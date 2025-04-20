@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         极乐禁地脚本-免费
-// @name:zh-TW   極樂禁地腳本-免費
+// @name         jl
+// @name:zh-TW   jl
 // @namespace    http://tampermonkey.net/
 // @version      0.0.3
 // @description  观看所有vip和金币视频
