@@ -12,8 +12,8 @@
 // @grant         unsafeWindow
 // @run-at        document-start
 // @license       MIT; https://opensource.org/licenses/MIT
-// @downloadURL   https://github.com/HatsuChuwu/miscs
-// @updateURL     https://github.com/HatsuChuwu/miscs
+// @downloadURL   https://github.com/HatsuChuwu/misc-files
+// @updateURL     https://github.com/HatsuChuwu/misc-files
 // ==/UserScript==
 
 (function() {
