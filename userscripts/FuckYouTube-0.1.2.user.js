@@ -13,8 +13,8 @@
 // @grant         unsafeWindow
 // @run-at        document-start
 // @license       MIT; https://opensource.org/licenses/MIT
-// @downloadURL   https://github.com/HatsuChuwu/misc-files
-// @updateURL     https://github.com/HatsuChuwu/misc-files
+// @downloadURL   https://github.com/ChuwuYo/misc-files/tree/main/userscripts
+// @updateURL     https://github.com/ChuwuYo/misc-files/tree/main/userscripts
 // ==/UserScript==
 
 (function() {
