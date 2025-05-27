@@ -16,7 +16,7 @@
 // @run-at          document-start
 // @license         AGPL3.0
 // @downloadURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%91%E5%90%AC.user.js
-// @updateURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%91%E5%90%AC.meta.js
+// @updateURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%D1%E5%90%AC.meta.js
 // ==/UserScript==
 
 (function() {
@@ -34,11 +34,11 @@
     // 功能1：重写 EventTarget.prototype.addEventListener 方法
     // 阻止特定的事件监听器被添加到 window 或 document 对象上
     const forbiddenEvents = new Set([
-        'mouseout',         // 鼠标指针移出元素或其子元素时触发
-        'mouseleave',       // 鼠标指针移出元素时触发 (不冒泡)
-        'blur',             // 元素失去焦点时触发
-        'focusout',         // 元素即将失去焦点时触发 (冒泡)
-        'visibilitychange'  // 页面的可见性状态发生改变时触发
+        'mouseout', // 鼠标指针移出元素或其子元素时触发
+        'mouseleave', // 鼠标指针移出元素时触发 (不冒泡)
+        'blur', // 元素失去焦点时触发
+        'focusout', // 元素即将失去焦点时触发 (冒泡)
+        'visibilitychange' // 页面的可见性状态发生改变时触发
     ]);
 
     // 保存原始的 addEventListener 方法引用
@@ -69,8 +69,8 @@
             visibilityState: 'visible',
             hidden: false,
             webkitVisibilityState: 'visible', // Webkit 内核浏览器前缀
-            mozVisibilityState: 'visible',    // Mozilla 内核浏览器前缀
-            msVisibilityState: 'visible',     // IE/Edge 浏览器前缀
+            mozVisibilityState: 'visible', // Mozilla 内核浏览器前缀
+            msVisibilityState: 'visible', // IE/Edge 浏览器前缀
             webkitHidden: false,
             mozHidden: false,
             msHidden: false,
@@ -82,8 +82,8 @@
                 // 使用 Object.defineProperty 重写 document 的属性
                 Object.defineProperty(pageWindow.document, propName, {
                     value: visibilityProperties[propName],
-                    writable: false,    // 设置为不可写，防止页面脚本轻易修改
-                    configurable: true  // 保持可配置，允许油猴脚本自身更新或禁用此重写
+                    writable: false, // 设置为不可写，防止页面脚本轻易修改
+                    configurable: true // 保持可配置，允许油猴脚本自身更新或禁用此重写
                 });
             }
         }
@@ -92,7 +92,7 @@
         // --- 2.2 文档焦点 (Document Focus) ---
         // 重写 document.hasFocus() 方法，使其始终返回 true
         Object.defineProperty(pageWindow.document, 'hasFocus', {
-            value: () => true,  // 使其固定返回 true，表明页面始终拥有焦点
+            value: () => true, // 使其固定返回 true，表明页面始终拥有焦点
             writable: false,
             configurable: true
         });
@@ -105,8 +105,8 @@
         windowEventHandlersToNullify.forEach(handlerName => {
             // 使用 Object.defineProperty 重写 window 的事件处理器属性
             Object.defineProperty(pageWindow, handlerName, {
-                value: null,        // 将事件处理器赋值为 null
-                writable: false,    // 设置为不可写，以阻止如 `window.onblur = function(){...}` 这样的直接赋值
+                value: null, // 将事件处理器赋值为 null
+                writable: false, // 设置为不可写，以阻止如 `window.onblur = function(){...}` 这样的直接赋值
                 configurable: true
             });
         });
@@ -123,11 +123,11 @@
     try {
         // 创建一个模拟的 'mousemove' (鼠标移动) 事件对象
         const fakeMouseEvent = new MouseEvent('mousemove', {
-            bubbles: true,      // 事件应冒泡
-            cancelable: true,   // 事件可被取消
-            view: pageWindow,   // 关联的视图 (通常是 window 对象)
-            clientX: 100,       // 模拟的鼠标事件在浏览器可视区域的X坐标
-            clientY: 100        // 模拟的鼠标事件在浏览器可视区域的Y坐标
+            bubbles: true, // 事件应冒泡
+            cancelable: true, // 事件可被取消
+            view: pageWindow, // 关联的视图 (通常是 window 对象)
+            clientX: 100, // 模拟的鼠标事件在浏览器可视区域的X坐标
+            clientY: 100 // 模拟的鼠标事件在浏览器可视区域的Y坐标
         });
 
         const activityInterval = 30000; // 模拟活动的间隔时间 (毫秒), 此处为30秒
