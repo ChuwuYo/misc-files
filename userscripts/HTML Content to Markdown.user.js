@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         HTML Content to Markdown
-// @name:zh      网页内容转Markdown工具
+// @name:zh      网页内容转Markdown
 // @namespace    https://github.com/ChuwuYo
 // @version      0.1.0
 // @description  Convert selected HTML Content to Markdown with filtering
