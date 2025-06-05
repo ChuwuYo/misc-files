@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name          FuckYouTube
 // @namespace     https://t.me/Impart_Chat
-// @version       0.1.2
-// @description   每行合并 5 个缩略图、删除 Shorts、禁用 AV1/WebRTC、添加视频适配切换、清理 URL、调整字体大小
+// @version       0.1.3
+// @description   每行合并 5 个缩略图、删除 Shorts、禁用 AV1/WebRTC、添加视频适配切换、清理 URL、调整字体大小;灵感来源于FuckYoutube.
 // @author        chuwu
 // @match         https://*.youtube.com/*
 // @match         https://www.youtubekids.com/*
