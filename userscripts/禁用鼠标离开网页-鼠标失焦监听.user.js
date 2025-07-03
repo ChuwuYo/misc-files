@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            禁用鼠标离开网页/窗口失焦监听
 // @namespace       http://tampermonkey.net/
-// @version         0.4.3
+// @version         0.4.7
 // @description     通过多种方式阻止网页检测鼠标离开页面、窗口失去焦点或页面可见性变化，并包含活动模拟，旨在保护用户操作不被意外中断或记录。
 // @author          Chuwu
 // @match           *://*.chaoxing.com/*
@@ -13,6 +13,13 @@
 // @match           https://talent.shixizhi.huawei.com/*
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=chaoxing.com
 // @grant           unsafeWindow
+// @grant           GM_setValue
+// @grant           GM_getValue
+// @grant           GM_addStyle
+// @grant           GM_openInTab
+// @grant           GM_registerMenuCommand
+// @grant           GM_notification
+// @grant           GM_setClipboard
 // @run-at          document-start
 // @license         AGPL3.0
 // @downloadURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%91%E5%90%AC.user.js
@@ -150,6 +157,77 @@
     } catch (error) {
         // 捕获并报告在启动模拟鼠标移动过程中发生的错误
         console.error(`[${SCRIPT_NAME}] 启动模拟鼠标移动时出错:`, error);
+    }
+
+    // --- 4. 添加禁用列表选项 ---
+    // 功能4：添加将当前网站加入禁用列表的选项
+    try {
+        // 注册油猴菜单命令
+        GM_registerMenuCommand('将当前网站添加到禁用列表', addToBlockList);
+
+        // 显示通知的函数
+        function showNotification(message) {
+            GM_notification({
+                text: message,
+                title: SCRIPT_NAME,
+                highlight: true,
+                timeout: 3000
+            });
+        }
+
+        // 添加到禁用列表的函数
+        function addToBlockList() {
+            try {
+                // 获取当前URL并处理为通配符格式
+                const url = new URL(window.location.href);
+                const pattern = `*://*.${url.hostname}/*`;
+
+                // 使用更可靠的油猴API复制到剪贴板
+                GM_setClipboard(pattern, 'text');
+
+                console.log(`[${SCRIPT_NAME}] 已复制到剪贴板: ${pattern}`);
+                showNotification(`已将 ${pattern} 复制到剪贴板，请手动添加到脚本的 @match 部分`);
+
+                // 延迟提示用户打开脚本编辑页面
+                setTimeout(() => {
+                    if (confirm("是否现在打开脚本编辑页面？")) {
+                        // 尝试打开油猴脚本管理器
+                        openScriptEditor();
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error(`[${SCRIPT_NAME}] 添加到禁用列表时出错:`, error);
+                showNotification(`操作失败: ${error.message}`);
+            }
+        }
+
+        // 打开脚本编辑器的函数
+        function openScriptEditor() {
+            try {
+                // 尝试使用油猴API打开脚本编辑页面
+                if (typeof GM_openInTab !== 'undefined') {
+                    // 这里使用通用的油猴选项页面URL
+                    GM_openInTab('chrome-extension://dhdgffkkebhmkfjojejmpbldmpobfkfo/options.html#nav=scripts', {active: true});
+                } else {
+                    // 备用方案：直接打开油猴选项页面
+                    window.open('chrome-extension://dhdgffkkebhmkfjojejmpbldmpobfkfo/options.html#nav=scripts', '_blank');
+                }
+            } catch (error) {
+                console.error(`[${SCRIPT_NAME}] 打开脚本编辑器时出错:`, error);
+                showNotification(`无法自动打开编辑器，请手动点击油猴图标 > 管理面板 > 脚本列表`);
+
+                // 备用方案：复制完整的匹配规则文本
+                const fullMatchText = `// @match           ${pattern}`;
+                GM_setClipboard(fullMatchText, 'text');
+                setTimeout(() => {
+                    showNotification(`已复制完整匹配规则到剪贴板: ${fullMatchText}`);
+                }, 500);
+            }
+        }
+
+        if (DEBUG) console.log(`[${SCRIPT_NAME}] 禁用列表菜单命令已添加。`);
+    } catch (error) {
+        console.error(`[${SCRIPT_NAME}] 添加禁用列表选项时出错:`, error);
     }
 
     // --- 初始化完成日志 ---
