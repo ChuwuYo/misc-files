@@ -2,9 +2,9 @@
 // @name         HTML Content to Markdown
 // @name:zh      网页内容转Markdown
 // @namespace    https://github.com/ChuwuYo
-// @version      0.1.0
+// @version      0.1.2
 // @description  Convert selected HTML Content to Markdown with filtering
-// @description:zh 将选定的HTML内容转换为Markdown（带过滤规则）
+// @description:zh 将选定的HTML内容转换为Markdown（规则过滤）
 // @author       ChuwuYo
 // @match        *://*/*
 // @grant        GM_addStyle
@@ -18,6 +18,7 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js
 // @require      https://unpkg.com/@guyplusplus/turndown-plugin-gfm/dist/turndown-plugin-gfm.js
 // @license      AGPL-3.0
+// @TODO         1.添加多选元素功能，支持按文档顺序自上而下排列。这需要添加多选模式和选中元素管理功能
 // ==/UserScript==
 
 (function () {
@@ -35,16 +36,22 @@
         removeAttributes: [
             'style', 'onclick', 'onload', 'onerror', 'onmouseover', 'onmouseout',
             'onfocus', 'onblur', 'target', 'contenteditable', 'draggable',
-            'tabindex',
-            // Keep 'aria-*' and 'data-*' for now, can be added back if causing issues
-            // 'aria-\\w+', 'data-\\w+'
+            'tabindex', 'spellcheck', 'translate', 'dir', 'lang',
+            'aria-\\w+', 'data-\\w+'
         ],
         keepAttributesOnTags: {
-            'img': ['src', 'alt', 'title'], // Ensure src, alt, title are kept for images
-            'a': ['href', 'title']         // Ensure href, title are kept for anchors
+            'img': ['src', 'alt', 'title', 'width', 'height'],
+            'a': ['href', 'title', 'rel'],
+            'code': ['class'],
+            'pre': ['class'],
+            'table': ['class'],
+            'th': ['scope', 'colspan', 'rowspan'],
+            'td': ['colspan', 'rowspan']
         },
-        removeElementsWithClasses: [],
-        removeElementsWithIds: [],
+        removeElementsWithClasses: ['advertisement', 'ads', 'sidebar', 'footer', 'header', 'nav', 'menu'],
+        removeElementsWithIds: ['advertisement', 'ads', 'sidebar', 'footer', 'header', 'nav', 'menu'],
+        smartContentDetection: true,
+        preserveCodeBlocks: true
     };
 
     // --- User-Provided Config (can be empty) ---
@@ -99,13 +106,39 @@
     const turndownService = new TurndownService({
         codeBlockStyle: 'fenced', headingStyle: 'atx', hr: '---',
         bulletListMarker: '-', emDelimiter: '*', strongDelimiter: '**',
+        linkStyle: 'inlined', linkReferenceStyle: 'full'
     });
-    TurndownPluginGfmService.gfm(turndownService); // Apply GFM plugin (handles tables, strikethrough, task lists, and better link/image handling)
+    TurndownPluginGfmService.gfm(turndownService);
 
     if (filterConfig && filterConfig.removeTags && Array.isArray(filterConfig.removeTags)) {
         turndownService.remove(filterConfig.removeTags);
     }
-    turndownService.remove((node) => node.nodeType === Node.COMMENT_NODE); // Remove comment nodes
+    turndownService.remove((node) => node.nodeType === Node.COMMENT_NODE);
+
+    // Enhanced image handling
+    turndownService.addRule('enhancedImages', {
+        filter: 'img',
+        replacement: function (content, node) {
+            const alt = node.getAttribute('alt') || '';
+            const src = node.getAttribute('src') || '';
+            const title = node.getAttribute('title');
+            if (!src) return alt;
+            return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
+        }
+    });
+
+    // Enhanced link handling
+    turndownService.addRule('enhancedLinks', {
+        filter: function (node) {
+            return node.nodeName === 'A' && node.getAttribute('href');
+        },
+        replacement: function (content, node) {
+            const href = node.getAttribute('href');
+            const title = node.getAttribute('title');
+            if (!href || href.startsWith('javascript:') || href === '#') return content;
+            return title ? `[${content}](${href} "${title}")` : `[${content}](${href})`;
+        }
+    });
 
     // Removed custom 'cleanAnchors' rule. GFM plugin's anchor handling is generally preferred.
     // Specific cleanup will be done in post-processing regex.
@@ -122,18 +155,19 @@
 
                 if (filterConfig.removeAttributes && Array.isArray(filterConfig.removeAttributes)) {
                     Array.from(el.attributes).forEach(attr => {
-                        if (attributesToKeep.includes(attr.name.toLowerCase())) { // Ensure case-insensitivity for attr name check
+                        const attrName = attr.name.toLowerCase();
+                        if (attributesToKeep.includes(attrName)) {
                             return;
                         }
                         let shouldRemove = false;
                         for (const pattern of filterConfig.removeAttributes) {
                             if (pattern.includes('\\w+')) {
-                                const prefix = pattern.replace('\\w+', '');
-                                if (attr.name.startsWith(prefix)) {
+                                const regex = new RegExp('^' + pattern.replace('\\w+', '\\w+') + '$', 'i');
+                                if (regex.test(attrName)) {
                                     shouldRemove = true;
                                     break;
                                 }
-                            } else if (attr.name === pattern) {
+                            } else if (attrName === pattern.toLowerCase()) {
                                 shouldRemove = true;
                                 break;
                             }
@@ -147,13 +181,30 @@
 
             if (filterConfig.removeElementsWithClasses && Array.isArray(filterConfig.removeElementsWithClasses)) {
                 filterConfig.removeElementsWithClasses.forEach(className => {
-                    clonedElement.querySelectorAll('.' + className.replace(/\./g, '\\.')).forEach(elToRemove => elToRemove.remove());
+                    const selector = className.startsWith('.') ? className : '.' + className;
+                    const escapedSelector = selector.replace(/([.#\[\](){}*+?^$|\\])/g, '\\$1');
+                    clonedElement.querySelectorAll(`[class*="${className}"], ${escapedSelector}`).forEach(elToRemove => elToRemove.remove());
                 });
             }
             if (filterConfig.removeElementsWithIds && Array.isArray(filterConfig.removeElementsWithIds)) {
                 filterConfig.removeElementsWithIds.forEach(idName => {
-                    const elToRemove = clonedElement.querySelector('#' + idName.replace(/#/g, '\\#'));
+                    const selector = idName.startsWith('#') ? idName : '#' + idName;
+                    const escapedSelector = selector.replace(/([.#\[\](){}*+?^$|\\])/g, '\\$1');
+                    const elToRemove = clonedElement.querySelector(escapedSelector);
                     if (elToRemove) elToRemove.remove();
+                });
+            }
+
+            // Smart content detection
+            if (filterConfig.smartContentDetection) {
+                clonedElement.querySelectorAll('*').forEach(el => {
+                    const classList = Array.from(el.classList).join(' ').toLowerCase();
+                    const id = (el.id || '').toLowerCase();
+                    const commonNoisePatterns = /\b(ad|ads|advertisement|banner|popup|modal|overlay|sidebar|footer|header|nav|menu|social|share|comment|related|recommend)\b/;
+
+                    if (commonNoisePatterns.test(classList) || commonNoisePatterns.test(id)) {
+                        el.remove();
+                    }
                 });
             }
         }
@@ -161,11 +212,16 @@
         const html = clonedElement.outerHTML;
         let turndownMd = turndownService.turndown(html);
 
-        // Post-processing Markdown cleanup
-        turndownMd = turndownMd.replace(/\[\s*]\(\s*\)/g, ''); // Remove completely empty links: []() or [ ]( )
-        turndownMd = turndownMd.replace(/\[\s*]\((#|javascript:[^)]*)\)/g, ''); // Remove empty links with junk hrefs: [](#) or [](javascript:...)
-        turndownMd = turndownMd.replace(/\[([^\]]+)]\(\s*\)/g, '$1'); // Remove links with text but no href: [text]() -> text
+        // Enhanced post-processing Markdown cleanup
+        turndownMd = turndownMd.replace(/\[\s*]\(\s*\)/g, ''); // Remove completely empty links
+        turndownMd = turndownMd.replace(/\[\s*]\((#|javascript:[^)]*|mailto:|tel:)\)/g, ''); // Remove empty/junk links
+        turndownMd = turndownMd.replace(/\[([^\]]+)]\(\s*\)/g, '$1'); // Remove links with text but no href
+        turndownMd = turndownMd.replace(/\[([^\]]+)]\(\1\)/g, '$1'); // Remove redundant links where text equals URL
+        turndownMd = turndownMd.replace(/!\[\s*]\(\s*\)/g, ''); // Remove empty images
         turndownMd = turndownMd.replace(/\n{3,}/g, '\n\n'); // Consolidate multiple blank lines
+        turndownMd = turndownMd.replace(/^\s*\n+|\n+\s*$/g, ''); // Trim leading/trailing whitespace
+        turndownMd = turndownMd.replace(/(\*\*|__)\s*\1/g, ''); // Remove empty bold/italic markers
+        turndownMd = turndownMd.replace(/`\s*`/g, ''); // Remove empty code spans
 
         return turndownMd.trim();
     }
@@ -225,18 +281,66 @@
 
     function startSelecting() { if (isSelecting) return; $('body').addClass('h2m-no-scroll'); isSelecting = true; selectedElement = document.body.firstElementChild || document.body; $(selectedElement).addClass('h2m-selection-box'); tip('Selecting element... Use Arrows to navigate, Mouse Wheel to expand/collapse, Click to confirm, Esc to cancel.'); }
     function endSelecting() { if (!isSelecting) return; isSelecting = false; $('.h2m-selection-box').removeClass('h2m-selection-box'); $('body').removeClass('h2m-no-scroll'); $('.h2m-tip').remove(); selectedElement = null; }
+    function isContentElement(el) {
+        const contentTags = ['P', 'DIV', 'ARTICLE', 'SECTION', 'MAIN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE', 'TABLE'];
+        return contentTags.includes(el.tagName) || el.textContent.trim().length > 20;
+    }
+
+    function isValidElement(el) {
+        if (!el || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(el.tagName)) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+    }
+
     function tip(message, timeout = null) { $('.h2m-tip').remove(); const $t = $('<div>').addClass('h2m-tip').html(message).appendTo('body').hide().fadeIn(200); if (timeout !== null) { setTimeout(() => { $t.fadeOut(200, () => $t.remove()); }, timeout); } }
     function handleKeyboardNavigation(e) {
-        if (!isSelecting || !selectedElement) return; e.preventDefault(); let newEl = selectedElement;
+        if (!isSelecting || !selectedElement) return;
+        e.preventDefault();
+        let newEl = selectedElement;
+
         switch (e.key) {
             case 'Escape': endSelecting(); return;
-            case 'ArrowUp': newEl = selectedElement.parentElement || selectedElement; if (['HTML', 'BODY'].includes(newEl.tagName)) newEl = newEl.firstElementChild || newEl; break;
-            case 'ArrowDown': newEl = selectedElement.firstElementChild || selectedElement; break;
-            case 'ArrowLeft': { let p = selectedElement.previousElementSibling; if (p) { newEl = p; while (newEl.lastElementChild) newEl = newEl.lastElementChild; } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) newEl = selectedElement.parentElement; break; }
-            case 'ArrowRight': { let n = selectedElement.nextElementSibling; if (n) { newEl = n; while (newEl.firstElementChild) newEl = newEl.firstElementChild; } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) newEl = selectedElement.parentElement; break; }
+            case 'ArrowUp':
+                newEl = selectedElement.parentElement || selectedElement;
+                if (['HTML', 'BODY'].includes(newEl.tagName)) {
+                    newEl = newEl.firstElementChild || newEl;
+                }
+                break;
+            case 'ArrowDown':
+                newEl = selectedElement.firstElementChild || selectedElement;
+                break;
+            case 'ArrowLeft': {
+                let p = selectedElement.previousElementSibling;
+                if (p) {
+                    newEl = p;
+                    while (newEl.lastElementChild && !isContentElement(newEl)) {
+                        newEl = newEl.lastElementChild;
+                    }
+                } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) {
+                    newEl = selectedElement.parentElement;
+                }
+                break;
+            }
+            case 'ArrowRight': {
+                let n = selectedElement.nextElementSibling;
+                if (n) {
+                    newEl = n;
+                    while (newEl.firstElementChild && !isContentElement(newEl)) {
+                        newEl = newEl.firstElementChild;
+                    }
+                } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) {
+                    newEl = selectedElement.parentElement;
+                }
+                break;
+            }
             default: return;
         }
-        if (newEl && newEl !== selectedElement) { $(selectedElement).removeClass('h2m-selection-box'); selectedElement = newEl; $(selectedElement).addClass('h2m-selection-box'); }
+
+        if (newEl && newEl !== selectedElement && isValidElement(newEl)) {
+            $(selectedElement).removeClass('h2m-selection-box');
+            selectedElement = newEl;
+            $(selectedElement).addClass('h2m-selection-box');
+        }
     }
     function handleMouseWheelNavigation(e) {
         if (!isSelecting || !selectedElement) return; e.preventDefault(); let newEl = selectedElement;
@@ -245,17 +349,85 @@
         if (newEl && newEl !== selectedElement) { $(selectedElement).removeClass('h2m-selection-box'); selectedElement = newEl; $(selectedElement).addClass('h2m-selection-box'); }
     }
     $(document).on('keydown.h2m', function (e) { if (shortCutConfig && e.ctrlKey === shortCutConfig.Ctrl && e.altKey === shortCutConfig.Alt && e.shiftKey === shortCutConfig.Shift && e.key.toUpperCase() === shortCutConfig.Key.toUpperCase()) { e.preventDefault(); if (isSelecting) endSelecting(); else startSelecting(); return; } if (isSelecting) handleKeyboardNavigation(e); });
-    $(document).on('mouseover.h2m', function (e) { if (isSelecting && selectedElement !== e.target && !$(e.target).closest('.h2m-tip, .h2m-modal-overlay').length) { $(selectedElement).removeClass('h2m-selection-box'); selectedElement = e.target; $(selectedElement).addClass('h2m-selection-box'); } }).on('wheel.h2m', function (e) { if (isSelecting) handleMouseWheelNavigation(e); }).on('mousedown.h2m', function (e) { if (isSelecting && selectedElement && $(e.target).closest('.h2m-tip, .h2m-modal-overlay').length === 0) { e.preventDefault(); e.stopPropagation(); try { const markdown = convertToMarkdown(selectedElement); showMarkdownModal(markdown); } catch (err) { console.error("[HTML to MD] Error during conversion or showing modal:", err); alert("Error processing selection. Check console for details."); } endSelecting(); } });
+    $(document).on('mouseover.h2m', function (e) {
+        if (isSelecting && selectedElement !== e.target && !$(e.target).closest('.h2m-tip, .h2m-modal-overlay').length && isValidElement(e.target)) {
+            $(selectedElement).removeClass('h2m-selection-box');
+            selectedElement = e.target;
+            $(selectedElement).addClass('h2m-selection-box');
+        }
+    }).on('wheel.h2m', function (e) {
+        if (isSelecting) handleMouseWheelNavigation(e);
+    }).on('mousedown.h2m', function (e) {
+        if (isSelecting && selectedElement && $(e.target).closest('.h2m-tip, .h2m-modal-overlay').length === 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+                const markdown = convertToMarkdown(selectedElement);
+                if (markdown.trim()) {
+                    showMarkdownModal(markdown);
+                } else {
+                    tip('所选元素没有有效内容', 2000);
+                }
+            } catch (err) {
+                console.error("[HTML to MD] Error during conversion or showing modal:", err);
+                alert("Error processing selection. Check console for details.");
+            }
+            endSelecting();
+        }
+    });
     GM_registerMenuCommand('开始选择 / Start Selection', startSelecting);
     GM_registerMenuCommand('配置过滤规则 / Configure Filters', () => {
         const currentFilters = JSON.stringify(filterConfig || DEFAULT_FILTER_CONFIG, null, 2);
-        const newFiltersStr = prompt("编辑过滤规则 (JSON):\n(removeTags, removeAttributes, keepAttributesOnTags, removeElementsWithClasses, removeElementsWithIds)", currentFilters);
-        if (newFiltersStr) { try { const newFilters = JSON.parse(newFiltersStr); filterConfig = { ...DEFAULT_FILTER_CONFIG, ...newFilters }; GM_setValue('filterConfig', JSON.stringify(filterConfig)); alert("过滤规则已更新！"); } catch (err) { alert("无效的JSON格式！规则未更新。\n" + err); } }
+        const newFiltersStr = prompt("编辑过滤规则 (JSON):\n支持的配置项:\n- removeTags: 要移除的HTML标签\n- removeAttributes: 要移除的属性\n- keepAttributesOnTags: 特定标签保留的属性\n- removeElementsWithClasses: 要移除的CSS类\n- removeElementsWithIds: 要移除的ID\n- smartContentDetection: 智能内容检测\n- preserveCodeBlocks: 保留代码块", currentFilters);
+        if (newFiltersStr) {
+            try {
+                const newFilters = JSON.parse(newFiltersStr);
+                filterConfig = { ...DEFAULT_FILTER_CONFIG, ...newFilters };
+                GM_setValue('filterConfig', JSON.stringify(filterConfig));
+                alert("过滤规则已更新！页面将刷新以应用新规则。");
+                location.reload();
+            } catch (err) {
+                alert("无效的JSON格式！规则未更新。\n" + err.message);
+            }
+        }
+    });
+
+    GM_registerMenuCommand('重置为默认配置 / Reset to Default', () => {
+        if (confirm('确定要重置所有配置为默认值吗？')) {
+            GM_setValue('filterConfig', JSON.stringify(DEFAULT_FILTER_CONFIG));
+            GM_setValue('shortCutConfig', JSON.stringify(DEFAULT_SHORTCUT_CONFIG));
+            alert('配置已重置！页面将刷新。');
+            location.reload();
+        }
     });
 
     // --- CSS Styles ---
     GM_addStyle(`
-        .h2m-selection-box { outline: 2px dashed #0B57D0 !important; background-color: rgba(11, 87, 208, 0.1) !important; box-shadow: 0 0 0 9999px rgba(0,0,0,0.05); position: relative; z-index: 9999998; }
+        .h2m-selection-box {
+            outline: 2px dashed #0B57D0 !important;
+            background-color: rgba(11, 87, 208, 0.1) !important;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(11, 87, 208, 0.3) !important;
+            position: relative;
+            z-index: 9999998;
+            transition: all 0.2s ease-in-out !important;
+        }
+        .h2m-selection-box::before {
+            content: attr(tagName) ' - ' attr(class);
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background: #0B57D0;
+            color: white;
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 3px;
+            z-index: 10000000;
+            font-family: monospace;
+            white-space: nowrap;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .h2m-no-scroll { overflow: hidden !important; }
         .h2m-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999999; display: flex; align-items: center; justify-content: center; }
         .h2m-modal {
@@ -329,7 +501,7 @@
         .h2m-tip h1, .h2m-tip h2, .h2m-tip h3 { margin-top: 0.5em; margin-bottom: 0.2em; font-weight: 600; } .h2m-tip ul { margin-left: 20px; padding-left: 0; } .h2m-tip li { margin-bottom: 0.3em; }
     `);
 
-    console.log('[HTML Content to Markdown] Script loaded. Version 0.1.1. Shortcut:', shortCutConfig, "Filters:", filterConfig);
+    console.log('[HTML Content to Markdown] Script loaded. Version 0.2.0. Shortcut:', shortCutConfig, "Filters:", filterConfig);
     if (!TurndownPluginGfmService || typeof TurndownPluginGfmService.gfm !== 'function') {
         console.error("[HTML to MD] Turndown GFM plugin not loaded correctly!");
         alert("[HTML to MD] Error: GFM plugin failed to load. Some Markdown features might not work correctly.");
