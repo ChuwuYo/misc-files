@@ -2,7 +2,9 @@
 // @name         HTML Content to Markdown
 // @name:zh      网页内容转Markdown
 // @namespace    https://github.com/ChuwuYo
-// @version      0.1.2
+// @homepageURL  https://github.com/ChuwuYo/misc-files/blob/main/userscripts/HTML%20Content%20to%20Markdown.user.js
+// @supportURL   https://github.com/ChuwuYo/misc-files/issues
+// @version      0.1.3
 // @description  Convert selected HTML Content to Markdown with filtering
 // @description:zh 将选定的HTML内容转换为Markdown（规则过滤）
 // @author       ChuwuYo
@@ -139,9 +141,6 @@
             return title ? `[${content}](${href} "${title}")` : `[${content}](${href})`;
         }
     });
-
-    // Removed custom 'cleanAnchors' rule. GFM plugin's anchor handling is generally preferred.
-    // Specific cleanup will be done in post-processing regex.
 
     // --- Core Functions ---
     function convertToMarkdown(element) {
@@ -280,7 +279,7 @@
     }
 
     function startSelecting() { if (isSelecting) return; $('body').addClass('h2m-no-scroll'); isSelecting = true; selectedElement = document.body.firstElementChild || document.body; $(selectedElement).addClass('h2m-selection-box'); tip('Selecting element... Use Arrows to navigate, Mouse Wheel to expand/collapse, Click to confirm, Esc to cancel.'); }
-    function endSelecting() { if (!isSelecting) return; isSelecting = false; $('.h2m-selection-box').removeClass('h2m-selection-box'); $('body').removeClass('h2m-no-scroll'); $('.h2m-tip').remove(); selectedElement = null; }
+    function endSelecting() { if (!isSelecting) return; isSelecting = false; $('.h2m-selection-box').removeClass('h2m-selection-box'); $('body').removeClass('h2m-no-scroll'); $('#h2m-tip-instance').remove(); selectedElement = null; }
     function isContentElement(el) {
         const contentTags = ['P', 'DIV', 'ARTICLE', 'SECTION', 'MAIN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE', 'TABLE'];
         return contentTags.includes(el.tagName) || el.textContent.trim().length > 20;
@@ -292,7 +291,20 @@
         return rect.width > 0 && rect.height > 0;
     }
 
-    function tip(message, timeout = null) { $('.h2m-tip').remove(); const $t = $('<div>').addClass('h2m-tip').html(message).appendTo('body').hide().fadeIn(200); if (timeout !== null) { setTimeout(() => { $t.fadeOut(200, () => $t.remove()); }, timeout); } }
+    // Use an ID for the tip element to increase specificity without !important.
+    function tip(message, timeout = null) {
+        $('#h2m-tip-instance').remove(); // Remove any existing tip by its unique ID
+        const $t = $('<div>')
+            .attr('id', 'h2m-tip-instance') // Assign a unique ID for high-specificity styling
+            .html(message)
+            .appendTo('body')
+            .hide()
+            .fadeIn(200);
+        if (timeout !== null) {
+            setTimeout(() => { $t.fadeOut(200, () => $t.remove()); }, timeout);
+        }
+    }
+
     function handleKeyboardNavigation(e) {
         if (!isSelecting || !selectedElement) return;
         e.preventDefault();
@@ -350,7 +362,7 @@
     }
     $(document).on('keydown.h2m', function (e) { if (shortCutConfig && e.ctrlKey === shortCutConfig.Ctrl && e.altKey === shortCutConfig.Alt && e.shiftKey === shortCutConfig.Shift && e.key.toUpperCase() === shortCutConfig.Key.toUpperCase()) { e.preventDefault(); if (isSelecting) endSelecting(); else startSelecting(); return; } if (isSelecting) handleKeyboardNavigation(e); });
     $(document).on('mouseover.h2m', function (e) {
-        if (isSelecting && selectedElement !== e.target && !$(e.target).closest('.h2m-tip, .h2m-modal-overlay').length && isValidElement(e.target)) {
+        if (isSelecting && selectedElement !== e.target && !$(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length && isValidElement(e.target)) {
             $(selectedElement).removeClass('h2m-selection-box');
             selectedElement = e.target;
             $(selectedElement).addClass('h2m-selection-box');
@@ -358,7 +370,7 @@
     }).on('wheel.h2m', function (e) {
         if (isSelecting) handleMouseWheelNavigation(e);
     }).on('mousedown.h2m', function (e) {
-        if (isSelecting && selectedElement && $(e.target).closest('.h2m-tip, .h2m-modal-overlay').length === 0) {
+        if (isSelecting && selectedElement && $(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length === 0) {
             e.preventDefault();
             e.stopPropagation();
             try {
@@ -442,7 +454,7 @@
             background-color: #F8F9FA; border-top: 1px solid #DEE2E6;
             display: flex; justify-content: flex-end; align-items: center; gap: 12px; /* Ensure vertical alignment and gap */
             border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
-            position: relative; /* Added for stacking context, though not strictly necessary for this fix */
+            position: relative;
         }
         .h2m-modal textarea.h2m-markdown-area, .h2m-modal .h2m-preview {
             flex: 1; height: 100%; padding: 20px 24px; box-sizing: border-box;
@@ -472,10 +484,10 @@
         .h2m-modal .h2m-preview img { max-width: 100%; height: auto; border-radius: 8px; margin: 1em 0; display: block; }
 
         .h2m-modal-footer button,
-        .h2m-modal-footer button.h2m-copy, /* Increased specificity */
-        .h2m-modal-footer button.h2m-download { /* Increased specificity */
-            position: static !important; /* CRITICAL FIX for button positioning */
-            display: inline-flex !important; /* Ensure it behaves as a flex item */
+        .h2m-modal-footer button.h2m-copy,
+        .h2m-modal-footer button.h2m-download {
+            position: static !important;
+            display: inline-flex !important;
             background-color: #0B57D0 !important; color: #FFFFFF !important; border: none;
             border-radius: 20px; padding: 0 24px; font-size: 14px; font-weight: 500;
             line-height: 1; text-align: center; text-decoration: none;
@@ -483,7 +495,7 @@
             height: 40px; min-width: 80px; box-sizing: border-box; cursor: pointer;
             box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1);
             transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            margin: 0; /* Reset any conflicting margins */
+            margin: 0;
         }
         .h2m-modal-footer button:hover,
         .h2m-modal-footer button.h2m-copy:hover,
@@ -497,8 +509,26 @@
         .h2m-modal .h2m-close svg path { fill: #B3261E !important; transition: fill 0.2s ease-in-out; }
         .h2m-modal .h2m-close:hover svg path { fill: #9E221A !important; }
         .h2m-modal .h2m-close:hover { opacity: 0.85; }
-        .h2m-tip { position: fixed; top: 20px; right: 20px; background-color: rgba(255,255,255,0.95); border: 1px solid #DCDCDC; padding: 10px 15px; z-index: 10000000; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); max-width: 300px; font-family: sans-serif; font-size: 14px; }
-        .h2m-tip h1, .h2m-tip h2, .h2m-tip h3 { margin-top: 0.5em; margin-bottom: 0.2em; font-weight: 600; } .h2m-tip ul { margin-left: 20px; padding-left: 0; } .h2m-tip li { margin-bottom: 0.3em; }
+
+        /* Use a high-specificity ID selector to style the tip box, avoiding !important */
+        #h2m-tip-instance {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255,255,255,0.95);
+            color: #202124; /* High specificity from ID selector makes !important unnecessary */
+            border: 1px solid #DCDCDC;
+            padding: 10px 15px;
+            z-index: 10000000;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 300px;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+        #h2m-tip-instance h1, #h2m-tip-instance h2, #h2m-tip-instance h3 { margin-top: 0.5em; margin-bottom: 0.2em; font-weight: 600; }
+        #h2m-tip-instance ul { margin-left: 20px; padding-left: 0; }
+        #h2m-tip-instance li { margin-bottom: 0.3em; }
     `);
 
     console.log('[HTML Content to Markdown] Script loaded. Version 0.2.0. Shortcut:', shortCutConfig, "Filters:", filterConfig);
@@ -510,6 +540,5 @@
         console.error("[HTML to MD] Marked library not loaded correctly!");
         alert("[HTML to MD] Error: Markdown preview library (Marked) failed to load.");
     }
-
 
 })();
