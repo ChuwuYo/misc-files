@@ -20,7 +20,7 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js
 // @require      https://unpkg.com/@guyplusplus/turndown-plugin-gfm/dist/turndown-plugin-gfm.js
 // @license      AGPL-3.0
-// @TODO         1.添加多选元素功能，支持按文档顺序自上而下排列。这需要添加多选模式和选中元素管理功能
+// @TODO         1.消息国际化 zh-cn/en-us
 // ==/UserScript==
 
 (function () {
