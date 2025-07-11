@@ -62,7 +62,9 @@
 
     // --- Global Variables ---
     let isSelecting = false;
-    let selectedElement = null;
+    let isMultiSelectMode = false;
+    let hoveredElement = null;
+    let selectedElements = [];
     let shortCutConfig;
     let filterConfig;
 
@@ -278,8 +280,63 @@
         $('body').append($modal); $markdownArea.trigger('input'); // Trigger input to ensure preview is initially synced if markdown is complex
     }
 
-    function startSelecting() { if (isSelecting) return; $('body').addClass('h2m-no-scroll'); isSelecting = true; selectedElement = document.body.firstElementChild || document.body; $(selectedElement).addClass('h2m-selection-box'); tip('Selecting element... Use Arrows to navigate, Mouse Wheel to expand/collapse, Click to confirm, Esc to cancel.'); }
-    function endSelecting() { if (!isSelecting) return; isSelecting = false; $('.h2m-selection-box').removeClass('h2m-selection-box'); $('body').removeClass('h2m-no-scroll'); $('#h2m-tip-instance').remove(); selectedElement = null; }
+    function updateTip() {
+        let message;
+        if (isMultiSelectMode) {
+            message = `<b>Multi-Select Mode (${selectedElements.length} selected)</b><br><b>Click</b> to add/remove element.<br>Release <b>Shift</b> to exit.<br>Press <b>Enter</b> to convert.<br><b>Esc</b> to cancel.`
+        } else {
+            message = '<b>Single-Select Mode</b><br>Navigate with mouse/arrows. <b>Click</b> to convert.<br>Hold <b>Shift</b> for Multi-Select.<br><b>Esc</b> to cancel.';
+        }
+        tip(message);
+    }
+
+    function processSelection() {
+        try {
+            let finalElements = isMultiSelectMode ? selectedElements : [hoveredElement];
+            if (finalElements.length === 0 || (finalElements.length === 1 && !finalElements[0])) {
+                tip('No element selected.', 2000);
+                return;
+            }
+
+            // Sort elements by their document order (top-to-bottom)
+            finalElements.sort((a, b) => {
+                const position = a.compareDocumentPosition(b);
+                if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+                    return 1; // a is after b
+                } else if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+                    return -1; // a is before b
+                }
+                return 0;
+            });
+
+            const markdown = finalElements.map(el => convertToMarkdown(el)).join('\n\n---\n\n');
+
+            if (markdown.trim()) {
+                showMarkdownModal(markdown);
+            } else {
+                tip('所选元素没有有效内容', 2000);
+            }
+        } catch (err) {
+            console.error("[HTML to MD] Error during conversion or showing modal:", err);
+            alert("Error processing selection. Check console for details.");
+        } finally {
+            endSelecting();
+        }
+    }
+
+    function startSelecting() {
+        if (isSelecting) return;
+        $('body').addClass('h2m-no-scroll');
+        isSelecting = true;
+        isMultiSelectMode = false;
+        selectedElements = [];
+        hoveredElement = document.body.firstElementChild || document.body;
+        if (hoveredElement) {
+            $(hoveredElement).addClass('h2m-selection-box');
+        }
+        updateTip();
+    }
+    function endSelecting() { if (!isSelecting) return; isSelecting = false; isMultiSelectMode = false; $('.h2m-selection-box').removeClass('h2m-selection-box'); $('.h2m-selected-item').removeClass('h2m-selected-item'); $('body').removeClass('h2m-no-scroll'); $('#h2m-tip-instance').remove(); hoveredElement = null; selectedElements = []; }
     function isContentElement(el) {
         const contentTags = ['P', 'DIV', 'ARTICLE', 'SECTION', 'MAIN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE', 'TABLE'];
         return contentTags.includes(el.tagName) || el.textContent.trim().length > 20;
@@ -306,85 +363,117 @@
     }
 
     function handleKeyboardNavigation(e) {
-        if (!isSelecting || !selectedElement) return;
+        if (!isSelecting || !hoveredElement) return;
         e.preventDefault();
-        let newEl = selectedElement;
+        let newEl = hoveredElement;
 
         switch (e.key) {
             case 'Escape': endSelecting(); return;
+            case 'Enter':
+                if (isMultiSelectMode) {
+                    processSelection();
+                }
+                return;
             case 'ArrowUp':
-                newEl = selectedElement.parentElement || selectedElement;
+                newEl = hoveredElement.parentElement || hoveredElement;
                 if (['HTML', 'BODY'].includes(newEl.tagName)) {
                     newEl = newEl.firstElementChild || newEl;
                 }
                 break;
             case 'ArrowDown':
-                newEl = selectedElement.firstElementChild || selectedElement;
+                newEl = hoveredElement.firstElementChild || hoveredElement;
                 break;
             case 'ArrowLeft': {
-                let p = selectedElement.previousElementSibling;
+                let p = hoveredElement.previousElementSibling;
                 if (p) {
                     newEl = p;
                     while (newEl.lastElementChild && !isContentElement(newEl)) {
                         newEl = newEl.lastElementChild;
                     }
-                } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) {
-                    newEl = selectedElement.parentElement;
+                } else if (hoveredElement.parentElement && !['BODY', 'HTML'].includes(hoveredElement.parentElement.tagName)) {
+                    newEl = hoveredElement.parentElement;
                 }
                 break;
             }
             case 'ArrowRight': {
-                let n = selectedElement.nextElementSibling;
+                let n = hoveredElement.nextElementSibling;
                 if (n) {
                     newEl = n;
                     while (newEl.firstElementChild && !isContentElement(newEl)) {
                         newEl = newEl.firstElementChild;
                     }
-                } else if (selectedElement.parentElement && !['BODY', 'HTML'].includes(selectedElement.parentElement.tagName)) {
-                    newEl = selectedElement.parentElement;
+                } else if (hoveredElement.parentElement && !['BODY', 'HTML'].includes(hoveredElement.parentElement.tagName)) {
+                    newEl = hoveredElement.parentElement;
                 }
                 break;
             }
             default: return;
         }
 
-        if (newEl && newEl !== selectedElement && isValidElement(newEl)) {
-            $(selectedElement).removeClass('h2m-selection-box');
-            selectedElement = newEl;
-            $(selectedElement).addClass('h2m-selection-box');
+        if (newEl && newEl !== hoveredElement && isValidElement(newEl)) {
+            $(hoveredElement).removeClass('h2m-selection-box');
+            hoveredElement = newEl;
+            $(hoveredElement).addClass('h2m-selection-box');
         }
     }
     function handleMouseWheelNavigation(e) {
-        if (!isSelecting || !selectedElement) return; e.preventDefault(); let newEl = selectedElement;
-        if (e.originalEvent.deltaY < 0) { newEl = selectedElement.parentElement || selectedElement; if (['HTML', 'BODY'].includes(newEl.tagName)) newEl = newEl.firstElementChild || newEl; }
-        else { newEl = selectedElement.firstElementChild || selectedElement; }
-        if (newEl && newEl !== selectedElement) { $(selectedElement).removeClass('h2m-selection-box'); selectedElement = newEl; $(selectedElement).addClass('h2m-selection-box'); }
+        if (!isSelecting || !hoveredElement) return; e.preventDefault(); let newEl = hoveredElement;
+        if (e.originalEvent.deltaY < 0) { newEl = hoveredElement.parentElement || hoveredElement; if (['HTML', 'BODY'].includes(newEl.tagName)) newEl = newEl.firstElementChild || newEl; }
+        else { newEl = hoveredElement.firstElementChild || hoveredElement; }
+        if (newEl && newEl !== hoveredElement) { $(hoveredElement).removeClass('h2m-selection-box'); hoveredElement = newEl; $(hoveredElement).addClass('h2m-selection-box'); }
     }
-    $(document).on('keydown.h2m', function (e) { if (shortCutConfig && e.ctrlKey === shortCutConfig.Ctrl && e.altKey === shortCutConfig.Alt && e.shiftKey === shortCutConfig.Shift && e.key.toUpperCase() === shortCutConfig.Key.toUpperCase()) { e.preventDefault(); if (isSelecting) endSelecting(); else startSelecting(); return; } if (isSelecting) handleKeyboardNavigation(e); });
-    $(document).on('mouseover.h2m', function (e) {
-        if (isSelecting && selectedElement !== e.target && !$(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length && isValidElement(e.target)) {
-            $(selectedElement).removeClass('h2m-selection-box');
-            selectedElement = e.target;
-            $(selectedElement).addClass('h2m-selection-box');
+    $(document).on('keydown.h2m', function (e) {
+        if (e.key.toUpperCase() === shortCutConfig.Key.toUpperCase() &&
+            e.ctrlKey === shortCutConfig.Ctrl &&
+            e.altKey === shortCutConfig.Alt &&
+            e.shiftKey === shortCutConfig.Shift) {
+            e.preventDefault();
+            if (isSelecting) {
+                endSelecting();
+            } else {
+                startSelecting();
+            }
+            return;
+        }
+
+        if (isSelecting) {
+            if (e.key === 'Shift' && !isMultiSelectMode) {
+                isMultiSelectMode = true;
+                updateTip();
+            }
+            handleKeyboardNavigation(e);
+        }
+    }).on('keyup.h2m', function(e) {
+        if (isSelecting && e.key === 'Shift') {
+            isMultiSelectMode = false;
+            updateTip();
+        }
+    }).on('mouseover.h2m', function (e) {
+        if (isSelecting && hoveredElement !== e.target && !$(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length && isValidElement(e.target)) {
+            $(hoveredElement).removeClass('h2m-selection-box');
+            hoveredElement = e.target;
+            $(hoveredElement).addClass('h2m-selection-box');
         }
     }).on('wheel.h2m', function (e) {
         if (isSelecting) handleMouseWheelNavigation(e);
     }).on('mousedown.h2m', function (e) {
-        if (isSelecting && selectedElement && $(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length === 0) {
+        if (isSelecting && hoveredElement && $(e.target).closest('#h2m-tip-instance, .h2m-modal-overlay').length === 0) {
             e.preventDefault();
             e.stopPropagation();
-            try {
-                const markdown = convertToMarkdown(selectedElement);
-                if (markdown.trim()) {
-                    showMarkdownModal(markdown);
+
+            if (isMultiSelectMode) {
+                const index = selectedElements.indexOf(hoveredElement);
+                if (index > -1) {
+                    selectedElements.splice(index, 1);
+                    $(hoveredElement).removeClass('h2m-selected-item');
                 } else {
-                    tip('所选元素没有有效内容', 2000);
+                    selectedElements.push(hoveredElement);
+                    $(hoveredElement).addClass('h2m-selected-item');
                 }
-            } catch (err) {
-                console.error("[HTML to MD] Error during conversion or showing modal:", err);
-                alert("Error processing selection. Check console for details.");
+                updateTip();
+            } else {
+                processSelection();
             }
-            endSelecting();
         }
     });
     GM_registerMenuCommand('开始选择 / Start Selection', startSelecting);
@@ -422,6 +511,11 @@
             position: relative;
             z-index: 9999998;
             transition: all 0.2s ease-in-out !important;
+        }
+        .h2m-selected-item {
+            outline: 2px solid #D00B0B !important; /* Solid red outline for selected items */
+            background-color: rgba(208, 11, 11, 0.15) !important; /* Light red background */
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(208, 11, 11, 0.4) !important;
         }
         .h2m-selection-box::before {
             content: attr(tagName) ' - ' attr(class);
