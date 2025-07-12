@@ -14,6 +14,7 @@
 // @grant        GM_setClipboard
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @icon         https://litera-reader.com/favicon.png?v=2
 // @require      https://code.jquery.com/jquery-3.6.0.min.js
 // @require      https://unpkg.com/turndown/dist/turndown.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js
@@ -21,6 +22,8 @@
 // @require      https://unpkg.com/@guyplusplus/turndown-plugin-gfm/dist/turndown-plugin-gfm.js
 // @license      AGPL-3.0
 // @TODO         1.消息国际化 zh-cn/en-us
+// @downloadURL  https://update.greasyfork.org/scripts/541987/HTML%20Content%20to%20Markdown.user.js
+// @updateURL    https://update.greasyfork.org/scripts/541987/HTML%20Content%20to%20Markdown.meta.js
 // ==/UserScript==
 
 (function () {
