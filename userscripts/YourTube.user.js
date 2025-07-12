@@ -12,6 +12,7 @@
 // @grant         GM_addStyle
 // @grant         unsafeWindow
 // @run-at        document-start
+// @icon          https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @license       MIT; https://opensource.org/licenses/MIT
 // @downloadURL   https://github.com/ChuwuYo/misc-files/tree/main/userscripts
 // @updateURL     https://github.com/ChuwuYo/misc-files/tree/main/userscripts
