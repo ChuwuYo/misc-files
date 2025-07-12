@@ -22,8 +22,8 @@
 // @require      https://unpkg.com/@guyplusplus/turndown-plugin-gfm/dist/turndown-plugin-gfm.js
 // @license      AGPL-3.0
 // @TODO         1.消息国际化 zh-cn/en-us
-// @downloadURL  https://update.greasyfork.org/scripts/541987/HTML%20Content%20to%20Markdown.user.js
-// @updateURL    https://update.greasyfork.org/scripts/541987/HTML%20Content%20to%20Markdown.meta.js
+// @downloadURL  https://github.com/ChuwuYo/misc-files/blob/main/userscripts/HTML%20Content%20to%20Markdown.user.js
+// @updateURL    https://github.com/ChuwuYo/misc-files/blob/main/userscripts/HTML%20Content%20to%20Markdown.user.js
 // ==/UserScript==
 
 (function () {
