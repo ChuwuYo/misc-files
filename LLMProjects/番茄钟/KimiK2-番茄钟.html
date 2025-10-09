@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>MD3 像素番茄钟</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        :root {
+            --bg: #f5f1e6;
+            --primary: #3d5a80;
+            --secondary: #98c1d9;
+            --accent: #ee6c4d;
+            --text: #293241;
+            --pixel: 4px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg);
+            font-family: 'Orbitron', sans-serif;
+            color: var(--text);
+            user-select: none;
+        }
+        .container {
+            width: 360px;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.15);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            image-rendering: pixelated;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            letter-spacing: 2px;
+        }
+        .timer-ring {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin-bottom: 16px;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .bg-ring {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 12;
+        }
+        .progress-ring {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset .3s;
+        }
+        .time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .status {
+            font-size: 14px;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 0;
+            width: 90px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--secondary);
+            color: #fff;
+            box-shadow: 0 var(--pixel) 0 var(--primary);
+            transition: transform .1s, box-shadow .1s;
+        }
+        button:active {
+            transform: translateY(var(--pixel));
+            box-shadow: 0 0 0 var(--primary);
+        }
+        button.start {
+            background: var(--accent);
+            box-shadow: 0 var(--pixel) 0 #c44532;
+        }
+        button.start:active {
+            box-shadow: 0 0 0 #c44532;
+        }
+        .settings {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .settings h2 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: var(--primary);
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .row span {
+            font-size: 14px;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 6px;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            text-align: center;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>番茄钟</h1>
+        <div class="timer-ring">
+            <svg>
+                <circle class="bg-ring" cx="100" cy="100" r="88"></circle>
+                <circle class="progress-ring" cx="100" cy="100" r="88"></circle>
+            </svg>
+            <div class="time-display" id="timeDisplay">25:00</div>
+        </div>
+        <div class="status" id="status">准备工作</div>
+        <div class="controls">
+            <button class="start" id="startBtn">开始</button>
+            <button id="resetBtn">重置</button>
+            <button id="settingsBtn">设置</button>
+        </div>
+        <div class="settings" id="settingsPanel" style="display:none;">
+            <h2>设置</h2>
+            <div class="row">
+                <span>工作时间（分钟）</span>
+                <input type="number" id="workTime" min="1" max="60" value="25">
+            </div>
+            <div class="row">
+                <span>休息时间（分钟）</span>
+                <input type="number" id="shortBreak" min="1" max="30" value="5">
+            </div>
+            <div class="row">
+                <span>长休息时间（分钟）</span>
+                <input type="number" id="longBreak" min="1" max="60" value="15">
+            </div>
+            <div class="row">
+                <span>自动循环</span>
+                <input type="checkbox" id="autoLoop" checked>
+            </div>
+            <div class="row sound-toggle">
+                <span>声音提醒</span>
+                <input type="checkbox" id="soundAlert" checked>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const timeDisplay = document.getElementById('timeDisplay');
+        const status = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const progressRing = document.querySelector('.progress-ring');
+        const circumference = 2 * Math.PI * 88;
+        progressRing.style.strokeDasharray = circumference;
+        progressRing.style.strokeDashoffset = 0;
+
+        const inputs = {
+            workTime: document.getElementById('workTime'),
+            shortBreak: document.getElementById('shortBreak'),
+            longBreak: document.getElementById('longBreak'),
+            autoLoop: document.getElementById('autoLoop'),
+            soundAlert: document.getElementById('soundAlert')
+        };
+
+        let timer = null;
+        let totalSeconds = 0;
+        let remaining = 0;
+        let isRunning = false;
+        let isWork = true;
+        let cycle = 0;
+
+        function updateDisplay() {
+            const min = String(Math.floor(remaining / 60)).padStart(2, '0');
+            const sec = String(remaining % 60).padStart(2, '0');
+            timeDisplay.textContent = `${min}:${sec}`;
+            const offset = circumference * (1 - remaining / totalSeconds);
+            progressRing.style.strokeDashoffset = offset;
+        }
+
+        function tick() {
+            if (remaining <= 0) {
+                if (inputs.soundAlert.checked) {
+                    const ctx = new AudioContext();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 800;
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                }
+                if (isWork) {
+                    cycle++;
+                    if (cycle % 4 === 0) {
+                        isWork = false;
+                        totalSeconds = parseInt(inputs.longBreak.value) * 60;
+                        status.textContent = '长休息';
+                        progressRing.style.stroke = '#98c1d9';
+                    } else {
+                        totalSeconds = parseInt(inputs.shortBreak.value) * 60;
+                        status.textContent = '休息';
+                        progressRing.style.stroke = '#98c1d9';
+                    }
+                } else {
+                    isWork = true;
+                    totalSeconds = parseInt(inputs.workTime.value) * 60;
+                    status.textContent = '工作中';
+                    progressRing.style.stroke = '#ee6c4d';
+                }
+                remaining = totalSeconds;
+                updateDisplay();
+                if (!inputs.autoLoop.checked) {
+                    stop();
+                }
+                return;
+            }
+            remaining--;
+            updateDisplay();
+        }
+
+        function start() {
+            if (!isRunning) {
+                if (remaining === 0) {
+                    totalSeconds = parseInt(inputs.workTime.value) * 60;
+                    remaining = totalSeconds;
+                    status.textContent = '工作中';
+                    progressRing.style.stroke = '#ee6c4d';
+                }
+                isRunning = true;
+                startBtn.textContent = '暂停';
+                timer = setInterval(tick, 1000);
+            } else {
+                stop();
+            }
+        }
+
+        function stop() {
+            clearInterval(timer);
+            isRunning = false;
+            startBtn.textContent = '继续';
+        }
+
+        function reset() {
+            clearInterval(timer);
+            isRunning = false;
+            isWork = true;
+            cycle = 0;
+            remaining = 0;
+            status.textContent = '准备工作';
+            progressRing.style.stroke = '#ee6c4d';
+            startBtn.textContent = '开始';
+            updateDisplay();
+        }
+
+        startBtn.addEventListener('click', start);
+        resetBtn.addEventListener('click', reset);
+        settingsBtn.addEventListener('click', () => {
+            settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'flex' : 'none';
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>
