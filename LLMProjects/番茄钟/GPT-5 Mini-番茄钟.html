@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>番茄钟</title>
+  <style>
+    /* 基础重置 */
+    :root{
+      --bg:#f4f9ff;
+      --card:#ffffff;
+      --muted:#7b8aa3;
+      --accent:#ff6b6b;
+      --accent-2:#8bd3c7;
+      --pixel-size:12px;
+      --radius:12px;
+      --glass: rgba(255,255,255,0.6);
+      --font-sans: "Noto Sans SC", "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+    }
+    /* 小清新像素配色主题（可切换） */
+    .theme-1 { --accent:#ff6b6b; --accent-2:#8bd3c7; --bg:#f4fbff; }
+    .theme-2 { --accent:#ff9bb3; --accent-2:#b6f0d9; --bg:#fff8fb; }
+
+    html,body{height:100%; margin:0; font-family:var(--font-sans); background:linear-gradient(180deg,var(--bg),#ffffff); color:#223;}
+    .app {
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
+
+    .card {
+      width:100%;
+      max-width:980px;
+      background:linear-gradient(180deg,var(--card),#fbfdff);
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(34,50,80,0.08);
+      padding:20px;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:18px;
+      align-items:start;
+      filter: drop-shadow(0 2px 0 rgba(0,0,0,0.02));
+    }
+
+    header { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    h1 { margin:0; font-size:20px; letter-spacing:1px; font-weight:700; color:var(--accent); }
+    .meta { color:var(--muted); font-size:13px; }
+
+    /* 左栏：番茄 & 控件 */
+    .left {
+      padding:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+      border-radius:12px;
+      border:1px solid rgba(34,50,80,0.03);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    /* 番茄像素图 */
+    .tomato-stage {
+      --grid-size:11;
+      width: calc(var(--grid-size) * var(--pixel-size));
+      height: calc(var(--grid-size) * var(--pixel-size));
+      image-rendering: pixelated;
+      display:grid;
+      grid-template-columns: repeat(var(--grid-size), var(--pixel-size));
+      grid-template-rows: repeat(var(--grid-size), var(--pixel-size));
+      gap:0;
+      transform-origin:center;
+      transition: transform 300ms ease;
+    }
+    .tomato-stage.shake{
+      animation: shake 850ms ease-in-out infinite;
+    }
+    .tomato-stage.sleep { filter:grayscale(0.7) brightness(0.95); opacity:0.85; transform:scale(0.98); }
+    @keyframes shake{
+      0% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-2px) rotate(-2deg); }
+      50% { transform: translateY(0) rotate(0deg); }
+      75% { transform: translateY(-1px) rotate(2deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    .pixel {
+      width:var(--pixel-size);
+      height:var(--pixel-size);
+      box-sizing:border-box;
+      image-rendering:pixelated;
+      border-radius:2px;
+    }
+    /* 定义常用颜色类 */
+    .c-t { background:var(--accent); }      /* 番茄红 */
+    .c-t-dark { background:#d84b4b; }
+    .c-s { background:var(--accent-2);}     /* 叶子等 */
+    .c-s-dark { background:#61b9a6; }
+    .c-light { background:#ffdfe0; }
+    .c-none { background:transparent; }
+
+    /* 计时显示 */
+    .timer {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      width:100%;
+    }
+    .time-display {
+      font-family: "Press Start 2P", monospace;
+      font-size:34px;
+      letter-spacing:2px;
+      color:#15202b;
+      background: linear-gradient(180deg, #ffffff, rgba(0,0,0,0.02));
+      padding:10px 18px;
+      border-radius:10px;
+      box-shadow: inset 0 -4px 12px rgba(0,0,0,0.03);
+      width:100%;
+      text-align:center;
+    }
+    .mode-tag {
+      font-size:13px;
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    /* 控制按钮 */
+    .controls { display:flex; gap:8px; width:100%; justify-content:center; flex-wrap:wrap; }
+    button.btn {
+      border:0; cursor:pointer;
+      padding:10px 14px;
+      border-radius:10px;
+      box-shadow: 0 6px 10px rgba(34,50,80,0.04);
+      background:linear-gradient(180deg,#fff,#f6f9ff);
+      font-weight:600;
+      color:#123;
+      font-size:13px;
+    }
+    .btn-primary { background:linear-gradient(180deg,var(--accent),#ff8b8b); color:white; box-shadow: 0 8px 20px rgba(255,107,107,0.18); }
+    .btn-ghost { background:transparent; border:1px solid rgba(34,50,80,0.06); }
+    .btn-danger { background:linear-gradient(180deg,#ffdede,#ffb3b3); color:#7a1515; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    /* 右侧：设置与统计 */
+    .right {
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+      border-radius:12px;
+      border:1px solid rgba(34,50,80,0.03);
+    }
+    .panel { background:transparent; padding:8px; border-radius:10px; display:flex; gap:12px; flex-direction:column; }
+    .row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    label { font-size:13px; color:var(--muted); }
+    input[type=number] { width:86px; padding:8px 10px; border-radius:8px; border:1px solid rgba(34,50,80,0.06); font-weight:600; text-align:center; }
+    input[type=range] { width:160px; }
+    .small { font-size:12px; color:var(--muted); }
+
+    .stat { display:flex; gap:10px; align-items:center; justify-content:space-between; padding:8px; border-radius:8px; background:rgba(0,0,0,0.02); }
+    .progress {
+      width:100%;
+      height:12px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.03), rgba(0,0,0,0.02));
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .progress > i { display:block; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-2)); width:0%; transition:width 400ms linear; }
+
+    /* 切换面板 */
+    .settings { display:grid; gap:8px; grid-template-columns:1fr 1fr; }
+    .full { grid-column:1 / -1; display:flex; gap:8px; align-items:center; }
+
+    /* 小提示文本 */
+    .hint { font-size:12px; color:var(--muted); }
+
+    footer { grid-column:1 / -1; text-align:center; font-size:12px; color:var(--muted); margin-top:6px; }
+
+    /* 响应 */
+    @media (max-width:880px){
+      .card{ grid-template-columns: 1fr; padding:12px; }
+      .left, .right { width:100%; }
+      .tomato-stage { margin:8px auto; }
+    }
+
+  </style>
+  <!-- 像素字体（用于计时显示） -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body class="theme-1">
+  <div class="app">
+    <div class="card" role="application" aria-label="番茄钟应用">
+      <header>
+        <h1>番茄钟</h1>
+        <div class="meta">像素小清新 · 键盘：Space 开/关 · R 重置 · S 跳过</div>
+      </header>
+
+      <section class="left" aria-label="主控制区">
+        <div id="tomatoWrap" class="tomato-stage sleep" aria-hidden="true"></div>
+
+        <div class="timer" role="timer" aria-live="polite">
+          <div class="mode-tag"><strong id="modeLabel">工作</strong><span class="small" id="sessionInfo">第 0 / 0 次</span></div>
+          <div id="timeDisplay" class="time-display" aria-atomic="true">25:00</div>
+          <div class="controls">
+            <button id="startBtn" class="btn btn-primary" aria-pressed="false">开始</button>
+            <button id="pauseBtn" class="btn btn-ghost" disabled>暂停</button>
+            <button id="skipBtn" class="btn btn-ghost">跳过</button>
+            <button id="resetBtn" class="btn btn-danger">重置</button>
+            <button id="sprintBtn" class="btn btn-ghost" title="+5 分钟冲刺">冲刺+5分</button>
+          </div>
+          <div class="hint">自动开始：<span id="autoStartHint">否</span> · 震动：<span id="vibeHint">关</span></div>
+        </div>
+
+        <div class="stat" style="width:100%;">
+          <div>
+            <div style="font-weight:700">已完成番茄</div>
+            <div id="completedCount" style="font-size:18px">0</div>
+          </div>
+          <div style="width:48%">
+            <div style="font-size:13px; color:var(--muted)">当前周期进度</div>
+            <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="right" aria-label="设置与统计">
+        <div class="panel">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <label style="font-weight:700">时间设置（分钟）</label>
+            <div class="small">保存会即时生效并持久化</div>
+          </div>
+          <div class="settings">
+            <div>
+              <label>工作</label>
+              <input id="workInput" type="number" min="1" max="180" step="1" value="25" aria-label="工作分钟数">
+            </div>
+            <div>
+              <label>短休息</label>
+              <input id="shortInput" type="number" min="1" max="60" step="1" value="5" aria-label="短休息分钟">
+            </div>
+            <div>
+              <label>长休息</label>
+              <input id="longInput" type="number" min="1" max="180" step="1" value="15" aria-label="长休息分钟">
+            </div>
+            <div>
+              <label>循环数</label>
+              <input id="cyclesInput" type="number" min="1" max="10" step="1" value="4" aria-label="每隔多少次工作为一次长休息">
+            </div>
+            <div class="full">
+              <label>自动开始下个阶段</label>
+              <select id="autoStart" aria-label="自动开始">
+                <option value="false">否</option>
+                <option value="true">是</option>
+              </select>
+              <label style="margin-left:8px">震动提示</label>
+              <select id="vibrate" aria-label="震动提示">
+                <option value="false">关</option>
+                <option value="true">开</option>
+              </select>
+            </div>
+            <div class="full">
+              <label>声音与音量</label>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <select id="soundType" aria-label="声音类型">
+                  <option value="beep">短哔声</option>
+                  <option value="chime">温柔钟声</option>
+                  <option value="melody">小旋律</option>
+                </select>
+                <input id="soundToggle" type="checkbox" checked aria-label="声音开关"> 声音
+                <input id="volume" type="range" min="0" max="1" step="0.01" value="0.8" aria-label="音量">
+              </div>
+            </div>
+            <div class="full">
+              <label>主题</label>
+              <div style="display:flex; gap:8px;">
+                <button id="theme1" class="btn btn-ghost">粉绿</button>
+                <button id="theme2" class="btn btn-ghost">粉粉</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label style="font-weight:700">统计</label>
+            <div class="small">持久化存储</div>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1; padding:8px; border-radius:8px; background:rgba(0,0,0,0.02);">
+              <div class="small">今日完成</div>
+              <div id="todayCount" style="font-weight:700; font-size:16px">0</div>
+            </div>
+            <div style="flex:1; padding:8px; border-radius:8px; background:rgba(0,0,0,0.02);">
+              <div class="small">总计</div>
+              <div id="totalCount" style="font-weight:700; font-size:16px">0</div>
+            </div>
+          </div>
+          <div class="hint">提示：离开页面计时会暂停（浏览器限制），但设置与计数会保存。</div>
+        </div>
+
+        <div class="panel">
+          <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+            <div>
+              <label style="font-weight:700">调试/快速操作</label>
+              <div class="small">开发者或快速使用</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="resetStats" class="btn btn-ghost">清除统计</button>
+              <button id="applySettings" class="btn btn-primary">保存设置</button>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+      <footer>已保存设置会在本地浏览器保存 · 支持移动震动与无外部音频资源（WebAudio）</footer>
+    </div>
+  </div>
+
+  <script>
+  /* ------------- 数据与默认设置 ------------- */
+  const DEFAULTS = {
+    work: 25,
+    short: 5,
+    long: 15,
+    cycles: 4,
+    autoStart: false,
+    vibrate: false,
+    soundOn: true,
+    soundType: 'beep',
+    volume: 0.8,
+    theme: 'theme-1'
+  };
+
+  const LS_KEY = 'pixel-pomodoro-v1';
+  const STATS_KEY = 'pixel-pomodoro-stats-v1';
+
+  // load saved settings or defaults
+  function loadSettings(){
+    try{
+      const s = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      return Object.assign({}, DEFAULTS, s);
+    } catch(e){ return {...DEFAULTS}; }
+  }
+  function saveSettings(s){
+    localStorage.setItem(LS_KEY, JSON.stringify(s));
+  }
+
+  function loadStats(){
+    try{
+      return JSON.parse(localStorage.getItem(STATS_KEY) || '{"today":0,"total":0,"date":""}');
+    }catch(e){ return {today:0,total:0,date:""}; }
+  }
+  function saveStats(stats){
+    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  }
+
+  /* ------------- UI 元素 ------------- */
+  const el = {
+    timeDisplay: document.getElementById('timeDisplay'),
+    modeLabel: document.getElementById('modeLabel'),
+    sessionInfo: document.getElementById('sessionInfo'),
+    startBtn: document.getElementById('startBtn'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    skipBtn: document.getElementById('skipBtn'),
+    sprintBtn: document.getElementById('sprintBtn'),
+    workInput: document.getElementById('workInput'),
+    shortInput: document.getElementById('shortInput'),
+    longInput: document.getElementById('longInput'),
+    cyclesInput: document.getElementById('cyclesInput'),
+    autoStart: document.getElementById('autoStart'),
+    vibrate: document.getElementById('vibrate'),
+    soundType: document.getElementById('soundType'),
+    soundToggle: document.getElementById('soundToggle'),
+    volume: document.getElementById('volume'),
+    progressBar: document.getElementById('progressBar'),
+    completedCount: document.getElementById('completedCount'),
+    todayCount: document.getElementById('todayCount'),
+    totalCount: document.getElementById('totalCount'),
+    applySettings: document.getElementById('applySettings'),
+    resetStats: document.getElementById('resetStats'),
+    autoStartHint: document.getElementById('autoStartHint'),
+    vibeHint: document.getElementById('vibeHint'),
+    tomatoWrap: document.getElementById('tomatoWrap'),
+    theme1: document.getElementById('theme1'),
+    theme2: document.getElementById('theme2')
+  };
+
+  /* ------------- 状态机 ------------- */
+  const modes = { WORK: '工作', SHORT: '短休息', LONG: '长休息' };
+  let settings = loadSettings();
+  let stats = loadStats();
+
+  // timer state
+  let state = {
+    running: false,
+    currentMode: modes.WORK,
+    workCompleted: 0,  // completed work sessions in current cycle
+    totalCompleted: stats.total || 0,
+    remaining: settings.work * 60,
+    startedAt: null,
+    intervalId: null
+  };
+
+  // WebAudio context
+  let audioCtx = null;
+
+  /* ------------- 页面初始化 ------------- */
+  function init(){
+    // apply theme
+    document.body.classList.remove('theme-1','theme-2');
+    document.body.classList.add(settings.theme || 'theme-1');
+
+    // sync UI inputs
+    el.workInput.value = settings.work;
+    el.shortInput.value = settings.short;
+    el.longInput.value = settings.long;
+    el.cyclesInput.value = settings.cycles;
+    el.autoStart.value = (settings.autoStart? 'true' : 'false');
+    el.vibrate.value = (settings.vibrate? 'true' : 'false');
+    el.soundType.value = settings.soundType;
+    el.soundToggle.checked = settings.soundOn;
+    el.volume.value = settings.volume;
+    el.autoStartHint.textContent = settings.autoStart ? '是' : '否';
+    el.vibeHint.textContent = settings.vibrate ? '开' : '关';
+
+    // build pixel tomato
+    buildTomato();
+
+    // restore timer
+    state.remaining = settings.work * 60;
+    updateDisplay();
+    restoreStatsToUI();
+
+    // event handlers
+    el.startBtn.addEventListener('click', startTimer);
+    el.pauseBtn.addEventListener('click', pauseTimer);
+    el.resetBtn.addEventListener('click', resetTimer);
+    el.skipBtn.addEventListener('click', skipPhase);
+    el.sprintBtn.addEventListener('click', sprintAdd);
+    el.applySettings.addEventListener('click', applySettings);
+    el.resetStats.addEventListener('click', ()=>{ stats = {today:0,total:0,date:todayISO()}; saveStats(stats); restoreStatsToUI(); });
+    el.theme1.addEventListener('click', ()=>changeTheme('theme-1'));
+    el.theme2.addEventListener('click', ()=>changeTheme('theme-2'));
+
+    // keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if (e.code === 'Space') { e.preventDefault(); toggleStartPause(); }
+      if (e.code === 'KeyR') { resetTimer(); }
+      if (e.code === 'KeyS') { skipPhase(); }
+      if (e.code === 'ArrowUp') { incrementInput(el.workInput, 1); }
+      if (e.code === 'ArrowDown') { incrementInput(el.workInput, -1); }
+      if (e.code === 'ArrowRight') { incrementInput(el.shortInput, 1); }
+      if (e.code === 'ArrowLeft') { incrementInput(el.shortInput, -1); }
+    });
+
+    // visibility: pause when page hidden
+    document.addEventListener('visibilitychange', ()=>{
+      if (document.hidden && state.running) { pauseTimer(); }
+    });
+
+    // ensure date rollover for daily stats
+    ensureTodayInStats();
+  }
+
+  function incrementInput(input, delta){
+    const v = Math.max(1, Math.min(600, Number(input.value) + delta));
+    input.value = v;
+  }
+
+  function changeTheme(name){
+    settings.theme = name;
+    saveSettings(settings);
+    document.body.classList.remove('theme-1','theme-2');
+    document.body.classList.add(name);
+  }
+
+  /* ------------- 计时器控制 ------------- */
+  function startTimer(){
+    if(state.running) return;
+    state.running = true;
+    el.startBtn.disabled = true;
+    el.pauseBtn.disabled = false;
+    el.startBtn.setAttribute('aria-pressed','true');
+    el.modeLabel.textContent = state.currentMode;
+    el.tomatoWrap.classList.remove('sleep');
+    if (state.currentMode === modes.WORK) el.tomatoWrap.classList.add('shake');
+
+    state.startedAt = Date.now();
+    state.intervalId = setInterval(tick, 250);
+  }
+
+  function pauseTimer(){
+    if(!state.running) return;
+    state.running = false;
+    el.startBtn.disabled = false;
+    el.pauseBtn.disabled = true;
+    el.startBtn.setAttribute('aria-pressed','false');
+    el.tomatoWrap.classList.remove('shake');
+    el.tomatoWrap.classList.add('sleep');
+
+    if (state.intervalId) { clearInterval(state.intervalId); state.intervalId = null; }
+  }
+
+  function resetTimer(){
+    pauseTimer();
+    state.currentMode = modes.WORK;
+    state.workCompleted = 0;
+    state.remaining = settings.work * 60;
+    updateDisplay();
+    updateProgress();
+    el.modeLabel.textContent = state.currentMode;
+  }
+
+  function skipPhase(){
+    // jump to next phase immediately
+    pauseTimer();
+    nextPhase();
+    if (settings.autoStart) startTimer();
+  }
+
+  function sprintAdd(){
+    // temporary +5 minutes
+    state.remaining += 5*60;
+    updateDisplay();
+  }
+
+  function toggleStartPause(){ state.running ? pauseTimer() : startTimer(); }
+
+  /* ------------- 主循环 ------------- */
+  function tick(){
+    // decrease remaining based on real time
+    const elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+    if (elapsed <= 0) return;
+    state.remaining = Math.max(0, state.remaining - elapsed);
+    state.startedAt = Date.now();
+    updateDisplay();
+
+    if (state.remaining <= 0){
+      // phase finished
+      completePhase();
+    }
+  }
+
+  function completePhase(){
+    pauseTimer();
+    playNotify(settings.soundType);
+    if (settings.vibrate && navigator.vibrate) { try{ navigator.vibrate([200,80,200]); }catch(e){} }
+
+    if (state.currentMode === modes.WORK){
+      state.workCompleted++;
+      stats.today = (stats.date === todayISO()) ? stats.today + 1 : 1;
+      stats.total = (stats.total || 0) + 1;
+      saveStats(stats);
+      restoreStatsToUI();
+      state.totalCompleted = stats.total || 0;
+    }
+
+    // advance
+    nextPhase();
+
+    if (settings.autoStart){
+      startTimer();
+    } else {
+      // visual: show that it's ready
+      el.tomatoWrap.classList.add('sleep');
+    }
+  }
+
+  function nextPhase(){
+    if (state.currentMode === modes.WORK){
+      // decide short or long
+      if (state.workCompleted % settings.cycles === 0){
+        state.currentMode = modes.LONG;
+        state.remaining = settings.long * 60;
+      } else {
+        state.currentMode = modes.SHORT;
+        state.remaining = settings.short * 60;
+      }
+      updateCompletedCount();
+    } else {
+      // finished break -> go to work
+      state.currentMode = modes.WORK;
+      state.remaining = settings.work * 60;
+    }
+    updateDisplay();
+    updateProgress();
+    el.modeLabel.textContent = state.currentMode;
+  }
+
+  /* ------------- UI 更新函数 ------------- */
+  function secsToMMSS(s){
+    s = Math.max(0, Math.floor(s));
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s % 60).padStart(2,'0');
+    return `${mm}:${ss}`;
+  }
+
+  function updateDisplay(){
+    el.timeDisplay.textContent = secsToMMSS(state.remaining);
+    el.sessionInfo.textContent = `第 ${state.workCompleted} / ${settings.cycles} 次`;
+    // progress computed by time in current mode relative to mode duration
+    updateProgress();
+  }
+
+  function updateProgress(){
+    let duration = 1;
+    if (state.currentMode === modes.WORK) duration = settings.work * 60;
+    if (state.currentMode === modes.SHORT) duration = settings.short * 60;
+    if (state.currentMode === modes.LONG) duration = settings.long * 60;
+    const pct = Math.round(100 * (1 - (state.remaining / duration)));
+    el.progressBar.style.width = pct + '%';
+    el.completedCount.textContent = stats.today || 0;
+  }
+
+  function updateCompletedCount(){
+    // update a small indicator if needed
+    // handled in completePhase via stats
+  }
+
+  function restoreStatsToUI(){
+    // daily rollover
+    ensureTodayInStats();
+    el.todayCount.textContent = stats.today || 0;
+    el.totalCount.textContent = stats.total || 0;
+    el.completedCount.textContent = stats.today || 0;
+  }
+
+  function ensureTodayInStats(){
+    const today = todayISO();
+    if (!stats.date || stats.date !== today){
+      stats.date = today;
+      stats.today = stats.today || 0; // if date changed, reset day count
+      if (stats.date !== today) stats.today = 0;
+      saveStats(stats);
+    }
+  }
+
+  function todayISO(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  /* ------------- 设置应用 ------------- */
+  function applySettings(){
+    // read inputs and validate
+    const w = Math.max(1, Math.min(600, Number(el.workInput.value) || DEFAULTS.work));
+    const s = Math.max(1, Math.min(600, Number(el.shortInput.value) || DEFAULTS.short));
+    const l = Math.max(1, Math.min(600, Number(el.longInput.value) || DEFAULTS.long));
+    const c = Math.max(1, Math.min(20, Number(el.cyclesInput.value) || DEFAULTS.cycles));
+    const auto = (el.autoStart.value === 'true');
+    const vib = (el.vibrate.value === 'true');
+    const soundType = el.soundType.value || 'beep';
+    const soundOn = el.soundToggle.checked;
+    const volume = Number(el.volume.value) || 0.8;
+
+    settings = { ...settings, work:w, short:s, long:l, cycles:c, autoStart:auto, vibrate:vib, soundType, soundOn, volume };
+    saveSettings(settings);
+
+    // update UI hints
+    el.autoStartHint.textContent = settings.autoStart ? '是' : '否';
+    el.vibeHint.textContent = settings.vibrate ? '开' : '关';
+
+    // if currently idle, update remaining to new work time
+    if (!state.running && state.currentMode === modes.WORK){
+      state.remaining = settings.work * 60;
+      updateDisplay();
+    }
+
+    // feedback
+    el.applySettings.textContent = '已保存';
+    setTimeout(()=> el.applySettings.textContent = '保存设置', 1000);
+  }
+
+  /* ------------- 声音（WebAudio） ------------- */
+  function ensureAudioCtx(){
+    if (!audioCtx) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(e) {
+        audioCtx = null;
+      }
+    }
+  }
+
+  function playNotify(type='beep'){
+    if (!settings.soundOn) return;
+    ensureAudioCtx();
+    if (!audioCtx) return;
+    const vol = Number(settings.volume || 0.8);
+    if (type === 'beep') {
+      playBeep(vol, 0.18, 880);
+    } else if (type === 'chime'){
+      playChime(vol);
+    } else if (type === 'melody'){
+      playMelody(vol);
+    }
+  }
+
+  function playBeep(volume=0.8, dur=0.12, freq=880){
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'square';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(volume, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(now);
+    o.stop(now + dur + 0.02);
+  }
+
+  function playChime(volume=0.85){
+    const now = audioCtx.currentTime;
+    const freqs = [660, 880, 1040].reverse();
+    freqs.forEach((f,i)=>{
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const start = now + i*0.08;
+      o.connect(g).connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(volume * (0.7 - i*0.15), start + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, start + 0.7 + i*0.05);
+      o.start(start);
+      o.stop(start + 1.1);
+    });
+  }
+
+  function playMelody(volume=0.7){
+    const seq = [880, 1047, 1318, 1568, 1318]; // simple arpeggio
+    const now = audioCtx.currentTime;
+    seq.forEach((f,i)=>{
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = f;
+      const start = now + i*0.12;
+      o.connect(g).connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.linearRampToValueAtTime(volume*0.8, start + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+      o.start(start);
+      o.stop(start + 0.3);
+    });
+  }
+
+  /* ------------- 像素番茄生成 ------------- */
+  function buildTomato(){
+    // simple 11x11 pixel tomato pattern using color keys:
+    // 'T' tomato, 'D' tomato dark, 'S' stem, 's' stem dark, '.' transparent, 'L' light
+    const pattern = [
+      "....TTT....",
+      "...TTTTT...",
+      "..TTTTTTT..",
+      ".TTTTTTTTT.",
+      ".TTTTTTTTT.",
+      ".TTTLLTTTT.",
+      ".TTTLLTTTT.",
+      "..TTSSSST..",
+      "...SSSSS...",
+      "....SSS....",
+      "..........."
+    ];
+    // map to classes
+    const mapping = {
+      'T':'c-t',
+      'L':'c-light',
+      'S':'c-s',
+      's':'c-s-dark',
+      '.':'c-none'
+    };
+    // clear
+    el.tomatoWrap.innerHTML = '';
+    const size = 11;
+    for(let r=0;r<size;r++){
+      const row = pattern[r] || ''.padEnd(size,'.');
+      for(let c=0;c<size;c++){
+        const ch = row[c] || '.';
+        const cls = mapping[ch] || 'c-none';
+        const div = document.createElement('div');
+        div.className = 'pixel ' + cls;
+        // small border to show pixel vibe
+        div.style.boxShadow = 'inset 0 -2px rgba(0,0,0,0.04)';
+        el.tomatoWrap.appendChild(div);
+      }
+    }
+  }
+
+  /* ------------- 启动 ------------- */
+  init();
+
+  // mark title precisely (already set in head)
+  document.title = '番茄钟';
+
+  </script>
+</body>
+</html>

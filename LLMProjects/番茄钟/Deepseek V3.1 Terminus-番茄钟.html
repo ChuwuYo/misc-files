@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <style>
+        :root {
+            --primary-color: #ff6b8b;
+            --secondary-color: #6b8cff;
+            --accent-color: #8bff6b;
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --pixel-size: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+            image-rendering: pixelated;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border: 4px solid var(--primary-color);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 32px;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer-display {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .timer {
+            font-size: 64px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        .status {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+            /* 确保按钮在禁用时有区分 */
+        }
+        
+        .btn:disabled {
+            background-color: #ccc;
+            box-shadow: 0 2px 0 #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-accent {
+            background-color: var(--accent-color);
+        }
+
+        .tomato-count {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .tomatoes {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            min-height: 25px; /* 保持空间稳定 */
+        }
+
+        .tomato {
+            width: 20px;
+            height: 20px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .tomato::after {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: 8px;
+            width: 4px;
+            height: 8px;
+            background-color: green;
+        }
+
+        .settings {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .settings h2 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            text-align: center;
+        }
+
+        .setting-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .setting-label {
+            font-weight: bold;
+        }
+
+        .setting-input {
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .character {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 40px;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .timer {
+                font-size: 48px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>番茄钟</h1>
+        
+        <div class="character">(>^ω^<)ﾉ</div>
+        
+        <div class="timer-display">
+            <div class="timer" id="timer">25:00</div>
+            <div class="status" id="status">准备开始工作</div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="startBtn">开始</button>
+            <button class="btn btn-secondary" id="pauseBtn" disabled>暂停</button>
+            <button class="btn btn-accent" id="resetBtn">重置</button>
+            <button class="btn btn-secondary" id="skipBtn">跳过</button>
+        </div>
+        
+        <div class="tomato-count">
+            <div>已完成番茄: <span id="completedCount">0</span></div>
+            <div class="tomatoes" id="tomatoContainer">
+                </div>
+        </div>
+        
+        <div class="settings">
+            <h2>设置</h2>
+            
+            <div class="setting-group">
+                <span class="setting-label">工作时长 (分钟):</span>
+                <input type="number" class="setting-input" id="workDuration" min="1" max="60" value="25">
+            </div>
+            
+            <div class="setting-group">
+                <span class="setting-label">短休息时长 (分钟):</span>
+                <input type="number" class="setting-input" id="shortBreakDuration" min="1" max="30" value="5">
+            </div>
+            
+            <div class="setting-group">
+                <span class="setting-label">长休息时长 (分钟):</span>
+                <input type="number" class="setting-input" id="longBreakDuration" min="1" max="60" value="15">
+            </div>
+            
+            <div class="setting-group">
+                <span class="setting-label">长休息间隔:</span>
+                <input type="number" class="setting-input" id="longBreakInterval" min="1" max="10" value="4">
+            </div>
+            
+            <div class="setting-group">
+                <span class="setting-label">声音提示:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            
+            <div class="setting-group">
+                <span class="setting-label">提示音:</span>
+                <select id="soundSelect">
+                    <option value="bell">铃铛</option>
+                    <option value="chime">钟声</option>
+                    <option value="beep">哔哔声</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <audio id="soundEffect" preload="auto">
+        <source src="data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAZGF0YRIAAAD//z8AACAA////MzMAGTAAACgAAAAAAAAAAAAAAAD//z8AACAA////MzMAGTAAACgAAAAAAAAAAAAAAAD//z8AACAA////MzMAGTAAACgAAAAAAAAAAAAAAAD//z8AACAA////MzMAGTAAACgAAAAAAAAAAAAAAA==" type="audio/wav">
+    </audio>
+
+    <script>
+        // 番茄钟状态
+        const states = {
+            WORK: 'work',
+            SHORT_BREAK: 'shortBreak',
+            LONG_BREAK: 'longBreak'
+        };
+        
+        // 默认设置 (与 HTML input 默认值保持一致)
+        const DEFAULT_SETTINGS = {
+            workDuration: 25,
+            shortBreakDuration: 5,
+            longBreakDuration: 15,
+            longBreakInterval: 4,
+            soundToggle: true,
+            soundSelect: 'bell'
+        };
+
+        // 当前状态
+        let currentState = states.WORK;
+        let isRunning = false;
+        let timeLeft = 0;
+        let timerInterval = null;
+        let completedPomodoros = 0;
+        
+        // DOM元素
+        const timerElement = document.getElementById('timer');
+        const statusElement = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const completedCountElement = document.getElementById('completedCount');
+        const tomatoContainer = document.getElementById('tomatoContainer');
+        
+        // 设置元素
+        const workDurationInput = document.getElementById('workDuration');
+        const shortBreakDurationInput = document.getElementById('shortBreakDuration');
+        const longBreakDurationInput = document.getElementById('longBreakDuration');
+        const longBreakIntervalInput = document.getElementById('longBreakInterval');
+        const soundToggle = document.getElementById('soundToggle');
+        const soundSelect = document.getElementById('soundSelect');
+        const soundEffect = document.getElementById('soundEffect');
+        
+        // --- 初始化与设置逻辑 ---
+        
+        function init() {
+            loadSettings();
+            loadTimeForCurrentState(); // 初始加载时间
+            updateTimerDisplay();
+            updateTomatoDisplay();
+            updateStatus();
+            addEventListeners();
+        }
+        
+        // 添加事件监听器 (修复: 确保事件已绑定)
+        function addEventListeners() {
+            startBtn.addEventListener('click', startTimer);
+            pauseBtn.addEventListener('click', pauseTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            skipBtn.addEventListener('click', skipTimer);
+            
+            // 设置变化监听
+            workDurationInput.addEventListener('change', updateSettings);
+            shortBreakDurationInput.addEventListener('change', updateSettings);
+            longBreakDurationInput.addEventListener('change', updateSettings);
+            longBreakIntervalInput.addEventListener('change', updateSettings);
+            soundToggle.addEventListener('change', updateSettings);
+            soundSelect.addEventListener('change', updateSettings);
+            
+            // 确保输入框值有效
+            [workDurationInput, shortBreakDurationInput, longBreakDurationInput, longBreakIntervalInput].forEach(input => {
+                input.addEventListener('blur', validateInput);
+            });
+        }
+        
+        function validateInput(event) {
+            const input = event.target;
+            const value = parseInt(input.value);
+            const min = parseInt(input.min);
+            const max = parseInt(input.max);
+            
+            if (isNaN(value) || value < min || value > max) {
+                input.value = input.defaultValue;
+                updateSettings();
+            }
+        }
+        
+        function loadSettings() {
+            const storedSettings = localStorage.getItem('pomodoroSettings');
+            const settings = storedSettings ? JSON.parse(storedSettings) : DEFAULT_SETTINGS;
+            
+            workDurationInput.value = settings.workDuration;
+            shortBreakDurationInput.value = settings.shortBreakDuration;
+            longBreakDurationInput.value = settings.longBreakDuration;
+            longBreakIntervalInput.value = settings.longBreakInterval;
+            soundToggle.checked = settings.soundToggle;
+            soundSelect.value = settings.soundSelect;
+            
+            // 额外加载已完成番茄数
+            completedPomodoros = parseInt(localStorage.getItem('completedPomodoros') || '0');
+        }
+        
+        function saveSettings() {
+            const settings = {
+                workDuration: parseInt(workDurationInput.value),
+                shortBreakDuration: parseInt(shortBreakDurationInput.value),
+                longBreakDuration: parseInt(longBreakDurationInput.value),
+                longBreakInterval: parseInt(longBreakIntervalInput.value),
+                soundToggle: soundToggle.checked,
+                soundSelect: soundSelect.value
+            };
+            localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+            localStorage.setItem('completedPomodoros', completedPomodoros.toString());
+        }
+
+        function updateSettings() {
+            saveSettings();
+            // 如果计时器没有运行，则根据当前状态重新加载时间
+            if (!isRunning) {
+                 loadTimeForCurrentState();
+                 updateTimerDisplay();
+            }
+        }
+        
+        // --- 计时器核心逻辑 ---
+
+        // 开始计时
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerFinished();
+                    }
+                }, 1000);
+            }
+        }
+        
+        // 暂停计时
+        function pauseTimer() {
+            if (isRunning) {
+                isRunning = false;
+                clearInterval(timerInterval);
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
+        }
+        
+        // 重置计时
+        function resetTimer() {
+            pauseTimer();
+            // 重置到初始工作状态和时间
+            currentState = states.WORK; 
+            completedPomodoros = 0; // 重置番茄计数
+            saveSettings(); // 保存重置后的计数
+            loadTimeForCurrentState();
+            updateTimerDisplay();
+            updateStatus();
+            updateTomatoDisplay();
+        }
+        
+        // 跳过当前阶段
+        function skipTimer() {
+            pauseTimer();
+            
+            // 如果跳过的是工作阶段，则计算完成一个番茄
+            if (currentState === states.WORK) {
+                completedPomodoros++;
+                saveSettings();
+                updateTomatoDisplay();
+            }
+            
+            nextState();
+            updateTimerDisplay();
+            
+            // 自动开始下一个阶段
+            startTimer(); 
+        }
+        
+        // 计时结束
+        function timerFinished() {
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            
+            // 播放提示音
+            if (soundToggle.checked) {
+                playSound();
+            }
+            
+            // 更新番茄计数和切换状态
+            if (currentState === states.WORK) {
+                completedPomodoros++;
+                saveSettings(); // 保存番茄计数
+                updateTomatoDisplay();
+                
+                // 检查是否需要长休息
+                if (completedPomodoros % parseInt(longBreakIntervalInput.value) === 0) {
+                    currentState = states.LONG_BREAK;
+                } else {
+                    currentState = states.SHORT_BREAK;
+                }
+            } else {
+                currentState = states.WORK;
+            }
+            
+            loadTimeForCurrentState();
+            updateTimerDisplay();
+            updateStatus();
+            
+            // 自动开始下一个阶段
+            startTimer(); 
+        }
+        
+        // 切换到下一个状态（主要用于 skipTimer 和 timerFinished 内部）
+        function nextState() {
+            // 在 timerFinished 中已经处理了工作结束后的计数和状态切换，
+            // 这里主要用于 skipTimer 或手动切换时的逻辑。
+            if (currentState === states.WORK) {
+                if (completedPomodoros % parseInt(longBreakIntervalInput.value) === 0) {
+                    currentState = states.LONG_BREAK;
+                } else {
+                    currentState = states.SHORT_BREAK;
+                }
+            } else {
+                currentState = states.WORK;
+            }
+            
+            loadTimeForCurrentState();
+            updateStatus();
+        }
+        
+        // 根据当前状态加载时间
+        function loadTimeForCurrentState() {
+            switch (currentState) {
+                case states.WORK:
+                    timeLeft = parseInt(workDurationInput.value) * 60;
+                    break;
+                case states.SHORT_BREAK:
+                    timeLeft = parseInt(shortBreakDurationInput.value) * 60;
+                    break;
+                case states.LONG_BREAK:
+                    timeLeft = parseInt(longBreakDurationInput.value) * 60;
+                    break;
+            }
+        }
+        
+        // --- 显示更新逻辑 ---
+        
+        // 更新计时器显示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerElement.textContent = timeString;
+            // 更新文档标题
+            const statusLabel = currentState === states.WORK ? '工作' : '休息';
+            document.title = `(${timeString}) ${statusLabel} | 番茄钟`;
+        }
+        
+        // 更新状态显示和表情
+        function updateStatus() {
+            const characterElement = document.querySelector('.character');
+            let statusText = '';
+            let color = '';
+            let character = '';
+            
+            switch (currentState) {
+                case states.WORK:
+                    statusText = isRunning ? '工作时间，保持专注！' : '准备开始工作';
+                    color = 'var(--primary-color)';
+                    character = isRunning ? '( ﾟДﾟ)ﾉ' : '(>^ω^<)ﾉ';
+                    break;
+                case states.SHORT_BREAK:
+                    statusText = '短休息时间，放松一下吧~';
+                    color = 'var(--secondary-color)';
+                    character = '♪(･ω･)ﾉ';
+                    break;
+                case states.LONG_BREAK:
+                    statusText = '长休息时间，好好放松！';
+                    color = 'var(--accent-color)';
+                    character = 'ヾ(＾-＾)ノ';
+                    break;
+            }
+            
+            statusElement.textContent = statusText;
+            statusElement.style.color = color;
+            characterElement.textContent = character;
+        }
+        
+        // 更新番茄计数显示
+        function updateTomatoDisplay() {
+            completedCountElement.textContent = completedPomodoros;
+            
+            // 清空番茄容器
+            tomatoContainer.innerHTML = '';
+            
+            // 动态添加番茄图标
+            for (let i = 0; i < completedPomodoros; i++) {
+                const tomatoDiv = document.createElement('div');
+                tomatoDiv.className = 'tomato';
+                tomatoContainer.appendChild(tomatoDiv);
+            }
+        }
+        
+        // 播放提示音 (简化版)
+        function playSound() {
+            // 在实际应用中，你需要根据 soundSelect.value 动态加载或使用不同的音频源。
+            // 由于这里只提供了一个 Base64 声音源，我们只重置播放并播放它。
+            soundEffect.currentTime = 0; 
+            soundEffect.play().catch(e => {
+                // 浏览器有自动播放限制，需要用户交互后才能播放
+                console.warn("播放声音失败 (可能被浏览器阻止):", e); 
+            }); 
+        }
+
+        // 🚀 关键修复: 在页面加载完成后调用初始化函数
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
