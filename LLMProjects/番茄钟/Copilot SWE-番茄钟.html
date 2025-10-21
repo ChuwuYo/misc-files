@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>番茄钟</title>
+    <style>
+      /* 色板 & 像素风基础 */
+      :root{
+        --bg: #f5f7ff; /* 柔和背景 */
+        --card: #fff;
+        --accent: #ff6b8a; /* 番茄粉 */
+        --accent-2: #6b9bff; /* 蓝色点缀 */
+        --muted: #9aa3bf;
+        --glass: rgba(255,255,255,0.75);
+      }
+
+      html,body{height:100%;}
+      body{
+        margin:0; padding:24px; box-sizing:border-box; font-family: 'Segoe UI', Roboto, 'Hiragino Kaku Gothic ProN', '微软雅黑', Arial, sans-serif; background:linear-gradient(135deg,var(--bg),#eaf0ff); display:flex; align-items:center; justify-content:center;
+      }
+
+      /* 中心容器 */
+      .container{
+        width:980px; max-width:96vw; background:var(--card); border-radius:18px; padding:22px; box-shadow: 0 8px 20px rgba(100,100,140,0.08); display:grid; grid-template-columns: 420px 1fr; gap:22px; align-items:center;
+        border:6px solid transparent; position:relative; overflow:hidden;
+      }
+
+      /* 像素边框效果 */
+      .container::before{
+        content:''; position:absolute; inset:0; pointer-events:none; background:
+          linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px) 0 0/8px 8px,
+          linear-gradient(180deg, rgba(0,0,0,0.03) 1px, transparent 1px) 0 0/8px 8px;
+        mix-blend-mode: overlay;
+      }
+
+      h1.title{grid-column:1/-1; margin:0 0 6px 0; font-size:22px; color:#2b2d42; letter-spacing:1px;}
+      .left{
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:12px; border-radius:12px; background: linear-gradient(180deg,#fff,#fbfbff);
+      }
+
+      /* 计时器大圆 */
+      .clock{
+        width:320px; height:320px; border-radius:20px; display:flex; align-items:center; justify-content:center; position:relative; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.02);
+        background: repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0 6px, transparent 6px 12px);
+      }
+
+  .inner-clock{width:260px; height:260px; border-radius:16px; background: linear-gradient(180deg,#fff,#fff7fb); display:flex; flex-direction:column; align-items:center; justify-content:center; border:6px solid var(--accent); box-shadow: 0 8px 0 rgba(0,0,0,0.05); position:relative;}
+
+      .time{font-weight:700; font-size:58px; color:#222; letter-spacing:1px; margin:0; font-family: 'Courier New', monospace;}
+      .session{font-size:14px; color:var(--muted); margin-top:8px;}
+
+      /* 控制按钮 */
+      .controls{display:flex; gap:10px; margin-top:12px;}
+
+      .btn{
+        border:0; background:var(--accent); color:white; padding:10px 14px; border-radius:6px; font-weight:700; cursor:pointer; box-shadow: 0 6px 0 #ff4b6f; transition: transform .08s ease; font-family:inherit;
+      }
+      .btn.secondary{background:var(--accent-2); box-shadow:0 6px 0 #4276ff}
+  .btn:active{transform:translateY(3px); box-shadow:none}
+  .btn:focus{outline:3px solid rgba(99,102,241,0.12); outline-offset:2px}
+
+      /* 右侧面板 */
+      .right{display:flex; flex-direction:column; gap:12px;}
+      .card{background:var(--glass); border-radius:12px; padding:12px;}
+
+      .preset-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+      .preset{background:#fff; border:1px solid rgba(0,0,0,0.04); padding:8px; border-radius:8px; cursor:pointer; text-align:center}
+      .preset strong{display:block; font-size:14px}
+      .preset small{color:var(--muted)}
+
+      label{display:block; font-size:13px; color:#3a3f55; margin-bottom:6px}
+      .row{display:flex; gap:10px; align-items:center}
+      input[type="number"]{width:100%; padding:8px; border-radius:8px; border:1px solid #e6e9f2}
+      input[type="range"]{width:100%}
+
+      .footer{grid-column:1/-1; display:flex; justify-content:space-between; align-items:center; margin-top:14px}
+      .small{font-size:12px; color:var(--muted)}
+
+      /* 像素装饰 */
+      .pixel-icon{width:60px;height:60px; image-rendering: pixelated; background:linear-gradient(45deg,var(--accent),var(--accent-2)); border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-weight:900; box-shadow:0 6px 0 rgba(0,0,0,0.05)}
+
+      /* 响应 */
+      @media (max-width:880px){
+        .container{grid-template-columns:1fr; padding:18px}
+        .clock{width:260px;height:260px}
+        .inner-clock{width:200px;height:200px}
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container" role="application" aria-label="番茄钟">
+      <h1 class="title">番茄钟</h1>
+
+      <section class="left">
+        <div class="clock" aria-hidden>
+          <div class="inner-clock">
+            <svg class="progress-ring" width="240" height="240" viewBox="0 0 240 240" style="position:absolute; left:10px; top:10px;" aria-hidden>
+              <circle cx="120" cy="120" r="100" stroke="rgba(0,0,0,0.06)" stroke-width="16" fill="transparent"></circle>
+              <circle id="progress" cx="120" cy="120" r="100" stroke="var(--accent)" stroke-width="16" fill="transparent" stroke-linecap="butt" transform="rotate(-90 120 120)" stroke-dasharray="628.318" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="pixel-icon" title="像素计时器">🍅</div>
+            <p id="display" class="time">25:00</p>
+            <p id="session" class="session">工作</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startBtn" class="btn" aria-label="开始计时">开始</button>
+          <button id="pauseBtn" class="btn secondary" aria-label="暂停计时">暂停</button>
+          <button id="skipBtn" class="btn" aria-label="跳过当前环">跳过</button>
+          <button id="resetBtn" class="btn secondary" aria-label="重置番茄钟">重置</button>
+        </div>
+      </section>
+
+      <aside class="right">
+        <div class="card">
+          <label>快速选择</label>
+          <div class="preset-grid">
+            <div class="preset" data-work="25" data-short="5" data-long="15"><strong>默认</strong><small>25/5/15</small></div>
+            <div class="preset" data-work="50" data-short="10" data-long="30"><strong>双倍时长</strong><small>50/10/30</small></div>
+            <div class="preset" data-work="15" data-short="5" data-long="10"><strong>速战速决</strong><small>15/5/10</small></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <label for="workInput">工作时长（分钟）</label>
+          <input id="workInput" type="number" min="1" max="180" value="25">
+
+          <label for="shortInput" style="margin-top:8px">短休时长（分钟）</label>
+          <input id="shortInput" type="number" min="1" max="60" value="5">
+
+          <label for="longInput" style="margin-top:8px">长休时长（分钟）</label>
+          <input id="longInput" type="number" min="1" max="120" value="15">
+        </div>
+
+        <div class="card">
+          <label>提示音量</label>
+          <input id="volumeRange" type="range" min="0" max="1" step="0.05" value="0.75">
+          <label style="margin-top:8px">自动模式</label>
+          <div class="row" style="margin-top:6px">
+            <label style="margin:0; display:flex; align-items:center; gap:8px"><input id="autoNext" type="checkbox"> 自动开始下一环</label>
+          </div>
+          <div style="margin-top:8px" class="row">
+            <label style="margin:0; display:flex; align-items:center; gap:8px"><input id="soundToggle" type="checkbox" checked> 声音提示</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <label>更多设置</label>
+          <div class="row" style="justify-content:space-between;">
+            <small class="small">循环计数</small>
+            <strong id="countDisplay">0</strong>
+          </div>
+          <div style="margin-top:8px">可上传自定义提示音（支持 mp3/ogg）</div>
+          <input id="soundUpload" type="file" accept="audio/*" style="margin-top:8px">
+        </div>
+      </aside>
+
+      <div class="footer">
+        <div class="small">像素小清新二次元风格 • 友好快捷键: 空格开始/暂停, R 重置, N 跳过</div>
+        <div class="small">已完成轮数: <span id="cycles">0</span></div>
+      </div>
+    </main>
+
+    <script>
+      // 基本选择器与初始状态
+      const display = document.getElementById('display');
+      const sessionLabel = document.getElementById('session');
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const skipBtn = document.getElementById('skipBtn');
+      const workInput = document.getElementById('workInput');
+      const shortInput = document.getElementById('shortInput');
+      const longInput = document.getElementById('longInput');
+  const volumeRange = document.getElementById('volumeRange');
+      const autoNext = document.getElementById('autoNext');
+      const soundToggle = document.getElementById('soundToggle');
+      const soundUpload = document.getElementById('soundUpload');
+      const cyclesOut = document.getElementById('cycles');
+
+      // 默认 UI 状态
+      let state = {
+        mode:'work', // work|short|long
+        running:false,
+        remaining:25*60,
+        durations:{work:25*60, short:5*60, long:15*60},
+        cycles:0,
+        timer:null,
+        sound:null,
+        lastTick: null
+      };
+
+      // 初始按钮状态
+      pauseBtn.disabled = true;
+
+      function formatTime(sec){
+        const m = Math.floor(sec/60).toString().padStart(2,'0');
+        const s = Math.floor(sec%60).toString().padStart(2,'0');
+        return `${m}:${s}`;
+      }
+
+      function loadSettings(){
+        // 从输入加载基础数据
+        state.durations.work = Math.max(1, Number(workInput.value)) * 60;
+        state.durations.short = Math.max(1, Number(shortInput.value)) * 60;
+        state.durations.long = Math.max(1, Number(longInput.value)) * 60;
+        if(!state.running){state.remaining = state.durations[state.mode]; updateDisplay();}
+      }
+
+      function updateDisplay(){
+        display.textContent = formatTime(state.remaining);
+        sessionLabel.textContent = state.mode === 'work' ? '工作' : (state.mode === 'short' ? '短休' : '长休');
+        document.getElementById('countDisplay').textContent = state.cycles;
+        cyclesOut.textContent = state.cycles;
+      }
+
+      function start(){
+        if(state.running) return; state.running = true;
+        startBtn.disabled = true; pauseBtn.disabled = false;
+        state.lastTick = Date.now();
+        state.timer = setInterval(()=>{
+          const now = Date.now();
+          const elapsed = Math.floor((now - state.lastTick) / 1000);
+          if(elapsed > 0){
+            state.remaining -= elapsed;
+            state.lastTick = now;
+            if(state.remaining<=0){completeRound();}
+            updateDisplay();
+          }
+        },250);
+      }
+
+      function pause(){
+        if(!state.running) return; state.running = false;
+        startBtn.disabled = false; pauseBtn.disabled = true;
+        clearInterval(state.timer); state.timer = null; state.lastTick = null;
+      }
+
+      // reset handled later (persisted)
+
+      function skip(){
+        pause(); completeRound(true);
+      }
+
+      function completeRound(isSkip=false){
+        // 播放提示
+        if(soundToggle.checked) playSound();
+        // 累计
+        if(state.mode === 'work') state.cycles +=1;
+        // 切换
+        if(state.mode === 'work'){
+          // 每4个短休后一个长休的简单规则
+          if(state.cycles % 4 === 0) state.mode = 'long'; else state.mode = 'short';
+        } else {
+          state.mode = 'work';
+        }
+  state.remaining = state.durations[state.mode];
+  // 保存循环次数
+  saveState();
+        updateDisplay();
+        // 自动开始下一环
+        if(autoNext.checked && !isSkip){
+          start();
+        }
+        // 完成动画
+        explodePixels();
+      }
+
+      // 简单的 WebAudio 提示音（备用）
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = AudioCtx ? new AudioCtx() : null;
+      function beep(freq = 880, duration = 0.18){
+        if(!audioCtx) return;
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'square';
+        o.frequency.value = freq;
+        g.gain.value = Number(volumeRange.value) * 0.18;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start();
+        setTimeout(()=>{ try{o.stop();}catch(e){} }, duration*1000);
+      }
+
+      function playSound(){
+        if(state.sound){
+          try{ const audio = state.sound.cloneNode(); audio.volume = Number(volumeRange.value); audio.play(); return; }catch(e){}
+        }
+        // 回退到合成音
+        beep(880, 0.18);
+        setTimeout(()=>beep(660, 0.08), 220);
+      }
+
+      // 像素碎片动画
+      function explodePixels(){
+        const container = document.querySelector('.inner-clock');
+        const frag = document.createElement('div');
+        frag.style.position='absolute'; frag.style.left='50%'; frag.style.top='50%'; frag.style.transform='translate(-50%,-50%)';
+        frag.style.pointerEvents='none'; frag.style.width='200px'; frag.style.height='200px';
+        frag.style.display='grid'; frag.style.gridTemplateColumns='repeat(10,1fr)'; frag.style.gridAutoRows='1fr'; frag.style.gap='2px';
+        for(let i=0;i<100;i++){
+          const d = document.createElement('div'); d.style.width='16px'; d.style.height='16px'; d.style.background = i%2? 'var(--accent)':'var(--accent-2)';
+          d.style.transform='translateY(0)'; d.style.opacity='1'; d.style.transition='transform 700ms cubic-bezier(.2,.8,.2,1), opacity 700ms linear';
+          frag.appendChild(d);
+          setTimeout(()=>{
+            d.style.transform = `translate(${(Math.random()-0.5)*240}px, ${(Math.random()-0.5)*240}px) rotate(${Math.random()*720-360}deg)`;
+            d.style.opacity = '0';
+          }, 40+Math.random()*200);
+        }
+        container.appendChild(frag);
+        setTimeout(()=>frag.remove(),900);
+      }
+
+      // 进度环更新
+      const progress = document.getElementById('progress');
+  const R = 100; const CIRC = 2*Math.PI*R;
+  progress.style.strokeDasharray = CIRC;
+  progress.style.strokeDashoffset = CIRC;
+      function setProgress(){
+        const total = state.durations[state.mode];
+        const pct = 1 - Math.max(0, state.remaining)/total;
+        progress.style.strokeDashoffset = (1-pct)*CIRC;
+      }
+
+  // 快速选择
+      document.querySelectorAll('.preset').forEach(el=>{
+        el.addEventListener('click', ()=>{
+          workInput.value = el.dataset.work;
+          shortInput.value = el.dataset.short;
+          longInput.value = el.dataset.long;
+          loadSettings();
+        });
+      });
+
+  // localStorage 保存/加载
+      function saveState(){
+        const s = {
+          durations: state.durations,
+          cycles: state.cycles,
+          autoNext: autoNext.checked,
+          volume: volumeRange.value,
+        };
+        localStorage.setItem('pomodoro_state', JSON.stringify(s));
+      }
+
+      function loadState(){
+        const raw = localStorage.getItem('pomodoro_state');
+        if(!raw) return;
+        try{
+          const s = JSON.parse(raw);
+          if(s.durations){
+            workInput.value = Math.floor(s.durations.work/60);
+            shortInput.value = Math.floor(s.durations.short/60);
+            longInput.value = Math.floor(s.durations.long/60);
+            loadSettings();
+          }
+          if(typeof s.cycles === 'number') state.cycles = s.cycles;
+          autoNext.checked = !!s.autoNext;
+          if(s.volume) volumeRange.value = s.volume;
+        }catch(e){}
+      }
+
+      // 界面更新定时刷新进度
+      setInterval(()=>{setProgress();},200);
+
+      // 上传自定义音频
+      let customAudioUrl = null;
+      soundUpload.addEventListener('change', (e)=>{
+        const file = e.target.files[0]; if(!file) return;
+        if(customAudioUrl){ URL.revokeObjectURL(customAudioUrl); customAudioUrl = null; }
+        customAudioUrl = URL.createObjectURL(file);
+        state.sound = new Audio(customAudioUrl);
+        // 立即播放预览
+        if(soundToggle.checked){ try{ state.sound.volume = Number(volumeRange.value); state.sound.play(); }catch(e){} }
+        saveState();
+      });
+
+  // 绑定按钮
+      startBtn.addEventListener('click', ()=>{loadSettings(); start();});
+      pauseBtn.addEventListener('click', pause);
+      resetBtn.addEventListener('click', reset);
+      skipBtn.addEventListener('click', skip);
+
+  // on change 保存
+  [workInput, shortInput, longInput].forEach(el=>el.addEventListener('change', ()=>{loadSettings(); saveState();}));
+  volumeRange.addEventListener('change', saveState);
+  autoNext.addEventListener('change', saveState);
+
+  // 初次加载
+  loadState();
+
+      // 键盘快捷
+      document.addEventListener('keydown', (e)=>{
+        if(e.code === 'Space'){ e.preventDefault(); state.running?pause():start(); }
+        if(e.key.toLowerCase()==='r') reset();
+        if(e.key.toLowerCase()==='n') skip();
+      });
+
+  // 初始化
+  updateDisplay();
+
+  // 重置时持久化
+  function reset(){
+    pause(); state.mode='work'; state.remaining = state.durations.work; state.cycles=0; updateDisplay(); saveState();
+  }
+    </script>
+  </body>
+</html>
