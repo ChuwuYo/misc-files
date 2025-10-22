@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <style>
+        :root {
+            --bg-color: #f5f0f0;
+            --primary: #ff9aa2;
+            --secondary: #ffb7b2;
+            --text: #333;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --pixel-font: 'Press Start 2P', cursive;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            font-family: var(--pixel-font), Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="10" height="10" fill="%23ffdac1" opacity="0.3"/><rect x="50" width="10" height="10" fill="%23ffdac1" opacity="0.3"/><rect y="50" width="10" height="10" fill="%23ffdac1" opacity="0.3"/><rect x="50" y="50" width="10" height="10" fill="%23ffdac1" opacity="0.3"/></svg>');
+        }
+
+        .container {
+            width: 400px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            border: 4px solid var(--primary);
+            image-rendering: pixelated;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0 0 20px;
+            color: var(--primary);
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .tomato {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background: var(--primary);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            transition: transform 0.3s;
+            image-rendering: pixelated;
+        }
+
+        .tomato::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 20px;
+            height: 20px;
+            background: #e07a5f;
+            border-radius: 50%;
+            box-shadow: 60px 0 0 #e07a5f, 30px -20px 0 #e07a5f;
+        }
+
+        .tomato.active {
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        .timer {
+            font-size: 48px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            letter-spacing: 3px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: var(--pixel-font);
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+            image-rendering: pixelated;
+        }
+
+        button:hover {
+            background: var(--secondary);
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ffdac1;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+        }
+
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .settings-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 300px;
+            max-width: 90%;
+            border: 4px solid var(--primary);
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: var(--pixel-font);
+            font-size: 12px;
+        }
+
+        .close-btn {
+            margin-top: 15px;
+            background: #ffdac1;
+        }
+
+        .stats {
+            margin-top: 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            border: 2px solid var(--primary);
+            font-size: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 90%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>番茄钟</h1>
+        <button class="settings-btn" id="settingsBtn">⚙</button>
+
+        <div class="tomato" id="tomato"></div>
+        <div class="timer" id="timer">25:00</div>
+
+        <div class="progress-container">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="controls">
+            <button id="startPauseBtn">开始</button>
+            <button id="resetBtn">重置</button>
+            <button id="skipBtn">跳过</button>
+        </div>
+
+        <div class="stats">
+            <span>番茄: <span id="tomatoCount">0</span></span>
+            <span>模式: <span id="mode">工作</span></span>
+        </div>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content">
+            <h2>设置</h2>
+
+            <div class="setting-group">
+                <label for="workTime">工作时长 (分钟)</label>
+                <input type="number" id="workTime" min="1" max="120" value="25">
+            </div>
+
+            <div class="setting-group">
+                <label for="shortBreak">短休息 (分钟)</label>
+                <input type="number" id="shortBreak" min="1" max="60" value="5">
+            </div>
+
+            <div class="setting-group">
+                <label for="longBreak">长休息 (分钟)</label>
+                <input type="number" id="longBreak" min="1" max="120" value="15">
+            </div>
+
+            <div class="setting-group">
+                <label for="sound">提示音</label>
+                <select id="sound">
+                    <option value="bell">铃声</option>
+                    <option value="chime">风铃</option>
+                    <option value="none">无</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="autoStart">自动开始下一阶段</label>
+                <select id="autoStart">
+                    <option value="true">是</option>
+                    <option value="false">否</option>
+                </select>
+            </div>
+
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+    </div>
+
+    <div class="notification" id="notification">
+        时间到！该休息啦！
+    </div>
+
+    <audio id="bellSound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
+    <audio id="chimeSound" src="data:audio/wav;base64,UklGRkZ5T19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..." preload="auto"></audio>
+
+    <script>
+        // 状态管理
+        let isRunning = false;
+        let isWorkMode = true;
+        let tomatoCount = 0;
+        let timeLeft = 25 * 60; // 默认25分钟
+        let timerInterval;
+        let autoStart = true;
+        let currentSound = 'bell';
+
+        // DOM元素
+        const timerDisplay = document.getElementById('timer');
+        const startPauseBtn = document.getElementById('startPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const progressBar = document.getElementById('progress');
+        const tomato = document.getElementById('tomato');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const notification = document.getElementById('notification');
+        const modeDisplay = document.getElementById('mode');
+        const tomatoCountDisplay = document.getElementById('tomatoCount');
+
+        // 音效元素
+        const bellSound = document.getElementById('bellSound');
+        const chimeSound = document.getElementById('chimeSound');
+
+        // 设置面板元素
+        const workTimeInput = document.getElementById('workTime');
+        const shortBreakInput = document.getElementById('shortBreak');
+        const longBreakInput = document.getElementById('longBreak');
+        const soundSelect = document.getElementById('sound');
+        const autoStartSelect = document.getElementById('autoStart');
+
+        // 初始化
+        function init() {
+            updateTimerDisplay();
+            loadSettings();
+            setupEventListeners();
+        }
+
+        // 加载设置
+        function loadSettings() {
+            workTimeInput.value = localStorage.getItem('workTime') || 25;
+            shortBreakInput.value = localStorage.getItem('shortBreak') || 5;
+            longBreakInput.value = localStorage.getItem('longBreak') || 15;
+            soundSelect.value = localStorage.getItem('sound') || 'bell';
+            autoStartSelect.value = localStorage.getItem('autoStart') || 'true';
+            currentSound = soundSelect.value;
+            autoStart = autoStartSelect.value === 'true';
+        }
+
+        // 保存设置
+        function saveSettings() {
+            localStorage.setItem('workTime', workTimeInput.value);
+            localStorage.setItem('shortBreak', shortBreakInput.value);
+            localStorage.setItem('longBreak', longBreakInput.value);
+            localStorage.setItem('sound', soundSelect.value);
+            localStorage.setItem('autoStart', autoStartSelect.value);
+            currentSound = soundSelect.value;
+            autoStart = autoStartSelect.value === 'true';
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            startPauseBtn.addEventListener('click', toggleTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            skipBtn.addEventListener('click', skipPhase);
+            settingsBtn.addEventListener('click', () => settingsPanel.style.display = 'flex');
+            closeSettingsBtn.addEventListener('click', () => {
+                saveSettings();
+                settingsPanel.style.display = 'none';
+            });
+
+            // 阻止设置面板点击关闭
+            settingsPanel.addEventListener('click', (e) => {
+                if (e.target === settingsPanel) {
+                    saveSettings();
+                    settingsPanel.style.display = 'none';
+                }
+            });
+        }
+
+        // 切换计时器状态
+        function toggleTimer() {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        }
+
+        // 开始计时
+        function startTimer() {
+            if (isRunning) return;
+
+            isRunning = true;
+            startPauseBtn.textContent = '暂停';
+            tomato.classList.add('active');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                updateProgress();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    playSound();
+                    showNotification();
+                    if (autoStart) {
+                        setTimeout(nextPhase, 1000);
+                    } else {
+                        isRunning = false;
+                        startPauseBtn.textContent = '开始';
+                        tomato.classList.remove('active');
+                    }
+                }
+            }, 1000);
+        }
+
+        // 暂停计时
+        function pauseTimer() {
+            isRunning = false;
+            startPauseBtn.textContent = '继续';
+            clearInterval(timerInterval);
+            tomato.classList.remove('active');
+        }
+
+        // 重置计时器
+        function resetTimer() {
+            pauseTimer();
+            if (isWorkMode) {
+                timeLeft = parseInt(workTimeInput.value) * 60;
+            } else {
+                timeLeft = (tomatoCount % 4 === 0)
+                    ? parseInt(longBreakInput.value) * 60
+                    : parseInt(shortBreakInput.value) * 60;
+            }
+            updateTimerDisplay();
+            updateProgress();
+        }
+
+        // 跳过当前阶段
+        function skipPhase() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                playSound();
+                nextPhase();
+            }
+        }
+
+        // 进入下一阶段
+        function nextPhase() {
+            isWorkMode = !isWorkMode;
+
+            if (isWorkMode) {
+                timeLeft = parseInt(workTimeInput.value) * 60;
+                modeDisplay.textContent = '工作';
+                tomatoCount++;
+                tomatoCountDisplay.textContent = tomatoCount;
+            } else {
+                modeDisplay.textContent = tomatoCount % 4 === 0 ? '长休息' : '短休息';
+                timeLeft = (tomatoCount % 4 === 0)
+                    ? parseInt(longBreakInput.value) * 60
+                    : parseInt(shortBreakInput.value) * 60;
+            }
+
+            updateTimerDisplay();
+            updateProgress();
+
+            if (autoStart) {
+                startTimer();
+            }
+        }
+
+        // 更新计时器显示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const seconds = (timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${minutes}:${seconds}`;
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const totalTime = isWorkMode
+                ? parseInt(workTimeInput.value) * 60
+                : (tomatoCount % 4 === 0
+                    ? parseInt(longBreakInput.value) * 60
+                    : parseInt(shortBreakInput.value) * 60);
+
+            const progress = ((totalTime - timeLeft) / totalTime) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // 播放音效
+        function playSound() {
+            if (currentSound === 'bell') {
+                bellSound.currentTime = 0;
+                bellSound.play();
+            } else if (currentSound === 'chime') {
+                chimeSound.currentTime = 0;
+                chimeSound.play();
+            }
+        }
+
+        // 显示通知
+        function showNotification() {
+            notification.textContent = isWorkMode
+                ? `时间到！该${tomatoCount % 4 === 0 ? '长休息' : '短休息'}啦！`
+                : '时间到！该工作啦！';
+
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

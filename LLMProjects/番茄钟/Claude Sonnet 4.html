@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.2) 2px, transparent 2px),
+                radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.2) 2px, transparent 2px);
+            background-size: 100px 100px, 120px 120px;
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 3px solid #fff;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 0px #ff9999;
+            position: relative;
+        }
+
+        h1::before {
+            content: '🍅';
+            position: absolute;
+            left: -40px;
+            animation: bounce 2s infinite;
+        }
+
+        h1::after {
+            content: '🍅';
+            position: absolute;
+            right: -40px;
+            animation: bounce 2s infinite 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .timer-display {
+            font-size: 48px;
+            color: #4ecdc4;
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+            border: 4px solid #fff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .status {
+            font-size: 14px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 10px;
+            border: 2px dashed #ff6b6b;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 12px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid;
+            background: white;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .btn:hover:before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn-start {
+            color: #4ecdc4;
+            border-color: #4ecdc4;
+        }
+
+        .btn-start:hover {
+            background: #4ecdc4;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-pause {
+            color: #ffd93d;
+            border-color: #ffd93d;
+        }
+
+        .btn-pause:hover {
+            background: #ffd93d;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 217, 61, 0.4);
+        }
+
+        .btn-reset {
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        .btn-reset:hover {
+            background: #ff6b6b;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-skip {
+            color: #a8e6cf;
+            border-color: #a8e6cf;
+        }
+
+        .btn-skip:hover {
+            background: #a8e6cf;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(168, 230, 207, 0.4);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            border-radius: 15px;
+            border: 3px solid #fff;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            color: #d63031;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 8px;
+            color: #636e72;
+            text-transform: uppercase;
+        }
+
+        .settings {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(116, 185, 255, 0.1);
+            border-radius: 15px;
+            border: 2px solid #74b9ff;
+        }
+
+        .settings-title {
+            font-size: 14px;
+            color: #0984e3;
+            margin-bottom: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .settings-title::after {
+            content: ' ⚙️';
+        }
+
+        .settings-content {
+            display: none;
+            gap: 15px;
+        }
+
+        .settings-content.show {
+            display: block;
+        }
+
+        .setting-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .setting-label {
+            font-size: 10px;
+            color: #2d3436;
+        }
+
+        .setting-input {
+            font-family: inherit;
+            font-size: 10px;
+            padding: 5px 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 80px;
+            text-align: center;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4ecdc4;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+            border: 2px solid #fff;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            border-radius: 10px;
+            transition: width 1s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progressShine 2s infinite;
+        }
+
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .timer-display {
+                font-size: 36px;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 10px;
+            }
+            
+            h1::before,
+            h1::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>番茄钟</h1>
+        
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="status" id="statusDisplay">准备开始工作 💪</div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn">开始</button>
+            <button class="btn btn-pause" id="pauseBtn" style="display: none;">暂停</button>
+            <button class="btn btn-reset" id="resetBtn">重置</button>
+            <button class="btn btn-skip" id="skipBtn">跳过</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="workCount">0</span>
+                <span class="stat-label">完成番茄</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="totalTime">0</span>
+                <span class="stat-label">总时长(分)</span>
+            </div>
+        </div>
+        
+        <div class="settings">
+            <div class="settings-title" id="settingsTitle">设置选项</div>
+            <div class="settings-content" id="settingsContent">
+                <div class="setting-group">
+                    <span class="setting-label">工作时长(分钟)</span>
+                    <input type="number" class="setting-input" id="workTime" value="25" min="15" max="60">
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">短休息(分钟)</span>
+                    <input type="number" class="setting-input" id="shortBreak" value="5" min="3" max="15">
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">长休息(分钟)</span>
+                    <input type="number" class="setting-input" id="longBreak" value="15" min="10" max="30">
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">长休息间隔</span>
+                    <input type="number" class="setting-input" id="longBreakInterval" value="4" min="2" max="8">
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">声音提示</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundEnabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <span class="setting-label">音量</span>
+                    <div class="volume-control">
+                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+                        <span id="volumeDisplay">50</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PomodoroTimer {
+            constructor() {
+                this.isRunning = false;
+                this.currentTime = 0;
+                this.totalTime = 0;
+                this.mode = 'work'; // work, shortBreak, longBreak
+                this.workCount = 0;
+                this.totalWorkTime = 0;
+                this.interval = null;
+                
+                this.initElements();
+                this.initSettings();
+                this.initEventListeners();
+                this.updateDisplay();
+                this.createAudioContext();
+            }
+            
+            initElements() {
+                this.timerDisplay = document.getElementById('timerDisplay');
+                this.statusDisplay = document.getElementById('statusDisplay');
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.skipBtn = document.getElementById('skipBtn');
+                this.workCountDisplay = document.getElementById('workCount');
+                this.totalTimeDisplay = document.getElementById('totalTime');
+                this.progressFill = document.getElementById('progressFill');
+                this.settingsTitle = document.getElementById('settingsTitle');
+                this.settingsContent = document.getElementById('settingsContent');
+            }
+            
+            initSettings() {
+                this.settings = {
+                    workTime: 25,
+                    shortBreak: 5,
+                    longBreak: 15,
+                    longBreakInterval: 4,
+                    soundEnabled: true,
+                    volume: 50
+                };
+                
+                this.loadSettings();
+                this.updateSettingsDisplay();
+            }
+            
+            loadSettings() {
+                const saved = localStorage.getItem('pomodoroSettings');
+                if (saved) {
+                    this.settings = { ...this.settings, ...JSON.parse(saved) };
+                }
+                
+                const savedStats = localStorage.getItem('pomodoroStats');
+                if (savedStats) {
+                    const stats = JSON.parse(savedStats);
+                    this.workCount = stats.workCount || 0;
+                    this.totalWorkTime = stats.totalWorkTime || 0;
+                }
+            }
+            
+            saveSettings() {
+                localStorage.setItem('pomodoroSettings', JSON.stringify(this.settings));
+                localStorage.setItem('pomodoroStats', JSON.stringify({
+                    workCount: this.workCount,
+                    totalWorkTime: this.totalWorkTime
+                }));
+            }
+            
+            updateSettingsDisplay() {
+                document.getElementById('workTime').value = this.settings.workTime;
+                document.getElementById('shortBreak').value = this.settings.shortBreak;
+                document.getElementById('longBreak').value = this.settings.longBreak;
+                document.getElementById('longBreakInterval').value = this.settings.longBreakInterval;
+                document.getElementById('soundEnabled').checked = this.settings.soundEnabled;
+                document.getElementById('volumeSlider').value = this.settings.volume;
+                document.getElementById('volumeDisplay').textContent = this.settings.volume;
+            }
+            
+            createAudioContext() {
+                // 创建提示音
+                this.audioContext = null;
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Web Audio API not supported');
+                }
+            }
+            
+            playSound(frequency = 800, duration = 200) {
+                if (!this.settings.soundEnabled || !this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(this.settings.volume / 100 * 0.3, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration / 1000);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration / 1000);
+            }
+            
+            initEventListeners() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.skipBtn.addEventListener('click', () => this.skip());
+                
+                this.settingsTitle.addEventListener('click', () => {
+                    this.settingsContent.classList.toggle('show');
+                });
+                
+                // 设置输入监听
+                ['workTime', 'shortBreak', 'longBreak', 'longBreakInterval'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        this.settings[id] = parseInt(e.target.value);
+                        this.saveSettings();
+                        if (!this.isRunning) {
+                            this.reset();
+                        }
+                    });
+                });
+                
+                document.getElementById('soundEnabled').addEventListener('change', (e) => {
+                    this.settings.soundEnabled = e.target.checked;
+                    this.saveSettings();
+                });
+                
+                document.getElementById('volumeSlider').addEventListener('input', (e) => {
+                    this.settings.volume = parseInt(e.target.value);
+                    document.getElementById('volumeDisplay').textContent = this.settings.volume;
+                    this.saveSettings();
+                });
+            }
+            
+            getCurrentModeTime() {
+                switch(this.mode) {
+                    case 'work': return this.settings.workTime;
+                    case 'shortBreak': return this.settings.shortBreak;
+                    case 'longBreak': return this.settings.longBreak;
+                    default: return this.settings.workTime;
+                }
+            }
+            
+            start() {
+                if (this.currentTime === 0) {
+                    this.totalTime = this.getCurrentModeTime() * 60;
+                    this.currentTime = this.totalTime;
+                }
+                
+                this.isRunning = true;
+                this.startBtn.style.display = 'none';
+                this.pauseBtn.style.display = 'inline-block';
+                
+                this.interval = setInterval(() => {
+                    this.currentTime--;
+                    this.updateDisplay();
+                    
+                    if (this.currentTime <= 0) {
+                        this.complete();
+                    }
+                }, 1000);
+                
+                this.updateStatus();
+            }
+            
+            pause() {
+                this.isRunning = false;
+                clearInterval(this.interval);
+                this.startBtn.style.display = 'inline-block';
+                this.pauseBtn.style.display = 'none';
+                this.updateStatus();
+            }
+            
+            reset() {
+                this.pause();
+                this.currentTime = 0;
+                this.totalTime = this.getCurrentModeTime() * 60;
+                this.currentTime = this.totalTime;
+                this.updateDisplay();
+                this.updateStatus();
+            }
+            
+            skip() {
+                this.complete();
+            }
+            
+            complete() {
+                this.pause();
+                this.playSound(1000, 500);
+                
+                if (this.mode === 'work') {
+                    this.workCount++;
+                    this.totalWorkTime += this.settings.workTime;
+                    this.saveSettings();
+                    
+                    // 判断是长休息还是短休息
+                    if (this.workCount % this.settings.longBreakInterval === 0) {
+                        this.mode = 'longBreak';
+                    } else {
+                        this.mode = 'shortBreak';
+                    }
+                } else {
+                    this.mode = 'work';
+                }
+                
+                this.reset();
+                this.updateStats();
+            }
+            
+            updateDisplay() {
+                const minutes = Math.floor(this.currentTime / 60);
+                const seconds = this.currentTime % 60;
+                this.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // 更新进度条
+                if (this.totalTime > 0) {
+                    const progress = ((this.totalTime - this.currentTime) / this.totalTime) * 100;
+                    this.progressFill.style.width = progress + '%';
+                }
+            }
+            
+            updateStatus() {
+                let emoji, text;
+                
+                switch(this.mode) {
+                    case 'work':
+                        emoji = this.isRunning ? '🍅' : '💪';
+                        text = this.isRunning ? '专注工作中...' : '准备开始工作';
+                        break;
+                    case 'shortBreak':
+                        emoji = this.isRunning ? '☕' : '😌';
+                        text = this.isRunning ? '短暂休息中...' : '准备短暂休息';
+                        break;
+                    case 'longBreak':
+                        emoji = this.isRunning ? '🌸' : '🎉';
+                        text = this.isRunning ? '长时间休息中...' : '准备长时间休息';
+                        break;
+                }
+                
+                this.statusDisplay.textContent = `${text} ${emoji}`;
+            }
+            
+            updateStats() {
+                this.workCountDisplay.textContent = this.workCount;
+                this.totalTimeDisplay.textContent = this.totalWorkTime;
+            }
+        }
+        
+        // 初始化番茄钟
+        document.addEventListener('DOMContentLoaded', () => {
+            const timer = new PomodoroTimer();
+        });
+    </script>
+</body>
+</html>

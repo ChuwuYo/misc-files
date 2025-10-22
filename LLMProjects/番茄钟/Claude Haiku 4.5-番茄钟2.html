@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7FD8BE;
+            --secondary: #FFB3D9;
+            --tertiary: #87CEEB;
+            --dark: #2C3E50;
+            --light: #ECF0F1;
+            --warning: #FFD700;
+            --success: #90EE90;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(135deg, #E0F6FF 0%, #F0E6FF 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--dark);
+        }
+
+        .container {
+            background: var(--light);
+            border: 4px solid var(--dark);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--dark);
+            text-shadow: 3px 3px 0 var(--primary);
+        }
+
+        /* 主显示区域 */
+        .display-area {
+            background: var(--primary);
+            border: 3px solid var(--dark);
+            border-radius: 4px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: inset 0 0 0 2px var(--light);
+        }
+
+        .stage-indicator {
+            font-size: 12px;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            color: var(--dark);
+            height: 20px;
+        }
+
+        .stage-icon {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .timer-display {
+            font-size: 48px;
+            font-family: 'Courier New', monospace;
+            color: var(--dark);
+            margin: 20px 0;
+            font-weight: bold;
+            letter-spacing: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 2px solid var(--dark);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--tertiary));
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .counter {
+            font-size: 10px;
+            margin-top: 15px;
+            letter-spacing: 2px;
+        }
+
+        .counter-item {
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            border: 3px solid var(--dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.1s;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: var(--light);
+            color: var(--dark);
+            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translate(0, 0);
+            box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            grid-column: 1 / -1;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-tertiary {
+            background: var(--tertiary);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            background: rgba(127, 216, 190, 0.2);
+            border: 2px dashed var(--dark);
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 12px;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            color: var(--dark);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .settings-title::before {
+            content: "▼ ";
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .settings-title.collapsed::before {
+            transform: rotate(-90deg);
+        }
+
+        .settings-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s;
+        }
+
+        .settings-content.collapsed {
+            max-height: 0;
+        }
+
+        .setting-item {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        .setting-label {
+            flex: 1;
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time-input {
+            width: 60px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid var(--dark);
+            border-radius: 2px;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .time-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 9px;
+            border: 2px solid var(--dark);
+            background: var(--primary);
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .btn-small:hover {
+            background: var(--secondary);
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border: 2px solid var(--dark);
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.on {
+            background: var(--success);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 1px solid var(--dark);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.on::after {
+            left: 28px;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--dark);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            box-shadow: inset 0 0 0 2px var(--dark), 0 0 0 3px var(--dark);
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 8px;
+            cursor: pointer;
+        }
+
+        /* 动画 */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .timer-display.pulse {
+            animation: pulse 0.5s;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .display-area.bounce {
+            animation: bounce 0.3s;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            .title {
+                font-size: 18px;
+            }
+
+            .timer-display {
+                font-size: 36px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .btn-primary {
+                grid-column: 1;
+            }
+
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">番茄钟</div>
+
+        <div class="display-area">
+            <div class="stage-indicator">
+                <span class="stage-icon">🍅</span>
+                <span id="stageText">工作时间</span>
+            </div>
+            <div class="timer-display" id="timerDisplay">25:00</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="counter">
+                <div class="counter-item">完成: <span id="completeCount">0</span></div>
+                <div class="counter-item">当前周期: <span id="cycleCount">1</span>/4</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn">开始</button>
+            <button class="btn btn-secondary" id="pauseBtn">暂停</button>
+            <button class="btn btn-tertiary" id="resetBtn">重置</button>
+            <button class="btn btn-warning" id="skipBtn">跳过</button>
+            <button class="btn btn-success" id="toggleModeBtn">切换模式</button>
+        </div>
+
+        <div class="settings-panel">
+            <div class="settings-title" id="settingsTitle">⚙️ 设置</div>
+            <div class="settings-content" id="settingsContent">
+                <div class="setting-item">
+                    <label class="setting-label">工作时长 (分钟)</label>
+                    <div class="setting-control">
+                        <input type="number" id="workDuration" class="time-input" min="1" max="60" value="25">
+                        <button class="btn-small" onclick="app.updateSettings()">应用</button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">短休息 (分钟)</label>
+                    <div class="setting-control">
+                        <input type="number" id="shortBreakDuration" class="time-input" min="1" max="30" value="5">
+                        <button class="btn-small" onclick="app.updateSettings()">应用</button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">长休息 (分钟)</label>
+                    <div class="setting-control">
+                        <input type="number" id="longBreakDuration" class="time-input" min="1" max="60" value="15">
+                        <button class="btn-small" onclick="app.updateSettings()">应用</button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">完成提示音</label>
+                    <div class="toggle-switch on" id="soundToggle" onclick="app.toggleSound()"></div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">音量</label>
+                    <div class="setting-control">
+                        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" 
+                               oninput="app.setVolume(this.value)">
+                        <span id="volumeValue">50%</span>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">背景音乐</label>
+                    <div class="toggle-switch" id="bgMusicToggle" onclick="app.toggleBgMusic()"></div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">桌面通知</label>
+                    <div class="toggle-switch on" id="notificationToggle" onclick="app.toggleNotification()"></div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">主题色</label>
+                    <div class="color-palette" id="colorPalette">
+                        <div class="color-option selected" style="background: #7FD8BE;" data-color="green" onclick="app.setTheme('green')"></div>
+                        <div class="color-option" style="background: #FFB3D9;" data-color="pink" onclick="app.setTheme('pink')"></div>
+                        <div class="color-option" style="background: #87CEEB;" data-color="blue" onclick="app.setTheme('blue')"></div>
+                        <div class="color-option" style="background: #FFD700;" data-color="gold" onclick="app.setTheme('gold')"></div>
+                        <div class="color-option" style="background: #DDA0DD;" data-color="purple" onclick="app.setTheme('purple')"></div>
+                        <div class="color-option" style="background: #F0A8D8;" data-color="coral" onclick="app.setTheme('coral')"></div>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">自动开始休息</label>
+                    <div class="toggle-switch on" id="autoStartToggle" onclick="app.toggleAutoStart()"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            // 配置
+            config: {
+                workDuration: 25 * 60,
+                shortBreakDuration: 5 * 60,
+                longBreakDuration: 15 * 60,
+                soundEnabled: true,
+                volume: 0.5,
+                bgMusicEnabled: false,
+                notificationEnabled: true,
+                autoStart: true,
+                currentTheme: 'green'
+            },
+
+            // 状态
+            state: {
+                isRunning: false,
+                isPaused: false,
+                timeLeft: 25 * 60,
+                totalTime: 25 * 60,
+                isWorkSession: true,
+                completeCount: 0,
+                cycleCount: 1,
+                sessionHistory: []
+            },
+
+            timerId: null,
+
+            // 初始化
+            init() {
+                this.setupEventListeners();
+                this.loadSettings();
+                this.updateDisplay();
+                this.requestNotificationPermission();
+                this.loadLocalStorage();
+            },
+
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.start());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('skipBtn').addEventListener('click', () => this.skip());
+                document.getElementById('settingsTitle').addEventListener('click', () => this.toggleSettings());
+            },
+
+            // 开始
+            start() {
+                if (this.state.isRunning && !this.state.isPaused) return;
+
+                this.state.isRunning = true;
+                this.state.isPaused = false;
+
+                this.timerId = setInterval(() => {
+                    this.state.timeLeft--;
+
+                    if (this.state.timeLeft <= 0) {
+                        this.onTimeUp();
+                    } else {
+                        this.updateDisplay();
+                    }
+                }, 1000);
+
+                this.updateDisplay();
+            },
+
+            // 暂停
+            pause() {
+                if (!this.state.isRunning) return;
+
+                this.state.isPaused = true;
+                clearInterval(this.timerId);
+                this.updateDisplay();
+            },
+
+            // 重置
+            reset() {
+                clearInterval(this.timerId);
+                this.state.isRunning = false;
+                this.state.isPaused = false;
+                this.state.isWorkSession = true;
+                this.state.timeLeft = this.config.workDuration;
+                this.state.totalTime = this.config.workDuration;
+                this.state.cycleCount = 1;
+                this.updateDisplay();
+            },
+
+            // 跳过
+            skip() {
+                clearInterval(this.timerId);
+                this.state.isRunning = false;
+                this.state.isPaused = false;
+
+                if (this.state.isWorkSession) {
+                    this.state.completeCount++;
+                }
+
+                this.switchSession();
+            },
+
+            // 时间到
+            onTimeUp() {
+                clearInterval(this.timerId);
+                this.state.isRunning = false;
+
+                this.playSound();
+                this.showNotification();
+                this.animateCompletion();
+
+                if (this.state.isWorkSession) {
+                    this.state.completeCount++;
+                    this.state.sessionHistory.push({
+                        type: 'work',
+                        duration: this.config.workDuration,
+                        timestamp: new Date()
+                    });
+                }
+
+                if (this.config.autoStart) {
+                    setTimeout(() => this.switchSession(), 1500);
+                } else {
+                    this.switchSession();
+                }
+            },
+
+            // 切换会话
+            switchSession() {
+                if (this.state.isWorkSession) {
+                    // 工作->休息
+                    if (this.state.completeCount % 4 === 0) {
+                        // 长休息
+                        this.state.isWorkSession = false;
+                        this.state.timeLeft = this.config.longBreakDuration;
+                        this.state.totalTime = this.config.longBreakDuration;
+                        this.state.cycleCount = 1;
+                    } else {
+                        // 短休息
+                        this.state.isWorkSession = false;
+                        this.state.timeLeft = this.config.shortBreakDuration;
+                        this.state.totalTime = this.config.shortBreakDuration;
+                    }
+                } else {
+                    // 休息->工作
+                    this.state.isWorkSession = true;
+                    this.state.timeLeft = this.config.workDuration;
+                    this.state.totalTime = this.config.workDuration;
+                    this.state.cycleCount = (this.state.completeCount % 4) + 1;
+                }
+
+                this.updateDisplay();
+
+                if (this.config.autoStart && this.state.isWorkSession) {
+                    setTimeout(() => this.start(), 1000);
+                }
+            },
+
+            // 手动切换模式
+            toggleMode() {
+                if (this.state.isRunning) return;
+                clearInterval(this.timerId);
+                this.switchSession();
+            },
+
+            // 播放声音
+            playSound() {
+                if (!this.config.soundEnabled) return;
+
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+
+                gain.gain.setValueAtTime(this.config.volume, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            },
+
+            // 显示通知
+            showNotification() {
+                if (!this.config.notificationEnabled) return;
+
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const title = this.state.isWorkSession ? '工作时间结束！' : '休息时间结束！';
+                    const options = {
+                        body: this.state.isWorkSession ? '去休息一下吧 🌟' : '继续加油！💪',
+                        icon: '🍅'
+                    };
+                    new Notification(title, options);
+                }
+            },
+
+            // 动画效果
+            animateCompletion() {
+                const display = document.querySelector('.display-area');
+                const timer = document.getElementById('timerDisplay');
+
+                display.classList.add('bounce');
+                timer.classList.add('pulse');
+
+                setTimeout(() => {
+                    display.classList.remove('bounce');
+                    timer.classList.remove('pulse');
+                }, 500);
+            },
+
+            // 更新显示
+            updateDisplay() {
+                const minutes = Math.floor(this.state.timeLeft / 60);
+                const seconds = this.state.timeLeft % 60;
+                const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                document.getElementById('timerDisplay').textContent = timeStr;
+                document.getElementById('stageText').textContent = this.state.isWorkSession ? '工作时间' : 
+                    (this.state.completeCount % 4 === 0 ? '长休息时间' : '短休息时间');
+                document.getElementById('completeCount').textContent = this.state.completeCount;
+                document.getElementById('cycleCount').textContent = this.state.cycleCount;
+
+                // 更新进度条
+                const progress = ((this.state.totalTime - this.state.timeLeft) / this.state.totalTime) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // 更新按钮状态
+                document.getElementById('startBtn').textContent = 
+                    this.state.isRunning && !this.state.isPaused ? '运行中' : '开始';
+                document.getElementById('startBtn').disabled = this.state.isRunning && !this.state.isPaused;
+                document.getElementById('pauseBtn').disabled = !this.state.isRunning;
+                document.getElementById('toggleModeBtn').disabled = this.state.isRunning;
+            },
+
+            // 更新设置
+            updateSettings() {
+                this.config.workDuration = parseInt(document.getElementById('workDuration').value) * 60;
+                this.config.shortBreakDuration = parseInt(document.getElementById('shortBreakDuration').value) * 60;
+                this.config.longBreakDuration = parseInt(document.getElementById('longBreakDuration').value) * 60;
+
+                if (!this.state.isRunning) {
+                    this.state.timeLeft = this.config.workDuration;
+                    this.state.totalTime = this.config.workDuration;
+                    this.updateDisplay();
+                }
+
+                this.saveSettings();
+            },
+
+            // 切换声音
+            toggleSound() {
+                this.config.soundEnabled = !this.config.soundEnabled;
+                const toggle = document.getElementById('soundToggle');
+                toggle.classList.toggle('on');
+                this.saveSettings();
+            },
+
+            // 设置音量
+            setVolume(value) {
+                this.config.volume = value / 100;
+                document.getElementById('volumeValue').textContent = value + '%';
+                this.saveSettings();
+            },
+
+            // 切换背景音乐
+            toggleBgMusic() {
+                this.config.bgMusicEnabled = !this.config.bgMusicEnabled;
+                const toggle = document.getElementById('bgMusicToggle');
+                toggle.classList.toggle('on');
+                this.saveSettings();
+            },
+
+            // 切换通知
+            toggleNotification() {
+                this.config.notificationEnabled = !this.config.notificationEnabled;
+                const toggle = document.getElementById('notificationToggle');
+                toggle.classList.toggle('on');
+                this.saveSettings();
+            },
+
+            // 切换自动开始
+            toggleAutoStart() {
+                this.config.autoStart = !this.config.autoStart;
+                const toggle = document.getElementById('autoStartToggle');
+                toggle.classList.toggle('on');
+                this.saveSettings();
+            },
+
+            // 设置主题
+            setTheme(theme) {
+                this.config.currentTheme = theme;
+                const themes = {
+                    green: { primary: '#7FD8BE', secondary: '#FFB3D9', tertiary: '#87CEEB' },
+                    pink: { primary: '#FFB3D9', secondary: '#87CEEB', tertiary: '#7FD8BE' },
+                    blue: { primary: '#87CEEB', secondary: '#7FD8BE', tertiary: '#FFB3D9' },
+                    gold: { primary: '#FFD700', secondary: '#FFB3D9', tertiary: '#7FD8BE' },
+                    purple: { primary: '#DDA0DD', secondary: '#7FD8BE', tertiary: '#FFB3D9' },
+                    coral: { primary: '#F0A8D8', secondary: '#7FD8BE', tertiary: '#87CEEB' }
+                };
+
+                const colors = themes[theme];
+                document.documentElement.style.setProperty('--primary', colors.primary);
+                document.documentElement.style.setProperty('--secondary', colors.secondary);
+                document.documentElement.style.setProperty('--tertiary', colors.tertiary);
+
+                // 更新选中指示
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                event.target.classList.add('selected');
+
+                this.saveSettings();
+            },
+
+            // 切换设置面板
+            toggleSettings() {
+                const title = document.getElementById('settingsTitle');
+                const content = document.getElementById('settingsContent');
+                title.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+            },
+
+            // 请求通知权限
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            },
+
+            // 保存设置到本地存储
+            saveSettings() {
+                const settings = {
+                    config: this.config
+                };
+                localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+            },
+
+            // 加载设置
+            loadSettings() {
+                const saved = localStorage.getItem('pomodoroSettings');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        this.config = { ...this.config, ...data.config };
+
+                        // 更新表单
+                        document.getElementById('workDuration').value = this.config.workDuration / 60;
+                        document.getElementById('shortBreakDuration').value = this.config.shortBreakDuration / 60;
+                        document.getElementById('longBreakDuration').value = this.config.longBreakDuration / 60;
+                        document.getElementById('volumeSlider').value = this.config.volume * 100;
+                        document.getElementById('volumeValue').textContent = Math.round(this.config.volume * 100) + '%';
+
+                        if (this.config.soundEnabled) document.getElementById('soundToggle').classList.add('on');
+                        if (this.config.bgMusicEnabled) document.getElementById('bgMusicToggle').classList.add('on');
+                        if (this.config.notificationEnabled) document.getElementById('notificationToggle').classList.add('on');
+                        if (this.config.autoStart) document.getElementById('autoStartToggle').classList.add('on');
+
+                        // 应用主题
+                        this.setTheme(this.config.currentTheme);
+                    } catch (e) {
+                        console.error('Failed to load settings', e);
+                    }
+                }
+            },
+
+            // 加载本地存储数据
+            loadLocalStorage() {
+                const saved = localStorage.getItem('pomodoroState');
+                if (saved) {
+                    try {
+                        this.state = { ...this.state, ...JSON.parse(saved) };
+                        this.state.isRunning = false;
+                        this.state.isPaused = false;
+                        this.updateDisplay();
+                    } catch (e) {
+                        console.error('Failed to load state', e);
+                    }
+                }
+            }
+        };
+
+        // 定期保存状态
+        setInterval(() => {
+            localStorage.setItem('pomodoroState', JSON.stringify(app.state));
+        }, 5000);
+
+        // 页面卸载时保存
+        window.addEventListener('beforeunload', () => {
+            localStorage.setItem('pomodoroState', JSON.stringify(app.state));
+        });
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+        // 为 toggleModeBtn 添加事件监听
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('toggleModeBtn').addEventListener('click', () => app.toggleMode());
+        });
+    </script>
+</body>
+</html>

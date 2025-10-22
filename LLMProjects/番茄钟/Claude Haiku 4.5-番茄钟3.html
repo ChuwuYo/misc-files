@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 50%, #ff7675 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #fef5e7;
+            border: 8px solid #e8daaa;
+            border-radius: 20px;
+            box-shadow: 
+                0 0 0 4px #d4c5a9,
+                10px 10px 0 rgba(0,0,0,0.1);
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #d63031;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+
+        .stage-indicator {
+            text-align: center;
+            font-size: 16px;
+            color: #74b9ff;
+            margin-bottom: 15px;
+            font-weight: bold;
+            height: 20px;
+        }
+
+        .timer-display {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            border: 6px solid #d4c5a9;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: inset 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        .timer-number {
+            font-size: 72px;
+            font-weight: bold;
+            color: #d63031;
+            font-family: 'Courier New', monospace;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.15);
+            line-height: 1;
+        }
+
+        .timer-emoji {
+            font-size: 48px;
+            margin-top: 10px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #dfe6e9;
+            border: 3px solid #2d3436;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: inset 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00b894, #55efc4);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: inset -2px 0 0 rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        button {
+            background: #ffeaa7;
+            border: 4px solid #2d3436;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+            color: #2d3436;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-start {
+            background: #00b894;
+            color: white;
+        }
+
+        .btn-pause {
+            background: #fdcb6e;
+            color: white;
+        }
+
+        .btn-reset {
+            background: #e17055;
+            color: white;
+        }
+
+        .btn-skip {
+            background: #74b9ff;
+            color: white;
+        }
+
+        .stats {
+            background: #fff5e6;
+            border: 4px solid #d4c5a9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-title {
+            font-size: 12px;
+            color: #636e72;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .stats-content {
+            display: flex;
+            justify-content: space-around;
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d3436;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .settings-btn, .help-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: #6c5ce7;
+            color: white;
+            width: auto;
+            flex: 0;
+        }
+
+        /* 模态窗口 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fef5e7;
+            border: 8px solid #e8daaa;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 0 4px #d4c5a9, 15px 15px 0 rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d63031;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px dashed #d4c5a9;
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-weight: bold;
+            color: #2d3436;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 10px;
+            border: 3px solid #2d3436;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff9e6;
+        }
+
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .time-input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .time-input-group label {
+            font-size: 12px;
+            color: #636e72;
+            margin-bottom: 4px;
+        }
+
+        .time-input-group input {
+            padding: 8px;
+            border: 3px solid #2d3436;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff9e6;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 30px;
+            background: #dfe6e9;
+            border: 3px solid #2d3436;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            display: none;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border: 2px solid #2d3436;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            left: 22px;
+            background: #00b894;
+        }
+
+        .sound-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .sound-option {
+            padding: 10px;
+            border: 3px solid #d4c5a9;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            background: #fff9e6;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .sound-option:hover {
+            transform: scale(1.05);
+        }
+
+        .sound-option.active {
+            background: #ffeaa7;
+            border-color: #2d3436;
+            box-shadow: 0 0 0 2px #2d3436;
+        }
+
+        .volume-control {
+            margin-top: 8px;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border: 2px solid #2d3436;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #ff7675 0%, #fdcb6e 50%, #00b894 100%);
+        }
+
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #2d3436;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+
+        .volume-control input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #2d3436;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .modal-buttons button {
+            width: 100%;
+        }
+
+        .btn-confirm {
+            background: #00b894;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e17055;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #d63031;
+            color: white;
+            width: 100%;
+        }
+
+        .help-content {
+            font-size: 14px;
+            color: #2d3436;
+            line-height: 1.8;
+        }
+
+        .help-content h3 {
+            color: #d63031;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .help-content p {
+            margin-bottom: 10px;
+        }
+
+        .help-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .help-content li {
+            margin-bottom: 5px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            background: #e17055;
+            border: 3px solid #2d3436;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+
+        .close-modal:hover {
+            transform: rotate(90deg);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+            }
+
+            .title {
+                font-size: 28px;
+                margin-bottom: 20px;
+            }
+
+            .timer-number {
+                font-size: 56px;
+            }
+
+            .timer-emoji {
+                font-size: 40px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            button {
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer-number.warning {
+            animation: pulse 0.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">番茄钟</div>
+
+        <div class="stage-indicator" id="stageIndicator">工作中 ● ● ○</div>
+
+        <div class="timer-display">
+            <div class="timer-emoji" id="timerEmoji">🍅</div>
+            <div class="timer-number" id="timerDisplay">25:00</div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-start" id="startBtn" onclick="app.start()">开始</button>
+            <button class="btn-pause" id="pauseBtn" onclick="app.pause()" disabled>暂停</button>
+            <button class="btn-reset" id="resetBtn" onclick="app.reset()">重置</button>
+            <button class="btn-skip" id="skipBtn" onclick="app.skip()">跳过</button>
+        </div>
+
+        <div class="stats">
+            <div class="stats-title">今日统计</div>
+            <div class="stats-content">
+                <div class="stat-item">
+                    <span>🍅</span>
+                    <span id="tomatoCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>☕</span>
+                    <span id="breakCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>⏱️</span>
+                    <span id="totalTime">0分</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <button class="settings-btn" onclick="app.openSettings()">⚙️ 设置</button>
+            <button class="help-btn" onclick="app.openHelp()">❓ 帮助</button>
+        </div>
+    </div>
+
+    <!-- 设置模态窗口 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="close-modal" onclick="app.closeSettings()">×</div>
+            <div class="modal-header">⚙️ 设置</div>
+
+            <div class="setting-group">
+                <label class="setting-label">时长设置</label>
+                <div class="time-inputs">
+                    <div class="time-input-group">
+                        <label>工作时长(分)</label>
+                        <input type="number" id="workTime" min="1" max="60" value="25">
+                    </div>
+                    <div class="time-input-group">
+                        <label>短休息(分)</label>
+                        <input type="number" id="shortBreak" min="1" max="30" value="5">
+                    </div>
+                    <div class="time-input-group">
+                        <label>长休息(分)</label>
+                        <input type="number" id="longBreak" min="1" max="60" value="15">
+                    </div>
+                    <div class="time-input-group">
+                        <label>长休息周期</label>
+                        <input type="number" id="longBreakCycle" min="2" max="10" value="4">
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">音频设置</label>
+                <div>
+                    <label class="setting-label" style="font-size: 12px; margin-top: 8px;">选择音效</label>
+                    <div class="sound-options">
+                        <div class="sound-option active" onclick="app.selectSound('bell')">🔔 铃声</div>
+                        <div class="sound-option" onclick="app.selectSound('chime')">✨ 清脆</div>
+                        <div class="sound-option" onclick="app.selectSound('pop')">🎉 爆破</div>
+                    </div>
+                </div>
+                <div class="volume-control">
+                    <label class="setting-label" style="font-size: 12px; margin-top: 8px;">音量</label>
+                    <input type="range" id="volumeControl" min="0" max="100" value="70">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">功能设置</label>
+                <div class="toggle-group">
+                    <label class="setting-label" style="margin-bottom: 0;">自动开始下一阶段</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="autoStart" checked onchange="app.toggleAutoStart()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-group" style="margin-top: 10px;">
+                    <label class="setting-label" style="margin-bottom: 0;">完成时桌面通知</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="enableNotif" checked onchange="app.toggleNotification()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="app.saveSettings()">保存</button>
+                <button class="btn-cancel" onclick="app.closeSettings()">取消</button>
+            </div>
+
+            <button class="btn-clear" onclick="app.clearStats()">🗑️ 清除统计数据</button>
+        </div>
+    </div>
+
+    <!-- 帮助模态窗口 -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="close-modal" onclick="app.closeHelp()">×</div>
+            <div class="modal-header">❓ 帮助</div>
+            <div class="help-content">
+                <h3>什么是番茄钟?</h3>
+                <p>番茄钟是一个时间管理技术，通过周期性的工作和休息来提高生产力。一个完整的周期称为"一个番茄钟"。</p>
+
+                <h3>基本工作流程</h3>
+                <ul>
+                    <li>点击"开始"开始工作计时</li>
+                    <li>工作25分钟后，会自动进入短休息</li>
+                    <li>短休息5分钟后，继续下一个工作周期</li>
+                    <li>每4个番茄钟后，享受15分钟长休息</li>
+                </ul>
+
+                <h3>快速操作</h3>
+                <ul>
+                    <li><strong>开始</strong> - 开始计时</li>
+                    <li><strong>暂停</strong> - 暂停计时</li>
+                    <li><strong>重置</strong> - 重置当前阶段</li>
+                    <li><strong>跳过</strong> - 跳过到下一个阶段</li>
+                </ul>
+
+                <h3>小贴士</h3>
+                <ul>
+                    <li>在"设置"中自定义时长以适应您的需求</li>
+                    <li>启用"自动开始"可以无缝进入下一个阶段</li>
+                    <li>查看统计数据来了解您的工作效率</li>
+                    <li>休息时远离屏幕，做做眼保健操</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            // 配置
+            config: {
+                workTime: 25,
+                shortBreak: 5,
+                longBreak: 15,
+                longBreakCycle: 4,
+                autoStart: true,
+                enableNotif: true,
+                soundType: 'bell',
+                volume: 70
+            },
+
+            // 状态
+            state: {
+                isRunning: false,
+                currentStage: 'work', // work, shortBreak, longBreak
+                timeLeft: 1500, // 秒
+                totalTime: 0,
+                tomatoCount: 0,
+                breakCount: 0,
+                cycleCount: 0, // 4个番茄后长休息
+                intervalId: null
+            },
+
+            // 初始化
+            init() {
+                this.loadSettings();
+                this.loadStats();
+                this.updateDisplay();
+                this.requestNotificationPermission();
+            },
+
+            // 开始
+            start() {
+                if (this.state.isRunning) return;
+                this.state.isRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+
+                this.state.intervalId = setInterval(() => {
+                    this.state.timeLeft--;
+                    this.updateDisplay();
+
+                    if (this.state.timeLeft <= 0) {
+                        this.completePhase();
+                    }
+                }, 1000);
+            },
+
+            // 暂停
+            pause() {
+                this.state.isRunning = false;
+                clearInterval(this.state.intervalId);
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+            },
+
+            // 重置
+            reset() {
+                this.pause();
+                this.setPhase(this.state.currentStage);
+            },
+
+            // 跳过
+            skip() {
+                this.pause();
+                this.completePhase();
+            },
+
+            // 完成一个阶段
+            completePhase() {
+                this.pause();
+                
+                // 统计
+                if (this.state.currentStage === 'work') {
+                    this.state.tomatoCount++;
+                    this.state.cycleCount++;
+                    this.playSound();
+                    this.notify('🍅 工作完成!', '享受短休息吧');
+                } else {
+                    this.state.breakCount++;
+                    this.playSound();
+                    if (this.state.currentStage === 'shortBreak') {
+                        this.notify('☕ 休息完成!', '准备好下一个工作了吗?');
+                    } else {
+                        this.notify('🌟 长休息完成!', '冲刺新的四个番茄钟!');
+                    }
+                }
+
+                // 进入下一个阶段
+                this.moveToNextPhase();
+                this.saveStats();
+
+                if (this.config.autoStart) {
+                    setTimeout(() => this.start(), 1000);
+                }
+            },
+
+            // 移动到下一个阶段
+            moveToNextPhase() {
+                if (this.state.currentStage === 'work') {
+                    if (this.state.cycleCount % this.config.longBreakCycle === 0) {
+                        this.setPhase('longBreak');
+                    } else {
+                        this.setPhase('shortBreak');
+                    }
+                } else {
+                    this.setPhase('work');
+                }
+            },
+
+            // 设置阶段
+            setPhase(phase) {
+                this.state.currentStage = phase;
+                switch(phase) {
+                    case 'work':
+                        this.state.timeLeft = this.config.workTime * 60;
+                        break;
+                    case 'shortBreak':
+                        this.state.timeLeft = this.config.shortBreak * 60;
+                        break;
+                    case 'longBreak':
+                        this.state.timeLeft = this.config.longBreak * 60;
+                        break;
+                }
+                this.updateDisplay();
+            },
+
+            // 更新显示
+            updateDisplay() {
+                const minutes = Math.floor(this.state.timeLeft / 60);
+                const seconds = this.state.timeLeft % 60;
+                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                document.getElementById('timerDisplay').textContent = display;
+
+                // 更新阶段指示
+                let stageText = '';
+                let emoji = '';
+                switch(this.state.currentStage) {
+                    case 'work':
+                        stageText = `工作中 (${this.state.cycleCount + 1}/${this.config.longBreakCycle})`;
+                        emoji = '🍅';
+                        break;
+                    case 'shortBreak':
+                        stageText = '短休息中';
+                        emoji = '☕';
+                        break;
+                    case 'longBreak':
+                        stageText = '长休息中 🌟';
+                        emoji = '🌳';
+                        break;
+                }
+                document.getElementById('stageIndicator').textContent = stageText;
+                document.getElementById('timerEmoji').textContent = emoji;
+
+                // 更新进度条
+                let totalSeconds = 0;
+                switch(this.state.currentStage) {
+                    case 'work':
+                        totalSeconds = this.config.workTime * 60;
+                        break;
+                    case 'shortBreak':
+                        totalSeconds = this.config.shortBreak * 60;
+                        break;
+                    case 'longBreak':
+                        totalSeconds = this.config.longBreak * 60;
+                        break;
+                }
+                const progress = ((totalSeconds - this.state.timeLeft) / totalSeconds) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // 时间不足30秒时闪烁
+                if (this.state.timeLeft <= 30 && this.state.isRunning) {
+                    document.getElementById('timerDisplay').classList.add('warning');
+                } else {
+                    document.getElementById('timerDisplay').classList.remove('warning');
+                }
+
+                // 更新统计
+                this.updateStats();
+            },
+
+            // 更新统计显示
+            updateStats() {
+                document.getElementById('tomatoCount').textContent = this.state.tomatoCount;
+                document.getElementById('breakCount').textContent = this.state.breakCount;
+                
+                let totalMinutes = this.state.tomatoCount * this.config.workTime;
+                totalMinutes += this.state.breakCount * (this.state.cycleCount % this.config.longBreakCycle === 0 ? this.config.longBreak : this.config.shortBreak);
+                
+                if (totalMinutes >= 60) {
+                    const hours = Math.floor(totalMinutes / 60);
+                    const mins = totalMinutes % 60;
+                    document.getElementById('totalTime').textContent = `${hours}h${mins}分`;
+                } else {
+                    document.getElementById('totalTime').textContent = `${totalMinutes}分`;
+                }
+            },
+
+            // 播放声音
+            playSound() {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const volume = this.config.volume / 100;
+
+                switch(this.config.soundType) {
+                    case 'bell':
+                        this.playBell(audioContext, volume);
+                        break;
+                    case 'chime':
+                        this.playChime(audioContext, volume);
+                        break;
+                    case 'pop':
+                        this.playPop(audioContext, volume);
+                        break;
+                }
+            },
+
+            playBell(ctx, vol) {
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.5);
+
+                gain.gain.setValueAtTime(vol, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                osc.start(now);
+                osc.stop(now + 0.5);
+            },
+
+            playChime(ctx, vol) {
+                const now = ctx.currentTime;
+                const notes = [1046.5, 1318.5, 1567.98]; // C6, E6, G6
+
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(vol, now + idx * 0.15);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.15 + 0.3);
+
+                    osc.start(now + idx * 0.15);
+                    osc.stop(now + idx * 0.15 + 0.3);
+                });
+            },
+
+            playPop(ctx, vol) {
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+                gain.gain.setValueAtTime(vol, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+                osc.start(now);
+                osc.stop(now + 0.1);
+            },
+
+            // 通知
+            notify(title, body) {
+                if (!this.config.enableNotif || !('Notification' in window)) return;
+                if (Notification.permission === 'granted') {
+                    new Notification(title, { body, icon: '🍅' });
+                }
+            },
+
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            },
+
+            // 选择音效
+            selectSound(type) {
+                this.config.soundType = type;
+                document.querySelectorAll('.sound-option').forEach(el => {
+                    el.classList.remove('active');
+                });
+                event.target.classList.add('active');
+            },
+
+            // 切换自动开始
+            toggleAutoStart() {
+                this.config.autoStart = document.getElementById('autoStart').checked;
+            },
+
+            // 切换通知
+            toggleNotification() {
+                this.config.enableNotif = document.getElementById('enableNotif').checked;
+            },
+
+            // 打开设置
+            openSettings() {
+                document.getElementById('settingsModal').classList.add('show');
+                document.getElementById('workTime').value = this.config.workTime;
+                document.getElementById('shortBreak').value = this.config.shortBreak;
+                document.getElementById('longBreak').value = this.config.longBreak;
+                document.getElementById('longBreakCycle').value = this.config.longBreakCycle;
+                document.getElementById('volumeControl').value = this.config.volume;
+                document.getElementById('autoStart').checked = this.config.autoStart;
+                document.getElementById('enableNotif').checked = this.config.enableNotif;
+            },
+
+            // 关闭设置
+            closeSettings() {
+                document.getElementById('settingsModal').classList.remove('show');
+            },
+
+            // 保存设置
+            saveSettings() {
+                const newConfig = {
+                    workTime: parseInt(document.getElementById('workTime').value),
+                    shortBreak: parseInt(document.getElementById('shortBreak').value),
+                    longBreak: parseInt(document.getElementById('longBreak').value),
+                    longBreakCycle: parseInt(document.getElementById('longBreakCycle').value),
+                    autoStart: document.getElementById('autoStart').checked,
+                    enableNotif: document.getElementById('enableNotif').checked,
+                    volume: parseInt(document.getElementById('volumeControl').value)
+                };
+
+                this.config = { ...this.config, ...newConfig };
+                this.saveSettingsToStorage();
+                this.reset();
+                this.closeSettings();
+            },
+
+            // 打开帮助
+            openHelp() {
+                document.getElementById('helpModal').classList.add('show');
+            },
+
+            // 关闭帮助
+            closeHelp() {
+                document.getElementById('helpModal').classList.remove('show');
+            },
+
+            // 清除统计
+            clearStats() {
+                if (confirm('确定要清除今天的统计数据吗?')) {
+                    this.state.tomatoCount = 0;
+                    this.state.breakCount = 0;
+                    this.state.cycleCount = 0;
+                    this.saveStats();
+                    this.updateStats();
+                }
+            },
+
+            // 存储相关
+            saveSettingsToStorage() {
+                localStorage.setItem('pomodoroConfig', JSON.stringify(this.config));
+            },
+
+            loadSettings() {
+                const saved = localStorage.getItem('pomodoroConfig');
+                if (saved) {
+                    this.config = { ...this.config, ...JSON.parse(saved) };
+                }
+                this.setPhase('work');
+            },
+
+            saveStats() {
+                const today = new Date().toDateString();
+                const stats = {
+                    date: today,
+                    tomatoCount: this.state.tomatoCount,
+                    breakCount: this.state.breakCount,
+                    cycleCount: this.state.cycleCount
+                };
+                localStorage.setItem('pomodoroStats', JSON.stringify(stats));
+            },
+
+            loadStats() {
+                const today = new Date().toDateString();
+                const saved = localStorage.getItem('pomodoroStats');
+                if (saved) {
+                    const stats = JSON.parse(saved);
+                    if (stats.date === today) {
+                        this.state.tomatoCount = stats.tomatoCount;
+                        this.state.breakCount = stats.breakCount;
+                        this.state.cycleCount = stats.cycleCount;
+                    }
+                }
+            }
+        };
+
+        // 启动应用
+        app.init();
+
+        // 关闭模态窗口时的点击事件处理
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                app.closeSettings();
+            }
+        });
+
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                app.closeHelp();
+            }
+        });
+    </script>
+</body>
+</html>
