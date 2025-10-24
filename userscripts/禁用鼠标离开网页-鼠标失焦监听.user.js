@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name            禁用鼠标离开网页/窗口失焦监听
 // @namespace       http://tampermonkey.net/
-// @version         0.4.7
-// @description     通过多种方式阻止网页检测鼠标离开页面、窗口失去焦点或页面可见性变化，并包含活动模拟，旨在保护用户操作不被意外中断或记录。
+// @version         0.4.8
+// @description     通过多种方式阻止网页检测鼠标离开页面、窗口失去焦点或页面可见性变化，并包含活动模拟，旨在保护用户操作不被意外中断或记录。新增禁用网页自动全屏功能。
 // @author          Chuwu
 // @match           *://*.chaoxing.com/*
 // @match           *://*.icve.com.cn/*
@@ -23,7 +23,7 @@
 // @run-at          document-start
 // @license         AGPL3.0
 // @downloadURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%91%E5%90%AC.user.js
-// @updateURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%D1%E5%90%AC.meta.js
+// @updateURL https://update.greasyfork.org/scripts/531453/%E7%A6%81%E7%94%A8%E9%BC%A0%E6%A0%87%E7%A6%BB%E5%BC%80%E7%BD%91%E9%A1%B5%E7%AA%97%E5%8F%A3%E5%A4%B1%E7%84%A6%E7%9B%91%E5%90%AC.meta.js
 // ==/UserScript==
 
 (function() {
@@ -45,7 +45,11 @@
         'mouseleave', // 鼠标指针移出元素时触发 (不冒泡)
         'blur', // 元素失去焦点时触发
         'focusout', // 元素即将失去焦点时触发 (冒泡)
-        'visibilitychange' // 页面的可见性状态发生改变时触发
+        'visibilitychange', // 页面的可见性状态发生改变时触发
+        'fullscreenchange', // 全屏状态改变时触发
+        'webkitfullscreenchange', // Webkit 内核的全屏状态改变事件
+        'mozfullscreenchange', // Mozilla 内核的全屏状态改变事件
+        'MSFullscreenChange' // IE/Edge 的全屏状态改变事件
     ]);
 
     // 保存原始的 addEventListener 方法引用
@@ -118,6 +122,70 @@
             });
         });
         if (DEBUG) console.log(`[${SCRIPT_NAME}] window.onblur/onfocus 等属性已被重写。`);
+
+        // --- 2.4 全屏 API (Fullscreen API) ---
+        // 新增功能：禁用网页自动全屏，让网页以为自己已经全屏
+        // 创建一个假的元素作为全屏元素
+        const fakeFullscreenElement = pageWindow.document.createElement('div');
+        fakeFullscreenElement.style.display = 'none';
+        pageWindow.document.body.appendChild(fakeFullscreenElement);
+
+        // 重写全屏相关的属性
+        const fullscreenProperties = {
+            fullscreenElement: fakeFullscreenElement,
+            webkitFullscreenElement: fakeFullscreenElement,
+            mozFullScreenElement: fakeFullscreenElement,
+            msFullscreenElement: fakeFullscreenElement,
+            fullscreenEnabled: true,
+            webkitFullscreenEnabled: true,
+            mozFullScreenEnabled: true,
+            msFullscreenEnabled: true
+        };
+
+        // 遍历并重写上述定义的各属性
+        for (const propName in fullscreenProperties) {
+            if (Object.prototype.hasOwnProperty.call(fullscreenProperties, propName)) {
+                // 使用 Object.defineProperty 重写 document 的属性
+                Object.defineProperty(pageWindow.document, propName, {
+                    get: function() { return fullscreenProperties[propName]; },
+                    configurable: true
+                });
+            }
+        }
+
+        // 重写 requestFullscreen 方法
+        const originalRequestFullscreen = Element.prototype.requestFullscreen ||
+                                         Element.prototype.webkitRequestFullscreen ||
+                                         Element.prototype.mozRequestFullScreen ||
+                                         Element.prototype.msRequestFullscreen;
+
+        if (originalRequestFullscreen) {
+            Element.prototype.requestFullscreen =
+            Element.prototype.webkitRequestFullscreen =
+            Element.prototype.mozRequestFullScreen =
+            Element.prototype.msRequestFullscreen = function() {
+                if (DEBUG) console.log(`[${SCRIPT_NAME}] 已阻止 requestFullscreen 调用`);
+                return Promise.resolve();
+            };
+        }
+
+        // 重写 exitFullscreen 方法
+        const originalExitFullscreen = pageWindow.document.exitFullscreen ||
+                                      pageWindow.document.webkitExitFullscreen ||
+                                      pageWindow.document.mozCancelFullScreen ||
+                                      pageWindow.document.msExitFullscreen;
+
+        if (originalExitFullscreen) {
+            pageWindow.document.exitFullscreen =
+            pageWindow.document.webkitExitFullscreen =
+            pageWindow.document.mozCancelFullScreen =
+            pageWindow.document.msExitFullscreen = function() {
+                if (DEBUG) console.log(`[${SCRIPT_NAME}] 已阻止 exitFullscreen 调用`);
+                return Promise.resolve();
+            };
+        }
+
+        if (DEBUG) console.log(`[${SCRIPT_NAME}] 全屏 API 相关属性和方法已被重写。`);
 
     } catch (error) {
         // 捕获并报告在重写属性过程中发生的错误
