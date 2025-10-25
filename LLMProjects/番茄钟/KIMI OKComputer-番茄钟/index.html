@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    
+    <!-- 字体引入 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS变量定义 - 默认主题 */
+        :root {
+            --primary-color: #A8E6CF;
+            --secondary-color: #FFD3B6;
+            --accent-color: #FFAAA5;
+            --neutral-color: #8FCACA;
+            --text-color: #5A5A5A;
+            --bg-color: #FFF8F0;
+            --shadow-dark: #8FCACA;
+            --shadow-light: #FFD3B6;
+            --pixel-border: #5A5A5A;
+        }
+        
+        /* 樱花主题 */
+        .theme-sakura {
+            --primary-color: #FFB7C5;
+            --secondary-color: #FFF0F5;
+            --accent-color: #FF69B4;
+            --neutral-color: #FFC0CB;
+            --text-color: #8B5A5A;
+            --bg-color: #FFF9FB;
+            --shadow-dark: #FFC0CB;
+            --shadow-light: #FFF0F5;
+            --pixel-border: #8B5A5A;
+        }
+        
+        /* 海洋主题 */
+        .theme-ocean {
+            --primary-color: #87CEEB;
+            --secondary-color: #E0F6FF;
+            --accent-color: #4682B4;
+            --neutral-color: #B0E0E6;
+            --text-color: #2F4F4F;
+            --bg-color: #F0F8FF;
+            --shadow-dark: #B0E0E6;
+            --shadow-light: #E0F6FF;
+            --pixel-border: #2F4F4F;
+        }
+        
+        /* 森林主题 */
+        .theme-forest {
+            --primary-color: #98D98C;
+            --secondary-color: #E8F5E8;
+            --accent-color: #66CDAA;
+            --neutral-color: #90EE90;
+            --text-color: #2E4E2E;
+            --bg-color: #F5FFF5;
+            --shadow-dark: #90EE90;
+            --shadow-light: #E8F5E8;
+            --pixel-border: #2E4E2E;
+        }
+        
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+        
+        /* 主容器 */
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        /* 标题区域 */
+        .app-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .app-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 24px;
+            color: var(--text-color);
+            text-shadow: 2px 2px 0px var(--shadow-light);
+        }
+        
+        /* 像素按钮样式 */
+        .pixel-button {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 20px;
+            border: 3px solid var(--pixel-border);
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            cursor: pointer;
+            position: relative;
+            box-shadow: 
+                inset -3px -3px 0px var(--shadow-dark),
+                inset 3px 3px 0px var(--shadow-light),
+                2px 2px 0px var(--pixel-border);
+            transition: all 0.1s linear;
+            image-rendering: pixelated;
+            user-select: none;
+        }
+        
+        .pixel-button:hover {
+            background-color: var(--secondary-color);
+            transform: translate(-1px, -1px);
+        }
+        
+        .pixel-button:active {
+            box-shadow: 
+                inset 3px 3px 0px var(--shadow-dark),
+                inset -3px -3px 0px var(--shadow-light),
+                1px 1px 0px var(--pixel-border);
+            transform: translate(1px, 1px);
+        }
+        
+        .settings-btn {
+            padding: 8px 12px;
+            font-size: 16px;
+        }
+        
+        /* 主要内容区域 */
+        .main-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        
+        /* 角色显示区域 */
+        .character-area {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .tomato-chan {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .tomato-chan img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        
+        /* 角色动画 */
+        .tomato-chan.idle {
+            animation: idle 2s ease-in-out infinite;
+        }
+        
+        .tomato-chan.working {
+            animation: working 1.5s ease-in-out infinite;
+        }
+        
+        .tomato-chan.resting {
+            animation: resting 3s ease-in-out infinite;
+        }
+        
+        .tomato-chan.completed {
+            animation: completed 1s ease-out;
+        }
+        
+        @keyframes idle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(2deg); }
+        }
+        
+        @keyframes working {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.02) rotate(-1deg); }
+            75% { transform: scale(1.02) rotate(1deg); }
+        }
+        
+        @keyframes resting {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        @keyframes completed {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+        
+        /* 计时器显示区域 */
+        .timer-section {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .timer-display {
+            font-family: 'Digital-7', 'Press Start 2P', cursive;
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-shadow: 
+                3px 3px 0px var(--shadow-dark),
+                -1px -1px 0px var(--pixel-border);
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 15px 30px;
+            border-radius: 8px;
+            border: 3px solid var(--pixel-border);
+            box-shadow: 
+                inset 0 0 10px rgba(0, 0, 0, 0.2),
+                2px 2px 0px var(--pixel-border);
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .timer-status {
+            font-size: 16px;
+            color: var(--text-color);
+            font-weight: 500;
+            margin-top: 5px;
+        }
+        
+        /* 进度条区域 */
+        .progress-section {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: var(--bg-color);
+            border: 3px solid var(--pixel-border);
+            position: relative;
+            box-shadow: 
+                inset -2px -2px 0px var(--shadow-dark),
+                inset 2px 2px 0px var(--shadow-light),
+                2px 2px 0px var(--pixel-border);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.5s ease-out;
+            position: relative;
+            image-rendering: pixelated;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.2) 25%, 
+                rgba(255,255,255,0.2) 50%, transparent 50%, transparent 75%, 
+                rgba(255,255,255,0.2) 75%);
+            background-size: 4px 4px;
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+        
+        /* 控制按钮区域 */
+        .controls-section {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            min-width: 80px;
+            padding: 12px 20px;
+        }
+        
+        /* 统计信息区域 */
+        .stats-section {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-color);
+            background-color: var(--secondary-color);
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: 2px solid var(--pixel-border);
+        }
+        
+        .stat-label {
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .settings-panel.active {
+            display: flex;
+        }
+        
+        .settings-content {
+            background-color: var(--bg-color);
+            border: 3px solid var(--pixel-border);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 
+                inset -3px -3px 0px var(--shadow-dark),
+                inset 3px 3px 0px var(--shadow-light),
+                4px 4px 0px var(--pixel-border);
+        }
+        
+        .settings-content h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .setting-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px dashed var(--neutral-color);
+        }
+        
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-group h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 15px;
+        }
+        
+        .setting-item label {
+            font-size: 12px;
+            color: var(--text-color);
+            flex-shrink: 0;
+        }
+        
+        .setting-item input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background-color: var(--secondary-color);
+            border: 2px solid var(--pixel-border);
+            outline: none;
+            appearance: none;
+        }
+        
+        .setting-item input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background-color: var(--primary-color);
+            border: 2px solid var(--pixel-border);
+            cursor: pointer;
+        }
+        
+        .setting-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+        }
+        
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .theme-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+            min-width: 60px;
+        }
+        
+        .theme-btn.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .close-settings {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+                gap: 20px;
+            }
+            
+            .app-title {
+                font-size: 18px;
+            }
+            
+            .timer-display {
+                font-size: 36px;
+                padding: 12px 20px;
+                min-width: 160px;
+            }
+            
+            .controls-section {
+                gap: 10px;
+            }
+            
+            .control-btn {
+                min-width: 70px;
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+            
+            .stats-section {
+                gap: 15px;
+            }
+            
+            .stat-item {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            
+            .tomato-chan {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .character-area {
+                height: 100px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .app-container {
+                padding: 30px;
+                gap: 35px;
+            }
+            
+            .timer-display {
+                font-size: 56px;
+                padding: 20px 40px;
+                min-width: 240px;
+            }
+            
+            .control-btn {
+                min-width: 90px;
+                padding: 15px 25px;
+            }
+        }
+        
+        /* 特殊效果 */
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); }
+            to { text-shadow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            padding: 15px 20px;
+            border: 3px solid var(--pixel-border);
+            border-radius: 8px;
+            box-shadow: 2px 2px 0px var(--pixel-border);
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="app-container">
+        
+        <!-- 标题区域 -->
+        <header class="app-header">
+            <h1 class="app-title">番茄钟</h1>
+            <button class="settings-btn pixel-button" id="settingsBtn">⚙️</button>
+        </header>
+        
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            
+            <!-- 角色显示区域 -->
+            <div class="character-area">
+                <div class="tomato-chan idle" id="tomatoCharacter">
+                    <img src="resources/tomato-chan.png" alt="小番茄">
+                </div>
+            </div>
+            
+            <!-- 计时器显示区域 -->
+            <div class="timer-section">
+                <div class="timer-display" id="timerDisplay">25:00</div>
+                <div class="timer-status" id="timerStatus">准备开始工作 💪</div>
+            </div>
+            
+            <!-- 进度条区域 -->
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+            
+            <!-- 控制按钮区域 -->
+            <div class="controls-section">
+                <button class="control-btn pixel-button" id="startBtn">开始</button>
+                <button class="control-btn pixel-button" id="pauseBtn" style="display:none;">暂停</button>
+                <button class="control-btn pixel-button" id="resetBtn">重置</button>
+                <button class="control-btn pixel-button" id="skipBtn">跳过</button>
+            </div>
+            
+            <!-- 统计信息区域 -->
+            <div class="stats-section">
+                <div class="stat-item">
+                    <span class="stat-label">今日完成:</span>
+                    <span class="stat-value" id="todayCount">0</span>
+                    <span class="stat-unit">个 🍅</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">总时长:</span>
+                    <span class="stat-value" id="todayTime">0</span>
+                    <span class="stat-unit">分钟</span>
+                </div>
+            </div>
+            
+        </main>
+        
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-content">
+                <h2>设置</h2>
+                
+                <!-- 时间设置 -->
+                <div class="setting-group">
+                    <h3>时间设置</h3>
+                    <div class="setting-item">
+                        <label>工作时长 (分钟):</label>
+                        <input type="range" id="workTime" min="15" max="45" value="25">
+                        <span id="workTimeValue">25</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>短休息 (分钟):</label>
+                        <input type="range" id="shortBreak" min="3" max="15" value="5">
+                        <span id="shortBreakValue">5</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>长休息 (分钟):</label>
+                        <input type="range" id="longBreak" min="10" max="30" value="15">
+                        <span id="longBreakValue">15</span>
+                    </div>
+                </div>
+                
+                <!-- 音效设置 -->
+                <div class="setting-group">
+                    <h3>音效设置</h3>
+                    <div class="setting-item">
+                        <label>主音量:</label>
+                        <input type="range" id="masterVolume" min="0" max="100" value="50">
+                        <span id="masterVolumeValue">50%</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>音效开关:</label>
+                        <input type="checkbox" id="soundEnabled" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>背景音乐:</label>
+                        <input type="checkbox" id="bgMusicEnabled">
+                    </div>
+                </div>
+                
+                <!-- 主题设置 -->
+                <div class="setting-group">
+                    <h3>主题设置</h3>
+                    <div class="theme-options">
+                        <button class="theme-btn pixel-button active" data-theme="default">默认</button>
+                        <button class="theme-btn pixel-button" data-theme="sakura">樱花</button>
+                        <button class="theme-btn pixel-button" data-theme="ocean">海洋</button>
+                        <button class="theme-btn pixel-button" data-theme="forest">森林</button>
+                    </div>
+                </div>
+                
+                <!-- 其他设置 -->
+                <div class="setting-group">
+                    <h3>其他设置</h3>
+                    <div class="setting-item">
+                        <label>自动播放:</label>
+                        <input type="checkbox" id="autoPlay" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label>桌面通知:</label>
+                        <input type="checkbox" id="notifications">
+                    </div>
+                </div>
+                
+                <button class="close-settings pixel-button" id="closeSettings">关闭</button>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- JavaScript代码 -->
+    <script>
+        // 番茄钟应用主类
+        class PomodoroTimer {
+            constructor() {
+                // 时间设置 (秒)
+                this.workTime = 25 * 60;
+                this.shortBreakTime = 5 * 60;
+                this.longBreakTime = 15 * 60;
+                
+                // 当前状态
+                this.currentTime = this.workTime;
+                this.isRunning = false;
+                this.currentMode = 'work';
+                this.completedCycles = 0;
+                this.timer = null;
+                
+                // DOM元素
+                this.timerDisplay = document.getElementById('timerDisplay');
+                this.timerStatus = document.getElementById('timerStatus');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressText = document.getElementById('progressText');
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.skipBtn = document.getElementById('skipBtn');
+                this.tomatoCharacter = document.getElementById('tomatoCharacter');
+                this.todayCount = document.getElementById('todayCount');
+                this.todayTime = document.getElementById('todayTime');
+                
+                // 设置相关
+                this.settings = {
+                    workTime: 25,
+                    shortBreak: 5,
+                    longBreak: 15,
+                    masterVolume: 50,
+                    soundEnabled: true,
+                    bgMusicEnabled: false,
+                    autoPlay: true,
+                    notifications: false,
+                    theme: 'default'
+                };
+                
+                // 音效
+                this.sounds = {};
+                this.bgMusic = null;
+                
+                // 统计数据
+                this.stats = {
+                    todayCount: 0,
+                    todayTime: 0,
+                    lastDate: this.getTodayString()
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.loadSettings();
+                this.loadStats();
+                this.initSounds();
+                this.updateDisplay();
+                this.updateStats();
+                this.requestNotificationPermission();
+                
+                // 初始化角色动画
+                this.characterAnimator = new CharacterAnimator(this.tomatoCharacter);
+            }
+            
+            bindEvents() {
+                // 控制按钮
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                this.skipBtn.addEventListener('click', () => this.skip());
+                
+                // 设置面板
+                document.getElementById('settingsBtn').addEventListener('click', () => this.openSettings());
+                document.getElementById('closeSettings').addEventListener('click', () => this.closeSettings());
+                
+                // 键盘快捷键
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                // 设置变更
+                this.bindSettingEvents();
+                
+                // 主题切换
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.changeTheme(e.target.dataset.theme));
+                });
+            }
+            
+            bindSettingEvents() {
+                // 时间设置
+                document.getElementById('workTime').addEventListener('input', (e) => {
+                    this.settings.workTime = parseInt(e.target.value);
+                    document.getElementById('workTimeValue').textContent = e.target.value;
+                    if (!this.isRunning && this.currentMode === 'work') {
+                        this.workTime = parseInt(e.target.value) * 60;
+                        this.currentTime = this.workTime;
+                        this.updateDisplay();
+                    }
+                });
+                
+                document.getElementById('shortBreak').addEventListener('input', (e) => {
+                    this.settings.shortBreak = parseInt(e.target.value);
+                    document.getElementById('shortBreakValue').textContent = e.target.value;
+                    this.shortBreakTime = parseInt(e.target.value) * 60;
+                });
+                
+                document.getElementById('longBreak').addEventListener('input', (e) => {
+                    this.settings.longBreak = parseInt(e.target.value);
+                    document.getElementById('longBreakValue').textContent = e.target.value;
+                    this.longBreakTime = parseInt(e.target.value) * 60;
+                });
+                
+                // 音效设置
+                document.getElementById('masterVolume').addEventListener('input', (e) => {
+                    this.settings.masterVolume = parseInt(e.target.value);
+                    document.getElementById('masterVolumeValue').textContent = e.target.value + '%';
+                    this.updateVolume();
+                });
+                
+                document.getElementById('soundEnabled').addEventListener('change', (e) => {
+                    this.settings.soundEnabled = e.target.checked;
+                });
+                
+                document.getElementById('bgMusicEnabled').addEventListener('change', (e) => {
+                    this.settings.bgMusicEnabled = e.target.checked;
+                    this.toggleBgMusic();
+                });
+                
+                // 其他设置
+                document.getElementById('autoPlay').addEventListener('change', (e) => {
+                    this.settings.autoPlay = e.target.checked;
+                });
+                
+                document.getElementById('notifications').addEventListener('change', (e) => {
+                    this.settings.notifications = e.target.checked;
+                });
+            }
+            
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.startBtn.style.display = 'none';
+                    this.pauseBtn.style.display = 'inline-block';
+                    
+                    this.timer = setInterval(() => {
+                        this.tick();
+                    }, 1000);
+                    
+                    this.playSound('start');
+                    this.updateCharacterAnimation();
+                    this.updateTitle();
+                }
+            }
+            
+            pause() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    clearInterval(this.timer);
+                    this.startBtn.style.display = 'inline-block';
+                    this.pauseBtn.style.display = 'none';
+                    this.startBtn.textContent = '继续';
+                    
+                    this.updateCharacterAnimation();
+                    this.updateTitle();
+                }
+            }
+            
+            reset() {
+                this.isRunning = false;
+                clearInterval(this.timer);
+                this.startBtn.style.display = 'inline-block';
+                this.pauseBtn.style.display = 'none';
+                this.startBtn.textContent = '开始';
+                
+                // 重置到当前模式的初始时间
+                switch (this.currentMode) {
+                    case 'work':
+                        this.currentTime = this.workTime;
+                        break;
+                    case 'shortBreak':
+                        this.currentTime = this.shortBreakTime;
+                        break;
+                    case 'longBreak':
+                        this.currentTime = this.longBreakTime;
+                        break;
+                }
+                
+                this.updateDisplay();
+                this.updateProgress();
+                this.updateCharacterAnimation();
+                this.updateTitle();
+            }
+            
+            skip() {
+                this.nextMode();
+                this.playSound('end');
+                this.showNotification(`${this.getModeText(this.currentMode)}时间到了！`);
+            }
+            
+            tick() {
+                this.currentTime--;
+                this.updateDisplay();
+                this.updateProgress();
+                this.updateTitle();
+                
+                if (this.currentTime <= 0) {
+                    this.complete();
+                }
+            }
+            
+            complete() {
+                this.isRunning = false;
+                clearInterval(this.timer);
+                this.startBtn.style.display = 'inline-block';
+                this.pauseBtn.style.display = 'none';
+                this.startBtn.textContent = '开始';
+                
+                // 播放完成动画
+                this.tomatoCharacter.classList.add('completed');
+                setTimeout(() => {
+                    this.tomatoCharacter.classList.remove('completed');
+                }, 1000);
+                
+                this.playSound('end');
+                this.showNotification(`${this.getModeText(this.currentMode)}时间到了！`);
+                
+                // 更新统计数据
+                if (this.currentMode === 'work') {
+                    this.stats.todayCount++;
+                    this.stats.todayTime += Math.round(this.workTime / 60);
+                    this.completedCycles++;
+                }
+                
+                this.saveStats();
+                this.updateStats();
+                
+                // 自动进入下一个模式
+                if (this.settings.autoPlay) {
+                    setTimeout(() => {
+                        this.nextMode();
+                    }, 2000);
+                }
+            }
+            
+            nextMode() {
+                if (this.currentMode === 'work') {
+                    // 工作完成后进入休息
+                    if (this.completedCycles % 4 === 0) {
+                        this.currentMode = 'longBreak';
+                        this.currentTime = this.longBreakTime;
+                    } else {
+                        this.currentMode = 'shortBreak';
+                        this.currentTime = this.shortBreakTime;
+                    }
+                } else {
+                    // 休息完成后进入工作
+                    this.currentMode = 'work';
+                    this.currentTime = this.workTime;
+                }
+                
+                this.updateDisplay();
+                this.updateProgress();
+                this.updateCharacterAnimation();
+                this.updateTitle();
+            }
+            
+            updateDisplay() {
+                const minutes = Math.floor(this.currentTime / 60);
+                const seconds = this.currentTime % 60;
+                this.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                const statusText = {
+                    'work': '工作时间 💪',
+                    'shortBreak': '短休息 😌',
+                    'longBreak': '长休息 🧘'
+                };
+                
+                this.timerStatus.textContent = this.isRunning ? 
+                    statusText[this.currentMode] : 
+                    `准备${statusText[this.currentMode]}`;
+            }
+            
+            updateProgress() {
+                let totalTime;
+                switch (this.currentMode) {
+                    case 'work':
+                        totalTime = this.workTime;
+                        break;
+                    case 'shortBreak':
+                        totalTime = this.shortBreakTime;
+                        break;
+                    case 'longBreak':
+                        totalTime = this.longBreakTime;
+                        break;
+                }
+                
+                const progress = ((totalTime - this.currentTime) / totalTime) * 100;
+                this.progressFill.style.width = `${progress}%`;
+                this.progressText.textContent = `${Math.round(progress)}%`;
+            }
+            
+            updateCharacterAnimation() {
+                if (!this.isRunning) {
+                    this.characterAnimator.play('idle');
+                } else if (this.currentMode === 'work') {
+                    this.characterAnimator.play('working');
+                } else {
+                    this.characterAnimator.play('resting');
+                }
+            }
+            
+            updateTitle() {
+                if (this.isRunning) {
+                    const minutes = Math.floor(this.currentTime / 60);
+                    const seconds = this.currentTime % 60;
+                    document.title = `${minutes}:${seconds.toString().padStart(2, '0')} - 番茄钟`;
+                } else {
+                    document.title = '番茄钟';
+                }
+            }
+            
+            updateStats() {
+                this.todayCount.textContent = this.stats.todayCount;
+                this.todayTime.textContent = this.stats.todayTime;
+            }
+            
+            handleKeyboard(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (this.isRunning) {
+                        this.pause();
+                    } else {
+                        this.start();
+                    }
+                } else if (e.code === 'KeyR') {
+                    e.preventDefault();
+                    this.reset();
+                } else if (e.code === 'KeyS') {
+                    e.preventDefault();
+                    this.skip();
+                }
+            }
+            
+            initSounds() {
+                this.sounds.start = new Audio('resources/start-sound.mp3');
+                this.sounds.end = new Audio('resources/end-sound.mp3');
+                this.sounds.click = new Audio('resources/click-sound.mp3');
+                
+                this.bgMusic = new Audio('resources/bg-music.mp3');
+                this.bgMusic.loop = true;
+                this.bgMusic.volume = 0.3;
+                
+                this.updateVolume();
+            }
+            
+            updateVolume() {
+                const volume = this.settings.masterVolume / 100;
+                Object.values(this.sounds).forEach(sound => {
+                    sound.volume = volume;
+                });
+                this.bgMusic.volume = volume * 0.3;
+            }
+            
+            playSound(type) {
+                if (this.settings.soundEnabled && this.sounds[type]) {
+                    this.sounds[type].currentTime = 0;
+                    this.sounds[type].play().catch(e => console.log('音效播放失败:', e));
+                }
+            }
+            
+            toggleBgMusic() {
+                if (this.settings.bgMusicEnabled) {
+                    this.bgMusic.play().catch(e => console.log('背景音乐播放失败:', e));
+                } else {
+                    this.bgMusic.pause();
+                }
+            }
+            
+            openSettings() {
+                document.getElementById('settingsPanel').classList.add('active');
+                this.playSound('click');
+            }
+            
+            closeSettings() {
+                document.getElementById('settingsPanel').classList.remove('active');
+                this.saveSettings();
+                this.playSound('click');
+            }
+            
+            changeTheme(theme) {
+                this.settings.theme = theme;
+                document.body.className = `theme-${theme}`;
+                
+                // 更新主题按钮状态
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+                
+                this.playSound('click');
+            }
+            
+            getModeText(mode) {
+                const modeTexts = {
+                    'work': '工作',
+                    'shortBreak': '短休息',
+                    'longBreak': '长休息'
+                };
+                return modeTexts[mode] || '工作';
+            }
+            
+            getTodayString() {
+                return new Date().toDateString();
+            }
+            
+            requestNotificationPermission() {
+                if ('Notification' in window && this.settings.notifications) {
+                    Notification.requestPermission();
+                }
+            }
+            
+            showNotification(message) {
+                if (this.settings.notifications && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification('番茄钟', {
+                        body: message,
+                        icon: 'resources/tomato-chan.png'
+                    });
+                }
+            }
+            
+            loadSettings() {
+                const saved = localStorage.getItem('pomodoroSettings');
+                if (saved) {
+                    this.settings = { ...this.settings, ...JSON.parse(saved) };
+                }
+                
+                // 应用设置到UI
+                document.getElementById('workTime').value = this.settings.workTime;
+                document.getElementById('workTimeValue').textContent = this.settings.workTime;
+                document.getElementById('shortBreak').value = this.settings.shortBreak;
+                document.getElementById('shortBreakValue').textContent = this.settings.shortBreak;
+                document.getElementById('longBreak').value = this.settings.longBreak;
+                document.getElementById('longBreakValue').textContent = this.settings.longBreak;
+                document.getElementById('masterVolume').value = this.settings.masterVolume;
+                document.getElementById('masterVolumeValue').textContent = this.settings.masterVolume + '%';
+                document.getElementById('soundEnabled').checked = this.settings.soundEnabled;
+                document.getElementById('bgMusicEnabled').checked = this.settings.bgMusicEnabled;
+                document.getElementById('autoPlay').checked = this.settings.autoPlay;
+                document.getElementById('notifications').checked = this.settings.notifications;
+                
+                // 应用主题
+                this.changeTheme(this.settings.theme);
+                
+                // 更新时间设置
+                this.workTime = this.settings.workTime * 60;
+                this.shortBreakTime = this.settings.shortBreak * 60;
+                this.longBreakTime = this.settings.longBreak * 60;
+                this.currentTime = this.workTime;
+            }
+            
+            saveSettings() {
+                localStorage.setItem('pomodoroSettings', JSON.stringify(this.settings));
+            }
+            
+            loadStats() {
+                const saved = localStorage.getItem('pomodoroStats');
+                if (saved) {
+                    this.stats = { ...this.stats, ...JSON.parse(saved) };
+                    
+                    // 检查是否是新的一天
+                    const today = this.getTodayString();
+                    if (this.stats.lastDate !== today) {
+                        this.stats.todayCount = 0;
+                        this.stats.todayTime = 0;
+                        this.stats.lastDate = today;
+                    }
+                }
+            }
+            
+            saveStats() {
+                localStorage.setItem('pomodoroStats', JSON.stringify(this.stats));
+            }
+        }
+        
+        // 角色动画管理器
+        class CharacterAnimator {
+            constructor(element) {
+                this.element = element;
+                this.currentAnimation = 'idle';
+            }
+            
+            play(animation) {
+                this.element.classList.remove(this.currentAnimation);
+                this.element.classList.add(animation);
+                this.currentAnimation = animation;
+            }
+        }
+        
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new PomodoroTimer();
+            
+            // 全局对象供调试使用
+            window.pomodoroApp = app;
+            
+            // 点击设置面板外部关闭
+            document.getElementById('settingsPanel').addEventListener('click', (e) => {
+                if (e.target.id === 'settingsPanel') {
+                    app.closeSettings();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

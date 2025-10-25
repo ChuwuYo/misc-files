@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素番茄钟</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* 基础变量定义 */
+        :root {
+            --primary-color: #98E4D6;     /* 薄荷绿 */
+            --secondary-color: #F8F9FA;   /* 奶白色 */
+            --accent-color: #FFB6C1;      /* 淡粉色 */
+            --text-color: #2C3E50;        /* 深蓝灰 */
+            --background-color: #F0F8F6;  /* 浅绿背景 */
+            --success-color: #00D084;     /* 成功绿 */
+            --warning-color: #FFA500;     /* 警告橙 */
+            --danger-color: #FF6B6B;      /* 危险红 */
+        }
+
+        /* 主题变体 */
+        [data-theme="mint"] {
+            --primary-color: #98E4D6;     /* 薄荷绿 */
+            --secondary-color: #F8F9FA;   /* 奶白色 */
+            --accent-color: #FFB6C1;      /* 淡粉色 */
+            --text-color: #2C3E50;        /* 深蓝灰 */
+            --background-color: #F0F8F6;  /* 浅绿背景 */
+        }
+
+        [data-theme="sakura"] {
+            --primary-color: #FFB7C5;     /* 樱花粉 */
+            --secondary-color: #FFFFFF;   /* 纯白色 */
+            --accent-color: #FFD700;      /* 金色 */
+            --text-color: #8B4A9C;        /* 深紫粉 */
+            --background-color: #FFF8FB;  /* 浅粉背景 */
+        }
+
+        [data-theme="ocean"] {
+            --primary-color: #87CEEB;     /* 海洋蓝 */
+            --secondary-color: #F0F8FF;   /* 淡蓝白 */
+            --accent-color: #FF69B4;      /* 珊瑚粉 */
+            --text-color: #191970;        /* 深蓝 */
+            --background-color: #E0F6FF;  /* 浅蓝背景 */
+        }
+
+        [data-theme="rainbow"] {
+            --primary-color: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
+            --secondary-color: #ffffff;
+            --accent-color: #ff4757;
+            --text-color: #2c3e50;
+            --background-color: #f8f9fa;
+        }
+
+        [data-theme="moon"] {
+            --primary-color: #4834D4;     /* 深蓝 */
+            --secondary-color: #F8F9FA;   /* 白色 */
+            --accent-color: #FFD700;      /* 金黄 */
+            --text-color: #E8E8E8;        /* 浅灰 */
+            --background-color: #2C3E50;  /* 夜空蓝 */
+        }
+
+        [data-theme="strawberry"] {
+            --primary-color: #FF6B6B;     /* 草莓红 */
+            --secondary-color: #FFF8DC;   /* 奶白 */
+            --accent-color: #98D8C8;      /* 薄荷绿 */
+            --text-color: #8B4513;        /* 棕色 */
+            --background-color: #FFF0F5;  /* 浅粉背景 */
+        }
+
+        /* 全局样式 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            overflow-x: hidden;
+        }
+
+        /* 像素按钮样式 */
+        .pixel-btn {
+            background: var(--primary-color);
+            border: 4px solid var(--accent-color);
+            color: var(--text-color);
+            padding: 12px 24px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            image-rendering: pixelated;
+            transition: all 0.1s ease;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+            box-shadow: 
+                inset 2px 2px 0px rgba(255,255,255,0.7),
+                inset -2px -2px 0px rgba(0,0,0,0.3),
+                4px 4px 0px rgba(0,0,0,0.2);
+        }
+
+        .pixel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                inset 2px 2px 0px rgba(255,255,255,0.7),
+                inset -2px -2px 0px rgba(0,0,0,0.3),
+                6px 6px 0px rgba(0,0,0,0.2);
+        }
+
+        .pixel-btn:active,
+        .pixel-btn.active {
+            transform: translateY(2px);
+            box-shadow: 
+                inset 2px 2px 0px rgba(0,0,0,0.3),
+                inset -2px -2px 0px rgba(255,255,255,0.7);
+        }
+
+        .pixel-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 主容器 */
+        .pomodoro-app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* 头部样式 */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .app-title {
+            font-size: 28px;
+            color: var(--text-color);
+            text-shadow: 3px 3px 0px var(--accent-color);
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .theme-selector {
+            position: relative;
+        }
+
+        .theme-current {
+            background: var(--secondary-color);
+            border: 2px solid var(--accent-color);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .theme-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--secondary-color);
+            border: 3px solid var(--accent-color);
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+            image-rendering: pixelated;
+        }
+
+        .theme-dropdown.active {
+            display: block;
+        }
+
+        .theme-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 10px;
+            border-bottom: 1px solid var(--accent-color);
+            transition: all 0.1s ease;
+        }
+
+        .theme-option:hover {
+            background: var(--primary-color);
+        }
+
+        .theme-option:last-child {
+            border-bottom: none;
+        }
+
+        /* 主计时器区域 - 保持中心位置 */
+        .timer-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+            min-height: 500px;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .timer-section {
+                min-height: 400px;
+            }
+        }
+
+        .timer-display {
+            text-align: center;
+            position: relative;
+        }
+
+        .pet-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            background: var(--secondary-color);
+            border: 4px solid var(--accent-color);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            image-rendering: pixelated;
+            box-shadow: 
+                inset 2px 2px 0px rgba(255,255,255,0.7),
+                inset -2px -2px 0px rgba(0,0,0,0.3),
+                4px 4px 0px rgba(0,0,0,0.2);
+        }
+
+        .pixel-pet {
+            width: 100px;
+            height: 100px;
+            background: var(--primary-color);
+            border: 3px solid var(--accent-color);
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+            image-rendering: pixelated;
+        }
+
+        .pixel-pet::before,
+        .pixel-pet::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--text-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        .pixel-pet::before {
+            top: 25px;
+            left: 25px;
+        }
+
+        .pixel-pet::after {
+            top: 25px;
+            right: 25px;
+        }
+
+        .pet-mouth {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            border: 2px solid var(--text-color);
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .pet-mouth.happy {
+            border-top: 2px solid var(--text-color);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .pet-mouth.sad {
+            border-radius: 0;
+            transform: translateX(-50%) rotate(180deg);
+        }
+
+        .pet-container.celebrating {
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1) rotate(180deg); }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            animation: sparkle 0.8s ease-in-out infinite;
+        }
+
+        .timer-mode {
+            font-size: 16px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 0px var(--text-color);
+        }
+
+        .timer-time {
+            font-size: 48px;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0px var(--accent-color);
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .timer-progress {
+            width: 100%;
+            height: 25px;
+            background: var(--secondary-color);
+            border: 3px solid var(--accent-color);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--primary-color) 0px,
+                var(--primary-color) 10px,
+                var(--accent-color) 10px,
+                var(--accent-color) 12px
+            );
+            transition: width 0.3s ease;
+            image-rendering: pixelated;
+        }
+
+        .timer-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 480px) {
+            .timer-controls {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* 圆润卡片面板 - 右侧滑出居中 */
+        .side-panel {
+            position: fixed;
+            top: 50%;
+            right: -350px;
+            width: 320px;
+            max-height: 80vh;
+            background: var(--secondary-color);
+            border: 3px solid var(--accent-color);
+            border-radius: 16px;
+            padding: 0;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.15),
+                0 10px 20px rgba(0,0,0,0.1),
+                inset 2px 2px 0px rgba(255,255,255,0.7),
+                inset -2px -2px 0px rgba(0,0,0,0.3);
+            z-index: 100;
+            transition: right 0.3s ease-in-out, transform 0.3s ease-in-out;
+            overflow: hidden;
+            transform: translateY(-50%);
+        }
+
+        .side-panel.open {
+            right: 20px;
+        }
+
+        .side-panel-header {
+            background: var(--primary-color);
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 13px 13px 0 0;
+        }
+
+        .side-panel-title {
+            font-size: 14px;
+            color: var(--text-color);
+            font-weight: bold;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+        }
+
+        .side-panel-close {
+            background: var(--accent-color);
+            border: 2px solid var(--text-color);
+            color: var(--text-color);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.1s ease;
+        }
+
+        .side-panel-close:hover {
+            background: var(--text-color);
+            color: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .side-panel-content {
+            padding: 20px;
+            max-height: calc(80vh - 60px);
+            overflow-y: auto;
+            /* 隐藏滚动条但在需要时保持可滚动 */
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) var(--primary-color);
+        }
+        
+        .side-panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .side-panel-content::-webkit-scrollbar-track {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+        
+        .side-panel-content::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .side-panel {
+                width: 280px;
+                right: -310px;
+                max-height: 70vh;
+            }
+            
+            .side-panel.open {
+                right: 10px;
+            }
+            
+            .side-panel-content {
+                max-height: calc(70vh - 60px);
+                padding: 15px;
+            }
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+        }
+        
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 0px var(--text-color);
+            font-weight: bold;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .setting-label {
+            font-size: 10px;
+            color: var(--text-color);
+        }
+
+        .time-input {
+            background: var(--primary-color);
+            border: 2px solid var(--accent-color);
+            padding: 5px 10px;
+            font-family: inherit;
+            font-size: 10px;
+            color: var(--text-color);
+            width: 80px;
+            text-align: center;
+        }
+
+        .slider {
+            width: 100%;
+            height: 20px;
+            background: var(--secondary-color);
+            border: 2px solid var(--accent-color);
+            appearance: none;
+            image-rendering: pixelated;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border: 2px solid var(--text-color);
+            cursor: pointer;
+            image-rendering: pixelated;
+        }
+
+        /* 统计信息 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            background: var(--primary-color);
+            border: 2px solid var(--accent-color);
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 18px;
+            color: var(--text-color);
+            text-shadow: 2px 2px 0px var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 8px;
+            color: var(--text-color);
+        }
+
+        /* 成就系统 */
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .achievement-badge {
+            background: var(--secondary-color);
+            border: 3px solid var(--accent-color);
+            padding: 15px 10px;
+            text-align: center;
+            border-radius: 10px;
+            position: relative;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .achievement-badge.earned {
+            opacity: 1;
+            animation: achievement-glow 2s ease-in-out infinite alternate;
+        }
+
+        .achievement-badge.earned::before {
+            content: '★';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--accent-color);
+            color: var(--secondary-color);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border: 2px solid var(--text-color);
+        }
+
+        @keyframes achievement-glow {
+            0% { box-shadow: 0 0 5px var(--accent-color); }
+            100% { box-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color); }
+        }
+
+        .achievement-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .achievement-name {
+            font-size: 10px;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--secondary-color);
+            border: 4px solid var(--accent-color);
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        /* 粒子效果 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            animation: particle-float 2s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .pomodoro-app {
+                padding: 15px;
+            }
+
+            .app-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .app-title {
+                font-size: 24px;
+            }
+
+            .timer-time {
+                font-size: 36px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 设置面板遮罩层 */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        
+        .settings-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* 原始模态框覆盖层 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 彩虹主题特殊样式 */
+        [data-theme="rainbow"] .pixel-btn {
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff);
+            background-size: 400% 400%;
+            animation: rainbow-shift 3s ease infinite;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        @keyframes rainbow-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 月亮主题特殊样式 */
+        [data-theme="moon"] body {
+            background: linear-gradient(45deg, #2C3E50, #4834D4);
+        }
+
+        [data-theme="moon"] .pixel-pet {
+            background: var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color);
+        }
+
+        /* 主题切换动画 */
+        .theme-transition {
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* 特殊状态样式 */
+        .state-working .pixel-pet {
+            background: var(--success-color);
+        }
+
+        .state-break .pixel-pet {
+            background: var(--warning-color);
+        }
+
+        .state-complete .pixel-pet {
+            background: var(--accent-color);
+            animation: celebration-spin 0.6s ease-in-out;
+        }
+
+        @keyframes celebration-spin {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 进度条百分比显示 */
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            color: var(--text-color);
+            text-shadow: 1px 1px 0px var(--secondary-color);
+        }
+
+        /* 音频控制 */
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .volume-slider {
+            width: 80px;
+        }
+    </style>
+</head>
+<body data-theme="mint">
+    <div class="pomodoro-app">
+        <!-- 头部 -->
+        <header class="app-header">
+            <h1 class="app-title">番茄钟</h1>
+            <div class="header-controls">
+                <div class="theme-selector">
+                    <button class="theme-current" onclick="toggleThemeDropdown()">主题</button>
+                    <div class="theme-dropdown" id="themeDropdown">
+                        <div class="theme-option" onclick="switchTheme('mint')">薄荷绿</div>
+                        <div class="theme-option" onclick="switchTheme('sakura')">樱花粉</div>
+                        <div class="theme-option" onclick="switchTheme('ocean')">海洋蓝</div>
+                        <div class="theme-option" onclick="switchTheme('rainbow')">彩虹色</div>
+                        <div class="theme-option" onclick="switchTheme('moon')">月亮</div>
+                        <div class="theme-option" onclick="switchTheme('strawberry')">草莓红</div>
+                    </div>
+                </div>
+                <button class="pixel-btn" onclick="toggleSettings()">设置</button>
+            </div>
+        </header>
+
+        <!-- 主要计时器区域 -->
+        <main class="timer-section">
+            <div class="timer-display">
+                <div class="pet-container" id="petContainer">
+                    <div class="pixel-pet" id="pixelPet">
+                        <div class="pet-mouth" id="petMouth"></div>
+                    </div>
+                </div>
+                
+                <div class="timer-mode" id="timerMode">工作时段</div>
+                <div class="timer-time" id="timerDisplay">25:00</div>
+                
+                <div class="timer-progress">
+                    <div class="progress-fill" id="progressFill"></div>
+                    <div class="progress-text" id="progressText">100%</div>
+                </div>
+                
+                <div class="timer-controls">
+                    <button class="pixel-btn" id="startBtn" onclick="startTimer()">开始</button>
+                    <button class="pixel-btn" id="pauseBtn" onclick="pauseTimer()" disabled>暂停</button>
+                    <button class="pixel-btn" id="resetBtn" onclick="resetTimer()">重置</button>
+                    <button class="pixel-btn" id="skipBtn" onclick="skipTimer()">跳过</button>
+                </div>
+            </div>
+
+            <!-- 圆润卡片面板 -->
+            <aside class="side-panel" id="settingsPanel">
+                <div class="side-panel-header">
+                    <div class="side-panel-title">设置面板</div>
+                    <button class="side-panel-close" onclick="closeSettings()">×</button>
+                </div>
+                <div class="side-panel-content">
+                    <div class="panel-section">
+                        <h3 class="panel-title">时长设置</h3>
+                        <div class="setting-item">
+                            <span class="setting-label">工作时间:</span>
+                            <input type="range" class="slider" id="workTimeSlider" min="5" max="60" value="25" onchange="updateWorkTime(this.value)">
+                            <input type="number" class="time-input" id="workTimeInput" min="5" max="60" value="25" onchange="updateWorkTime(this.value)">
+                        </div>
+                        <div class="setting-item">
+                            <span class="setting-label">短休息:</span>
+                            <input type="range" class="slider" id="shortBreakSlider" min="1" max="30" value="5" onchange="updateShortBreak(this.value)">
+                            <input type="number" class="time-input" id="shortBreakInput" min="1" max="30" value="5" onchange="updateShortBreak(this.value)">
+                        </div>
+                        <div class="setting-item">
+                            <span class="setting-label">长休息:</span>
+                            <input type="range" class="slider" id="longBreakSlider" min="5" max="60" value="15" onchange="updateLongBreak(this.value)">
+                            <input type="number" class="time-input" id="longBreakInput" min="5" max="60" value="15" onchange="updateLongBreak(this.value)">
+                        </div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3 class="panel-title">音效设置</h3>
+                        <div class="setting-item">
+                            <span class="setting-label">音量:</span>
+                            <div class="audio-controls">
+                                <input type="range" class="slider volume-slider" id="volumeSlider" min="0" max="100" value="70" onchange="updateVolume(this.value)">
+                                <span id="volumeDisplay">70%</span>
+                            </div>
+                        </div>
+                        <button class="pixel-btn" onclick="testSound()">测试音效</button>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3 class="panel-title">今日统计</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number" id="completedToday">0</span>
+                                <span class="stat-label">完成番茄钟</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="focusTimeToday">0</span>
+                                <span class="stat-label">专注时长(分)</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="consecutiveDays">0</span>
+                                <span class="stat-label">连续天数</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalPomodoros">0</span>
+                                <span class="stat-label">累计完成</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- 设置面板遮罩层 -->
+            <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+        </main>
+
+        <!-- 成就系统 -->
+        <section class="panel-section">
+            <h3 class="panel-title">成就徽章</h3>
+            <div class="achievements-grid" id="achievementsGrid">
+                <!-- 成就将通过JavaScript动态生成 -->
+            </div>
+        </section>
+
+        <!-- 成就弹窗 -->
+        <div class="modal" id="achievementModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeAchievementModal()">×</button>
+                <h3>恭喜获得新成就!</h3>
+                <div id="achievementContent"></div>
+            </div>
+        </div>
+
+        <!-- 完成提醒弹窗 -->
+        <div class="modal" id="completionModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeCompletionModal()">×</button>
+                <h3 id="completionTitle">休息时间到!</h3>
+                <p id="completionMessage">现在可以休息一下了</p>
+                <div style="margin-top: 20px;">
+                    <button class="pixel-btn" onclick="continueTimer()">继续</button>
+                    <button class="pixel-btn" onclick="skipRest()">跳过休息</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 粒子效果容器 -->
+        <div class="particles" id="particles"></div>
+    </div>
+
+    <script>
+        // 应用类
+        class PixelPomodoro {
+            constructor() {
+                this.isRunning = false;
+                this.currentMode = 'work'; // work, shortBreak, longBreak
+                this.timeLeft = 25 * 60; // 转换为秒
+                this.cycleCount = 0;
+                this.timer = null;
+                this.soundEnabled = true;
+                
+                // 加载设置和数据
+                this.settings = this.loadSettings();
+                this.stats = this.loadStats();
+                this.achievements = this.loadAchievements();
+                
+                this.init();
+            }
+
+            init() {
+                this.updateDisplay();
+                this.updateStats();
+                this.generateAchievements();
+                this.setupEventListeners();
+                
+                // 初始化主题
+                document.body.setAttribute('data-theme', this.settings.currentTheme);
+            }
+
+            setupEventListeners() {
+                // 键盘快捷键
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT') return; // 输入时不响应
+                    
+                    switch(e.key) {
+                        case ' ':
+                            e.preventDefault();
+                            if (this.isRunning) {
+                                this.pause();
+                            } else {
+                                this.start();
+                            }
+                            break;
+                        case 'r':
+                        case 'R':
+                            this.reset();
+                            break;
+                        case 's':
+                        case 'S':
+                            this.skip();
+                            break;
+                    }
+                });
+
+                // 窗口焦点事件
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && this.isRunning) {
+                        this.updateDisplay();
+                    }
+                });
+            }
+
+            start() {
+                if (!this.isRunning) {
+                    this.isRunning = true;
+                    this.timer = setInterval(() => {
+                        this.updateTimer();
+                    }, 1000);
+                    
+                    this.setPetState('focusing');
+                    this.updateButtons();
+                    this.updateTitle(); // 更新标题
+                    this.playSound('start');
+                }
+            }
+
+            pause() {
+                if (this.isRunning) {
+                    this.isRunning = false;
+                    clearInterval(this.timer);
+                    this.setPetState('waiting');
+                    this.updateButtons();
+                    this.updateTitle(); // 更新标题为暂停状态
+                    this.playSound('pause');
+                }
+            }
+
+            reset() {
+                this.isRunning = false;
+                clearInterval(this.timer);
+                this.timeLeft = this.getCurrentModeTime() * 60;
+                this.setPetState('idle');
+                this.updateDisplay();
+                this.updateProgress();
+                this.updateButtons();
+                this.updateTitle(); // 恢复默认标题
+            }
+
+            skip() {
+                this.completeCycle();
+            }
+
+            updateTimer() {
+                if (this.timeLeft > 0) {
+                    this.timeLeft--;
+                    this.updateDisplay();
+                    this.updateProgress();
+                    this.updatePetAnimation();
+                    
+                    // 进度最后1分钟时，让宠物显示紧张状态
+                    if (this.timeLeft <= 60) {
+                        this.setPetMood('excited');
+                    } else if (this.timeLeft <= 300) {
+                        this.setPetMood('focused');
+                    } else {
+                        this.setPetMood('calm');
+                    }
+                } else {
+                    this.completeCycle();
+                }
+            }
+
+            completeCycle() {
+                this.isRunning = false;
+                clearInterval(this.timer);
+                
+                if (this.currentMode === 'work') {
+                    this.stats.completed++;
+                    this.stats.focusTime += this.settings.workTime;
+                    this.stats.total++;
+                    
+                    // 检查连续使用天数
+                    this.updateStreak();
+                    
+                    this.cycleCount++;
+                    this.setPetState('celebrating');
+                    this.createParticles('celebration');
+                    this.playSound('complete');
+                    
+                    // 检查成就
+                    this.checkAchievements();
+                    
+                    // 决定下一个模式
+                    if (this.cycleCount % 4 === 0) {
+                        this.currentMode = 'longBreak';
+                        this.timeLeft = this.settings.longBreak * 60;
+                        this.showCompletionModal('长休息时间!', '恭喜完成了4个番茄钟，现在可以享受15分钟的长时间休息了!');
+                    } else {
+                        this.currentMode = 'shortBreak';
+                        this.timeLeft = this.settings.shortBreak * 60;
+                        this.showCompletionModal('短休息时间!', '工作很棒! 现在可以休息5分钟，放松一下。');
+                    }
+                } else {
+                    // 休息结束，开始新工作周期
+                    this.currentMode = 'work';
+                    this.timeLeft = this.settings.workTime * 60;
+                    this.showCompletionModal('工作时间到!', '休息完毕，准备开始新的专注时光吧!');
+                }
+                
+                this.saveStats();
+                this.updateDisplay();
+                this.updateProgress();
+                this.updateButtons();
+                this.updateTitle(); // 更新标题
+                this.updateStats();
+            }
+
+            updateDisplay() {
+                const minutes = Math.floor(this.timeLeft / 60);
+                const seconds = this.timeLeft % 60;
+                document.getElementById('timerDisplay').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                const modeNames = {
+                    work: '工作时段',
+                    shortBreak: '短休息',
+                    longBreak: '长休息'
+                };
+                document.getElementById('timerMode').textContent = modeNames[this.currentMode];
+                
+                // 更新宠物容器类
+                const petContainer = document.getElementById('petContainer');
+                petContainer.className = `pet-container state-${this.currentMode}`;
+                
+                if (this.currentMode === 'work') {
+                    petContainer.classList.add('state-working');
+                } else {
+                    petContainer.classList.add('state-break');
+                }
+                
+                // 更新标签页标题
+                this.updateTitle();
+            }
+
+            updateProgress() {
+                const totalTime = this.getCurrentModeTime() * 60;
+                const progress = ((totalTime - this.timeLeft) / totalTime) * 100;
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                
+                progressFill.style.width = `${Math.min(progress, 100)}%`;
+                progressText.textContent = `${Math.round(progress)}%`;
+            }
+
+            updateButtons() {
+                const startBtn = document.getElementById('startBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                
+                if (this.isRunning) {
+                    startBtn.textContent = '继续';
+                    startBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                    pauseBtn.classList.add('active');
+                } else {
+                    startBtn.textContent = '开始';
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    pauseBtn.classList.remove('active');
+                }
+            }
+            
+            // 更新标签页标题
+            updateTitle() {
+                if (this.isRunning) {
+                    const minutes = Math.floor(this.timeLeft / 60);
+                    const seconds = this.timeLeft % 60;
+                    const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    document.title = `番茄钟 - ${timeString}`;
+                } else if (this.timeLeft < this.getCurrentModeTime() * 60 && !this.isRunning) {
+                    // 暂停状态
+                    document.title = '番茄钟 - 暂停中';
+                }
+                // 其他情况下保持默认标题 "番茄钟"
+            }
+
+            setPetState(state) {
+                const pet = document.getElementById('pixelPet');
+                pet.className = `pixel-pet ${state}`;
+                
+                const mouth = document.getElementById('petMouth');
+                mouth.className = 'pet-mouth';
+                
+                switch(state) {
+                    case 'focusing':
+                        mouth.classList.add('happy');
+                        break;
+                    case 'waiting':
+                        mouth.classList.remove('happy', 'sad');
+                        break;
+                    case 'celebrating':
+                        pet.classList.add('celebrating');
+                        setTimeout(() => {
+                            pet.classList.remove('celebrating');
+                        }, 600);
+                        break;
+                }
+            }
+
+            setPetMood(mood) {
+                const mouth = document.getElementById('petMouth');
+                mouth.className = 'pet-mouth';
+                
+                switch(mood) {
+                    case 'calm':
+                        mouth.classList.remove('happy', 'sad');
+                        break;
+                    case 'focused':
+                        mouth.classList.add('happy');
+                        break;
+                    case 'excited':
+                        mouth.classList.remove('happy');
+                        mouth.classList.add('sad');
+                        break;
+                }
+            }
+
+            updatePetAnimation() {
+                const pet = document.getElementById('pixelPet');
+                const progress = this.timeLeft / (this.getCurrentModeTime() * 60);
+                
+                // 根据进度调整动画速度
+                if (progress > 0.5) {
+                    pet.style.animationDuration = '3s';
+                } else if (progress > 0.2) {
+                    pet.style.animationDuration = '2s';
+                } else {
+                    pet.style.animationDuration = '1s';
+                }
+            }
+
+            getCurrentModeTime() {
+                return this.settings[`${this.currentMode}Time`];
+            }
+
+            createParticles(type) {
+                const particlesContainer = document.getElementById('particles');
+                const particleCount = 15;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'particle';
+                        particle.style.left = Math.random() * window.innerWidth + 'px';
+                        particle.style.bottom = '0px';
+                        particle.style.animationDelay = Math.random() * 0.5 + 's';
+                        particle.style.background = this.getRandomColor();
+                        
+                        particlesContainer.appendChild(particle);
+                        
+                        setTimeout(() => {
+                            particle.remove();
+                        }, 2000);
+                    }, i * 100);
+                }
+            }
+
+            getRandomColor() {
+                const colors = ['#FFB6C1', '#98E4D6', '#FFA500', '#87CEEB', '#FF69B4', '#FFD700'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            // 音效系统
+            playSound(type) {
+                if (!this.soundEnabled) return;
+                
+                // 创建简单的音效（用Web Audio API生成）
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                const frequencies = {
+                    start: [440, 554, 659],
+                    pause: [330, 277],
+                    complete: [523, 659, 784, 1047],
+                    break: [440, 523, 659],
+                    achievement: [784, 1047, 1319]
+                };
+                
+                const volume = this.settings.soundVolume / 100;
+                const soundPattern = frequencies[type] || [440];
+                
+                let time = audioContext.currentTime;
+                
+                soundPattern.forEach((freq, index) => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+                    
+                    osc.frequency.setValueAtTime(freq, time);
+                    gain.gain.setValueAtTime(0, time);
+                    gain.gain.linearRampToValueAtTime(volume * 0.3, time + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+                    
+                    osc.start(time);
+                    osc.stop(time + 0.3);
+                    
+                    time += 0.1;
+                });
+            }
+
+            // 成就系统
+            checkAchievements() {
+                const newAchievements = [];
+                
+                // 首次完成
+                if (this.stats.completed === 1 && !this.achievements.firstCompletion) {
+                    newAchievements.push('firstCompletion');
+                    this.achievements.firstCompletion = true;
+                }
+                
+                // 累计完成成就
+                const completionMilestones = [10, 50, 100];
+                completionMilestones.forEach(milestone => {
+                    if (this.stats.total >= milestone && !this.achievements[`milestone${milestone}`]) {
+                        newAchievements.push(`milestone${milestone}`);
+                        this.achievements[`milestone${milestone}`] = true;
+                    }
+                });
+                
+                // 连续使用成就
+                const streakMilestones = [3, 7, 30];
+                streakMilestones.forEach(streak => {
+                    if (this.stats.consecutiveDays >= streak && !this.achievements[`streak${streak}`]) {
+                        newAchievements.push(`streak${streak}`);
+                        this.achievements[`streak${streak}`] = true;
+                    }
+                });
+                
+                // 早起鸟儿成就
+                const now = new Date();
+                if (now.getHours() >= 6 && now.getHours() <= 8 && !this.achievements.earlyBird) {
+                    newAchievements.push('earlyBird');
+                    this.achievements.earlyBird = true;
+                }
+                
+                // 夜猫子成就
+                if (now.getHours() >= 20 && now.getHours() <= 22 && !this.achievements.nightOwl) {
+                    newAchievements.push('nightOwl');
+                    this.achievements.nightOwl = true;
+                }
+                
+                if (newAchievements.length > 0) {
+                    this.showAchievements(newAchievements);
+                }
+            }
+
+            showAchievements(achievementIds) {
+                const modal = document.getElementById('achievementModal');
+                const content = document.getElementById('achievementContent');
+                
+                const achievementNames = {
+                    firstCompletion: '初次尝试',
+                    milestone10: '专注达人',
+                    milestone50: '番茄钟专家',
+                    milestone100: '番茄钟大师',
+                    streak3: '坚持3天',
+                    streak7: '坚持一周',
+                    streak30: '坚持一个月',
+                    earlyBird: '早起鸟儿',
+                    nightOwl: '夜猫子'
+                };
+                
+                const achievementIcons = {
+                    firstCompletion: '🌟',
+                    milestone10: '🎯',
+                    milestone50: '🏆',
+                    milestone100: '👑',
+                    streak3: '📅',
+                    streak7: '🔥',
+                    streak30: '💎',
+                    earlyBird: '🌅',
+                    nightOwl: '🌙'
+                };
+                
+                content.innerHTML = achievementIds.map(id => `
+                    <div class="achievement-badge earned">
+                        <span class="achievement-icon">${achievementIcons[id]}</span>
+                        <div class="achievement-name">${achievementNames[id]}</div>
+                    </div>
+                `).join('');
+                
+                modal.classList.add('active');
+                this.playSound('achievement');
+                this.saveAchievements();
+            }
+
+            generateAchievements() {
+                const achievementsGrid = document.getElementById('achievementsGrid');
+                const achievements = [
+                    { id: 'firstCompletion', name: '初次尝试', icon: '🌟', description: '完成第一个番茄钟' },
+                    { id: 'milestone10', name: '专注达人', icon: '🎯', description: '累计完成10个番茄钟' },
+                    { id: 'milestone50', name: '番茄钟专家', icon: '🏆', description: '累计完成50个番茄钟' },
+                    { id: 'milestone100', name: '番茄钟大师', icon: '👑', description: '累计完成100个番茄钟' },
+                    { id: 'streak3', name: '坚持3天', icon: '📅', description: '连续使用3天' },
+                    { id: 'streak7', name: '坚持一周', icon: '🔥', description: '连续使用7天' },
+                    { id: 'streak30', name: '坚持一个月', icon: '💎', description: '连续使用30天' },
+                    { id: 'earlyBird', name: '早起鸟儿', icon: '🌅', description: '在早晨6-8点完成番茄钟' },
+                    { id: 'nightOwl', name: '夜猫子', icon: '🌙', description: '在晚上8-10点完成番茄钟' }
+                ];
+                
+                achievementsGrid.innerHTML = achievements.map(achievement => `
+                    <div class="achievement-badge ${this.achievements[achievement.id] ? 'earned' : ''}" 
+                         title="${achievement.description}">
+                        <span class="achievement-icon">${achievement.icon}</span>
+                        <div class="achievement-name">${achievement.name}</div>
+                    </div>
+                `).join('');
+            }
+
+            // 统计系统
+            updateStats() {
+                document.getElementById('completedToday').textContent = this.stats.completed;
+                document.getElementById('focusTimeToday').textContent = this.stats.focusTime;
+                document.getElementById('consecutiveDays').textContent = this.stats.consecutiveDays;
+                document.getElementById('totalPomodoros').textContent = this.stats.total;
+                
+                // 更新成就显示
+                this.generateAchievements();
+            }
+
+            updateStreak() {
+                const today = new Date().toDateString();
+                const lastDate = this.stats.lastUsed;
+                
+                if (lastDate !== today) {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    if (lastDate === yesterday.toDateString()) {
+                        this.stats.consecutiveDays++;
+                    } else {
+                        this.stats.consecutiveDays = 1;
+                    }
+                    this.stats.lastUsed = today;
+                }
+            }
+
+            // 数据持久化
+            loadSettings() {
+                const defaultSettings = {
+                    workTime: 25,
+                    shortBreak: 5,
+                    longBreak: 15,
+                    soundVolume: 70,
+                    currentTheme: 'mint'
+                };
+                
+                try {
+                    const saved = localStorage.getItem('pomodoroSettings');
+                    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+                } catch {
+                    return defaultSettings;
+                }
+            }
+
+            saveSettings() {
+                localStorage.setItem('pomodoroSettings', JSON.stringify(this.settings));
+            }
+
+            loadStats() {
+                const defaultStats = {
+                    completed: 0,
+                    focusTime: 0,
+                    total: 0,
+                    consecutiveDays: 0,
+                    lastUsed: null
+                };
+                
+                try {
+                    const saved = localStorage.getItem('pomodoroStats');
+                    return saved ? { ...defaultStats, ...JSON.parse(saved) } : defaultStats;
+                } catch {
+                    return defaultStats;
+                }
+            }
+
+            saveStats() {
+                localStorage.setItem('pomodoroStats', JSON.stringify(this.stats));
+            }
+
+            loadAchievements() {
+                try {
+                    const saved = localStorage.getItem('pomodoroAchievements');
+                    return saved ? JSON.parse(saved) : {};
+                } catch {
+                    return {};
+                }
+            }
+
+            saveAchievements() {
+                localStorage.setItem('pomodoroAchievements', JSON.stringify(this.achievements));
+            }
+
+            // 弹窗控制
+            showCompletionModal(title, message) {
+                document.getElementById('completionTitle').textContent = title;
+                document.getElementById('completionMessage').textContent = message;
+                document.getElementById('completionModal').classList.add('active');
+            }
+
+            continueTimer() {
+                document.getElementById('completionModal').classList.remove('active');
+                if (this.currentMode === 'work') {
+                    this.start();
+                } else {
+                    this.start();
+                }
+            }
+
+            skipRest() {
+                document.getElementById('completionModal').classList.remove('active');
+                this.currentMode = 'work';
+                this.timeLeft = this.settings.workTime * 60;
+                this.updateDisplay();
+                this.updateProgress();
+                this.setPetState('idle');
+            }
+        }
+
+        // 全局变量
+        let pomodoro;
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            pomodoro = new PixelPomodoro();
+        });
+
+        // 全局函数
+        function startTimer() {
+            pomodoro.start();
+        }
+
+        function pauseTimer() {
+            pomodoro.pause();
+        }
+
+        function resetTimer() {
+            pomodoro.reset();
+        }
+
+        function skipTimer() {
+            pomodoro.skip();
+        }
+
+        function toggleThemeDropdown() {
+            const dropdown = document.getElementById('themeDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function switchTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            pomodoro.settings.currentTheme = theme;
+            pomodoro.saveSettings();
+            
+            // 关闭下拉菜单
+            document.getElementById('themeDropdown').classList.remove('active');
+            
+            // 播放主题切换音效
+            pomodoro.playSound('start');
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            panel.classList.toggle('open');
+            overlay.classList.toggle('active');
+            
+            // 防止背景滚动
+            if (panel.classList.contains('open')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+        
+        function closeSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const overlay = document.getElementById('settingsOverlay');
+            
+            panel.classList.remove('open');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // 防止点击卡片内容关闭弹窗
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('settingsPanel');
+            if (e.target.classList.contains('side-panel') || e.target.closest('.side-panel')) {
+                e.stopPropagation();
+            }
+        });
+
+        function updateWorkTime(value) {
+            document.getElementById('workTimeSlider').value = value;
+            document.getElementById('workTimeInput').value = value;
+            pomodoro.settings.workTime = parseInt(value);
+            pomodoro.saveSettings();
+        }
+
+        function updateShortBreak(value) {
+            document.getElementById('shortBreakSlider').value = value;
+            document.getElementById('shortBreakInput').value = value;
+            pomodoro.settings.shortBreak = parseInt(value);
+            pomodoro.saveSettings();
+        }
+
+        function updateLongBreak(value) {
+            document.getElementById('longBreakSlider').value = value;
+            document.getElementById('longBreakInput').value = value;
+            pomodoro.settings.longBreak = parseInt(value);
+            pomodoro.saveSettings();
+        }
+
+        function updateVolume(value) {
+            document.getElementById('volumeDisplay').textContent = value + '%';
+            pomodoro.settings.soundVolume = parseInt(value);
+            pomodoro.soundEnabled = value > 0;
+            pomodoro.saveSettings();
+        }
+
+        function testSound() {
+            pomodoro.playSound('achievement');
+        }
+
+        function closeAchievementModal() {
+            document.getElementById('achievementModal').classList.remove('active');
+        }
+
+        function closeCompletionModal() {
+            document.getElementById('completionModal').classList.remove('active');
+        }
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            const themeSelector = document.querySelector('.theme-selector');
+            const dropdown = document.getElementById('themeDropdown');
+            
+            if (!themeSelector.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+        
+        // ESC键关闭设置面板
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const panel = document.getElementById('settingsPanel');
+                if (panel.classList.contains('open')) {
+                    closeSettings();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
