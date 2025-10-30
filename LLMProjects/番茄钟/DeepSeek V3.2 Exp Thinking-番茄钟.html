@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>番茄钟</title>
+  <meta name="description" content="像素小清新 + 二次元像素艺术风格番茄钟。25分钟工作+5分钟短休+15分钟长休，支持音效、主题、自定义设置与键盘快捷键。" />
+  <meta name="keywords" content="番茄钟,pomodoro,timer,像素,二次元,像素风,计时器" />
+  <meta name="theme-color" content="#ff9ec4" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #ffeef7 0%, #f0f7ff 100%);
+      --bg-dot: radial-gradient(circle at 8px 8px, rgba(255,255,255,0.7) 2px, transparent 3px);
+      --panel: rgba(255,255,255,0.85);
+      --panel-border: #222;
+      --text: #1a1a1a;
+      --muted: #5a5a5a;
+      --shadow: 0 8px 0 #222, 0 10px 20px rgba(0,0,0,0.15);
+      --accent: #ff9ec4;
+      --accent-2: #9ecbff;
+      --ok: #7ae582;
+      --warn: #ffd166;
+      --danger: #ff6b6b;
+      --btn-text: #111;
+      --btn-shadow: 0 6px 0 #222, 0 8px 16px rgba(0,0,0,0.12);
+      --radius: 12px;
+      --focus: 0 0 0 3px rgba(255,158,196,0.55), 0 0 0 6px rgba(255,158,196,0.25);
+    }
+    [data-theme="dark"] {
+      --bg: linear-gradient(135deg, #1b1d2a 0%, #252941 100%);
+      --bg-dot: radial-gradient(circle at 8px 8px, rgba(255,255,255,0.12) 2px, transparent 3px);
+      --panel: rgba(35,39,66,0.8);
+      --panel-border: #e8e6ff;
+      --text: #f3f4ff;
+      --muted: #b8b8d9;
+      --shadow: 0 8px 0 #e8e6ff, 0 10px 20px rgba(0,0,0,0.3);
+      --accent: #ff8ec5;
+      --accent-2: #7db6ff;
+      --ok: #7ae582;
+      --warn: #ffd166;
+      --danger: #ff7a7a;
+      --btn-text: #f3f4ff;
+      --btn-shadow: 0 6px 0 #e8e6ff, 0 8px 16px rgba(0,0,0,0.25);
+      --focus: 0 0 0 3px rgba(127,178,255,0.55), 0 0 0 6px rgba(127,178,255,0.25);
+    }
+    /* Variant color themes */
+    [data-color="candy"] { --accent: #ff9ec4; --accent-2: #9ecbff; }
+    [data-color="mint"] { --accent: #7ae582; --accent-2: #9adcf7; }
+    [data-color="lavender"] { --accent: #c9a9ff; --accent-2: #f2a9ff; }
+    [data-color="peach"] { --accent: #ffb49a; --accent-2: #ffd59a; }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, Arial, 'Microsoft YaHei', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      background-size: 24px 24px, cover;
+      background-image: var(--bg-dot), var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      line-height: 1.5;
+      transition: background 0.4s ease;
+    }
+
+    /* Built with anycoder */
+    .credit {
+      position: fixed;
+      top: env(safe-area-inset-top, 8px);
+      left: 12px;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      padding: 4px 6px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.5);
+      border: 2px solid var(--panel-border);
+      box-shadow: 0 3px 0 var(--panel-border);
+      border-radius: 6px;
+      text-decoration: none;
+      backdrop-filter: blur(6px);
+    }
+    [data-theme="dark"] .credit { background: rgba(35,39,66,0.5); }
+    .credit:hover { transform: translateY(-1px); }
+    .credit:active { transform: translateY(0); }
+
+    .app {
+      width: min(980px, 100%);
+      background: var(--panel);
+      border: 4px solid var(--panel-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: clamp(12px, 2vw, 20px);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo .mark {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border: 3px solid var(--panel-border);
+      box-shadow: 0 4px 0 var(--panel-border);
+      border-radius: 8px;
+      position: relative;
+    }
+    .logo .mark::before,
+    .logo .mark::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--panel-border);
+      top: -8px;
+      border-radius: 2px;
+    }
+    .logo .mark::before { left: 4px; }
+    .logo .mark::after { right: 4px; }
+    .logo h1 {
+      margin: 0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(16px, 2.6vw, 24px);
+      letter-spacing: 2px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pixel-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      padding: 10px 14px;
+      border: 3px solid var(--panel-border);
+      color: var(--btn-text);
+      background: var(--accent);
+      box-shadow: var(--btn-shadow);
+      border-radius: 8px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      user-select: none;
+      position: relative;
+    }
+    .pixel-btn.secondary { background: var(--accent-2); }
+    .pixel-btn.ghost {
+      background: transparent;
+      box-shadow: 0 0 0 3px var(--panel-border) inset, var(--btn-shadow);
+      color: var(--text);
+    }
+    .pixel-btn.warn { background: var(--warn); }
+    .pixel-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 var(--panel-border);
+    }
+    .pixel-btn:focus-visible { outline: none; box-shadow: var(--btn-shadow), var(--focus); }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: clamp(16px, 3vw, 28px);
+      align-items: center;
+    }
+    @media (max-width: 840px) {
+      .main { grid-template-columns: 1fr; }
+    }
+
+    .character {
+      aspect-ratio: 1 / 1;
+      max-width: 420px;
+      width: 100%;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.1));
+      border: 3px solid var(--panel-border);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 6px 0 var(--panel-border), 0 10px 24px rgba(0,0,0,0.12);
+    }
+    .character::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: var(--bg-dot);
+      background-size: 24px 24px;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .character .tomato {
+      width: 72%;
+      max-width: 280px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 0 var(--panel-border)) drop-shadow(0 12px 16px rgba(0,0,0,0.18));
+      transition: transform 0.25s ease;
+      animation: idle-bounce 2.2s ease-in-out infinite;
+    }
+    [data-state="work"] .character .tomato { animation: work-bounce 1.2s ease-in-out infinite; }
+    [data-state="shortBreak"] .character .tomato,
+    [data-state="longBreak"] .character .tomato { animation: relax-float 2.4s ease-in-out infinite; }
+
+    .timer-panel {
+      background: rgba(255,255,255,0.65);
+      border: 3px solid var(--panel-border);
+      border-radius: 16px;
+      padding: clamp(12px, 2.5vw, 20px);
+      box-shadow: 0 6px 0 var(--panel-border);
+      backdrop-filter: blur(8px);
+      position: relative;
+    }
+    [data-theme="dark"] .timer-panel { background: rgba(35,39,66,0.55); }
+
+    .state-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .state-chip {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      padding: 6px 10px;
+      border: 2px solid var(--panel-border);
+      border-radius: 8px;
+      background: var(--accent-2);
+      color: var(--btn-text);
+      box-shadow: 0 4px 0 var(--panel-border);
+      text-transform: uppercase;
+    }
+    .progress {
+      height: 16px;
+      border: 3px solid var(--panel-border);
+      border-radius: 10px;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(0,0,0,0.08) 0 10px,
+        rgba(255,255,255,0.3) 10px 20px
+      );
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 4px 8px rgba(0,0,0,0.08);
+    }
+    .progress .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.2s linear;
+      position: relative;
+    }
+    .progress .bar::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 12px;
+      background: rgba(255,255,255,0.55);
+      mix-blend-mode: overlay;
+    }
+
+    .time {
+      text-align: center;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(28px, 7vw, 64px);
+      letter-spacing: 3px;
+      margin: clamp(10px, 2vw, 16px) 0;
+      text-shadow: 0 4px 0 var(--panel-border);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .controls .pixel-btn { width: 100%; }
+    .controls .pixel-btn.pause { background: var(--warn); }
+    .controls .pixel-btn.skip { background: var(--ok); }
+    .controls .pixel-btn.reset { background: var(--danger); }
+
+    .stats {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat {
+      background: rgba(255,255,255,0.6);
+      border: 3px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 4px 0 var(--panel-border);
+      text-align: center;
+    }
+    [data-theme="dark"] .stat { background: rgba(35,39,66,0.6); }
+    .stat .label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat .value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 18px;
+    }
+
+    .footer {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .kbd {
+      display: inline-block;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      padding: 2px 6px;
+      border: 2px solid var(--panel-border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 3px 0 var(--panel-border);
+      margin: 0 2px;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(2px);
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal[open] { display: grid; }
+    .dialog {
+      width: min(760px, 100%);
+      background: var(--panel);
+      border: 4px solid var(--panel-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .dialog header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-bottom: 3px solid var(--panel-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.3), rgba(255,255,255,0));
+    }
+    .dialog header h2 {
+      margin: 0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .dialog .body {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 720px) {
+      .dialog .body { grid-template-columns: 1fr; }
+    }
+    .group {
+      border: 3px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.5);
+    }
+    [data-theme="dark"] .group { background: rgba(35,39,66,0.5); }
+    .group h3 {
+      margin: 0 0 10px 0;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .row label {
+      font-size: 14px;
+    }
+    .row input[type="number"],
+    .row select {
+      font-family: inherit;
+      font-size: 14px;
+      padding: 6px 8px;
+      border: 2px solid var(--panel-border);
+      border-radius: 8px;
+      background: #fff;
+      color: #222;
+      width: 100px;
+      text-align: right;
+    }
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .switch input { display: none; }
+    .switch .track {
+      width: 48px;
+      height: 28px;
+      background: #ddd;
+      border: 3px solid var(--panel-border);
+      border-radius: 14px;
+      position: relative;
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.15);
+    }
+    .switch .thumb {
+      position: absolute;
+      width: 20px; height: 20px;
+      background: var(--accent);
+      border: 2px solid var(--panel-border);
+      border-radius: 50%;
+      top: 50%; left: 2px;
+      transform: translateY(-50%);
+      transition: left 0.15s ease, background 0.15s ease;
+      box-shadow: 0 2px 0 var(--panel-border);
+    }
+    .switch input:checked + .track .thumb { left: 24px; background: var(--ok); }
+    .range {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 6px 0 10px;
+    }
+    .range input[type="range"] { width: 100%; }
+    .color-swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .swatch {
+      width: 36px; height: 28px;
+      border: 3px solid var(--panel-border);
+      border-radius: 8px;
+      box-shadow: 0 4px 0 var(--panel-border);
+      cursor: pointer;
+      outline-offset: 2px;
+    }
+    .swatch.candy { background: var(--accent); }
+    .swatch.mint { background: #7ae582; }
+    .swatch.lavender { background: #c9a9ff; }
+    .swatch.peach { background: #ffb49a; }
+
+    .dialog footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-top: 3px solid var(--panel-border);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Animations */
+    @keyframes idle-bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-4px) scale(1.02); }
+    }
+    @keyframes work-bounce {
+      0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+      50% { transform: translateY(-6px) scale(1.03) rotate(-1deg); }
+    }
+    @keyframes relax-float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-8px) scale(1.01); }
+    }
+    .pulse {
+      animation: pulse 0.6s ease-in-out 2;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    /* Visually hidden (for a11y) */
+    .sr-only {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body data-theme="light" data-color="candy">
+
+  <main class="app" id="app">
+    <div class="topbar">
+      <div class="logo">
+        <div class="mark" aria-hidden="true"></div>
+        <h1>番茄钟</h1>
+      </div>
+      <div class="top-actions">
+        <button class="pixel-btn ghost" id="themeBtn" aria-label="切换主题">主题</button>
+        <button class="pixel-btn" id="openSettings" aria-label="打开设置">设置</button>
+      </div>
+    </div>
+
+    <div class="main" id="main" data-state="work">
+      <section class="character" aria-label="像素角色">
+        <!-- Inline SVG pixel-art tomato -->
+        <svg class="tomato" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="番茄角色">
+          <!-- Tomato body -->
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff6b8b"/>
+              <stop offset="100%" stop-color="#ff3a5e"/>
+            </linearGradient>
+            <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffa6bb"/>
+              <stop offset="100%" stop-color="#ff7896"/>
+            </linearGradient>
+          </defs>
+          <!-- shadow -->
+          <ellipse cx="64" cy="108" rx="36" ry="10" fill="rgba(0,0,0,0.2)"/>
+          <!-- stem -->
+          <rect x="58" y="22" width="12" height="18" fill="#5aa94e" stroke="#222" stroke-width="3" />
+          <path d="M64 22 C58 14, 72 10, 72 6 C70 10, 80 16, 72 22" fill="#5aa94e" stroke="#222" stroke-width="3"/>
+          <!-- leaves -->
+          <path d="M64 26 C50 16, 32 26, 40 42 C52 36, 60 32, 64 26 Z" fill="#68c25c" stroke="#222" stroke-width="3"/>
+          <path d="M64 26 C78 16, 96 26, 88 42 C76 36, 68 32, 64 26 Z" fill="#68c25c" stroke="#222" stroke-width="3"/>
+          <!-- body -->
+          <circle cx="64" cy="70" r="40" fill="url(#g1)" stroke="#222" stroke-width="4"/>
+          <!-- face -->
+          <circle cx="52" cy="68" r="4" fill="#222"/>
+          <circle cx="76" cy="68" r="4" fill="#222"/>
+          <path d="M48 84 Q64 96 80 84" fill="none" stroke="#222" stroke-width="4" stroke-linecap="round"/>
+          <!-- pixel freckles -->
+          <rect x="42" y="80" width="3" height="3" fill="#ff9ec4"/>
+          <rect x="83" y="80" width="3" height="3" fill="#ff9ec4"/>
+          <rect x="46" y="90" width="3" height="3" fill="#ff9ec4"/>
+          <rect x="80" y="90" width="3" height="3" fill="#ff9ec4"/>
+        </svg>
+      </section>
+
+      <section class="timer-panel">
+        <div class="state-row">
+          <div class="state-chip" id="stateChip">WORK</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;color:var(--muted)">第</span>
+            <span class="stat value" id="cycle" style="font-size:14px;">1</span>
+            <span style="font-size:12px;color:var(--muted)">轮</span>
+          </div>
+        </div>
+
+        <div class="progress" aria-label="进度条">
+          <div class="bar" id="progressBar"></div>
+        </div>
+
+        <div class="time" id="time">25:00</div>
+
+        <div class="controls">
+          <button class="pixel-btn pause" id="toggleBtn" aria-label="开始或暂停">开始</button>
+          <button class="pixel-btn skip" id="skipBtn" aria-label="跳过当前时段">跳过</button>
+          <button class="pixel-btn reset" id="resetBtn" aria-label="重置番茄钟">重置</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">今日完成</div>
+            <div class="value"><span id="completedToday">0</span> 个</div>
+          </div>
+          <div class="stat">
+            <div class="label">总完成</div>
+            <div class="value"><span id="completedAll">0</span> 个</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="footer">
+      快捷键：
+      <span class="kbd">Space</span> 开始/暂停
+      <span class="kbd">R</span> 重置
+      <span class="kbd">S</span> 跳过
+      <span class="kbd">T</span> 主题
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="dialog">
+      <header>
+        <h2 id="settingsTitle">设置</h2>
+        <button class="pixel-btn ghost" id="closeSettings" aria-label="关闭设置">关闭</button>
+      </header>
+      <div class="body">
+        <div class="group">
+          <h3>时长设置</h3>
+          <div class="row">
+            <label for="workMins">工作时间（分钟）</label>
+            <input type="number" id="workMins" min="1" max="180" step="1" />
+          </div>
+          <div class="row">
+            <label for="shortMins">短休息（分钟）</label>
+            <input type="number" id="shortMins" min="1" max="60" step="1" />
+          </div>
+          <div class="row">
+            <label for="longMins">长休息（分钟）</label>
+            <input type="number" id="longMins" min="1" max="180" step="1" />
+          </div>
+          <div class="row">
+            <label class="switch">
+              <input type="checkbox" id="autoStartNext" />
+              <span class="track"><span class="thumb"></span></span>
+              <span>自动开始下一时段</span>
+            </label>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>声音与通知</h3>
+          <div class="range">
+            <label for="volume">音量</label>
+            <input type="range" id="volume" min="0" max="100" step="1" />
+            <span id="volumeVal" style="font-family:'Press Start 2P',monospace;font-size:12px;">50</span>
+          </div>
+          <div class="row">
+            <label>提示音效</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="pixel-btn ghost" data-sound="start">开始</button>
+              <button class="pixel-btn ghost" data-sound="end">结束</button>
+              <button class="pixel-btn ghost" data-sound="tick">滴答</button>
+            </div>
+          </div>
+          <div class="row">
+            <label class="switch">
+              <input type="checkbox" id="notifyToggle" />
+              <span class="track"><span class="thumb"></span></span>
+              <span>桌面通知</span>
+            </label>
+            <span></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>外观</h3>
+          <div class="row">
+            <label>主题</label>
+            <div style="display:flex;gap:8px;">
+              <button class="pixel-btn ghost" id="themeLight">浅色</button>
+              <button class="pixel-btn ghost" id="themeDark">深色</button>
+            </div>
+          </div>
+          <div class="row">
+            <label>配色</label>
+            <div class="color-swatches" id="colorSwatches">
+              <button class="swatch candy" data-color="candy" aria-label="糖果"></button>
+              <button class="swatch mint" data-color="mint" aria-label="薄荷"></button>
+              <button class="swatch lavender" data-color="lavender" aria-label="薰衣草"></button>
+              <button class="swatch peach" data-color="peach" aria-label="蜜桃"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>数据</h3>
+          <div class="row">
+            <label>今日完成</label>
+            <div class="value" id="todayInModal" style="font-family:'Press Start 2P',monospace;">0</div>
+          </div>
+          <div class="row">
+            <label>总完成</label>
+            <div class="value" id="allInModal" style="font-family:'Press Start 2P',monospace;">0</div>
+          </div>
+          <div class="row">
+            <label>重置数据</label>
+            <button class="pixel-btn warn" id="resetStats">清空统计</button>
+          </div>
+        </div>
+      </div>
+      <footer>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="pixel-btn" id="testSound">测试音效</button>
+          <button class="pixel-btn secondary" id="requestNotif">请求通知权限</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="pixel-btn ghost" id="resetAll">恢复默认</button>
+          <button class="pixel-btn" id="saveSettings">保存</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+  <script>
+    ;(() => {
+      'use strict';
+
+      const $ = (sel, root = document) => root.querySelector(sel);
+      const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+      const storage = {
+        get(key, fallback) {
+          try {
+            const v = localStorage.getItem(key);
+            return v ? JSON.parse(v) : fallback;
+          } catch { return fallback; }
+        },
+        set(key, val) {
+          localStorage.setItem(key, JSON.stringify(val));
+        },
+        remove(key) { localStorage.removeItem(key); }
+      };
+
+      const defaultSettings = {
+        work: 25,
+        short: 5,
+        long: 15,
+        autoStartNext: true,
+        soundEnabled: true,
+        volume: 50,
+        theme: 'light',
+        color: 'candy',
+        notify: false,
+        completedAll: 0
+      };
+
+      const state = {
+        settings: { ...defaultSettings, ...storage.get('pomodoro:settings', {}) },
+        isRunning: false,
+        totalMs: 25 * 60 * 1000,
+        remainMs: 25 * 60 * 1000,
+        endAt: 0,
+        tickHandle: 0,
+        session: 'work', // 'work' | 'shortBreak' | 'longBreak'
+        cycle: 1,
+        completedToday: 0,
+        lastSessionType: null
+      };
+
+      const el = {
+        app: $('#app'),
+        main: $('#main'),
+        time: $('#time'),
+        toggleBtn: $('#toggleBtn'),
+        skipBtn: $('#skipBtn'),
+        resetBtn: $('#resetBtn'),
+        progressBar: $('#progressBar'),
+        stateChip: $('#stateChip'),
+        cycle: $('#cycle'),
+        completedToday: $('#completedToday'),
+        completedAll: $('#completedAll'),
+        themeBtn: $('#themeBtn'),
+        openSettings: $('#openSettings'),
+        settingsModal: $('#settingsModal'),
+        closeSettings: $('#closeSettings'),
+        workMins: $('#workMins'),
+        shortMins: $('#shortMins'),
+        longMins: $('#longMins'),
+        autoStartNext: $('#autoStartNext'),
+        volume: $('#volume'),
+        volumeVal: $('#volumeVal'),
+        notifyToggle: $('#notifyToggle'),
+        themeLight: $('#themeLight'),
+        themeDark: $('#themeDark'),
+        colorSwatches: $('#colorSwatches'),
+        todayInModal: $('#todayInModal'),
+        allInModal: $('#allInModal'),
+        resetStats: $('#resetStats'),
+        testSound: $('#testSound'),
+        requestNotif: $('#requestNotif'),
+        resetAll: $('#resetAll'),
+        saveSettings: $('#saveSettings'),
+        live: $('#liveRegion')
+      };
+
+      // Audio
+      let audioCtx = null;
+      function getAudioCtx() {
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+          catch { audioCtx = null; }
+        }
+        return audioCtx;
+      }
+      function beep({ freq = 880, duration = 0.18, type = 'sine', gain = 0.2 } = {}) {
+        if (!state.settings.soundEnabled) return;
+        const ctx = getAudioCtx();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0, ctx.currentTime);
+        g.gain.linearRampToValueAtTime(gain * (state.settings.volume / 100), ctx.currentTime + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(g).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration + 0.02);
+      }
+      function playStartSound() { beep({ freq: 740, duration: 0.16, type: 'square' }); }
+      function playEndSound() { beep({ freq: 660, duration: 0.18, type: 'square' }); setTimeout(() => beep({ freq: 880, duration: 0.18, type: 'square' }), 200); }
+      function playTickSound() { if (!state.settings.soundEnabled) return; beep({ freq: 500, duration: 0.05, type: 'triangle', gain: 0.12 }); }
+
+      // Notifications
+      function canNotify() { return 'Notification' in window; }
+      function requestNotifyPermission() {
+        if (!canNotify()) return false;
+        Notification.requestPermission().then((perm) => {
+          state.settings.notify = perm === 'granted';
+          storage.set('pomodoro:settings', state.settings);
+          el.notifyToggle.checked = state.settings.notify;
+        });
+        return true;
+      }
+      function showNotify(title, body) {
+        if (state.settings.notify && canNotify() && Notification.permission === 'granted') {
+          try { new Notification(title, { body }); } catch {}
+        }
+      }
+
+      // Date key
+      function todayKey() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      function statsKey() { return `pomodoro:stats:${todayKey()}`; }
+      function loadStats() {
+        const today = storage.get(statsKey(), { count: 0 }).count || 0;
+        const all = storage.get('pomodoro:settings', {}).completedAll || state.settings.completedAll || 0;
+        state.completedToday = today;
+        state.settings.completedAll = all;
+        updateStatsUI();
+      }
+      function saveStats() {
+        storage.set(statsKey(), { count: state.completedToday });
+        storage.set('pomodoro:settings', state.settings);
+      }
+
+      // Utils
+      const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
+      function fmt(ms) {
+        ms = Math.max(0, ms|0);
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+      }
+
+      // Timer logic
+      function setSession(type, opts = { autoStart: false, resetCycle: false }) {
+        state.session = type;
+        const dur = type === 'work' ? state.settings.work
+          : type === 'shortBreak' ? state.settings.short
+          : state.settings.long;
+        state.totalMs = dur * 60 * 1000;
+        state.remainMs = state.totalMs;
+
+        // Cycle management
+        if (type === 'work') {
+          if (opts.resetCycle) state.cycle = 1;
+          el.cycle.textContent = state.cycle;
+        } else {
+          // entering break
+          el.cycle.textContent = state.cycle;
+        }
+
+        updateUI();
+        updateTitle();
+
+        if (opts.autoStart) {
+          startTimer();
+        }
+      }
+
+      function updateTitle() {
+        const runningPart = state.isRunning ? `${fmt(state.remainMs)} - ` : '';
+        const sessionName = state.session === 'work' ? '工作'
+          : state.session === 'shortBreak' ? '短休' : '长休';
+        document.title = `${runningPart}番茄钟 · ${sessionName}`;
+      }
+
+      function startTimer() {
+        if (state.isRunning) return;
+        state.isRunning = true;
+        state.endAt = Date.now() + state.remainMs;
+        // Create or resume audio context on user gesture
+        getAudioCtx();
+
+        tick(); // immediate UI update
+        state.tickHandle = setInterval(tick, 200);
+        updateTitle(); // start updating title immediately
+        updateControls();
+        playStartSound();
+      }
+
+      function pauseTimer() {
+        if (!state.isRunning) return;
+        state.isRunning = false;
+        clearInterval(state.tickHandle);
+        state.tickHandle = 0;
+        state.remainMs = Math.max(0, state.endAt - Date.now());
+        updateControls();
+        updateTitle();
+      }
+
+      function resetTimer() {
+        pauseTimer();
+        setSession('work', { autoStart: false, resetCycle: true });
+        pulse(el.time);
+      }
+
+      function skipTimer() {
+        // Skip current session and move to next
+        const next = nextSession();
+        setSession(next, { autoStart: state.settings.autoStartNext, resetCycle: next === 'work' });
+        pulse(el.time);
+      }
+
+      function nextSession() {
+        if (state.session === 'work') {
+          return (state.cycle % 4 === 0) ? 'longBreak' : 'shortBreak';
+        } else {
+          // after any break -> work
+          return 'work';
+        }
+      }
+
+      function onSessionComplete() {
+        pauseTimer();
+        playEndSound();
+        showNotify('番茄钟', `一段${state.session === 'work' ? '工作' : '休息'}完成！`);
+        // Move to next
+        const next = nextSession();
+        if (next === 'work') {
+          state.completedToday += 1;
+          state.settings.completedAll = (state.settings.completedAll || 0) + 1;
+          state.cycle += 1;
+          saveStats();
+          updateStatsUI();
+        }
+        setSession(next, { autoStart: state.settings.autoStartNext, resetCycle: next === 'work' });
+        pulse(el.time);
+        pulse($('.progress'));
+      }
+
+      function tick() {
+        const left = state.endAt - Date.now();
+        state.remainMs = Math.max(0, left);
+        updateTimeUI();
+        updateProgress();
+        updateTitle(); // Update title on every tick
+
+        // 3-2-1 tick
+        const secLeft = Math.ceil(state.remainMs / 1000);
+        if (secLeft <= 3 && secLeft > 0 && Math.floor(left / 1000) !== Math.floor((left + 200) / 1000)) {
+          playTickSound();
+        }
+
+        if (left <= 0) {
+          onSessionComplete();
+        }
+      }
+
+      function updateControls() {
+        if (state.isRunning) {
+          el.toggleBtn.textContent = '暂停';
+          el.toggleBtn.classList.add('pause');
+        } else {
+          el.toggleBtn.textContent = '开始';
+          el.toggleBtn.classList.remove('pause');
+        }
+      }
+
+      function updateProgress() {
+        const pct = state.totalMs ? (1 - (state.remainMs / state.totalMs)) * 100 : 0;
+        el.progressBar.style.width = `${pct}%`;
+      }
+
+      function updateTimeUI() {
+        el.time.textContent = fmt(state.remainMs);
+      }
+
+      function updateUI() {
+        el.main.dataset.state = state.session;
+        el.stateChip.textContent = state.session === 'work' ? 'WORK'
+          : state.session === 'shortBreak' ? 'SHORT' : 'LONG';
+        updateControls();
+        updateTimeUI();
+        updateProgress();
+        updateTheme();
+        updateStatsUI();
+      }
+
+      function updateStatsUI() {
+        el.completedToday.textContent = state.completedToday || 0;
+        el.completedAll.textContent = state.settings.completedAll || 0;
+        el.todayInModal.textContent = state.completedToday || 0;
+        el.allInModal.textContent = state.settings.completedAll || 0;
+      }
+
+      function updateTheme() {
+        document.body.setAttribute('data-theme', state.settings.theme);
+        document.body.setAttribute('data-color', state.settings.color);
+      }
+
+      function pulse(node) {
+        if (!node) return;
+        node.classList.remove('pulse');
+        void node.offsetWidth; // reflow
+        node.classList.add('pulse');
+      }
+
+      // Settings UI binding
+      function openSettings() {
+        // Populate fields
+        el.workMins.value = state.settings.work;
+        el.shortMins.value = state.settings.short;
+        el.longMins.value = state.settings.long;
+        el.autoStartNext.checked = !!state.settings.autoStartNext;
+        el.volume.value = state.settings.volume;
+        el.volumeVal.textContent = state.settings.volume;
+        el.notifyToggle.checked = !!state.settings.notify;
+
+        // theme buttons
+        el.themeLight.classList.toggle('secondary', state.settings.theme === 'light');
+        el.themeDark.classList.toggle('secondary', state.settings.theme === 'dark');
+
+        // colors
+        $$('#colorSwatches .swatch').forEach(btn => {
+          btn.classList.toggle('secondary', btn.dataset.color === state.settings.color);
+        });
+
+        el.settingsModal.setAttribute('open', '');
+        trapFocus(el.settingsModal);
+      }
+
+      function closeSettings() {
+        el.settingsModal.removeAttribute('open');
+        releaseFocus();
+      }
+
+      function saveSettingsFromUI() {
+        const work = clamp(parseInt(el.workMins.value || state.settings.work, 10), 1, 180);
+        const short = clamp(parseInt(el.shortMins.value || state.settings.short, 10), 1, 60);
+        const long = clamp(parseInt(el.longMins.value || state.settings.long, 10), 1, 180);
+        state.settings.work = work;
+        state.settings.short = short;
+        state.settings.long = long;
+        state.settings.autoStartNext = !!el.autoStartNext.checked;
+        state.settings.volume = clamp(parseInt(el.volume.value, 10), 0, 100);
+        state.settings.notify = !!el.notifyToggle.checked;
+
+        storage.set('pomodoro:settings', state.settings);
+
+        // Apply duration if not running
+        if (!state.isRunning) {
+          setSession(state.session);
+        }
+        updateTheme();
+      }
+
+      function resetAllSettings() {
+        state.settings = { ...defaultSettings };
+        storage.set('pomodoro:settings', state.settings);
+        loadStats();
+        setSession('work', { autoStart: false, resetCycle: true });
+      }
+
+      // Keyboard
+      function onKeydown(e) {
+        if (e.target && ['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+        if (e.code === 'Space') { e.preventDefault(); state.isRunning ? pauseTimer() : startTimer(); }
+        if (e.key === 'r' || e.key === 'R') { e.preventDefault(); resetTimer(); }
+        if (e.key === 's' || e.key === 'S') { e.preventDefault(); skipTimer(); }
+        if (e.key === 't' || e.key === 'T') { e.preventDefault(); toggleTheme(); }
+      }
+
+      function toggleTheme() {
+        state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+        storage.set('pomodoro:settings', state.settings);
+        updateTheme();
+      }
+
+      // Focus trap for modal
+      let lastFocus = null;
+      function trapFocus(container) {
+        lastFocus = document.activeElement;
+        const focusables = $$('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])', container)
+          .filter(el => !el.hasAttribute('disabled'));
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        function onKey(e) {
+          if (e.key === 'Tab') {
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          } else if (e.key === 'Escape') {
+            closeSettings();
+          }
+        }
+        container.addEventListener('keydown', onKey);
+        container._removeKeyHandler = () => container.removeEventListener('keydown', onKey);
+        if (first) first.focus();
+      }
+      function releaseFocus() {
+        const container = el.settingsModal;
+        if (container._removeKeyHandler) container._removeKeyHandler();
+        if (lastFocus && document.contains(lastFocus)) lastFocus.focus();
+      }
+
+      // Init
+      function init() {
+        // Load persisted settings
+        state.settings = { ...defaultSettings, ...storage.get('pomodoro:settings', {}) };
+        state.session = 'work';
+        state.cycle = 1;
+        loadStats();
+        setSession('work');
+
+        // Events
+        el.toggleBtn.addEventListener('click', () => state.isRunning ? pauseTimer() : startTimer());
+        el.resetBtn.addEventListener('click', resetTimer);
+        el.skipBtn.addEventListener('click', skipTimer);
+        el.themeBtn.addEventListener('click', toggleTheme);
+        el.openSettings.addEventListener('click', openSettings);
+        el.closeSettings.addEventListener('click', closeSettings);
+        el.settingsModal.addEventListener('click', (e) => { if (e.target === el.settingsModal) closeSettings(); });
+
+        el.volume.addEventListener('input', () => el.volumeVal.textContent = el.volume.value);
+
+        el.themeLight.addEventListener('click', () => {
+          state.settings.theme = 'light'; storage.set('pomodoro:settings', state.settings); updateTheme();
+          el.themeLight.classList.add('secondary'); el.themeDark.classList.remove('secondary');
+        });
+        el.themeDark.addEventListener('click', () => {
+          state.settings.theme = 'dark'; storage.set('pomodoro:settings', state.settings); updateTheme();
+          el.themeDark.classList.add('secondary'); el.themeLight.classList.remove('secondary');
+        });
+
+        $$('#colorSwatches .swatch').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.settings.color = btn.dataset.color;
+            storage.set('pomodoro:settings', state.settings);
+            updateTheme();
+            $$('#colorSwatches .swatch').forEach(b => b.classList.remove('secondary'));
+            btn.classList.add('secondary');
+          });
+        });
+
+        el.resetStats.addEventListener('click', () => {
+          if (!confirm('确定要清空今日统计吗？')) return;
+          state.completedToday = 0;
+          saveStats();
+          updateStatsUI();
+        });
+
+        el.testSound.addEventListener('click', () => {
+          playStartSound(); setTimeout(playEndSound, 250);
+        });
+
+        el.requestNotif.addEventListener('click', () => {
+          const ok = requestNotifyPermission();
+          if (!ok) alert('此浏览器不支持桌面通知。');
+        });
+
+        el.resetAll.addEventListener('click', () => {
+          if (!confirm('确定要恢复所有默认设置吗？')) return;
+          resetAllSettings();
+        });
+
+        el.saveSettings.addEventListener('click', () => {
+          saveSettingsFromUI();
+          closeSettings();
+        });
+
+        document.addEventListener('keydown', onKeydown);
+
+        // Initial UI
+        updateTheme();
+        updateControls();
+        updateTitle();
+
+        // Periodic cleanup for midnight cross-over stats
+        setInterval(() => {
+          const key = statsKey();
+          const today = storage.get(key, { count: 0 }).count || 0;
+          if (today !== state.completedToday) {
+            state.completedToday = today;
+            updateStatsUI();
+          }
+        }, 60000);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

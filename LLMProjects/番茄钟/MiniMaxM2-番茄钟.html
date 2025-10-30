@@ -238,63 +238,150 @@
             align-items: center;
             justify-content: center;
             image-rendering: pixelated;
-            box-shadow: 
+            box-shadow:
                 inset 2px 2px 0px rgba(255,255,255,0.7),
                 inset -2px -2px 0px rgba(0,0,0,0.3),
                 4px 4px 0px rgba(0,0,0,0.2);
         }
 
-        .pixel-pet {
-            width: 100px;
-            height: 100px;
-            background: var(--primary-color);
-            border: 3px solid var(--accent-color);
+        /* 像素吉祥物样式 - 从file-dmn.html移植 */
+        .mascot {
+            width: clamp(180px, 40vw, 280px);
+            aspect-ratio: 1 / 1;
             position: relative;
-            animation: float 3s ease-in-out infinite;
+            margin: 10px auto 2px;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1));
+        }
+
+        .mascot .bubble {
+            position: absolute;
+            right: -10px;
+            top: -10px;
+            background: var(--secondary-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 10px;
+            padding: 6px 8px;
+            font-family: "Press Start 2P", monospace;
+            font-size: 10px;
+            color: var(--text-color);
+        }
+
+        .mascot .head {
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(30% 30% at 35% 35%, rgba(255,255,255,0.6), transparent 60%),
+                radial-gradient(30% 30% at 65% 35%, rgba(255,255,255,0.6), transparent 60%),
+                linear-gradient(180deg, var(--accent-color), var(--accent-color) 35%, var(--primary-color) 100%);
+            border-radius: 18px;
+            border: 4px solid #00000033;
+            position: relative;
+            overflow: hidden;
             image-rendering: pixelated;
+            transform-origin: center bottom;
         }
 
-        .pixel-pet::before,
-        .pixel-pet::after {
-            content: '';
+        .mascot .band {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: var(--text-color);
-            border: 1px solid var(--accent-color);
+            left: -5%;
+            width: 110%;
+            height: 18%;
+            top: 10%;
+            background:
+                repeating-linear-gradient(90deg, var(--accent-color) 0 8px, var(--primary-color) 8px 16px, var(--secondary-color) 16px 24px, var(--text-color) 24px 32px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.08), inset 0 -3px 0 rgba(0,0,0,0.1);
         }
 
-        .pixel-pet::before {
-            top: 25px;
-            left: 25px;
-        }
-
-        .pixel-pet::after {
-            top: 25px;
-            right: 25px;
-        }
-
-        .pet-mouth {
+        .mascot .eye {
             position: absolute;
-            bottom: 30px;
+            width: 18%;
+            height: 18%;
+            background: #222;
+            top: 38%;
+            border-radius: 4px;
+            box-shadow: inset 0 -2px 0 #0008, 0 0 0 2px #0003;
+        }
+
+        .mascot .eye.left { left: 28%; }
+        .mascot .eye.right { right: 28%; }
+
+        .mascot .mouth {
+            position: absolute;
+            width: 22%;
+            height: 10%;
+            border: 4px solid #333;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
             left: 50%;
             transform: translateX(-50%);
-            width: 20px;
-            height: 10px;
-            border: 2px solid var(--text-color);
-            border-top: none;
-            border-radius: 0 0 10px 10px;
+            bottom: 26%;
+            background: transparent;
+            box-shadow: 0 2px 0 #0002;
         }
 
-        .pet-mouth.happy {
-            border-top: 2px solid var(--text-color);
-            border-bottom: none;
-            border-radius: 10px 10px 0 0;
+        .mascot .hat {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -16%;
+            width: 60%;
+            height: 26%;
+            background: var(--accent-color);
+            clip-path: polygon(50% 0, 100% 100%, 0 100%);
+            border: 4px solid #00000033;
+            border-bottom-width: 6px;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.08);
         }
 
-        .pet-mouth.sad {
-            border-radius: 0;
-            transform: translateX(-50%) rotate(180deg);
+        .mascot .cheek {
+            position: absolute;
+            width: 16%;
+            height: 10%;
+            background: rgba(255,153,187,0.5);
+            border-radius: 999px;
+            top: 54%;
+            filter: blur(0.4px);
+        }
+
+        .mascot .cheek.left { left: 18%; }
+        .mascot .cheek.right { right: 18%; }
+
+        .mascot .shadow {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            width: 60%;
+            height: 12px;
+            background: radial-gradient(closest-side, rgba(0,0,0,0.25), transparent);
+            transform: translateX(-50%);
+            filter: blur(4px);
+            opacity: .7;
+        }
+
+        /* 动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes blink {
+            0%, 90%, 100% { transform: scaleY(1); }
+            95% { transform: scaleY(0.1); }
+        }
+
+        .mascot .eye { animation: blink 4.2s infinite; }
+        .mascot .head { animation: float 3.2s ease-in-out infinite; }
+
+        .mascot[data-state="work"] .head { filter: saturate(1.2) hue-rotate(-8deg); }
+        .mascot[data-state="short"] .head { filter: saturate(1.3) hue-rotate(-18deg); }
+        .mascot[data-state="long"] .head { filter: saturate(1.35) hue-rotate(-22deg); }
+
+        .mascot.bounce { animation: bounce .4s ease; }
+
+        @keyframes bounce {
+            0% { transform: translateY(0) scale(1); }
+            35% { transform: translateY(-8px) scale(1.02); }
+            100% { transform: translateY(0) scale(1); }
         }
 
         .pet-container.celebrating {
@@ -859,8 +946,18 @@
         <main class="timer-section">
             <div class="timer-display">
                 <div class="pet-container" id="petContainer">
-                    <div class="pixel-pet" id="pixelPet">
-                        <div class="pet-mouth" id="petMouth"></div>
+                    <div class="mascot" id="mascot" data-state="work" aria-hidden="true">
+                        <div class="head">
+                            <div class="band"></div>
+                            <div class="hat"></div>
+                            <div class="eye left"></div>
+                            <div class="eye right"></div>
+                            <div class="mouth"></div>
+                            <div class="cheek left"></div>
+                            <div class="cheek right"></div>
+                        </div>
+                        <div class="shadow"></div>
+                        <div class="bubble" id="mascotBubble">加油!</div>
                     </div>
                 </div>
                 
@@ -1160,15 +1257,8 @@
                 };
                 document.getElementById('timerMode').textContent = modeNames[this.currentMode];
                 
-                // 更新宠物容器类
-                const petContainer = document.getElementById('petContainer');
-                petContainer.className = `pet-container state-${this.currentMode}`;
-                
-                if (this.currentMode === 'work') {
-                    petContainer.classList.add('state-working');
-                } else {
-                    petContainer.classList.add('state-break');
-                }
+                // 更新吉祥物状态
+                this.setPetState(this.currentMode);
                 
                 // 更新标签页标题
                 this.updateTitle();
@@ -1216,58 +1306,43 @@
             }
 
             setPetState(state) {
-                const pet = document.getElementById('pixelPet');
-                pet.className = `pixel-pet ${state}`;
+                const mascot = document.getElementById('mascot');
+                mascot.dataset.state = state === 'work' ? 'work' : (state === 'shortBreak' ? 'short' : 'long');
                 
-                const mouth = document.getElementById('petMouth');
-                mouth.className = 'pet-mouth';
+                // 更新吉祥物状态文本
+                const bubbleText = {
+                    work: ['加油!', '专注!', '冲!', '你能行!', '番茄时间!'],
+                    short: ['休息下~', '喝水💧', '走动走动~', '放松~', '深呼吸~'],
+                    long: ['小憩一会', '远眺窗外', '伸展一下', '恭喜！', '太长休啦~']
+                };
                 
-                switch(state) {
-                    case 'focusing':
-                        mouth.classList.add('happy');
-                        break;
-                    case 'waiting':
-                        mouth.classList.remove('happy', 'sad');
-                        break;
-                    case 'celebrating':
-                        pet.classList.add('celebrating');
-                        setTimeout(() => {
-                            pet.classList.remove('celebrating');
-                        }, 600);
-                        break;
+                const currentState = mascot.dataset.state;
+                const textOptions = bubbleText[currentState] || bubbleText.work;
+                const bubble = document.getElementById('mascotBubble');
+                bubble.textContent = textOptions[Math.floor(Math.random() * textOptions.length)];
+                
+                // 触发吉祥物动画
+                if (state === 'celebrating') {
+                    this.bounceMascot();
                 }
             }
 
             setPetMood(mood) {
-                const mouth = document.getElementById('petMouth');
-                mouth.className = 'pet-mouth';
-                
-                switch(mood) {
-                    case 'calm':
-                        mouth.classList.remove('happy', 'sad');
-                        break;
-                    case 'focused':
-                        mouth.classList.add('happy');
-                        break;
-                    case 'excited':
-                        mouth.classList.remove('happy');
-                        mouth.classList.add('sad');
-                        break;
-                }
+                // 新的吉祥物设计使用CSS动画和状态管理，不需要单独的mood控制
+                // 状态变化通过setPetState统一管理
+            }
+
+            bounceMascot() {
+                const mascot = document.getElementById('mascot');
+                mascot.classList.remove('bounce');
+                // force reflow
+                void mascot.offsetWidth;
+                mascot.classList.add('bounce');
             }
 
             updatePetAnimation() {
-                const pet = document.getElementById('pixelPet');
-                const progress = this.timeLeft / (this.getCurrentModeTime() * 60);
-                
-                // 根据进度调整动画速度
-                if (progress > 0.5) {
-                    pet.style.animationDuration = '3s';
-                } else if (progress > 0.2) {
-                    pet.style.animationDuration = '2s';
-                } else {
-                    pet.style.animationDuration = '1s';
-                }
+                // 新的吉祥物设计使用CSS动画和状态管理，不需要动态调整动画速度
+                // 动画效果通过CSS类和状态变化自动处理
             }
 
             getCurrentModeTime() {
