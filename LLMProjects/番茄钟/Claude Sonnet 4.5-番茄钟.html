@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>番茄钟</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,50 +14,172 @@
             box-sizing: border-box;
         }
 
-        @font-face {
-            font-family: 'Pixel';
-            src: local('Press Start 2P'), local('Courier New');
+        :root {
+            /* 樱花粉主题 */
+            --bg-primary: #FFE5EC;
+            --bg-secondary: #FFF0F5;
+            --bg-card: #FFFFFF;
+            --text-primary: #5A4A5F;
+            --text-secondary: #8B7B8F;
+            --accent-primary: #FFB3C6;
+            --accent-secondary: #FFC8DD;
+            --progress-bg: #FFE0E9;
+            --progress-fill: #FF6B9D;
+            --button-bg: #FFB3C6;
+            --button-hover: #FF8FAB;
+            --shadow: rgba(255, 107, 157, 0.2);
+            --tomato-body: #FF6B6B;
+            --tomato-stem: #4CAF50;
+        }
+
+        :root[data-theme="mint"] {
+            --bg-primary: #E0F9F5;
+            --bg-secondary: #F0FFFC;
+            --bg-card: #FFFFFF;
+            --text-primary: #2C5F5F;
+            --text-secondary: #5A8F8F;
+            --accent-primary: #7FE5CC;
+            --accent-secondary: #A7F3D0;
+            --progress-bg: #C7F5E8;
+            --progress-fill: #10B981;
+            --button-bg: #6EE7B7;
+            --button-hover: #34D399;
+            --shadow: rgba(16, 185, 129, 0.2);
+        }
+
+        :root[data-theme="lavender"] {
+            --bg-primary: #EDE7F6;
+            --bg-secondary: #F5F0FF;
+            --bg-card: #FFFFFF;
+            --text-primary: #4A3F5F;
+            --text-secondary: #7A6F8F;
+            --accent-primary: #CE93D8;
+            --accent-secondary: #E1BEE7;
+            --progress-bg: #E8D5F0;
+            --progress-fill: #9C27B0;
+            --button-bg: #CE93D8;
+            --button-hover: #BA68C8;
+            --shadow: rgba(156, 39, 176, 0.2);
+        }
+
+        :root[data-theme="peach"] {
+            --bg-primary: #FFE9DB;
+            --bg-secondary: #FFF4ED;
+            --bg-card: #FFFFFF;
+            --text-primary: #5F4A3F;
+            --text-secondary: #8F7A6F;
+            --accent-primary: #FFB399;
+            --accent-secondary: #FFCCB3;
+            --progress-bg: #FFD9C7;
+            --progress-fill: #FF6B35;
+            --button-bg: #FFB399;
+            --button-hover: #FF8F6B;
+            --shadow: rgba(255, 107, 53, 0.2);
+        }
+
+        :root[data-dark="true"] {
+            --bg-primary: #1a1625;
+            --bg-secondary: #261d30;
+            --bg-card: #2d2438;
+            --text-primary: #e8d4f0;
+            --text-secondary: #b8a5c0;
+            --progress-bg: #3d3450;
+            --shadow: rgba(0, 0, 0, 0.5);
         }
 
         body {
-            font-family: 'Pixel', 'Courier New', monospace;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Press Start 2P', cursive;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
             padding: 20px;
-            image-rendering: pixelated;
         }
 
         .container {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
+            background: var(--bg-card);
+            border: 4px solid var(--text-primary);
+            border-radius: 0;
+            box-shadow: 8px 8px 0 var(--shadow);
             max-width: 600px;
             width: 100%;
-            border: 4px solid #333;
+            padding: 30px;
+            position: relative;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
         }
 
-        h1 {
-            text-align: center;
-            color: #ff6b9d;
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .title {
+            font-size: 18px;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title::before {
+            content: '🍅';
             font-size: 24px;
-            margin-bottom: 30px;
-            text-shadow: 3px 3px 0 #ffc2d4;
-            letter-spacing: 2px;
+            animation: float 2s ease-in-out infinite;
         }
 
-        .tomato-display {
-            text-align: center;
-            margin-bottom: 30px;
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
         }
 
-        .tomato-icon {
-            font-size: 60px;
-            animation: bounce 2s infinite;
-            display: inline-block;
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--button-bg);
+            border: 3px solid var(--text-primary);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        .icon-btn:hover {
+            background: var(--button-hover);
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 var(--text-primary);
+        }
+
+        .icon-btn:active {
+            transform: translate(0, 0);
+            box-shadow: 2px 2px 0 var(--text-primary);
+        }
+
+        .character {
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .pixel-tomato {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            animation: bounce 1s ease-in-out infinite;
         }
 
         @keyframes bounce {
@@ -62,768 +187,1294 @@
             50% { transform: translateY(-10px); }
         }
 
+        .tomato-body {
+            width: 80px;
+            height: 80px;
+            background: var(--tomato-body);
+            border: 3px solid var(--text-primary);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset -10px -10px 0 rgba(0,0,0,0.1);
+        }
+
+        .tomato-stem {
+            width: 30px;
+            height: 20px;
+            background: var(--tomato-stem);
+            border: 3px solid var(--text-primary);
+            border-radius: 10px 10px 0 0;
+            position: absolute;
+            left: 50%;
+            top: 15%;
+            transform: translateX(-50%);
+        }
+
+        .tomato-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .eye {
+            width: 12px;
+            height: 12px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 35%;
+            animation: blink 3s infinite;
+        }
+
+        .eye.left { left: 25%; }
+        .eye.right { right: 25%; }
+
+        @keyframes blink {
+            0%, 48%, 52%, 100% { height: 12px; }
+            50% { height: 2px; }
+        }
+
+        .mouth {
+            width: 24px;
+            height: 12px;
+            border: 3px solid var(--text-primary);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            position: absolute;
+            left: 50%;
+            bottom: 25%;
+            transform: translateX(-50%);
+        }
+
+        .mouth.working {
+            width: 20px;
+            height: 10px;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .mouth.resting {
+            width: 30px;
+            height: 15px;
+            border-radius: 0 0 15px 15px;
+        }
+
         .timer-display {
             text-align: center;
-            font-size: 72px;
-            color: #333;
             margin: 30px 0;
-            font-weight: bold;
-            text-shadow: 4px 4px 0 #e0e0e0;
-            letter-spacing: 8px;
         }
 
-        .mode-indicator {
-            text-align: center;
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 10px;
-            border: 2px solid #ddd;
-        }
-
-        .mode-work { background: #ffe4e9; color: #ff6b9d; }
-        .mode-break { background: #e4f9ff; color: #4ecdc4; }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 15px 25px;
-            font-size: 14px;
-            border: 3px solid #333;
-            background: #fff;
-            cursor: pointer;
-            border-radius: 10px;
-            font-family: inherit;
-            transition: all 0.1s;
-            box-shadow: 4px 4px 0 #333;
-        }
-
-        .btn:hover {
-            transform: translate(2px, 2px);
-            box-shadow: 2px 2px 0 #333;
-        }
-
-        .btn:active {
-            transform: translate(4px, 4px);
-            box-shadow: 0 0 0 #333;
-        }
-
-        .btn-primary { background: #ff6b9d; color: white; }
-        .btn-secondary { background: #4ecdc4; color: white; }
-        .btn-warning { background: #ffd93d; color: #333; }
-        .btn-danger { background: #ff6b6b; color: white; }
-
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 15px;
-            border: 3px solid #e0e0e0;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 32px;
-            color: #ff6b9d;
-            font-weight: bold;
-            text-shadow: 2px 2px 0 #ffc2d4;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .settings {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 15px;
-            border: 3px solid #e0e0e0;
-            margin-top: 20px;
-        }
-
-        .settings-toggle {
-            text-align: center;
-            margin-bottom: 15px;
-            cursor: pointer;
-            color: #666;
-            font-size: 14px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-        }
-
-        .settings-toggle:hover {
-            background: #f0f0f0;
-        }
-
-        .settings-content {
-            display: none;
-        }
-
-        .settings-content.active {
-            display: block;
-        }
-
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
-        }
-
-        .setting-label {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .setting-input {
-            width: 80px;
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        select {
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-            font-size: 12px;
-            background: white;
-            cursor: pointer;
+        .time {
+            font-size: 64px;
+            color: var(--progress-fill);
+            text-shadow: 4px 4px 0 var(--shadow);
+            letter-spacing: 5px;
+            font-family: 'Press Start 2P', monospace;
         }
 
         .progress-bar {
             width: 100%;
-            height: 10px;
-            background: #e0e0e0;
-            border-radius: 5px;
+            height: 30px;
+            background: var(--progress-bg);
+            border: 3px solid var(--text-primary);
+            margin: 20px 0;
+            position: relative;
             overflow: hidden;
-            margin-bottom: 20px;
-            border: 2px solid #333;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff6b9d, #ffc2d4);
-            transition: width 1s linear;
+            background: var(--progress-fill);
+            transition: width 0.3s linear;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.3);
         }
 
-        .notification-permission {
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.1) 10px,
+                rgba(255,255,255,0.1) 20px
+            );
+            animation: slide 1s linear infinite;
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(20px); }
+        }
+
+        .status {
             text-align: center;
-            margin-top: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
 
-        .notification-permission button {
-            padding: 8px 15px;
-            font-size: 11px;
-            background: #4ecdc4;
-            color: white;
-            border: 2px solid #333;
-            border-radius: 5px;
+        .session-indicator {
+            display: flex;
+            gap: 5px;
+        }
+
+        .session-dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--text-primary);
+            background: var(--progress-bg);
+        }
+
+        .session-dot.completed {
+            background: var(--progress-fill);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 15px;
+            background: var(--button-bg);
+            border: 3px solid var(--text-primary);
+            color: var(--text-primary);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
             cursor: pointer;
-            font-family: inherit;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            position: relative;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-            }
-            
-            .timer-display {
-                font-size: 48px;
-            }
-            
-            h1 {
-                font-size: 18px;
-            }
-            
-            .btn {
-                padding: 12px 18px;
-                font-size: 11px;
-            }
-            
-            .stats {
-                flex-direction: column;
-                gap: 15px;
-            }
+        .btn:hover {
+            background: var(--button-hover);
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0 var(--text-primary);
         }
 
-        .bgm-control {
+        .btn:active {
+            transform: translate(0, 0);
+            box-shadow: 2px 2px 0 var(--text-primary);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn.primary {
+            grid-column: span 2;
+            background: var(--progress-fill);
+            color: white;
+        }
+
+        .stats {
             text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-            background: #fff;
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
+            padding: 20px;
+            background: var(--progress-bg);
+            border: 3px solid var(--text-primary);
+            margin-top: 20px;
         }
 
-        .volume-control {
+        .stats-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            color: var(--progress-fill);
+        }
+
+        .stat-label {
+            font-size: 8px;
+            color: var(--text-secondary);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 4px solid var(--text-primary);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 8px 8px 0 var(--shadow);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            color: var(--accent-primary);
+        }
+
+        .close-btn {
+            width: 30px;
+            height: 30px;
+            background: var(--button-bg);
+            border: 3px solid var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: var(--button-hover);
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--progress-bg);
+            border: 3px solid var(--text-primary);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+
+        .setting-input:focus {
+            outline: none;
+            background: var(--bg-secondary);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .switch {
+            width: 60px;
+            height: 30px;
+            background: var(--progress-bg);
+            border: 3px solid var(--text-primary);
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .switch::after {
+            content: '';
+            width: 24px;
+            height: 24px;
+            background: var(--button-bg);
+            border: 2px solid var(--text-primary);
+            position: absolute;
+            left: 0;
+            top: 0;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch input:checked + .switch {
+            background: var(--progress-fill);
+        }
+
+        .toggle-switch input:checked + .switch::after {
+            left: 30px;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-top: 10px;
         }
 
-        input[type="range"] {
-            width: 150px;
+        .theme-option {
+            padding: 15px;
+            border: 3px solid var(--text-primary);
+            cursor: pointer;
+            text-align: center;
+            font-size: 9px;
+            background: var(--progress-bg);
+            transition: all 0.2s;
+        }
+
+        .theme-option:hover {
+            background: var(--button-hover);
+            transform: translate(-2px, -2px);
+            box-shadow: 3px 3px 0 var(--text-primary);
+        }
+
+        .theme-option.active {
+            background: var(--progress-fill);
+            color: white;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 20px;
+            -webkit-appearance: none;
+            background: var(--progress-bg);
+            border: 3px solid var(--text-primary);
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--button-bg);
+            border: 3px solid var(--text-primary);
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: var(--button-bg);
+            border: 3px solid var(--text-primary);
+            cursor: pointer;
+        }
+
+        .slider-value {
+            font-size: 12px;
+            color: var(--progress-fill);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 4px solid var(--text-primary);
+            padding: 20px;
+            box-shadow: 8px 8px 0 var(--shadow);
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            max-width: 300px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-title {
+            font-size: 12px;
+            color: var(--progress-fill);
+            margin-bottom: 10px;
+        }
+
+        .notification-message {
+            font-size: 9px;
+            color: var(--text-secondary);
+        }
+
+        .encouragement {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin: 15px 0;
+            min-height: 20px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .title {
+                font-size: 14px;
+            }
+
+            .time {
+                font-size: 48px;
+            }
+
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .btn.primary {
+                grid-column: span 2;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .theme-selector {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .time {
+                font-size: 36px;
+            }
+
+            .btn {
+                font-size: 8px;
+                padding: 12px;
+            }
+
+            .character {
+                width: 80px;
+                height: 80px;
+            }
+
+            .tomato-body {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* 完成庆祝动画 */
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(1.1) rotate(5deg); }
+        }
+
+        .celebrating {
+            animation: celebrate 0.5s ease-in-out 3;
+        }
+
+        /* 粒子效果 */
+        .particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--progress-fill);
+            border: 2px solid var(--text-primary);
+            pointer-events: none;
+            z-index: 9999;
+            animation: particle-fall 2s ease-out forwards;
+        }
+
+        @keyframes particle-fall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(300px) rotate(360deg);
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--progress-bg);
+            border: 2px solid var(--text-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--button-bg);
+            border: 2px solid var(--text-primary);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--button-hover);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🍅 番茄钟 🍅</h1>
-        
-        <div class="tomato-display">
-            <span class="tomato-icon" id="tomatoIcon">🍅</span>
+        <div class="header">
+            <div class="title">番茄钟</div>
+            <div class="header-buttons">
+                <button class="icon-btn" id="settingsBtn" title="设置">⚙️</button>
+                <button class="icon-btn" id="themeBtn" title="切换主题">🎨</button>
+            </div>
+        </div>
+
+        <div class="character">
+            <div class="pixel-tomato">
+                <div class="tomato-stem"></div>
+                <div class="tomato-body"></div>
+                <div class="tomato-face">
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="mouth" id="tomatoMouth"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="encouragement" id="encouragement">准备好专注了吗？</div>
+
+        <div class="timer-display">
+            <div class="time" id="timeDisplay">25:00</div>
         </div>
 
         <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
         </div>
 
-        <div class="mode-indicator" id="modeIndicator">工作模式</div>
-        
-        <div class="timer-display" id="timerDisplay">25:00</div>
-        
+        <div class="status">
+            <span id="statusText">工作模式</span>
+            <div class="session-indicator" id="sessionIndicator"></div>
+        </div>
+
         <div class="controls">
-            <button class="btn btn-primary" id="startBtn">开始</button>
-            <button class="btn btn-secondary" id="pauseBtn" style="display:none;">暂停</button>
-            <button class="btn btn-warning" id="resetBtn">重置</button>
-            <button class="btn btn-danger" id="skipBtn">跳过</button>
+            <button class="btn primary" id="startBtn">开始</button>
+            <button class="btn" id="resetBtn">重置</button>
+            <button class="btn" id="skipBtn">跳过</button>
         </div>
 
         <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number" id="todayCount">0</div>
-                <div class="stat-label">今日完成</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="totalCount">0</div>
-                <div class="stat-label">总计</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="streakCount">0</div>
-                <div class="stat-label">连续</div>
-            </div>
-        </div>
-
-        <div class="settings">
-            <div class="settings-toggle" id="settingsToggle">⚙️ 设置选项 ⚙️</div>
-            <div class="settings-content" id="settingsContent">
-                <div class="setting-row">
-                    <span class="setting-label">工作时长 (分钟)</span>
-                    <input type="number" class="setting-input" id="workDuration" value="25" min="1" max="60">
+            <div class="stats-content">
+                <div class="stat-item">
+                    <div class="stat-value" id="todayCount">0</div>
+                    <div class="stat-label">今日完成</div>
                 </div>
-                <div class="setting-row">
-                    <span class="setting-label">短休息 (分钟)</span>
-                    <input type="number" class="setting-input" id="shortBreak" value="5" min="1" max="30">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalMinutes">0</div>
+                    <div class="stat-label">总专注(分钟)</div>
                 </div>
-                <div class="setting-row">
-                    <span class="setting-label">长休息 (分钟)</span>
-                    <input type="number" class="setting-input" id="longBreak" value="15" min="1" max="60">
-                </div>
-                <div class="setting-row">
-                    <span class="setting-label">长休息间隔</span>
-                    <input type="number" class="setting-input" id="longBreakInterval" value="4" min="2" max="10">
-                </div>
-                <div class="setting-row">
-                    <span class="setting-label">声音提示</span>
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" id="soundEnabled" checked>
-                        <select id="soundType">
-                            <option value="bell">铃铛</option>
-                            <option value="chime">风铃</option>
-                            <option value="soft">轻柔</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="setting-row">
-                    <span class="setting-label">自动开始</span>
-                    <input type="checkbox" id="autoStart">
-                </div>
-                <div class="setting-row">
-                    <span class="setting-label">桌面通知</span>
-                    <input type="checkbox" id="notificationEnabled">
-                </div>
-                <div class="bgm-control">
-                    <div class="setting-row" style="border: none; margin-bottom: 5px;">
-                        <span class="setting-label">背景音乐</span>
-                        <select id="bgmType">
-                            <option value="none">无</option>
-                            <option value="rain">雨声</option>
-                            <option value="cafe">咖啡厅</option>
-                            <option value="lofi">Lo-fi</option>
-                        </select>
-                    </div>
-                    <div class="volume-control">
-                        <span style="font-size: 10px;">🔊</span>
-                        <input type="range" id="bgmVolume" min="0" max="100" value="30">
-                        <span style="font-size: 10px;" id="volumeDisplay">30%</span>
-                    </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="streakCount">0</div>
+                    <div class="stat-label">连续天数</div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="notification-permission" id="notificationPrompt" style="display:none;">
-            <button onclick="requestNotificationPermission()">启用桌面通知</button>
+    <!-- 设置模态框 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">设置</div>
+                <button class="close-btn" id="closeSettings">✕</button>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">工作时长 (分钟)</label>
+                <input type="number" class="setting-input" id="workDuration" min="1" max="60" value="25">
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">短休息 (分钟)</label>
+                <input type="number" class="setting-input" id="shortBreak" min="1" max="30" value="5">
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">长休息 (分钟)</label>
+                <input type="number" class="setting-input" id="longBreak" min="1" max="60" value="15">
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">长休息间隔</label>
+                <input type="number" class="setting-input" id="longBreakInterval" min="2" max="10" value="4">
+            </div>
+
+            <div class="setting-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoPlay">
+                    <div class="switch"></div>
+                    <span class="setting-label">自动播放</span>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="soundEnabled">
+                    <div class="switch"></div>
+                    <span class="setting-label">音效</span>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">音量</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="volume" min="0" max="100" value="70">
+                    <span class="slider-value" id="volumeValue">70%</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkMode">
+                    <div class="switch"></div>
+                    <span class="setting-label">深色模式</span>
+                </label>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">主题配色</label>
+                <div class="theme-selector">
+                    <div class="theme-option active" data-theme="sakura">🌸 樱花粉</div>
+                    <div class="theme-option" data-theme="mint">🍃 薄荷绿</div>
+                    <div class="theme-option" data-theme="lavender">💜 薰衣草</div>
+                    <div class="theme-option" data-theme="peach">🍑 蜜桃橙</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // 状态管理
-        let state = {
-            isRunning: false,
-            mode: 'work', // work, shortBreak, longBreak
-            timeLeft: 25 * 60,
-            totalTime: 25 * 60,
-            pomodoroCount: 0,
-            todayCount: 0,
-            totalCount: 0,
-            streakCount: 0,
-            timer: null
-        };
-
-        // 音频上下文
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let bgmOscillator = null;
-        let bgmGain = null;
-
-        // DOM 元素
-        const elements = {
-            timerDisplay: document.getElementById('timerDisplay'),
-            modeIndicator: document.getElementById('modeIndicator'),
-            progressFill: document.getElementById('progressFill'),
-            startBtn: document.getElementById('startBtn'),
-            pauseBtn: document.getElementById('pauseBtn'),
-            resetBtn: document.getElementById('resetBtn'),
-            skipBtn: document.getElementById('skipBtn'),
-            todayCount: document.getElementById('todayCount'),
-            totalCount: document.getElementById('totalCount'),
-            streakCount: document.getElementById('streakCount'),
-            tomatoIcon: document.getElementById('tomatoIcon'),
-            settingsToggle: document.getElementById('settingsToggle'),
-            settingsContent: document.getElementById('settingsContent'),
-            workDuration: document.getElementById('workDuration'),
-            shortBreak: document.getElementById('shortBreak'),
-            longBreak: document.getElementById('longBreak'),
-            longBreakInterval: document.getElementById('longBreakInterval'),
-            soundEnabled: document.getElementById('soundEnabled'),
-            soundType: document.getElementById('soundType'),
-            autoStart: document.getElementById('autoStart'),
-            notificationEnabled: document.getElementById('notificationEnabled'),
-            bgmType: document.getElementById('bgmType'),
-            bgmVolume: document.getElementById('bgmVolume'),
-            volumeDisplay: document.getElementById('volumeDisplay')
-        };
-
-        // 初始化
-        function init() {
-            loadSettings();
-            updateDisplay();
-            updateStats();
-            checkNotificationPermission();
-            
-            // 事件监听
-            elements.startBtn.addEventListener('click', startTimer);
-            elements.pauseBtn.addEventListener('click', pauseTimer);
-            elements.resetBtn.addEventListener('click', resetTimer);
-            elements.skipBtn.addEventListener('click', skipPhase);
-            elements.settingsToggle.addEventListener('click', toggleSettings);
-            
-            // 设置变更监听
-            ['workDuration', 'shortBreak', 'longBreak', 'longBreakInterval'].forEach(id => {
-                elements[id].addEventListener('change', saveSettings);
-            });
-            
-            ['soundEnabled', 'autoStart', 'notificationEnabled'].forEach(id => {
-                elements[id].addEventListener('change', saveSettings);
-            });
-            
-            elements.soundType.addEventListener('change', saveSettings);
-            elements.bgmType.addEventListener('change', handleBgmChange);
-            elements.bgmVolume.addEventListener('input', handleVolumeChange);
-            
-            // 每日重置检查
-            checkDailyReset();
-        }
-
-        // 计时器控制
-        function startTimer() {
-            if (state.isRunning) return;
-            
-            state.isRunning = true;
-            elements.startBtn.style.display = 'none';
-            elements.pauseBtn.style.display = 'inline-block';
-            
-            state.timer = setInterval(() => {
-                state.timeLeft--;
-                updateDisplay();
+        // ============ 应用状态管理 ============
+        class PomodoroApp {
+            constructor() {
+                this.state = 'IDLE'; // IDLE, WORK, SHORT_BREAK, LONG_BREAK, PAUSED
+                this.timeRemaining = 0;
+                this.totalTime = 0;
+                this.currentSession = 0;
+                this.completedSessions = 0;
+                this.interval = null;
+                this.settings = this.loadSettings();
+                this.stats = this.loadStats();
                 
-                if (state.timeLeft <= 0) {
-                    completePhase();
+                this.audioContext = null;
+                this.initAudio();
+                this.initUI();
+                this.initEventListeners();
+                this.updateStats();
+                this.checkStreak();
+            }
+
+            // ============ 初始化 ============
+            initAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.warn('Web Audio API not supported');
                 }
-            }, 1000);
-        }
-
-        function pauseTimer() {
-            state.isRunning = false;
-            elements.startBtn.style.display = 'inline-block';
-            elements.pauseBtn.style.display = 'none';
-            clearInterval(state.timer);
-        }
-
-        function resetTimer() {
-            pauseTimer();
-            state.timeLeft = state.totalTime;
-            updateDisplay();
-        }
-
-        function skipPhase() {
-            pauseTimer();
-            completePhase();
-        }
-
-        function completePhase() {
-            pauseTimer();
-            
-            // 播放提示音
-            if (elements.soundEnabled.checked) {
-                playNotificationSound();
             }
-            
-            // 桌面通知
-            if (elements.notificationEnabled.checked && Notification.permission === 'granted') {
-                showNotification();
-            }
-            
-            // 更新统计
-            if (state.mode === 'work') {
-                state.pomodoroCount++;
-                state.todayCount++;
-                state.totalCount++;
-                state.streakCount++;
-                saveStats();
-                updateStats();
-            }
-            
-            // 切换模式
-            switchMode();
-            
-            // 自动开始
-            if (elements.autoStart.checked) {
-                setTimeout(() => startTimer(), 1000);
-            }
-        }
 
-        function switchMode() {
-            if (state.mode === 'work') {
-                if (state.pomodoroCount % parseInt(elements.longBreakInterval.value) === 0) {
-                    state.mode = 'longBreak';
-                    state.totalTime = parseInt(elements.longBreak.value) * 60;
+            initUI() {
+                this.applyTheme();
+                this.updateSessionIndicator();
+                this.reset();
+            }
+
+            initEventListeners() {
+                // 按钮事件
+                document.getElementById('startBtn').addEventListener('click', () => this.toggleTimer());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('skipBtn').addEventListener('click', () => this.skip());
+                document.getElementById('settingsBtn').addEventListener('click', () => this.openSettings());
+                document.getElementById('themeBtn').addEventListener('click', () => this.cycleTheme());
+                document.getElementById('closeSettings').addEventListener('click', () => this.closeSettings());
+
+                // 设置事件
+                document.getElementById('workDuration').addEventListener('change', (e) => {
+                    this.settings.workDuration = parseInt(e.target.value);
+                    this.saveSettings();
+                });
+                document.getElementById('shortBreak').addEventListener('change', (e) => {
+                    this.settings.shortBreak = parseInt(e.target.value);
+                    this.saveSettings();
+                });
+                document.getElementById('longBreak').addEventListener('change', (e) => {
+                    this.settings.longBreak = parseInt(e.target.value);
+                    this.saveSettings();
+                });
+                document.getElementById('longBreakInterval').addEventListener('change', (e) => {
+                    this.settings.longBreakInterval = parseInt(e.target.value);
+                    this.saveSettings();
+                    this.updateSessionIndicator();
+                });
+                document.getElementById('autoPlay').addEventListener('change', (e) => {
+                    this.settings.autoPlay = e.target.checked;
+                    this.saveSettings();
+                });
+                document.getElementById('soundEnabled').addEventListener('change', (e) => {
+                    this.settings.soundEnabled = e.target.checked;
+                    this.saveSettings();
+                });
+                document.getElementById('volume').addEventListener('input', (e) => {
+                    this.settings.volume = parseInt(e.target.value);
+                    document.getElementById('volumeValue').textContent = e.target.value + '%';
+                    this.saveSettings();
+                });
+                document.getElementById('darkMode').addEventListener('change', (e) => {
+                    this.settings.darkMode = e.target.checked;
+                    this.saveSettings();
+                    this.applyTheme();
+                });
+
+                // 主题选择
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        const theme = e.target.dataset.theme;
+                        this.settings.theme = theme;
+                        this.saveSettings();
+                        this.applyTheme();
+                        document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+                        e.target.classList.add('active');
+                    });
+                });
+
+                // 键盘快捷键
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    
+                    switch(e.code) {
+                        case 'Space':
+                            e.preventDefault();
+                            this.toggleTimer();
+                            break;
+                        case 'KeyR':
+                            this.reset();
+                            break;
+                        case 'KeyS':
+                            this.skip();
+                            break;
+                        case 'Escape':
+                            this.closeSettings();
+                            break;
+                    }
+                });
+
+                // 点击模态框外部关闭
+                document.getElementById('settingsModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'settingsModal') {
+                        this.closeSettings();
+                    }
+                });
+            }
+
+            // ============ 计时器核心逻辑 ============
+            toggleTimer() {
+                if (this.state === 'IDLE') {
+                    this.startWork();
+                } else if (this.state === 'PAUSED') {
+                    this.resume();
                 } else {
-                    state.mode = 'shortBreak';
-                    state.totalTime = parseInt(elements.shortBreak.value) * 60;
+                    this.pause();
                 }
-            } else {
-                state.mode = 'work';
-                state.totalTime = parseInt(elements.workDuration.value) * 60;
             }
-            
-            state.timeLeft = state.totalTime;
-            updateDisplay();
-        }
 
-        // 显示更新
-        function updateDisplay() {
-            const minutes = Math.floor(state.timeLeft / 60);
-            const seconds = state.timeLeft % 60;
-            elements.timerDisplay.textContent = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            
-            // 更新进度条
-            const progress = ((state.totalTime - state.timeLeft) / state.totalTime) * 100;
-            elements.progressFill.style.width = progress + '%';
-            
-            // 更新模式指示器
-            elements.modeIndicator.className = 'mode-indicator';
-            if (state.mode === 'work') {
-                elements.modeIndicator.textContent = '🔥 工作模式';
-                elements.modeIndicator.classList.add('mode-work');
-                elements.tomatoIcon.textContent = '🍅';
-            } else if (state.mode === 'shortBreak') {
-                elements.modeIndicator.textContent = '☕ 短休息';
-                elements.modeIndicator.classList.add('mode-break');
-                elements.tomatoIcon.textContent = '🌸';
-            } else {
-                elements.modeIndicator.textContent = '🌟 长休息';
-                elements.modeIndicator.classList.add('mode-break');
-                elements.tomatoIcon.textContent = '🎉';
+            startWork() {
+                this.state = 'WORK';
+                this.totalTime = this.settings.workDuration * 60;
+                this.timeRemaining = this.totalTime;
+                this.start();
+                this.playSound('start');
+                this.updateUI();
             }
-            
-            // 更新页面标题
-            document.title = `${elements.timerDisplay.textContent} - 番茄钟`;
-        }
 
-        function updateStats() {
-            elements.todayCount.textContent = state.todayCount;
-            elements.totalCount.textContent = state.totalCount;
-            elements.streakCount.textContent = state.streakCount;
-        }
-
-        // 设置管理
-        function toggleSettings() {
-            elements.settingsContent.classList.toggle('active');
-        }
-
-        function saveSettings() {
-            const settings = {
-                workDuration: elements.workDuration.value,
-                shortBreak: elements.shortBreak.value,
-                longBreak: elements.longBreak.value,
-                longBreakInterval: elements.longBreakInterval.value,
-                soundEnabled: elements.soundEnabled.checked,
-                soundType: elements.soundType.value,
-                autoStart: elements.autoStart.checked,
-                notificationEnabled: elements.notificationEnabled.checked,
-                bgmType: elements.bgmType.value,
-                bgmVolume: elements.bgmVolume.value
-            };
-            localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
-            
-            // 如果不在运行中,更新当前时间
-            if (!state.isRunning && state.mode === 'work') {
-                state.totalTime = parseInt(elements.workDuration.value) * 60;
-                state.timeLeft = state.totalTime;
-                updateDisplay();
+            startBreak(isLong = false) {
+                this.state = isLong ? 'LONG_BREAK' : 'SHORT_BREAK';
+                const duration = isLong ? this.settings.longBreak : this.settings.shortBreak;
+                this.totalTime = duration * 60;
+                this.timeRemaining = this.totalTime;
+                
+                if (this.settings.autoPlay) {
+                    this.start();
+                }
+                
+                this.playSound('end');
+                this.updateUI();
             }
-        }
 
-        function loadSettings() {
-            const saved = localStorage.getItem('pomodoroSettings');
-            if (saved) {
-                const settings = JSON.parse(saved);
-                elements.workDuration.value = settings.workDuration || 25;
-                elements.shortBreak.value = settings.shortBreak || 5;
-                elements.longBreak.value = settings.longBreak || 15;
-                elements.longBreakInterval.value = settings.longBreakInterval || 4;
-                elements.soundEnabled.checked = settings.soundEnabled !== false;
-                elements.soundType.value = settings.soundType || 'bell';
-                elements.autoStart.checked = settings.autoStart || false;
-                elements.notificationEnabled.checked = settings.notificationEnabled || false;
-                elements.bgmType.value = settings.bgmType || 'none';
-                elements.bgmVolume.value = settings.bgmVolume || 30;
-                elements.volumeDisplay.textContent = elements.bgmVolume.value + '%';
+            start() {
+                if (this.interval) clearInterval(this.interval);
+                
+                this.interval = setInterval(() => {
+                    this.tick();
+                }, 1000);
+                
+                document.getElementById('startBtn').textContent = '暂停';
             }
-            
-            state.totalTime = parseInt(elements.workDuration.value) * 60;
-            state.timeLeft = state.totalTime;
-        }
 
-        // 统计管理
-        function saveStats() {
-            const stats = {
-                todayCount: state.todayCount,
-                totalCount: state.totalCount,
-                streakCount: state.streakCount,
-                lastDate: new Date().toDateString()
-            };
-            localStorage.setItem('pomodoroStats', JSON.stringify(stats));
-        }
-
-        function loadStats() {
-            const saved = localStorage.getItem('pomodoroStats');
-            if (saved) {
-                const stats = JSON.parse(saved);
-                state.totalCount = stats.totalCount || 0;
-                state.todayCount = stats.todayCount || 0;
-                state.streakCount = stats.streakCount || 0;
+            pause() {
+                this.state = 'PAUSED';
+                clearInterval(this.interval);
+                this.interval = null;
+                document.getElementById('startBtn').textContent = '继续';
+                this.updateUI();
             }
-        }
 
-        function checkDailyReset() {
-            const saved = localStorage.getItem('pomodoroStats');
-            if (saved) {
-                const stats = JSON.parse(saved);
-                const lastDate = new Date(stats.lastDate);
+            resume() {
+                if (this.timeRemaining > 0) {
+                    this.state = this.state === 'PAUSED' ? 'WORK' : this.state;
+                    this.start();
+                    this.updateUI();
+                }
+            }
+
+            reset() {
+                clearInterval(this.interval);
+                this.interval = null;
+                this.state = 'IDLE';
+                this.totalTime = this.settings.workDuration * 60;
+                this.timeRemaining = this.totalTime;
+                document.getElementById('startBtn').textContent = '开始';
+                this.updateUI();
+            }
+
+            skip() {
+                clearInterval(this.interval);
+                this.interval = null;
+                
+                if (this.state === 'WORK') {
+                    this.currentSession++;
+                    const isLongBreak = this.currentSession % this.settings.longBreakInterval === 0;
+                    this.startBreak(isLongBreak);
+                } else if (this.state === 'SHORT_BREAK' || this.state === 'LONG_BREAK') {
+                    this.startWork();
+                }
+                
+                this.updateSessionIndicator();
+            }
+
+            tick() {
+                this.timeRemaining--;
+
+                if (this.timeRemaining === 10 && this.state === 'WORK') {
+                    this.playSound('tick');
+                }
+
+                if (this.timeRemaining <= 0) {
+                    this.onTimerComplete();
+                }
+
+                this.updateUI();
+            }
+
+            onTimerComplete() {
+                clearInterval(this.interval);
+                this.interval = null;
+
+                if (this.state === 'WORK') {
+                    this.completedSessions++;
+                    this.currentSession++;
+                    this.addCompletedPomodoro();
+                    this.celebrate();
+                    
+                    const isLongBreak = this.currentSession % this.settings.longBreakInterval === 0;
+                    this.startBreak(isLongBreak);
+                    this.showNotification('工作完成！', '休息一下吧～');
+                } else {
+                    this.startWork();
+                    this.showNotification('休息结束！', '开始新的工作时段');
+                }
+
+                this.updateSessionIndicator();
+                this.updateStats();
+            }
+
+            // ============ UI更新 ============
+            updateUI() {
+                const minutes = Math.floor(this.timeRemaining / 60);
+                const seconds = this.timeRemaining % 60;
+                const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                
+                document.getElementById('timeDisplay').textContent = timeString;
+                
+                // 更新页面标题
+                if (this.state !== 'IDLE' && this.state !== 'PAUSED') {
+                    document.title = `${timeString} - 番茄钟`;
+                } else {
+                    document.title = '番茄钟';
+                }
+
+                // 更新进度条
+                const progress = ((this.totalTime - this.timeRemaining) / this.totalTime) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+
+                // 更新状态文本
+                const statusText = {
+                    'IDLE': '工作模式',
+                    'WORK': '工作中',
+                    'SHORT_BREAK': '短休息',
+                    'LONG_BREAK': '长休息',
+                    'PAUSED': '已暂停'
+                };
+                document.getElementById('statusText').textContent = statusText[this.state] || '工作模式';
+
+                // 更新番茄表情
+                const mouth = document.getElementById('tomatoMouth');
+                if (this.state === 'WORK') {
+                    mouth.className = 'mouth working';
+                } else if (this.state === 'SHORT_BREAK' || this.state === 'LONG_BREAK') {
+                    mouth.className = 'mouth resting';
+                } else {
+                    mouth.className = 'mouth';
+                }
+
+                // 更新鼓励语
+                this.updateEncouragement();
+            }
+
+            updateSessionIndicator() {
+                const container = document.getElementById('sessionIndicator');
+                container.innerHTML = '';
+                
+                for (let i = 0; i < this.settings.longBreakInterval; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'session-dot';
+                    if (i < this.currentSession % this.settings.longBreakInterval) {
+                        dot.classList.add('completed');
+                    }
+                    container.appendChild(dot);
+                }
+            }
+
+            updateEncouragement() {
+                const encouragements = {
+                    'IDLE': ['准备好专注了吗？', '开始新的番茄钟吧！', '加油，你可以的！'],
+                    'WORK': ['保持专注！', '做得很好～', '继续加油！', '专注中...', '你真棒！'],
+                    'SHORT_BREAK': ['休息一下～', '喝口水吧', '放松放松', '伸个懒腰吧'],
+                    'LONG_BREAK': ['好好休息！', '你辛苦了～', '放松心情', '去走走吧'],
+                    'PAUSED': ['暂停中...', '随时继续', '休息一下']
+                };
+
+                const messages = encouragements[this.state] || encouragements['IDLE'];
+                const message = messages[Math.floor(Math.random() * messages.length)];
+                document.getElementById('encouragement').textContent = message;
+            }
+
+            // ============ 统计功能 ============
+            addCompletedPomodoro() {
+                const today = this.getTodayString();
+                
+                if (!this.stats.today || this.stats.today.date !== today) {
+                    this.stats.today = {
+                        date: today,
+                        completed: 0,
+                        totalMinutes: 0
+                    };
+                }
+
+                this.stats.today.completed++;
+                this.stats.today.totalMinutes += this.settings.workDuration;
+                
+                this.saveStats();
+                this.updateStats();
+            }
+
+            updateStats() {
+                const today = this.stats.today || { completed: 0, totalMinutes: 0 };
+                document.getElementById('todayCount').textContent = today.completed;
+                document.getElementById('totalMinutes').textContent = today.totalMinutes;
+                document.getElementById('streakCount').textContent = this.calculateStreak();
+            }
+
+            calculateStreak() {
+                if (!this.stats.history || this.stats.history.length === 0) return 0;
+                
+                let streak = 0;
                 const today = new Date();
                 
-                if (lastDate.toDateString() !== today.toDateString()) {
-                    state.todayCount = 0;
-                    if (today - lastDate > 24 * 60 * 60 * 1000 * 2) {
-                        state.streakCount = 0;
+                for (let i = 0; i < 365; i++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(today.getDate() - i);
+                    const dateString = this.formatDate(checkDate);
+                    
+                    const record = this.stats.history.find(h => h.date === dateString);
+                    if (record && record.completed > 0) {
+                        streak++;
+                    } else if (i > 0) {
+                        break;
                     }
-                    saveStats();
+                }
+                
+                return streak;
+            }
+
+            checkStreak() {
+                const today = this.getTodayString();
+                
+                if (this.stats.today && this.stats.today.date !== today) {
+                    // 新的一天，保存昨天的记录
+                    if (!this.stats.history) this.stats.history = [];
+                    this.stats.history.push(this.stats.today);
+                    
+                    // 只保留最近90天
+                    if (this.stats.history.length > 90) {
+                        this.stats.history = this.stats.history.slice(-90);
+                    }
+                    
+                    this.stats.today = null;
+                    this.saveStats();
                 }
             }
-            loadStats();
-        }
 
-        // 音效
-        function playNotificationSound() {
-            const ctx = audioContext;
-            const oscillator = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(ctx.destination);
-            
-            const soundType = elements.soundType.value;
-            
-            if (soundType === 'bell') {
-                oscillator.frequency.value = 800;
-                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-                oscillator.start(ctx.currentTime);
-                oscillator.stop(ctx.currentTime + 0.5);
-            } else if (soundType === 'chime') {
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 1000;
-                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
-                oscillator.start(ctx.currentTime);
-                oscillator.stop(ctx.currentTime + 1);
-            } else if (soundType === 'soft') {
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 600;
-                gainNode.gain.setValueAtTime(0.15, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-                oscillator.start(ctx.currentTime);
-                oscillator.stop(ctx.currentTime + 0.8);
+            // ============ 庆祝动画 ============
+            celebrate() {
+                const tomato = document.querySelector('.pixel-tomato');
+                tomato.classList.add('celebrating');
+                
+                setTimeout(() => {
+                    tomato.classList.remove('celebrating');
+                }, 1500);
+
+                this.createParticles();
             }
-        }
 
-        // 背景音乐
-        function handleBgmChange() {
-            stopBgm();
-            const type = elements.bgmType.value;
-            if (type !== 'none') {
-                startBgm(type);
-            }
-            saveSettings();
-        }
-
-        function handleVolumeChange() {
-            const volume = elements.bgmVolume.value;
-            elements.volumeDisplay.textContent = volume + '%';
-            if (bgmGain) {
-                bgmGain.gain.value = volume / 100 * 0.3;
-            }
-            saveSettings();
-        }
-
-        function startBgm(type) {
-            const ctx = audioContext;
-            bgmOscillator = ctx.createOscillator();
-            bgmGain = ctx.createGain();
-            
-            bgmOscillator.connect(bgmGain);
-            bgmGain.connect(ctx.destination);
-            
-            const volume = elements.bgmVolume.value / 100 * 0.3;
-            bgmGain.gain.value = volume;
-            
-            if (type === 'rain') {
-                bgmOscillator.type = 'sawtooth';
-                bgmOscillator.frequency.value = 100;
-            } else if (type === 'cafe') {
-                bgmOscillator.type = 'triangle';
-                bgmOscillator.frequency.value = 200;
-            } else if (type === 'lofi') {
-                bgmOscillator.type = 'sine';
-                bgmOscillator.frequency.value = 150;
-            }
-            
-            bgmOscillator.start();
-        }
-
-        function stopBgm() {
-            if (bgmOscillator) {
-                bgmOscillator.stop();
-                bgmOscillator = null;
-                bgmGain = null;
-            }
-        }
-
-        // 通知
-        function checkNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                document.getElementById('notificationPrompt').style.display = 'block';
-            }
-        }
-
-        function requestNotificationPermission() {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    document.getElementById('notificationPrompt').style.display = 'none';
-                    elements.notificationEnabled.checked = true;
-                    saveSettings();
+            createParticles() {
+                const colors = ['var(--progress-fill)', 'var(--accent-primary)', 'var(--accent-secondary)'];
+                
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const particle = document.createElement('div');
+                        particle.className = 'particle';
+                        particle.style.left = Math.random() * window.innerWidth + 'px';
+                        particle.style.top = Math.random() * window.innerHeight * 0.3 + 'px';
+                        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        
+                        document.body.appendChild(particle);
+                        
+                        setTimeout(() => particle.remove(), 2000);
+                    }, i * 50);
                 }
-            });
+            }
+
+            // ============ 音效系统 ============
+            playSound(type) {
+                if (!this.settings.soundEnabled || !this.audioContext) return;
+
+                const volume = this.settings.volume / 100;
+
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+
+                    gainNode.gain.value = volume * 0.3;
+
+                    if (type === 'start') {
+                        oscillator.frequency.value = 440;
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 0.1);
+                    } else if (type === 'end') {
+                        const frequencies = [523, 659, 784];
+                        frequencies.forEach((freq, i) => {
+                            setTimeout(() => {
+                                const osc = this.audioContext.createOscillator();
+                                const gain = this.audioContext.createGain();
+                                osc.connect(gain);
+                                gain.connect(this.audioContext.destination);
+                                gain.gain.value = volume * 0.3;
+                                osc.frequency.value = freq;
+                                osc.start();
+                                osc.stop(this.audioContext.currentTime + 0.15);
+                            }, i * 100);
+                        });
+                    } else if (type === 'tick') {
+                        oscillator.frequency.value = 880;
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 0.05);
+                    }
+                } catch (e) {
+                    console.warn('Sound playback failed:', e);
+                }
+            }
+
+            // ============ 通知系统 ============
+            showNotification(title, message) {
+                // 页面内通知
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.innerHTML = `
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                `;
+                document.body.appendChild(notification);
+
+                setTimeout(() => notification.remove(), 3000);
+
+                // 桌面通知
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: message,
+                        icon: '🍅'
+                    });
+                }
+            }
+
+            requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }
+
+            // ============ 设置管理 ============
+            openSettings() {
+                document.getElementById('settingsModal').classList.add('active');
+                
+                // 同步当前设置到UI
+                document.getElementById('workDuration').value = this.settings.workDuration;
+                document.getElementById('shortBreak').value = this.settings.shortBreak;
+                document.getElementById('longBreak').value = this.settings.longBreak;
+                document.getElementById('longBreakInterval').value = this.settings.longBreakInterval;
+                document.getElementById('autoPlay').checked = this.settings.autoPlay;
+                document.getElementById('soundEnabled').checked = this.settings.soundEnabled;
+                document.getElementById('volume').value = this.settings.volume;
+                document.getElementById('volumeValue').textContent = this.settings.volume + '%';
+                document.getElementById('darkMode').checked = this.settings.darkMode;
+
+                this.requestNotificationPermission();
+            }
+
+            closeSettings() {
+                document.getElementById('settingsModal').classList.remove('active');
+            }
+
+            // ============ 主题管理 ============
+            applyTheme() {
+                const root = document.documentElement;
+                root.setAttribute('data-theme', this.settings.theme);
+                root.setAttribute('data-dark', this.settings.darkMode);
+            }
+
+            cycleTheme() {
+                const themes = ['sakura', 'mint', 'lavender', 'peach'];
+                const currentIndex = themes.indexOf(this.settings.theme);
+                const nextIndex = (currentIndex + 1) % themes.length;
+                this.settings.theme = themes[nextIndex];
+                this.saveSettings();
+                this.applyTheme();
+            }
+
+            // ============ 数据持久化 ============
+            loadSettings() {
+                const defaultSettings = {
+                    workDuration: 25,
+                    shortBreak: 5,
+                    longBreak: 15,
+                    longBreakInterval: 4,
+                    autoPlay: true,
+                    soundEnabled: true,
+                    volume: 70,
+                    theme: 'sakura',
+                    darkMode: false
+                };
+
+                try {
+                    const saved = localStorage.getItem('pomodoroSettings');
+                    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+                } catch (e) {
+                    return defaultSettings;
+                }
+            }
+
+            saveSettings() {
+                try {
+                    localStorage.setItem('pomodoroSettings', JSON.stringify(this.settings));
+                } catch (e) {
+                    console.warn('Failed to save settings:', e);
+                }
+            }
+
+            loadStats() {
+                try {
+                    const saved = localStorage.getItem('pomodoroStats');
+                    return saved ? JSON.parse(saved) : { today: null, history: [] };
+                } catch (e) {
+                    return { today: null, history: [] };
+                }
+            }
+
+            saveStats() {
+                try {
+                    localStorage.setItem('pomodoroStats', JSON.stringify(this.stats));
+                } catch (e) {
+                    console.warn('Failed to save stats:', e);
+                }
+            }
+
+            // ============ 工具函数 ============
+            getTodayString() {
+                return this.formatDate(new Date());
+            }
+
+            formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
         }
 
-        function showNotification() {
-            let title, body;
-            if (state.mode === 'work') {
-                title = '🎉 番茄钟完成！';
-                body = `太棒了！你已经完成了 ${state.pomodoroCount} 个番茄钟`;
-            } else {
-                title = '⏰ 休息结束';
-                body = '准备好开始新的番茄钟了吗？';
-            }
-            
-            new Notification(title, {
-                body: body,
-                icon: '🍅',
-                badge: '🍅'
-            });
-        }
-
-        // 页面可见性变化
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                updateDisplay();
-            }
+        // ============ 启动应用 ============
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new PomodoroApp();
         });
-
-        // 启动应用
-        init();
     </script>
 </body>
 </html>
