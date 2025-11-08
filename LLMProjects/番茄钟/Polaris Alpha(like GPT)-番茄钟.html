@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>番茄钟</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --font-main: "Press Start 2P", "Pixel", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "Pixel", monospace;
+
+      /* Light / Mint theme */
+      --bg-color: #f5fbff;
+      --bg-gradient-top: #f5fbff;
+      --bg-gradient-bottom: #d8f5ff;
+      --text-color: #263449;
+
+      --accent-color: #ff9ecb;
+      --accent-soft: #ffe4f2;
+      --accent-strong: #ff6fa6;
+
+      --work-color: #7ed9ff;
+      --short-color: #b4ff9e;
+      --long-color: #c9a8ff;
+
+      --border-color: #223147;
+      --shadow-color: rgba(34, 49, 71, 0.35);
+
+      --btn-bg: #ffffff;
+      --btn-bg-hover: #ffecf6;
+      --btn-text: #223147;
+
+      --panel-bg: rgba(255, 255, 255, 0.96);
+      --input-bg: #ffffff;
+
+      --danger-color: #ff6b81;
+
+      --pixel-size: 3px;
+      --transition-fast: 0.18s ease-out;
+    }
+
+    /* 全新暗色主题：高对比 + 糖果色 */
+    [data-theme="dark"] {
+      --bg-color: #050814;
+      --bg-gradient-top: #050814;
+      --bg-gradient-bottom: #151a33;
+
+      --text-color: #f3f5ff;
+
+      --accent-color: #ff9ef5;
+      --accent-soft: #261636;
+      --accent-strong: #ff6cf0;
+
+      --work-color: #51c8ff;
+      --short-color: #63ffb5;
+      --long-color: #d69bff;
+
+      --border-color: #8fd3ff;
+      --shadow-color: rgba(0, 0, 0, 0.75);
+
+      --btn-bg: #141827;
+      --btn-bg-hover: #222842;
+      --btn-text: #f3f5ff;
+
+      --panel-bg: rgba(10, 13, 25, 0.98);
+      --input-bg: #111626;
+
+      --danger-color: #ff6b9b;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-main);
+      background:
+        linear-gradient(to bottom, var(--bg-gradient-top), var(--bg-gradient-bottom));
+      color: var(--text-color);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .pixel-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 10px 10px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.25;
+    }
+
+    [data-theme="dark"] .pixel-grid {
+      background-image:
+        linear-gradient(to right, rgba(143, 211, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(143, 211, 255, 0.05) 1px, transparent 1px);
+      opacity: 0.18;
+    }
+
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.85);
+      image-rendering: pixelated;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 1);
+      animation: floatStar 10s linear infinite;
+    }
+
+    [data-theme="dark"] .star {
+      background: #fffbcc;
+      box-shadow: 0 0 5px #fffbcc;
+    }
+
+    @keyframes floatStar {
+      0% { transform: translateY(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-40px); opacity: 0; }
+    }
+
+    .app {
+      position: relative;
+      z-index: 2;
+      width: min(1040px, 100vw - 20px);
+      height: min(680px, 100vh - 20px);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--panel-bg);
+      box-shadow:
+        0 0 0 var(--pixel-size) #ffffff22,
+        0 var(--pixel-size) 0 #00000055,
+        0 16px 30px var(--shadow-color);
+      image-rendering: pixelated;
+      border-radius: 6px;
+      backdrop-filter: blur(10px) saturate(1.05);
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        padding: 6px;
+      }
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .title {
+      font-size: 18px;
+      letter-spacing: 2px;
+      padding: 4px 10px;
+      background: var(--accent-soft);
+      border: var(--pixel-size) solid var(--border-color);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-icon {
+      width: 10px;
+      height: 10px;
+      background: var(--accent-color);
+      box-shadow:
+        var(--pixel-size) 0 0 var(--accent-strong),
+        0 var(--pixel-size) 0 var(--accent-strong);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+    }
+
+    .chip {
+      padding: 4px 6px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+      transition: all var(--transition-fast);
+    }
+
+    .chip span.dot {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: var(--accent-color);
+    }
+
+    .chip:hover {
+      background: var(--btn-bg-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 var(--pixel-size) 0 var(--accent-strong);
+    }
+
+    .chip:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .layout-main {
+      display: grid;
+      grid-template-columns: minmax(0, 3.2fr) minmax(220px, 2fr);
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    @media (max-width: 720px) {
+      .layout-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+    }
+
+    /* Timer Panel */
+    .timer-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--input-bg);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      position: relative;
+      overflow: hidden;
+    }
+
+    [data-theme="dark"] .timer-panel {
+      background: #111626;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 4px;
+      font-size: 9px;
+      flex-wrap: wrap;
+    }
+
+    .mode-tab {
+      padding: 4px 7px;
+      border: var(--pixel-size) solid var(--border-color);
+      cursor: pointer;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      user-select: none;
+      transition: all var(--transition-fast);
+    }
+
+    .mode-tab.active.work {
+      background: var(--work-color);
+      color: #0c1826;
+    }
+
+    .mode-tab.active.short {
+      background: var(--short-color);
+      color: #153018;
+    }
+
+    .mode-tab.active.long {
+      background: var(--long-color);
+      color: #1d1030;
+    }
+
+    .mode-tab:hover {
+      background: var(--btn-bg-hover);
+      transform: translateY(-1px);
+    }
+
+    .mode-tab:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .timer-display-wrap {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.7fr 1.2fr;
+      gap: 4px;
+      align-items: center;
+    }
+
+    @media (max-width: 720px) {
+      .timer-display-wrap {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+    }
+
+    .timer-core {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .timer-circle {
+      width: 190px;
+      height: 190px;
+      position: relative;
+      border: var(--pixel-size) solid var(--border-color);
+      box-shadow:
+        0 var(--pixel-size) 0 var(--border-color),
+        0 0 0 calc(var(--pixel-size) * 2) var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 30% 30%, #ffffff, var(--panel-bg));
+    }
+
+    [data-theme="dark"] .timer-circle {
+      background:
+        radial-gradient(circle at 30% 30%, #222848, #0a0d18);
+      box-shadow:
+        0 var(--pixel-size) 0 var(--border-color),
+        0 0 0 calc(var(--pixel-size) * 2) #252f5a;
+    }
+
+    @media (max-width: 720px) {
+      .timer-circle {
+        width: 180px;
+        height: 180px;
+      }
+    }
+
+    .timer-time {
+      font-family: var(--font-mono);
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--text-color);
+      text-shadow: 0 1px 0 #ffffff55;
+    }
+
+    [data-theme="dark"] .timer-time {
+      text-shadow: 0 1px 0 #000000aa;
+    }
+
+    .timer-label {
+      font-size: 9px;
+      margin-top: 2px;
+      text-align: center;
+      opacity: 0.9;
+    }
+
+    .timer-progress {
+      position: absolute;
+      inset: 4px;
+      pointer-events: none;
+    }
+
+    .timer-progress-bar {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      height: 7px;
+      background: var(--accent-color);
+      box-shadow:
+        0 0 0 var(--pixel-size) var(--border-color),
+        0 -var(--pixel-size) 0 var(--accent-soft);
+      transform-origin: left center;
+    }
+
+    [data-theme="dark"] .timer-progress-bar {
+      box-shadow:
+        0 0 0 var(--pixel-size) var(--border-color),
+        0 -var(--pixel-size) 0 #151a33;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 5px 10px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      font-size: 9px;
+      cursor: pointer;
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      text-transform: none;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all var(--transition-fast);
+      image-rendering: pixelated;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: var(--accent-color);
+      color: #2b0f22;
+      box-shadow: 0 var(--pixel-size) 0 var(--accent-strong);
+    }
+
+    .btn.danger {
+      background: var(--danger-color);
+      color: #fff9ff;
+      box-shadow: 0 var(--pixel-size) 0 #b03040;
+    }
+
+    .btn:hover {
+      background: var(--btn-bg-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 var(--pixel-size) 0 var(--accent-strong);
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-strong);
+      color: #ffffff;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .btn small {
+      font-size: 7px;
+      opacity: 0.8;
+    }
+
+    /* Pixel companion character */
+    .pixel-companion {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      margin: 0 auto;
+      image-rendering: pixelated;
+    }
+
+    .pc-shadow {
+      position: absolute;
+      bottom: 10px;
+      left: 18px;
+      width: 72px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.1);
+      filter: blur(1px);
+    }
+
+    [data-theme="dark"] .pc-shadow {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .pc-body {
+      position: absolute;
+      left: 24px;
+      top: 32px;
+      width: 60px;
+      height: 46px;
+      background: #ffbfd8;
+      box-shadow:
+        0 -3px #ff9ecb,
+        0 3px #e88ab4,
+        -3px 0 #ff9ecb,
+        3px 0 #ff9ecb;
+    }
+
+    .pc-face {
+      position: absolute;
+      left: 27px;
+      top: 26px;
+      width: 54px;
+      height: 28px;
+      background: #ffe9f2;
+      box-shadow:
+        0 -3px #ff9ecb,
+        0 3px #ff9ecb,
+        -3px 0 #ff9ecb,
+        3px 0 #ff9ecb;
+    }
+
+    .pc-eye {
+      position: absolute;
+      top: 9px;
+      width: 7px;
+      height: 7px;
+      background: #2b3c5a;
+    }
+
+    .pc-eye.left {
+      left: 8px;
+    }
+
+    .pc-eye.right {
+      right: 8px;
+    }
+
+    .pc-blush {
+      position: absolute;
+      top: 17px;
+      width: 6px;
+      height: 3px;
+      background: #ffb0c9;
+      opacity: 0.9;
+    }
+
+    .pc-blush.left {
+      left: 4px;
+    }
+
+    .pc-blush.right {
+      right: 4px;
+    }
+
+    .pc-mouth {
+      position: absolute;
+      bottom: 6px;
+      left: 20px;
+      width: 14px;
+      height: 3px;
+      background: #ff6fa6;
+    }
+
+    .pc-hair {
+      position: absolute;
+      left: 22px;
+      top: 16px;
+      width: 20px;
+      height: 9px;
+      background: #ff9ecb;
+      box-shadow:
+        -3px -3px #ff9ecb,
+        3px -3px #ff9ecb;
+    }
+
+    .pc-ears {
+      position: absolute;
+      top: 16px;
+      width: 7px;
+      height: 9px;
+      background: #ffbfd8;
+      box-shadow: 0 -3px #ff9ecb;
+    }
+
+    .pc-ears.left {
+      left: 18px;
+    }
+
+    .pc-ears.right {
+      right: 18px;
+    }
+
+    .pc-status {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      padding: 1px 3px;
+      font-size: 6px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--accent-soft);
+      color: var(--border-color);
+      white-space: nowrap;
+    }
+
+    .pc-z {
+      position: absolute;
+      top: -2px;
+      right: 4px;
+      font-size: 9px;
+      opacity: 0;
+    }
+
+    /* 状态动画 */
+    .pc-work .pc-eye {
+      height: 7px;
+      background: #2b3c5a;
+    }
+
+    .pc-work .pc-mouth {
+      width: 10px;
+      left: 22px;
+    }
+
+    .pc-rest .pc-eye {
+      height: 3px;
+      margin-top: 3px;
+      background: #2b3c5a;
+    }
+
+    .pc-rest .pc-mouth {
+      width: 10px;
+      left: 22px;
+      height: 2px;
+    }
+
+    .pc-long .pc-eye {
+      height: 2px;
+      margin-top: 4px;
+      background: #2b3c5a;
+    }
+
+    .pc-long .pc-mouth {
+      width: 6px;
+      left: 24px;
+      height: 2px;
+    }
+
+    .pc-long .pc-z {
+      opacity: 1;
+      animation: zzz 1.6s infinite;
+      color: var(--accent-strong);
+      text-shadow: 0 0 4px var(--accent-strong);
+    }
+
+    @keyframes zzz {
+      0% { opacity: 0; transform: translateY(0); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-6px); }
+    }
+
+    .pc-rest {
+      animation: rest-bob 1.2s ease-in-out infinite;
+    }
+
+    @keyframes rest-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+
+    .pc-work {
+      animation: work-bounce 0.9s ease-in-out infinite;
+    }
+
+    @keyframes work-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-1px); }
+    }
+
+    .pc-long {
+      animation: long-sleep 2s ease-in-out infinite;
+    }
+
+    @keyframes long-sleep {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(1px); }
+    }
+
+    /* Side: Stats + Settings */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .stats-panel,
+    .settings-panel {
+      padding: 6px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--input-bg);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      font-size: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    [data-theme="dark"] .stats-panel,
+    [data-theme="dark"] .settings-panel {
+      background: #111626;
+    }
+
+    .stats-title,
+    .settings-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 8px;
+      padding: 2px 4px;
+      background: var(--accent-soft);
+      border: var(--pixel-size) solid var(--border-color);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      width: fit-content;
+    }
+
+    .stats-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .tomato-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .t-icon {
+      width: 8px;
+      height: 8px;
+      background: #ff6b6b;
+      box-shadow:
+        0 -2px #ff9e6b,
+        2px 0 #b03030,
+        -2px 0 #b03030;
+      border-radius: 2px;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr;
+      gap: 3px 4px;
+      align-items: center;
+    }
+
+    .settings-label {
+      font-size: 7px;
+    }
+
+    .settings-input {
+      width: 100%;
+      padding: 2px 3px;
+      font-size: 7px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--panel-bg);
+      color: var(--text-color);
+      font-family: var(--font-mono);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+    }
+
+    .settings-input[type="range"] {
+      padding: 0;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      font-size: 7px;
+    }
+
+    .settings-row small {
+      opacity: 0.7;
+      font-size: 6px;
+    }
+
+    .toggle {
+      width: 24px;
+      height: 10px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--btn-bg);
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 9px;
+      height: 6px;
+      background: var(--danger-color);
+      transition: all var(--transition-fast);
+    }
+
+    .toggle.on .toggle-knob {
+      left: 12px;
+      background: var(--accent-color);
+    }
+
+    .settings-collapsible-header {
+      display: none;
+      cursor: pointer;
+      margin-top: 2px;
+      padding: 3px 4px;
+      border: var(--pixel-size) solid var(--border-color);
+      background: var(--btn-bg);
+      font-size: 7px;
+      box-shadow: 0 var(--pixel-size) 0 var(--border-color);
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .settings-collapsible-arrow {
+      font-size: 8px;
+    }
+
+    @media (max-width: 720px) {
+      .settings-panel {
+        margin-top: 2px;
+      }
+      .settings-collapsible-header {
+        display: flex;
+      }
+      .settings-panel-inner {
+        display: none;
+      }
+      .settings-panel.open .settings-panel-inner {
+        display: flex;
+      }
+    }
+
+    @media (min-width: 721px) {
+      .settings-panel-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+    }
+
+    .hint-keys {
+      font-size: 6px;
+      opacity: 0.8;
+    }
+
+    .blink {
+      animation: blink 0.5s ease-in-out 2;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .shake {
+      animation: shake 0.18s linear 1;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      50% { transform: translateX(2px); }
+      75% { transform: translateX(-1px); }
+      100% { transform: translateX(0); }
+    }
+
+    .footer-hint {
+      font-size: 6px;
+      opacity: 0.75;
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    [data-theme="dark"] .footer-hint {
+      opacity: 0.9;
+      color: #c6d4ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="pixel-grid"></div>
+  <div class="stars" id="stars"></div>
+
+  <div class="app" id="app" data-theme="light">
+    <header class="app-header">
+      <div class="title">
+        <div class="title-icon"></div>
+        <div>番茄钟</div>
+      </div>
+      <div class="header-actions">
+        <div class="chip" id="themeToggle">
+          <span class="dot"></span>
+          <span id="themeLabel">薄荷日光</span>
+        </div>
+        <div class="chip" id="settingsToggleMobile">
+          <span>⚙</span>
+          <span>设置</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout-main">
+      <!-- 左侧：计时器 + 像素角色 -->
+      <section class="timer-panel">
+        <div class="mode-tabs">
+          <div class="mode-tab work active" data-mode="work">工作</div>
+          <div class="mode-tab short" data-mode="shortBreak">短休息</div>
+          <div class="mode-tab long" data-mode="longBreak">长休息</div>
+        </div>
+
+        <div class="timer-display-wrap">
+          <div class="timer-core">
+            <div class="timer-circle" id="timerCircle">
+              <div class="timer-progress">
+                <div class="timer-progress-bar" id="timerProgress"></div>
+              </div>
+              <div class="timer-time" id="timeDisplay">25:00</div>
+            </div>
+            <div class="timer-label" id="modeLabel">准备开始专注 · 第 0 个番茄</div>
+            <div class="timer-controls">
+              <button class="btn primary" id="btnStartPause">
+                ▶ 开始
+                <small>(空格)</small>
+              </button>
+              <button class="btn" id="btnReset">
+                ↺ 重置
+                <small>(R)</small>
+              </button>
+              <button class="btn" id="btnSkip">
+                ⇥ 跳过
+                <small>(S)</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="pixel-companion" id="pixelCompanion">
+            <div class="pc-shadow"></div>
+            <div class="pc-body"></div>
+            <div class="pc-face">
+              <div class="pc-eye left"></div>
+              <div class="pc-eye right"></div>
+              <div class="pc-blush left"></div>
+              <div class="pc-blush right"></div>
+              <div class="pc-mouth"></div>
+            </div>
+            <div class="pc-hair"></div>
+            <div class="pc-ears left"></div>
+            <div class="pc-ears right"></div>
+            <div class="pc-status" id="pcStatus">READY</div>
+            <div class="pc-z">Z</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 右侧：统计 + 设置 -->
+      <aside class="side-panel">
+        <section class="stats-panel">
+          <div class="stats-title">
+            <span>★ 今日统计</span>
+          </div>
+          <div class="stats-line">
+            <span>今日完成番茄</span>
+            <span id="todayCount">0</span>
+          </div>
+          <div class="tomato-row" id="tomatoRow"></div>
+          <div class="stats-line">
+            <span>已完成工作阶段</span>
+            <span id="sessionCount">0</span>
+          </div>
+          <div class="stats-line">
+            <span>长休间隔</span>
+            <span><span id="longIntervalLabel">4</span> 个工作后长休息</span>
+          </div>
+          <div class="hint-keys">
+            快捷键：空格 = 开始/暂停，R = 重置，S = 跳过
+          </div>
+        </section>
+
+        <section class="settings-panel" id="settingsPanel">
+          <div class="settings-collapsible-header">
+            <span>⚙ 设置</span>
+            <span class="settings-collapsible-arrow" id="settingsArrow">▼</span>
+          </div>
+          <div class="settings-panel-inner">
+            <div class="settings-title">
+              <span>⌛ 时间设置</span>
+            </div>
+            <div class="settings-grid">
+              <div class="settings-label">工作时长 (分钟)</div>
+              <input class="settings-input" type="number" id="inputWork" min="5" max="90" />
+              <div class="settings-label">短休息 (分钟)</div>
+              <input class="settings-input" type="number" id="inputShort" min="1" max="30" />
+              <div class="settings-label">长休息 (分钟)</div>
+              <input class="settings-input" type="number" id="inputLong" min="5" max="60" />
+              <div class="settings-label">长休间隔 (工作数)</div>
+              <input class="settings-input" type="number" id="inputLongInterval" min="2" max="8" />
+            </div>
+
+            <div class="settings-title">
+              <span>♪ 声音与自动</span>
+            </div>
+            <div class="settings-row">
+              <span>启用提示音</span>
+              <div class="toggle" id="toggleSound">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span>提示音音量</span>
+              <input class="settings-input" type="range" id="soundVolume" min="0" max="100" />
+            </div>
+            <div class="settings-row">
+              <span>背景音乐</span>
+              <div class="toggle" id="toggleBgm">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <span>BGM 音量</span>
+              <input class="settings-input" type="range" id="bgmVolume" min="0" max="100" />
+            </div>
+            <div class="settings-row">
+              <span>自动开始下一阶段</span>
+              <div class="toggle" id="toggleAutoNext">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+
+            <div class="settings-title">
+              <span>🎨 主题</span>
+            </div>
+            <div class="settings-row">
+              <span>当前主题</span>
+              <span id="themeText">薄荷日光</span>
+            </div>
+            <div class="hint-keys">
+              提示：暂停时修改时间会重置当前阶段；运行中修改从下一轮开始生效。
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <div class="footer-hint">
+      像素番茄提示：专注 $25$ 分钟，休息 $5$ 分钟，记得眨眼和喝水 (´・ω・`)
+    </div>
+  </div>
+
+  <script>
+    // 工具函数
+    function $(s) { return document.querySelector(s); }
+    function $all(s) { return document.querySelectorAll(s); }
+
+    function formatTime(sec) {
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function todayStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    // 背景星星
+    (function initStars() {
+      const stars = $('#stars');
+      const count = 32;
+      for (let i = 0; i < count; i++) {
+        const st = document.createElement('div');
+        st.className = 'star';
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const delay = (Math.random() * 10).toFixed(2);
+        st.style.left = x + '%';
+        st.style.bottom = y + '%';
+        st.style.animationDelay = '-' + delay + 's';
+        stars.appendChild(st);
+      }
+    })();
+
+    // 简单 beep 音效 + 静音 BGM 占位
+    const beepStartData =
+      "data:audio/wav;base64,UklGRoQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQwAAAAA/////wAAAP///w==";
+    const beepEndData =
+      "data:audio/wav;base64,UklGRoQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAAAA/////wD///8=";
+    const bgmData =
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAA";
+
+    function createAudio(src, loop = false) {
+      const a = new Audio(src);
+      a.loop = loop;
+      a.preload = "auto";
+      return a;
+    }
+
+    const startSound = createAudio(beepStartData, false);
+    const endSound = createAudio(beepEndData, false);
+    const bgmAudio = createAudio(bgmData, true);
+
+    // 默认设置
+    const DEFAULT_SETTINGS = {
+      workDuration: 25 * 60,
+      shortBreakDuration: 5 * 60,
+      longBreakDuration: 15 * 60,
+      longBreakInterval: 4,
+      autoStartNext: true,
+      soundEnabled: true,
+      soundVolume: 60,
+      bgmEnabled: false,
+      bgmVolume: 10,
+      theme: 'light'
+    };
+
+    const SETTINGS_KEY = 'pixelPomodoroSettings_v2';
+    const STATS_KEY = 'pixelPomodoroStats_v2';
+
+    let settings = { ...DEFAULT_SETTINGS };
+    let stats = {
+      date: todayStr(),
+      todayCount: 0,
+      sessionsCompleted: 0
+    };
+
+    let currentMode = 'work'; // work | shortBreak | longBreak
+    let remaining = settings.workDuration;
+    let totalForMode = settings.workDuration;
+
+    let isRunning = false;
+    let timer = null;
+    let lastTick = null;
+
+    // DOM 引用
+    const appEl = $('#app');
+    const timeDisplay = $('#timeDisplay');
+    const modeLabel = $('#modeLabel');
+    const modeTabs = $all('.mode-tab');
+    const timerProgress = $('#timerProgress');
+    const timerCircle = $('#timerCircle');
+    const btnStartPause = $('#btnStartPause');
+    const btnReset = $('#btnReset');
+    const btnSkip = $('#btnSkip');
+    const todayCountEl = $('#todayCount');
+    const tomatoRow = $('#tomatoRow');
+    const sessionCountEl = $('#sessionCount');
+    const longIntervalLabel = $('#longIntervalLabel');
+    const pixelCompanion = $('#pixelCompanion');
+    const pcStatus = $('#pcStatus');
+    const themeToggle = $('#themeToggle');
+    const themeLabel = $('#themeLabel');
+    const themeText = $('#themeText');
+    const settingsPanel = $('#settingsPanel');
+    const settingsToggleMobile = $('#settingsToggleMobile');
+    const settingsArrow = $('#settingsArrow');
+
+    const inputWork = $('#inputWork');
+    const inputShort = $('#inputShort');
+    const inputLong = $('#inputLong');
+    const inputLongInterval = $('#inputLongInterval');
+    const toggleSound = $('#toggleSound');
+    const soundVolume = $('#soundVolume');
+    const toggleBgm = $('#toggleBgm');
+    const bgmVolume = $('#bgmVolume');
+    const toggleAutoNext = $('#toggleAutoNext');
+
+    // 本地存储
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s && typeof s === 'object') {
+          settings = { ...settings, ...s };
+        }
+      } catch {}
+    }
+
+    function saveSettings() {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function loadStats() {
+      try {
+        const raw = localStorage.getItem(STATS_KEY);
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (s && typeof s === 'object') {
+            stats = { ...stats, ...s };
+          }
+        }
+      } catch {}
+      const today = todayStr();
+      if (stats.date !== today) {
+        stats.date = today;
+        stats.todayCount = 0;
+        stats.sessionsCompleted = 0;
+        saveStats();
+      }
+    }
+
+    function saveStats() {
+      localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    }
+
+    // UI 更新
+    function updateThemeUI() {
+      appEl.setAttribute('data-theme', settings.theme);
+      if (settings.theme === 'light') {
+        themeLabel.textContent = '薄荷日光';
+        themeText.textContent = '薄荷日光';
+      } else {
+        themeLabel.textContent = '星夜糖果';
+        themeText.textContent = '星夜糖果';
+      }
+    }
+
+    function setToggle(el, on) {
+      el.classList.toggle('on', !!on);
+    }
+
+    function updateStatsUI() {
+      todayCountEl.textContent = stats.todayCount;
+      sessionCountEl.textContent = stats.sessionsCompleted;
+      longIntervalLabel.textContent = settings.longBreakInterval;
+
+      tomatoRow.innerHTML = '';
+      const count = Math.min(stats.todayCount, 40);
+      for (let i = 0; i < count; i++) {
+        const t = document.createElement('div');
+        t.className = 't-icon';
+        tomatoRow.appendChild(t);
+      }
+    }
+
+    function updateModeTabs() {
+      modeTabs.forEach(tab => {
+        const m = tab.dataset.mode;
+        tab.classList.remove('active');
+        if (
+          (m === 'work' && currentMode === 'work') ||
+          (m === 'shortBreak' && currentMode === 'shortBreak') ||
+          (m === 'longBreak' && currentMode === 'longBreak')
+        ) {
+          tab.classList.add('active');
+        }
+      });
+    }
+
+    function updateCompanion() {
+      pixelCompanion.classList.remove('pc-work', 'pc-rest', 'pc-long');
+
+      if (currentMode === 'work') {
+        pixelCompanion.classList.add('pc-work');
+        pcStatus.textContent = isRunning ? 'FOCUS!' : 'READY';
+      } else if (currentMode === 'shortBreak') {
+        pixelCompanion.classList.add('pc-rest');
+        pcStatus.textContent = isRunning ? 'CHILL' : 'REST';
+      } else {
+        pixelCompanion.classList.add('pc-long');
+        pcStatus.textContent = isRunning ? 'SLEEP' : 'NAP';
+      }
+    }
+
+    function updateTimeAndProgress() {
+      timeDisplay.textContent = formatTime(remaining);
+
+      const ratio = totalForMode > 0
+        ? (totalForMode - remaining) / totalForMode
+        : 0;
+      const w = (timerCircle.clientWidth - 16) * Math.max(0, Math.min(1, ratio));
+      timerProgress.style.width = w + 'px';
+
+      let label;
+      if (currentMode === 'work') {
+        if (isRunning) label = '专注工作中';
+        else label = '准备开始专注';
+      } else if (currentMode === 'shortBreak') {
+        label = isRunning ? '短休息中 · 记得伸伸懒腰' : '短休息待机';
+      } else {
+        label = isRunning ? '长休息中 · 好好放空一下' : '长休息待机';
+      }
+      label += ' · 第 ' + stats.sessionsCompleted + ' 个番茄';
+      modeLabel.textContent = label;
+
+      if (isRunning) {
+        document.title = '[' + formatTime(remaining) + '] 番茄钟';
+      } else {
+        document.title = '番茄钟';
+      }
+    }
+
+    function updateButtons() {
+      btnStartPause.innerHTML = (isRunning ? '⏸ 暂停' : '▶ 开始') + ' <small>(空格)</small>';
+      btnReset.innerHTML = '↺ 重置 <small>(R)</small>';
+      btnSkip.innerHTML = '⇥ 跳过 <small>(S)</small>';
+      if (isRunning) {
+        btnStartPause.classList.add('primary');
+      } else {
+        btnStartPause.classList.add('primary'); // 保持主按钮视觉
+      }
+    }
+
+    function applySettingsToInputs() {
+      inputWork.value = Math.round(settings.workDuration / 60);
+      inputShort.value = Math.round(settings.shortBreakDuration / 60);
+      inputLong.value = Math.round(settings.longBreakDuration / 60);
+      inputLongInterval.value = settings.longBreakInterval;
+
+      soundVolume.value = settings.soundVolume;
+      bgmVolume.value = settings.bgmVolume;
+
+      setToggle(toggleSound, settings.soundEnabled);
+      setToggle(toggleBgm, settings.bgmEnabled);
+      setToggle(toggleAutoNext, settings.autoStartNext);
+
+      updateThemeUI();
+    }
+
+    function updateAudioVolumes() {
+      const vol = (settings.soundVolume || 0) / 100;
+      startSound.volume = vol;
+      endSound.volume = vol;
+      bgmAudio.volume = (settings.bgmVolume || 0) / 100;
+    }
+
+    function ensureBgmState() {
+      if (settings.bgmEnabled) {
+        bgmAudio.loop = true;
+        bgmAudio.volume = (settings.bgmVolume || 0) / 100;
+        bgmAudio.play().catch(() => {});
+      } else {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+      }
+    }
+
+    // 计时逻辑
+    function getModeDuration(mode) {
+      if (mode === 'work') return settings.workDuration;
+      if (mode === 'shortBreak') return settings.shortBreakDuration;
+      if (mode === 'longBreak') return settings.longBreakDuration;
+      return settings.workDuration;
+    }
+
+    function setMode(mode, resetTime = true) {
+      currentMode = mode;
+      totalForMode = getModeDuration(mode);
+      if (resetTime) remaining = totalForMode;
+
+      updateModeTabs();
+      updateCompanion();
+      updateTimeAndProgress();
+
+      timerCircle.classList.add('blink');
+      setTimeout(() => timerCircle.classList.remove('blink'), 260);
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      if (remaining <= 0) {
+        remaining = getModeDuration(currentMode);
+      }
+      isRunning = true;
+      lastTick = performance.now();
+      if (settings.soundEnabled) {
+        startSound.currentTime = 0;
+        startSound.play().catch(() => {});
+      }
+      updateButtons();
+      updateCompanion();
+      ensureBgmState();
+      tick();
+    }
+
+    function pauseTimer() {
+      if (!isRunning) return;
+      isRunning = false;
+      if (timer) {
+        cancelAnimationFrame(timer);
+        timer = null;
+      }
+      updateButtons();
+      updateCompanion();
+      updateTimeAndProgress();
+    }
+
+    function resetTimer() {
+      remaining = getModeDuration(currentMode);
+      isRunning = false;
+      if (timer) {
+        cancelAnimationFrame(timer);
+        timer = null;
+      }
+      updateButtons();
+      updateCompanion();
+      updateTimeAndProgress();
+      timerCircle.classList.add('shake');
+      setTimeout(() => timerCircle.classList.remove('shake'), 180);
+    }
+
+    function skipCurrent() {
+      if (timer) {
+        cancelAnimationFrame(timer);
+        timer = null;
+      }
+      isRunning = false;
+      updateButtons();
+      // 跳过不计数，直接下一阶段
+      goToNextMode(false);
+    }
+
+    function completeSession() {
+      if (currentMode === 'work') {
+        stats.todayCount += 1;
+        stats.sessionsCompleted += 1;
+        saveStats();
+      }
+      updateStatsUI();
+
+      if (settings.soundEnabled) {
+        endSound.currentTime = 0;
+        endSound.play().catch(() => {});
+      }
+      timerCircle.classList.add('blink');
+      setTimeout(() => timerCircle.classList.remove('blink'), 400);
+
+      goToNextMode(true);
+    }
+
+    function goToNextMode(fromComplete) {
+      let next;
+      if (currentMode === 'work') {
+        if (
+          stats.sessionsCompleted > 0 &&
+          stats.sessionsCompleted % settings.longBreakInterval === 0
+        ) {
+          next = 'longBreak';
+        } else {
+          next = 'shortBreak';
+        }
+      } else {
+        next = 'work';
+      }
+
+      setMode(next, true);
+
+      if (fromComplete && settings.autoStartNext) {
+        startTimer();
+      } else {
+        isRunning = false;
+        if (timer) {
+          cancelAnimationFrame(timer);
+          timer = null;
+        }
+        updateButtons();
+        updateTimeAndProgress();
+      }
+    }
+
+    function tick() {
+      if (!isRunning) return;
+      const now = performance.now();
+      const delta = (now - lastTick) / 1000;
+      lastTick = now;
+      remaining -= delta;
+      if (remaining <= 0) {
+        remaining = 0;
+        updateTimeAndProgress();
+        isRunning = false;
+        if (timer) {
+          cancelAnimationFrame(timer);
+          timer = null;
+        }
+        completeSession();
+      } else {
+        updateTimeAndProgress();
+        timer = requestAnimationFrame(tick);
+      }
+    }
+
+    // 事件绑定
+    btnStartPause.addEventListener('click', () => {
+      isRunning ? pauseTimer() : startTimer();
+    });
+
+    btnReset.addEventListener('click', resetTimer);
+    btnSkip.addEventListener('click', skipCurrent);
+
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const m = tab.dataset.mode;
+        let target = 'work';
+        if (m === 'shortBreak') target = 'shortBreak';
+        else if (m === 'longBreak') target = 'longBreak';
+
+        if (currentMode === target && remaining === getModeDuration(target)) return;
+
+        // 手动切换不计数，仅重置到对应模式
+        isRunning = false;
+        if (timer) {
+          cancelAnimationFrame(timer);
+          timer = null;
+        }
+        setMode(target, true);
+        updateButtons();
+      });
+    });
+
+    // 键盘快捷键
+    window.addEventListener('keydown', e => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        isRunning ? pauseTimer() : startTimer();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        resetTimer();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        skipCurrent();
+      }
+    });
+
+    // 设置变更
+    function clamp(val, min, max, def) {
+      val = parseInt(val, 10);
+      if (isNaN(val)) return def;
+      return Math.max(min, Math.min(max, val));
+    }
+
+    function onTimeSettingsChange() {
+      const newWork = clamp(inputWork.value, 5, 90, settings.workDuration / 60) * 60;
+      const newShort = clamp(inputShort.value, 1, 30, settings.shortBreakDuration / 60) * 60;
+      const newLong = clamp(inputLong.value, 5, 60, settings.longBreakDuration / 60) * 60;
+      const newInterval = clamp(inputLongInterval.value, 2, 8, settings.longBreakInterval);
+
+      const changedCurrent =
+        (currentMode === 'work' && newWork !== settings.workDuration) ||
+        (currentMode === 'shortBreak' && newShort !== settings.shortBreakDuration) ||
+        (currentMode === 'longBreak' && newLong !== settings.longBreakDuration);
+
+      settings.workDuration = newWork;
+      settings.shortBreakDuration = newShort;
+      settings.longBreakDuration = newLong;
+      settings.longBreakInterval = newInterval;
+
+      saveSettings();
+      updateStatsUI();
+
+      // 暂停状态下修改：立即重置当前阶段并应用
+      if (!isRunning && changedCurrent) {
+        setMode(currentMode, true);
+      }
+      // 运行中：新设置对“下一次该模式”生效
+    }
+
+    inputWork.addEventListener('change', onTimeSettingsChange);
+    inputShort.addEventListener('change', onTimeSettingsChange);
+    inputLong.addEventListener('change', onTimeSettingsChange);
+    inputLongInterval.addEventListener('change', onTimeSettingsChange);
+
+    toggleSound.addEventListener('click', () => {
+      settings.soundEnabled = !settings.soundEnabled;
+      setToggle(toggleSound, settings.soundEnabled);
+      saveSettings();
+      updateAudioVolumes();
+      if (settings.soundEnabled) {
+        startSound.currentTime = 0;
+        startSound.play().catch(() => {});
+      }
+    });
+
+    soundVolume.addEventListener('input', () => {
+      settings.soundVolume = clamp(soundVolume.value, 0, 100, 60);
+      saveSettings();
+      updateAudioVolumes();
+    });
+
+    toggleBgm.addEventListener('click', () => {
+      settings.bgmEnabled = !settings.bgmEnabled;
+      setToggle(toggleBgm, settings.bgmEnabled);
+      saveSettings();
+      ensureBgmState();
+    });
+
+    bgmVolume.addEventListener('input', () => {
+      settings.bgmVolume = clamp(bgmVolume.value, 0, 100, 10);
+      saveSettings();
+      updateAudioVolumes();
+      ensureBgmState();
+    });
+
+    toggleAutoNext.addEventListener('click', () => {
+      settings.autoStartNext = !settings.autoStartNext;
+      setToggle(toggleAutoNext, settings.autoStartNext);
+      saveSettings();
+    });
+
+    // 主题切换
+    themeToggle.addEventListener('click', () => {
+      settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+      saveSettings();
+      updateThemeUI();
+    });
+
+    // 移动端设置折叠
+    settingsToggleMobile.addEventListener('click', () => {
+      const open = settingsPanel.classList.toggle('open');
+      settingsArrow.textContent = open ? '▲' : '▼';
+    });
+
+    const settingsHeader = settingsPanel.querySelector('.settings-collapsible-header');
+    if (settingsHeader) {
+      settingsHeader.addEventListener('click', () => {
+        const open = settingsPanel.classList.toggle('open');
+        settingsArrow.textContent = open ? '▲' : '▼';
+      });
+    }
+
+    // 初始化
+    function init() {
+      loadSettings();
+      loadStats();
+      applySettingsToInputs();
+      updateAudioVolumes();
+      ensureBgmState();
+      setMode('work', true);
+      updateStatsUI();
+      updateButtons();
+      updateTimeAndProgress();
+      updateCompanion();
+    }
+
+    init();
+  </script>
+</body>
+</html>

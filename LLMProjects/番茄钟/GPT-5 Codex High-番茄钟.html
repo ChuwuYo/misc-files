@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>番茄钟</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --pixel-size: 4px;
+      --font-body: "Courier New", "Lucida Console", monospace;
+      --candy-mint-bg: #e7fff5;
+      --candy-mint-primary: #4bc3b7;
+      --candy-mint-secondary: #94f7e9;
+      --candy-mint-deep: #2a8a7f;
+      --candy-mint-dark: #163f3a;
+      --candy-peach-bg: #ffe9ef;
+      --candy-peach-primary: #ff8aa6;
+      --candy-peach-secondary: #ffd1dc;
+      --candy-peach-deep: #d74b71;
+      --candy-peach-dark: #5c2634;
+      --candy-lavender-bg: #efe7ff;
+      --candy-lavender-primary: #a48bff;
+      --candy-lavender-secondary: #d6c9ff;
+      --candy-lavender-deep: #6051c2;
+      --candy-lavender-dark: #2f285f;
+      --theme-bg: var(--candy-mint-bg);
+      --theme-primary: var(--candy-mint-primary);
+      --theme-secondary: var(--candy-mint-secondary);
+      --theme-deep: var(--candy-mint-deep);
+      --theme-dark: var(--candy-mint-dark);
+      --text-color: #1c2333;
+      --text-muted: #4a5568;
+      --pixel-border: 0 0 0 var(--pixel-size) var(--theme-dark), 0 0 0 calc(var(--pixel-size) * 2) #000000;
+      --shadow-elevate: calc(var(--pixel-size) * 1) calc(var(--pixel-size) * 1) 0 #000000;
+      --shadow-inset: inset calc(var(--pixel-size) * -1) calc(var(--pixel-size) * -1) 0 rgba(255,255,255,0.4);
+      --transition-fast: 0.2s;
+      color-scheme: light;
+    }
+
+    body.dark {
+      --theme-bg: #1b1f2b;
+      --theme-secondary: #262e40;
+      --text-color: #eef0ff;
+      --text-muted: #9aa4d1;
+      color-scheme: dark;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      background: var(--theme-bg);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    header {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(90deg, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 50%, transparent 50%, transparent 100%);
+      background-size: 24px 24px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin: 0;
+      text-shadow: var(--shadow-elevate);
+      z-index: 1;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      z-index: 1;
+      align-items: center;
+    }
+
+    .pixel-button {
+      position: relative;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: var(--theme-primary);
+      color: #fff;
+      font-family: inherit;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: var(--pixel-border);
+      outline: none;
+      transition: transform var(--transition-fast);
+    }
+
+    .pixel-button:hover {
+      transform: translate(calc(var(--pixel-size) * -0.5), calc(var(--pixel-size) * -0.5));
+    }
+
+    .pixel-button:active {
+      transform: translate(calc(var(--pixel-size) * 0.25), calc(var(--pixel-size) * 0.25));
+    }
+
+    .pixel-button:focus-visible {
+      box-shadow:
+        0 0 0 calc(var(--pixel-size) * 1.5) rgba(255,255,255,0.6),
+        var(--pixel-border);
+    }
+
+    .layout {
+      flex: 1;
+      display: grid;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.55);
+      padding: 1.5rem;
+      position: relative;
+      border-radius: 12px;
+      box-shadow: var(--pixel-border);
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+      transition: background var(--transition-fast);
+    }
+
+    body.dark .card {
+      background: rgba(21, 26, 40, 0.6);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(45deg, rgba(255,255,255,0.12) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.12) 75%);
+      background-size: 16px 16px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .timer-display {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .time-digits {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      letter-spacing: 6px;
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.8);
+      border-radius: 12px;
+      box-shadow: var(--pixel-border), var(--shadow-inset);
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.dark .time-digits {
+      background: rgba(26,34,48,0.8);
+    }
+
+    .time-digits::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(0deg, rgba(255,255,255,0.22) 0, transparent 40%, transparent 60%, rgba(255,255,255,0.22) 100%);
+      mix-blend-mode: screen;
+      opacity: 0.6;
+    }
+
+    .phase-label {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+    }
+
+    .pixel-mascot {
+      position: relative;
+      background: var(--theme-secondary);
+      border-radius: 12px;
+      box-shadow: var(--pixel-border), var(--shadow-inset);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mascot-body {
+      width: 120px;
+      height: 120px;
+      background: var(--theme-primary);
+      position: relative;
+      box-shadow: 0 0 0 calc(var(--pixel-size) * 1) #000000;
+      image-rendering: pixelated;
+      animation: mascotIdle 2s infinite ease-in-out;
+    }
+
+    .mascot-face {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 80px;
+      height: 60px;
+      transform: translate(-50%, -50%);
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 0 0 calc(var(--pixel-size) * 0.75) #000000;
+    }
+
+    .eye {
+      width: 14px;
+      height: 14px;
+      background: #1c1c1c;
+      position: absolute;
+      top: 18px;
+      border-radius: 2px;
+    }
+
+    .eye.left { left: 18px; }
+    .eye.right { right: 18px; }
+
+    .mouth {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 12px;
+      background: #1c1c1c;
+      border-radius: 2px;
+    }
+
+    .progress-bar {
+      margin-top: 1.5rem;
+      position: relative;
+      height: 32px;
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      box-shadow: var(--pixel-border);
+      overflow: hidden;
+    }
+
+    body.dark .progress-bar {
+      background: rgba(26,34,48,0.6);
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.7) 0px, rgba(255,255,255,0.7) 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 16px);
+      transition: width 0.5s ease;
+    }
+
+    .controls {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .controls .pixel-button {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .stats-card {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .stat-box {
+      padding: 1rem;
+      background: rgba(255,255,255,0.7);
+      border-radius: 10px;
+      box-shadow: var(--pixel-border), var(--shadow-inset);
+      position: relative;
+    }
+
+    body.dark .stat-box {
+      background: rgba(26,34,48,0.7);
+    }
+
+    .stat-title {
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      color: var(--theme-deep);
+    }
+
+    body.dark .stat-value {
+      color: var(--theme-primary);
+    }
+
+    .settings-panel {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+      z-index: 99;
+    }
+
+    .settings-panel.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .settings-card {
+      width: min(640px, 92vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--theme-bg);
+      padding: 1.5rem;
+      border-radius: 16px;
+      box-shadow: var(--pixel-border);
+      position: relative;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 1rem;
+    }
+
+    .setting-item {
+      background: rgba(255,255,255,0.6);
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: var(--pixel-border), var(--shadow-inset);
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    body.dark .setting-item {
+      background: rgba(26,34,48,0.7);
+    }
+
+    label {
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    input[type="number"],
+    input[type="range"],
+    select {
+      font-family: inherit;
+      background: rgba(255,255,255,0.9);
+      border: none;
+      padding: 0.5rem;
+      box-shadow: var(--pixel-border);
+      outline: none;
+    }
+
+    body.dark input[type="number"],
+    body.dark select {
+      background: rgba(36,42,58,0.9);
+      color: var(--text-color);
+    }
+
+    input[type="range"] {
+      appearance: none;
+      height: 10px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.2);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--theme-primary);
+      box-shadow: var(--pixel-border);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: var(--theme-primary);
+      border: none;
+      box-shadow: var(--pixel-border);
+      cursor: pointer;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle input {
+      appearance: none;
+      width: 48px;
+      height: 24px;
+      background: rgba(0,0,0,0.2);
+      position: relative;
+      border-radius: 12px;
+      outline: none;
+      box-shadow: inset 0 0 0 calc(var(--pixel-size) * 0.75) rgba(0,0,0,0.3);
+    }
+
+    .toggle input::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: var(--pixel-border);
+      transition: transform var(--transition-fast), background var(--transition-fast);
+    }
+
+    .toggle input:checked {
+      background: var(--theme-primary);
+    }
+
+    .toggle input:checked::after {
+      transform: translateX(22px);
+      background: var(--theme-secondary);
+    }
+
+    .floating-tip {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--theme-primary);
+      color: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: var(--pixel-border);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+      z-index: 100;
+    }
+
+    .floating-tip.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .key-hints {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    @keyframes mascotIdle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes mascotBlink {
+      0%, 90%, 92%, 94%, 100% { height: 14px; }
+      91%, 93% { height: 2px; }
+    }
+
+    .blink .eye {
+      animation: mascotBlink 3s infinite;
+    }
+
+    .resting .mouth {
+      height: 6px;
+      border-radius: 6px;
+      background: #1c1c1c;
+    }
+
+    .celebrate {
+      animation: mascotCelebrate 0.5s 3 ease-in-out;
+    }
+
+    @keyframes mascotCelebrate {
+      0%, 100% { transform: translateY(0); }
+      25% { transform: translateY(-16px); }
+      75% { transform: translateY(8px); }
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .timer-display {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .controls .pixel-button {
+        min-width: calc(50% - 0.5rem);
+        flex: 1 1 calc(50% - 0.5rem);
+      }
+
+      .pixel-mascot {
+        padding: 1rem;
+      }
+
+      .mascot-body {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>番茄钟</h1>
+    <div class="header-actions">
+      <button class="pixel-button" id="themeToggle" aria-label="切换明暗模式">切换明暗</button>
+      <button class="pixel-button" id="paletteToggle" aria-label="切换颜色主题">切换糖果色</button>
+      <button class="pixel-button" id="openSettings" aria-haspopup="dialog">设置</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="card" aria-live="polite">
+      <div class="timer-display">
+        <section class="time-section">
+          <div class="time-digits" id="timeDisplay">25:00</div>
+          <div class="phase-label" id="phaseLabel">工作时间，冲刺！</div>
+          <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="controls">
+            <button class="pixel-button" id="startPauseBtn">开始</button>
+            <button class="pixel-button" id="resetBtn">重置</button>
+            <button class="pixel-button" id="skipBtn">跳过</button>
+          </div>
+          <div class="key-hints">空格：开始/暂停 ｜ R：重置 ｜ S：跳过</div>
+        </section>
+        <section class="pixel-mascot">
+          <div class="mascot-body blink" id="mascotBody">
+            <div class="mascot-face">
+              <div class="eye left"></div>
+              <div class="eye right"></div>
+              <div class="mouth"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <aside class="card stats-card">
+      <div class="stat-box">
+        <div class="stat-title">今日完成</div>
+        <div class="stat-value" id="pomodoroCount">0</div>
+        <div class="stat-description">番茄个</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">当前阶段</div>
+        <div class="stat-value" id="phaseName">工作</div>
+        <div class="stat-description" id="phaseDescription">保持专注，像素萌宠为你应援！</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">自动播放</div>
+        <div class="stat-value" id="autoPlayStatus">关闭</div>
+        <div class="stat-description">可在设置中开启</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-card">
+      <h2 id="settingsTitle">设置中心</h2>
+      <p>调整你的工作节奏与像素世界偏好，变化即时保存。</p>
+      <button class="pixel-button" id="closeSettings">关闭</button>
+      <div class="settings-grid">
+        <div class="setting-item">
+          <label for="workDuration">工作时长 (分钟)</label>
+          <input type="number" id="workDuration" min="1" max="90" step="1">
+        </div>
+        <div class="setting-item">
+          <label for="shortBreakDuration">短休时长 (分钟)</label>
+          <input type="number" id="shortBreakDuration" min="1" max="45" step="1">
+        </div>
+        <div class="setting-item">
+          <label for="longBreakDuration">长休时长 (分钟)</label>
+          <input type="number" id="longBreakDuration" min="1" max="90" step="1">
+        </div>
+        <div class="setting-item">
+          <label for="longBreakInterval">长休间隔 (完成番茄数)</label>
+          <input type="number" id="longBreakInterval" min="1" max="6" step="1">
+        </div>
+        <div class="setting-item">
+          <label class="toggle">
+            <input type="checkbox" id="autoStartToggle">
+            自动播放下一阶段
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="sfxToggle">
+            提示音效
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="bgmToggle">
+            背景音乐
+          </label>
+        </div>
+        <div class="setting-item">
+          <label for="volumeRange">音量</label>
+          <input type="range" id="volumeRange" min="0" max="100">
+        </div>
+        <div class="setting-item">
+          <label for="paletteSelect">糖果色主题</label>
+          <select id="paletteSelect">
+            <option value="mint">薄荷绿</option>
+            <option value="peach">蜜桃粉</option>
+            <option value="lavender">薰衣草紫</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="floating-tip" id="floatingTip" role="status" aria-live="polite"></div>
+
+  <script>
+    (function() {
+      const DEFAULT_SETTINGS = {
+        durations: {
+          work: 25,
+          shortBreak: 5,
+          longBreak: 15
+        },
+        longBreakInterval: 4,
+        autoStart: false,
+        volume: 70,
+        sfxEnabled: true,
+        bgmEnabled: false,
+        theme: 'light',
+        palette: 'mint'
+      };
+
+      const PHASES = {
+        work: {
+          label: "工作",
+          description: "保持专注，像素萌宠为你应援！",
+          mascotClass: "blink"
+        },
+        shortBreak: {
+          label: "短休",
+          description: "喝口水伸个懒腰，像素萌宠陪你放松。",
+          mascotClass: "resting"
+        },
+        longBreak: {
+          label: "长休",
+          description: "长休时间，深呼吸，萌宠准备拥抱你。",
+          mascotClass: "resting"
+        }
+      };
+
+      const STORAGE_KEYS = {
+        SETTINGS: "pixelPomodoroSettings",
+        STATS: "pixelPomodoroStats"
+      };
+
+      const elements = {
+        timeDisplay: document.getElementById("timeDisplay"),
+        phaseLabel: document.getElementById("phaseLabel"),
+        progressFill: document.getElementById("progressFill"),
+        startPauseBtn: document.getElementById("startPauseBtn"),
+        resetBtn: document.getElementById("resetBtn"),
+        skipBtn: document.getElementById("skipBtn"),
+        pomodoroCount: document.getElementById("pomodoroCount"),
+        phaseName: document.getElementById("phaseName"),
+        phaseDescription: document.getElementById("phaseDescription"),
+        autoPlayStatus: document.getElementById("autoPlayStatus"),
+        settingsPanel: document.getElementById("settingsPanel"),
+        openSettings: document.getElementById("openSettings"),
+        closeSettings: document.getElementById("closeSettings"),
+        workDuration: document.getElementById("workDuration"),
+        shortBreakDuration: document.getElementById("shortBreakDuration"),
+        longBreakDuration: document.getElementById("longBreakDuration"),
+        longBreakInterval: document.getElementById("longBreakInterval"),
+        autoStartToggle: document.getElementById("autoStartToggle"),
+        sfxToggle: document.getElementById("sfxToggle"),
+        bgmToggle: document.getElementById("bgmToggle"),
+        volumeRange: document.getElementById("volumeRange"),
+        themeToggle: document.getElementById("themeToggle"),
+        paletteToggle: document.getElementById("paletteToggle"),
+        paletteSelect: document.getElementById("paletteSelect"),
+        floatingTip: document.getElementById("floatingTip"),
+        mascotBody: document.getElementById("mascotBody")
+      };
+
+      let state = {
+        phase: "work",
+        isRunning: false,
+        timeRemaining: DEFAULT_SETTINGS.durations.work * 60,
+        cycleCount: 0,
+        completedToday: 0,
+        settings: { ...DEFAULT_SETTINGS }
+      };
+
+      let intervalId = null;
+      let audioContext = null;
+      let bgmOscillator = null;
+      let bgmGain = null;
+
+      function init() {
+        loadSettings();
+        loadStats();
+        applyTheme();
+        applyPalette(state.settings.palette);
+        updateDurationInputs();
+        updateUI();
+        bindEvents();
+        updateDocumentTitle();
+      }
+
+      function loadSettings() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            state.settings = { ...DEFAULT_SETTINGS, ...parsed };
+            if (!parsed.durations) {
+              state.settings.durations = { ...DEFAULT_SETTINGS.durations };
+            } else {
+              state.settings.durations = {
+                ...DEFAULT_SETTINGS.durations,
+                ...parsed.durations
+              };
+            }
+          }
+        } catch (err) {
+          console.error("加载设置失败：", err);
+          showTip("读取设置失败，已恢复默认值。");
+          state.settings = { ...DEFAULT_SETTINGS };
+        }
+        state.settings.volume = clamp(state.settings.volume, 0, 100);
+        state.settings.longBreakInterval = clamp(state.settings.longBreakInterval, 1, 6);
+        ["work", "shortBreak", "longBreak"].forEach(key => {
+          state.settings.durations[key] = clamp(state.settings.durations[key], 1, 90);
+        });
+      }
+
+      function loadStats() {
+        const today = new Date().toDateString();
+        try {
+          const saved = localStorage.getItem(STORAGE_KEYS.STATS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.date === today) {
+              state.completedToday = parsed.completed || 0;
+            } else {
+              state.completedToday = 0;
+              saveStats();
+            }
+          } else {
+            saveStats();
+          }
+        } catch (err) {
+          console.error("加载统计失败：", err);
+          showTip("读取统计失败，今日数据重置。");
+          state.completedToday = 0;
+          saveStats();
+        }
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+        } catch (err) {
+          console.error("保存设置失败：", err);
+        }
+      }
+
+      function saveStats() {
+        const payload = {
+          date: new Date().toDateString(),
+          completed: state.completedToday
+        };
+        try {
+          localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(payload));
+        } catch (err) {
+          console.error("保存统计失败：", err);
+        }
+      }
+
+      function bindEvents() {
+        elements.startPauseBtn.addEventListener("click", toggleStartPause);
+        elements.resetBtn.addEventListener("click", resetTimer);
+        elements.skipBtn.addEventListener("click", skipPhase);
+        elements.openSettings.addEventListener("click", () => toggleSettings(true));
+        elements.closeSettings.addEventListener("click", () => toggleSettings(false));
+        elements.settingsPanel.addEventListener("click", (e) => {
+          if (e.target === elements.settingsPanel) toggleSettings(false);
+        });
+
+        elements.workDuration.addEventListener("change", () => handleDurationChange("work"));
+        elements.shortBreakDuration.addEventListener("change", () => handleDurationChange("shortBreak"));
+        elements.longBreakDuration.addEventListener("change", () => handleDurationChange("longBreak"));
+        elements.longBreakInterval.addEventListener("change", handleLongBreakInterval);
+        elements.autoStartToggle.addEventListener("change", handleAutoStart);
+        elements.sfxToggle.addEventListener("change", handleSfxToggle);
+        elements.bgmToggle.addEventListener("change", handleBgmToggle);
+        elements.volumeRange.addEventListener("input", handleVolumeChange);
+        elements.paletteSelect.addEventListener("change", handlePaletteSelect);
+        elements.themeToggle.addEventListener("click", toggleThemeMode);
+        elements.paletteToggle.addEventListener("click", cyclePalette);
+
+        document.addEventListener("keydown", handleKeydown);
+        window.addEventListener("beforeunload", stopTimer);
+      }
+
+      function handleKeydown(event) {
+        const activeTag = document.activeElement.tagName.toLowerCase();
+        if (["input", "select", "textarea"].includes(activeTag)) return;
+
+        if (event.code === "Space") {
+          event.preventDefault();
+          toggleStartPause();
+        } else if (event.key.toLowerCase() === "r") {
+          event.preventDefault();
+          resetTimer();
+        } else if (event.key.toLowerCase() === "s") {
+          event.preventDefault();
+          skipPhase();
+        }
+      }
+
+      function handleDurationChange(type) {
+        const input = elements[`${type}Duration`];
+        let value = parseInt(input.value, 10);
+        if (isNaN(value) || value < parseInt(input.min, 10) || value > parseInt(input.max, 10)) {
+          value = clamp(value || DEFAULT_SETTINGS.durations[type], parseInt(input.min, 10), parseInt(input.max, 10));
+          input.value = value;
+          showTip("输入超出范围，已自动调整。");
+        }
+        state.settings.durations[type] = value;
+        saveSettings();
+        if (!state.isRunning && state.phase === type || (state.phase === "work" && type === "work")) {
+          state.timeRemaining = value * 60;
+          updateTimeDisplay();
+          updateProgress();
+        }
+      }
+
+      function handleLongBreakInterval() {
+        let value = parseInt(elements.longBreakInterval.value, 10);
+        if (isNaN(value)) value = DEFAULT_SETTINGS.longBreakInterval;
+        value = clamp(value, 1, 6);
+        elements.longBreakInterval.value = value;
+        state.settings.longBreakInterval = value;
+        saveSettings();
+      }
+
+      function handleAutoStart() {
+        state.settings.autoStart = elements.autoStartToggle.checked;
+        elements.autoPlayStatus.textContent = state.settings.autoStart ? "开启" : "关闭";
+        saveSettings();
+      }
+
+      function handleSfxToggle() {
+        state.settings.sfxEnabled = elements.sfxToggle.checked;
+        saveSettings();
+      }
+
+      function handleBgmToggle() {
+        state.settings.bgmEnabled = elements.bgmToggle.checked;
+        if (state.settings.bgmEnabled) {
+          startBackgroundMusic();
+        } else {
+          stopBackgroundMusic();
+        }
+        saveSettings();
+      }
+
+      function handleVolumeChange() {
+        const value = parseInt(elements.volumeRange.value, 10);
+        state.settings.volume = value;
+        if (bgmGain) {
+          bgmGain.gain.value = value / 200;
+        }
+        saveSettings();
+      }
+
+      function handlePaletteSelect() {
+        const palette = elements.paletteSelect.value;
+        state.settings.palette = palette;
+        applyPalette(palette);
+        saveSettings();
+      }
+
+      function toggleThemeMode() {
+        state.settings.theme = state.settings.theme === "light" ? "dark" : "light";
+        applyTheme();
+        saveSettings();
+      }
+
+      function cyclePalette() {
+        const options = ["mint", "peach", "lavender"];
+        const currentIndex = options.indexOf(state.settings.palette);
+        const next = options[(currentIndex + 1) % options.length];
+        state.settings.palette = next;
+        elements.paletteSelect.value = next;
+        applyPalette(next);
+        saveSettings();
+      }
+
+      function toggleSettings(show) {
+        elements.settingsPanel.classList.toggle("active", show);
+        if (show) {
+          elements.settingsPanel.setAttribute("aria-hidden", "false");
+          syncSettingsInputs();
+        } else {
+          elements.settingsPanel.setAttribute("aria-hidden", "true");
+        }
+      }
+
+      function syncSettingsInputs() {
+        elements.workDuration.value = state.settings.durations.work;
+        elements.shortBreakDuration.value = state.settings.durations.shortBreak;
+        elements.longBreakDuration.value = state.settings.durations.longBreak;
+        elements.longBreakInterval.value = state.settings.longBreakInterval;
+        elements.autoStartToggle.checked = state.settings.autoStart;
+        elements.sfxToggle.checked = state.settings.sfxEnabled;
+        elements.bgmToggle.checked = state.settings.bgmEnabled;
+        elements.volumeRange.value = state.settings.volume;
+        elements.paletteSelect.value = state.settings.palette;
+      }
+
+      function applyTheme() {
+        if (state.settings.theme === "dark") {
+          document.body.classList.add("dark");
+        } else {
+          document.body.classList.remove("dark");
+        }
+      }
+
+      function applyPalette(palette) {
+        const root = document.documentElement;
+        switch (palette) {
+          case "peach":
+            root.style.setProperty("--theme-bg", document.body.classList.contains("dark") ? "#2b1b20" : "var(--candy-peach-bg)");
+            root.style.setProperty("--theme-primary", "var(--candy-peach-primary)");
+            root.style.setProperty("--theme-secondary", "var(--candy-peach-secondary)");
+            root.style.setProperty("--theme-deep", "var(--candy-peach-deep)");
+            root.style.setProperty("--theme-dark", "var(--candy-peach-dark)");
+            break;
+          case "lavender":
+            root.style.setProperty("--theme-bg", document.body.classList.contains("dark") ? "#221b2b" : "var(--candy-lavender-bg)");
+            root.style.setProperty("--theme-primary", "var(--candy-lavender-primary)");
+            root.style.setProperty("--theme-secondary", "var(--candy-lavender-secondary)");
+            root.style.setProperty("--theme-deep", "var(--candy-lavender-deep)");
+            root.style.setProperty("--theme-dark", "var(--candy-lavender-dark)");
+            break;
+          default:
+            root.style.setProperty("--theme-bg", document.body.classList.contains("dark") ? "#142522" : "var(--candy-mint-bg)");
+            root.style.setProperty("--theme-primary", "var(--candy-mint-primary)");
+            root.style.setProperty("--theme-secondary", "var(--candy-mint-secondary)");
+            root.style.setProperty("--theme-deep", "var(--candy-mint-deep)");
+            root.style.setProperty("--theme-dark", "var(--candy-mint-dark)");
+            break;
+        }
+      }
+
+      function toggleStartPause() {
+        state.isRunning = !state.isRunning;
+        if (state.isRunning) {
+          startTimer();
+        } else {
+          stopTimer();
+        }
+        updateStartPauseButton();
+      }
+
+      function resetTimer() {
+        stopTimer();
+        const duration = getPhaseDuration(state.phase);
+        state.timeRemaining = duration;
+        updateTimeDisplay();
+        updateProgress();
+        updateStartPauseButton();
+        updateDocumentTitle();
+        animateMascot("idle");
+      }
+
+      function skipPhase() {
+        completePhase(true);
+      }
+
+      function startTimer() {
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(() => {
+          state.timeRemaining -= 1;
+          updateTimeDisplay();
+          updateProgress();
+          updateDocumentTitle();
+          if (state.timeRemaining <= 0) {
+            completePhase(false);
+          } else if (state.timeRemaining === 5) {
+            playSound("reminder");
+          }
+        }, 1000);
+        playSound("start");
+      }
+
+      function stopTimer() {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        state.isRunning = false;
+        updateStartPauseButton();
+        updateDocumentTitle();
+      }
+
+      function completePhase(skipped) {
+        stopTimer();
+        const wasWorkPhase = state.phase === "work";
+        if (wasWorkPhase && !skipped) {
+          state.completedToday += 1;
+          saveStats();
+          animateMascot("celebrate");
+        } else {
+          animateMascot("idle");
+        }
+
+        playSound(skipped ? "skip" : "end");
+        advancePhase(skipped);
+        updateUI();
+        if (state.settings.autoStart && !skipped) {
+          state.isRunning = true;
+          updateStartPauseButton();
+          startTimer();
+        } else {
+          state.isRunning = false;
+          updateStartPauseButton();
+        }
+      }
+
+      function advancePhase(skipped) {
+        if (state.phase === "work") {
+          state.cycleCount += 1;
+          if (!skipped && state.completedToday > 0) {
+            showTip(`已完成第 ${state.completedToday} 个番茄，做得棒！`);
+          }
+          if (state.cycleCount % state.settings.longBreakInterval === 0) {
+            state.phase = "longBreak";
+          } else {
+            state.phase = "shortBreak";
+          }
+        } else {
+          state.phase = "work";
+          if (state.phase === "work") {
+            showTip("回到工作模式，加油冲刺！");
+          }
+        }
+        state.timeRemaining = getPhaseDuration(state.phase);
+      }
+
+      function getPhaseDuration(phase) {
+        const minutes = state.settings.durations[phase === "work" ? "work" : phase];
+        return minutes * 60;
+      }
+
+      function updateTimeDisplay() {
+        const minutes = Math.floor(state.timeRemaining / 60);
+        const seconds = state.timeRemaining % 60;
+        const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        elements.timeDisplay.textContent = formatted;
+      }
+
+      function updateProgress() {
+        const total = getPhaseDuration(state.phase);
+        const progress = ((total - state.timeRemaining) / total) * 100;
+        elements.progressFill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+        elements.progressFill.parentElement.setAttribute("aria-valuenow", Math.round(progress));
+      }
+
+      function updateStartPauseButton() {
+        elements.startPauseBtn.textContent = state.isRunning ? "暂停" : "开始";
+      }
+
+      function updateUI() {
+        const phaseInfo = PHASES[state.phase];
+        elements.phaseLabel.textContent = phaseMessage();
+        elements.phaseName.textContent = phaseInfo.label;
+        elements.phaseDescription.textContent = phaseInfo.description;
+        elements.pomodoroCount.textContent = state.completedToday;
+        elements.autoPlayStatus.textContent = state.settings.autoStart ? "开启" : "关闭";
+        applyMascotState(phaseInfo.mascotClass);
+        updateTimeDisplay();
+        updateProgress();
+        updateStartPauseButton();
+        updateDocumentTitle();
+      }
+
+      function phaseMessage() {
+        switch (state.phase) {
+          case "work":
+            return "工作时间，冲刺！";
+          case "shortBreak":
+            return "短休模式，放松一下。";
+          case "longBreak":
+            return "长休时间，充分充电。";
+          default:
+            return "继续保持节奏！";
+        }
+      }
+
+      function applyMascotState(styleClass) {
+        elements.mascotBody.classList.remove("blink", "resting", "celebrate");
+        elements.mascotBody.classList.add(styleClass);
+      }
+
+      function animateMascot(type) {
+        if (type === "celebrate") {
+          elements.mascotBody.classList.add("celebrate");
+          setTimeout(() => elements.mascotBody.classList.remove("celebrate"), 1500);
+        } else {
+          elements.mascotBody.classList.remove("celebrate");
+        }
+      }
+
+      function updateDurationInputs() {
+        elements.workDuration.value = state.settings.durations.work;
+        elements.shortBreakDuration.value = state.settings.durations.shortBreak;
+        elements.longBreakDuration.value = state.settings.durations.longBreak;
+      }
+
+      function updateDocumentTitle() {
+        if (state.isRunning) {
+          const minutes = Math.floor(state.timeRemaining / 60);
+          const seconds = state.timeRemaining % 60;
+          const formatted = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+          document.title = `${formatted} - 番茄钟`;
+        } else {
+          document.title = "番茄钟";
+        }
+      }
+
+      function showTip(message) {
+        elements.floatingTip.textContent = message;
+        elements.floatingTip.classList.add("show");
+        clearTimeout(elements.floatingTip.timeoutId);
+        elements.floatingTip.timeoutId = setTimeout(() => {
+          elements.floatingTip.classList.remove("show");
+        }, 2500);
+      }
+
+      function clamp(value, min, max) {
+        if (typeof value !== "number" || isNaN(value)) return min;
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function playSound(type) {
+        if (!state.settings.sfxEnabled && type !== "startBgm" && type !== "stopBgm") return;
+        try {
+          if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+
+          const durationMap = {
+            start: 0.2,
+            end: 0.4,
+            reminder: 0.3,
+            skip: 0.15
+          };
+
+          const frequencyMap = {
+            start: [660, 880],
+            end: [440, 660, 880],
+            reminder: [880],
+            skip: [330, 220]
+          };
+
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = state.settings.volume / 100;
+
+          const now = audioContext.currentTime;
+          const freqs = frequencyMap[type] || [600];
+          freqs.forEach((freq, idx) => {
+            const osc = audioContext.createOscillator();
+            osc.type = type === "skip" ? "square" : "triangle";
+            osc.frequency.value = freq;
+            osc.connect(gainNode);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + (durationMap[type] || 0.2));
+          });
+
+          gainNode.connect(audioContext.destination);
+        } catch (err) {
+          console.error("音效播放失败：", err);
+        }
+      }
+
+      function startBackgroundMusic() {
+        if (!state.settings.bgmEnabled) return;
+        try {
+          if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          stopBackgroundMusic();
+          bgmGain = audioContext.createGain();
+          bgmGain.gain.value = state.settings.volume / 200;
+
+          bgmOscillator = audioContext.createOscillator();
+          bgmOscillator.type = "square";
+
+          const pattern = [440, 494, 523, 440, 392, 440, 392, 330];
+          let step = 0;
+
+          function scheduleNext() {
+            if (!bgmOscillator) return;
+            const freq = pattern[step % pattern.length];
+            bgmOscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+            step += 1;
+            bgmOscillator.nextTimeout = setTimeout(scheduleNext, 400);
+          }
+
+          bgmOscillator.connect(bgmGain);
+          bgmGain.connect(audioContext.destination);
+          bgmOscillator.start();
+          scheduleNext();
+        } catch (err) {
+          console.error("背景音乐播放失败：", err);
+        }
+      }
+
+      function stopBackgroundMusic() {
+        if (bgmOscillator) {
+          try {
+            bgmOscillator.stop();
+          } catch (err) {}
+          if (bgmOscillator.nextTimeout) {
+            clearTimeout(bgmOscillator.nextTimeout);
+          }
+          bgmOscillator.disconnect();
+          bgmOscillator = null;
+        }
+        if (bgmGain) {
+          try {
+            bgmGain.disconnect();
+          } catch (err) {}
+          bgmGain = null;
+        }
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
