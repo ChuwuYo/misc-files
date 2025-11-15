@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>番茄钟</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f0ff;
+        --panel: #ffffffef;
+        --accent: #ffb6c1;
+        --accent-2: #9ad6fb;
+        --text: #3b1254;
+        --pixel-shadow: 6px 6px 0 #f49fc9;
+        --progress-bg: #f7d3fb;
+      }
+      [data-theme="dark"] {
+        --bg: #0b0b1d;
+        --panel: #151336;
+        --accent: #ff6faa;
+        --accent-2: #6ef5ff;
+        --text: #ffffffdc;
+        --pixel-shadow: 6px 6px 0 #ff6faa;
+        --progress-bg: #2b1e4f;
+      }
+      body {
+        font-family: "Press Start 2P", cursive;
+        background: radial-gradient(circle at top, #fff9ff, var(--bg));
+        min-height: 100vh;
+        color: var(--text);
+      }
+      .pixel-card {
+        background: var(--panel);
+        box-shadow: var(--pixel-shadow);
+        border: 4px solid var(--accent);
+        border-radius: 24px;
+      }
+      .pixel-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: 6px 6px 0 var(--accent-2);
+        border-radius: 12px;
+        border: 3px solid #fff;
+        font-family: "Press Start 2P", cursive;
+      }
+      .pixel-progress {
+        background: var(--progress-bg);
+        border-radius: 16px;
+        border: 4px solid #ffffff;
+        box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.5);
+      }
+      .pixel-progress-bar {
+        height: 18px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #f95c93, #ffa78e);
+        transition: width 0.3s ease;
+      }
+      .pixel-character {
+        width: 120px;
+        height: 120px;
+        background: repeating-linear-gradient(
+            -45deg,
+            #fff,
+            #fff 4px,
+            #ffd2f4 4px,
+            #ffd2f4 8px
+          ),
+          radial-gradient(circle at 30% 30%, #ffb4c7 10px, transparent 12px);
+        border-radius: 25px;
+        position: relative;
+      }
+      .pixel-character::after {
+        content: "☺";
+        font-size: 4rem;
+        position: absolute;
+        inset: 30px;
+        color: #ff5a8f;
+      }
+      .pixel-grid {
+        background-size: 40px 40px;
+        background-image: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0.4) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.4) 1px,
+            transparent 1px
+          );
+      }
+      @media (min-width: 1024px) {
+        .layout-grid {
+          display: grid;
+          grid-template-columns: minmax(320px, 1fr) minmax(360px, 1fr);
+          gap: 24px;
+        }
+      }
+      @media (max-width: 767px) {
+        .pixel-btn {
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen px-4 pb-8" data-theme="light">
+    <div class="max-w-6xl mx-auto pt-10">
+      <header class="text-center mb-6">
+        <h1 class="text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-blue-400">
+          番茄钟
+        </h1>
+        <p class="text-xs text-gray-500">像素小清新 + 二次元番茄节奏</p>
+      </header>
+      <main class="layout-grid gap-6">
+        <section class="pixel-card p-6 pixel-grid">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <p class="text-xs tracking-[0.4em] uppercase text-gray-500">当前阶段</p>
+              <p id="phase-label" class="text-2xl">工作</p>
+            </div>
+            <div class="pixel-character"></div>
+          </div>
+          <div class="text-center mb-4">
+            <p id="timer-display" class="text-5xl text-accent">25:00</p>
+            <p id="status-line" class="text-xs opacity-70">专注中 · 加油吧！</p>
+          </div>
+          <div class="pixel-progress mb-6">
+            <div id="progress-bar" class="pixel-progress-bar w-0"></div>
+          </div>
+          <div class="flex flex-wrap gap-3 justify-center">
+            <button id="start-pause" class="pixel-btn px-6 py-3 text-sm">开始</button>
+            <button id="reset" class="pixel-btn px-6 py-3 text-sm">重置</button>
+            <button id="skip" class="pixel-btn px-6 py-3 text-sm">跳过</button>
+          </div>
+          <div class="mt-4 text-xs text-right">
+            <p>今日完成：<span id="daily-count">0</span> 个番茄钟</p>
+          </div>
+        </section>
+        <section class="pixel-card p-6 space-y-6">
+          <div>
+            <h2 class="text-lg mb-2">设置区</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs uppercase tracking-[0.4em]">工作时长</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" min="15" max="60" value="25" id="work-duration" class="w-full h-2" />
+                  <span id="work-label" class="text-sm">25 分钟</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs uppercase tracking-[0.4em]">短休时长</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" min="3" max="15" value="5" id="short-duration" class="w-full h-2" />
+                  <span id="short-label" class="text-sm">5 分钟</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs uppercase tracking-[0.4em]">长休时长</label>
+                <div class="flex items-center gap-3">
+                  <input type="range" min="10" max="30" value="15" id="long-duration" class="w-full h-2" />
+                  <span id="long-label" class="text-sm">15 分钟</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs uppercase tracking-[0.4em]">音量</label>
+                <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5" class="w-full h-2" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <h2 class="text-lg mb-2">更多控制</h2>
+            <div class="flex flex-wrap gap-3">
+              <button id="theme-toggle" class="pixel-btn px-4 py-2 text-xs">亮/暗 模式</button>
+              <button id="auto-toggle" class="pixel-btn px-4 py-2 text-xs">自动下一阶段：开</button>
+              <button id="sound-toggle" class="pixel-btn px-4 py-2 text-xs">音效：开</button>
+            </div>
+          </div>
+          <div>
+            <h2 class="text-lg mb-2">快捷键</h2>
+            <p class="text-xs">空格·开始/暂停 · R·重置 · S·跳过</p>
+          </div>
+          <div>
+            <button id="stats-reset" class="pixel-btn px-4 py-3 w-full">重置今日计数</button>
+          </div>
+        </section>
+      </main>
+    </div>
+    <audio id="sound-start" src="https://cdn.pixabay.com/download/audio/2021/01/22/audio_2fb18c4fce.mp3?filename=retro-arcade-blip-01-110856.mp3" preload="auto"></audio>
+    <audio id="sound-end" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_1c718cbfb4.mp3?filename=retro-game-over-111345.mp3" preload="auto"></audio>
+    <audio id="sound-remind" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d7a6c3f593.mp3?filename=8-bit-blip-114772.mp3" preload="auto"></audio>
+    <script>
+      const storage = window.localStorage;
+      const timerDisplay = document.getElementById("timer-display");
+      const phaseLabel = document.getElementById("phase-label");
+      const statusLine = document.getElementById("status-line");
+      const startPauseButton = document.getElementById("start-pause");
+      const resetButton = document.getElementById("reset");
+      const skipButton = document.getElementById("skip");
+      const progressBar = document.getElementById("progress-bar");
+      const dailyCountLabel = document.getElementById("daily-count");
+      const workSlider = document.getElementById("work-duration");
+      const shortSlider = document.getElementById("short-duration");
+      const longSlider = document.getElementById("long-duration");
+      const workLabel = document.getElementById("work-label");
+      const shortLabel = document.getElementById("short-label");
+      const longLabel = document.getElementById("long-label");
+      const volumeSlider = document.getElementById("volume");
+      const themeToggle = document.getElementById("theme-toggle");
+      const autoToggle = document.getElementById("auto-toggle");
+      const soundToggle = document.getElementById("sound-toggle");
+      const statsReset = document.getElementById("stats-reset");
+      const soundStart = document.getElementById("sound-start");
+      const soundEnd = document.getElementById("sound-end");
+      const soundRemind = document.getElementById("sound-remind");
+      const DEFAULTS = {
+        work: 25,
+        short: 5,
+        long: 15,
+        auto: true,
+        sound: true,
+        theme: "light",
+        volume: 0.5,
+      };
+      let config = {
+        work: Number(storage.getItem("pf-work")) || DEFAULTS.work,
+        short: Number(storage.getItem("pf-short")) || DEFAULTS.short,
+        long: Number(storage.getItem("pf-long")) || DEFAULTS.long,
+        auto: storage.getItem("pf-auto") !== "false" && DEFAULTS.auto,
+        sound: storage.getItem("pf-sound") !== "false" && DEFAULTS.sound,
+        theme: storage.getItem("pf-theme") || DEFAULTS.theme,
+        volume: Number(storage.getItem("pf-volume")) || DEFAULTS.volume,
+      };
+      let state = {
+        phase: "work",
+        secondsLeft: config.work * 60,
+        running: false,
+        interval: null,
+        cycles: 0,
+      };
+      const dailyKey = "pf-daily";
+      const dailyDateKey = "pf-daily-date";
+      function loadDailyCount() {
+        const today = new Date().toLocaleDateString();
+        const storedDate = storage.getItem(dailyDateKey);
+        if (storedDate !== today) {
+          storage.setItem(dailyDateKey, today);
+          storage.setItem(dailyKey, "0");
+          return 0;
+        }
+        return Number(storage.getItem(dailyKey) || 0);
+      }
+      let dailyCount = loadDailyCount();
+      dailyCountLabel.textContent = dailyCount;
+      function persist() {
+        storage.setItem("pf-work", config.work);
+        storage.setItem("pf-short", config.short);
+        storage.setItem("pf-long", config.long);
+        storage.setItem("pf-auto", config.auto);
+        storage.setItem("pf-sound", config.sound);
+        storage.setItem("pf-theme", config.theme);
+        storage.setItem("pf-volume", config.volume);
+      }
+      function updateUI() {
+        workLabel.textContent = `${config.work} 分钟`;
+        shortLabel.textContent = `${config.short} 分钟`;
+        longLabel.textContent = `${config.long} 分钟`;
+        workSlider.value = config.work;
+        shortSlider.value = config.short;
+        longSlider.value = config.long;
+        volumeSlider.value = config.volume;
+        autoToggle.textContent = `自动下一阶段：${config.auto ? "开" : "关"}`;
+        soundToggle.textContent = `音效：${config.sound ? "开" : "关"}`;
+        document.body.setAttribute("data-theme", config.theme);
+        startPauseButton.textContent = state.running ? "暂停" : "开始";
+        themeToggle.textContent = `${config.theme === "light" ? "暗" : "亮"} 模式`;
+        dailyCountLabel.textContent = dailyCount;
+      }
+      function updateTitle() {
+        if (state.running) {
+          document.title = `番茄钟 - ${formatTime(state.secondsLeft)}`;
+        } else {
+          document.title = "番茄钟";
+        }
+      }
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${String(m).padStart(2, "0")} : ${String(s).padStart(2, "0")}`;
+      }
+      function getPhaseDuration(phase) {
+        if (phase === "work") return config.work * 60;
+        if (phase === "short") return config.short * 60;
+        return config.long * 60;
+      }
+      function nextPhase() {
+        if (state.phase === "work") {
+          state.phase = state.cycles === 3 ? "long" : "short";
+          if (state.phase === "short") {
+            state.cycles += 1;
+          }
+          state.secondsLeft = getPhaseDuration(state.phase);
+        } else {
+          state.phase = "work";
+          state.secondsLeft = getPhaseDuration("work");
+        }
+        if (state.phase === "work" && state.cycles >= 4) {
+          state.cycles = 0;
+        }
+      }
+      function playSound(audio) {
+        if (!config.sound) return;
+        audio.currentTime = 0;
+        audio.volume = config.volume;
+        audio.play().catch(() => {});
+      }
+      function updatePhaseUI() {
+        phaseLabel.textContent = state.phase === "work" ? "工作" : state.phase === "short" ? "短休" : "长休";
+        statusLine.textContent = state.phase === "work" ? "专注中 · 加油吧！" : "休息一下，放松微笑";
+        timerDisplay.textContent = formatTime(state.secondsLeft);
+        const ratio = 1 - state.secondsLeft / getPhaseDuration(state.phase);
+        progressBar.style.width = `${Math.min(Math.max(ratio * 100, 0), 100)}%`;
+      }
+      function tick() {
+        if (!state.running) return;
+        state.secondsLeft -= 1;
+        if (state.secondsLeft <= 0) {
+          playSound(soundEnd);
+          if (state.phase === "work") {
+            dailyCount += 1;
+            storage.setItem(dailyKey, dailyCount);
+          }
+          if (!config.auto) {
+            state.running = false;
+            startPauseButton.textContent = "开始";
+            updateTitle();
+            updatePhaseUI();
+            return;
+          }
+          nextPhase();
+          playSound(state.phase === "work" ? soundStart : soundRemind);
+        }
+        updatePhaseUI();
+        updateTitle();
+      }
+      function startTimer() {
+        if (state.running) return;
+        state.running = true;
+        playSound(soundStart);
+        if (!state.interval) {
+          state.interval = setInterval(tick, 1000);
+        }
+        updateUI();
+      }
+      function pauseTimer() {
+        if (!state.running) return;
+        state.running = false;
+        updateUI();
+      }
+      function resetTimer() {
+        state.secondsLeft = getPhaseDuration(state.phase);
+        state.running = false;
+        updateUI();
+        updatePhaseUI();
+      }
+      function skipPhase() {
+        playSound(soundRemind);
+        nextPhase();
+        state.running = false;
+        updatePhaseUI();
+        updateUI();
+      }
+      startPauseButton.onclick = () => {
+        state.running ? pauseTimer() : startTimer();
+      };
+      resetButton.onclick = () => resetTimer();
+      skipButton.onclick = () => skipPhase();
+      workSlider.oninput = (e) => {
+        config.work = Number(e.target.value);
+        storage.setItem("pf-work", config.work);
+        state.secondsLeft = state.phase === "work" ? config.work * 60 : state.secondsLeft;
+        persist();
+        updateUI();
+        updatePhaseUI();
+      };
+      shortSlider.oninput = (e) => {
+        config.short = Number(e.target.value);
+        storage.setItem("pf-short", config.short);
+        if (state.phase === "short") state.secondsLeft = config.short * 60;
+        persist();
+        updateUI();
+        updatePhaseUI();
+      };
+      longSlider.oninput = (e) => {
+        config.long = Number(e.target.value);
+        storage.setItem("pf-long", config.long);
+        if (state.phase === "long") state.secondsLeft = config.long * 60;
+        persist();
+        updateUI();
+        updatePhaseUI();
+      };
+      volumeSlider.oninput = (e) => {
+        config.volume = Number(e.target.value);
+        persist();
+        updateUI();
+      };
+      autoToggle.onclick = () => {
+        config.auto = !config.auto;
+        persist();
+        updateUI();
+      };
+      soundToggle.onclick = () => {
+        config.sound = !config.sound;
+        persist();
+        updateUI();
+      };
+      themeToggle.onclick = () => {
+        config.theme = config.theme === "light" ? "dark" : "light";
+        persist();
+        updateUI();
+      };
+      statsReset.onclick = () => {
+        dailyCount = 0;
+        storage.setItem(dailyKey, "0");
+        dailyCountLabel.textContent = dailyCount;
+      };
+      document.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          e.preventDefault();
+          startPauseButton.click();
+        }
+        if (e.code === "KeyR") {
+          resetButton.click();
+        }
+        if (e.code === "KeyS") {
+          skipButton.click();
+        }
+      });
+      function init() {
+        const event = new Event("input");
+        workSlider.value = config.work;
+        shortSlider.value = config.short;
+        longSlider.value = config.long;
+        workSlider.dispatchEvent(event);
+        shortSlider.dispatchEvent(event);
+        longSlider.dispatchEvent(event);
+        updatePhaseUI();
+        updateUI();
+        state.interval = setInterval(tick, 1000);
+        state.running = false;
+        if (config.sound) {
+          soundStart.volume = config.volume;
+          soundEnd.volume = config.volume;
+          soundRemind.volume = config.volume;
+        }
+      }
+      init();
+    </script>
+  </body>
+</html>

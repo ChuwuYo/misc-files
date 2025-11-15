@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>番茄钟</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+    :root {
+      --font-pixel: 'Press Start 2P', 'VT323', 'ZCOOL KuaiLe', monospace;
+      --radius: 16px;
+      --speed: 320ms;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-pixel);
+      letter-spacing: 0.03em;
+      background: var(--bg);
+      color: var(--ink);
+      transition: background 0.6s ease, color 0.6s ease;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(90deg, transparent 23px, var(--grid) 24px),
+        linear-gradient(transparent 23px, var(--grid) 24px);
+      background-size: 24px 24px;
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: -2;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.25), transparent 50%),
+                  radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2), transparent 45%);
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: -1;
+    }
+    body[data-theme="day"] {
+      --bg: #fefcff;
+      --panel: rgba(255,255,255,0.88);
+      --panel-border: #e3ecff;
+      --ink: #2c344b;
+      --shadow: #d0e7ff;
+      --grid: rgba(126, 195, 255, 0.4);
+    }
+    body[data-theme="night"] {
+      --bg: #111221;
+      --panel: rgba(23, 24, 38, 0.92);
+      --panel-border: rgba(255,255,255,0.08);
+      --ink: #eff3ff;
+      --shadow: rgba(17, 17, 33, 0.8);
+      --grid: rgba(255,255,255,0.08);
+    }
+    body[data-palette="mint"] {
+      --accent: #7ed4c6;
+      --accent-deep: #37b9a5;
+      --accent-soft: #d7fff4;
+      --accent-bg: rgba(126,212,198,0.18);
+    }
+    body[data-palette="peach"] {
+      --accent: #ff9e7d;
+      --accent-deep: #ff6b6b;
+      --accent-soft: #ffe4d7;
+      --accent-bg: rgba(255,158,125,0.18);
+    }
+    body[data-palette="lavender"] {
+      --accent: #c79bff;
+      --accent-deep: #9a6bff;
+      --accent-soft: #efe0ff;
+      --accent-bg: rgba(199,155,255,0.18);
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .app-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px clamp(16px, 5vw, 48px) 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .hero h1 {
+      font-size: clamp(20px, 6vw, 32px);
+      text-shadow: 3px 3px 0 var(--shadow);
+    }
+
+    .pixel-buddy {
+      width: 96px;
+      height: 96px;
+      flex-shrink: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" fill="%23ffffff00"/><rect x="16" y="20" width="64" height="56" rx="8" fill="%23ffdede"/><rect x="20" y="24" width="12" height="12" fill="%23ff8bb0"/><rect x="64" y="24" width="12" height="12" fill="%23ff8bb0"/><rect x="24" y="44" width="16" height="8" fill="%23333"/><rect x="56" y="44" width="16" height="8" fill="%23333"/><rect x="36" y="60" width="24" height="8" fill="%23ff6f91"/><rect x="12" y="60" width="12" height="20" fill="%23ffb2c6"/><rect x="72" y="60" width="12" height="20" fill="%23ffb2c6"/></svg>');
+      image-rendering: pixelated;
+      border: 4px solid var(--panel-border);
+      background-size: cover;
+      border-radius: 8px;
+      box-shadow: 0 12px 0 var(--shadow);
+      animation: floaty 4s ease-in-out infinite;
+      position: relative;
+    }
+    .pixel-buddy::after {
+      content: attr(data-dialogue);
+      position: absolute;
+      left: 110%;
+      top: 10px;
+      padding: 6px 10px;
+      font-size: 10px;
+      background: var(--panel);
+      border: 2px solid var(--panel-border);
+      border-radius: 6px;
+      box-shadow: 3px 3px 0 var(--shadow);
+      white-space: nowrap;
+    }
+
+    .timer-card {
+      background: var(--panel);
+      border: 3px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: clamp(16px, 4vw, 32px);
+      box-shadow: 0 18px 0 var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .phase-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 2px solid var(--ink);
+      background: var(--accent-soft);
+      box-shadow: 3px 3px 0 var(--ink);
+      width: max-content;
+    }
+    .phase-chip.phase-work { background: var(--accent-soft); }
+    .phase-chip.phase-short { background: rgba(255, 220, 150, 0.5); }
+    .phase-chip.phase-long { background: rgba(173, 209, 255, 0.5); }
+
+    .time-display {
+      font-size: clamp(32px, 10vw, 64px);
+      text-align: center;
+      padding: 12px 0;
+    }
+    .subinfo {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      font-size: 12px;
+      gap: 12px;
+      color: var(--ink);
+      opacity: 0.85;
+    }
+
+    .progress-wrap {
+      background: var(--accent-bg);
+      border: 2px solid var(--ink);
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: inset 0 0 0 2px var(--panel-border);
+    }
+    .pixel-progress {
+      width: 100%;
+      height: 18px;
+      background: rgba(0,0,0,0.08);
+      border: 2px solid var(--ink);
+      position: relative;
+      overflow: hidden;
+      image-rendering: pixelated;
+    }
+    .pixel-progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background-image: repeating-linear-gradient(
+        90deg,
+        var(--accent) 0 8px,
+        var(--accent-deep) 8px 16px
+      );
+      transition: width 0.4s steps(12);
+    }
+
+    .control-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .pixel-button {
+      border: 3px solid var(--ink);
+      padding: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      background: #fff;
+      box-shadow: 4px 4px 0 var(--ink);
+      cursor: pointer;
+      transition: transform 0.12s;
+    }
+    .pixel-button.primary {
+      background: var(--accent);
+      color: #0f1c1c;
+    }
+    .pixel-button:active {
+      transform: translate(2px,2px);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .pixel-button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      font-size: 11px;
+      text-align: center;
+    }
+    .stat {
+      border: 2px dashed var(--panel-border);
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+    }
+    .stat-value {
+      display: block;
+      font-size: 16px;
+      margin-top: 6px;
+    }
+
+    .status-bar {
+      border: 2px solid var(--ink);
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--accent-bg);
+      font-size: 11px;
+      animation: pulse 1.6s infinite;
+    }
+
+    .settings-panel {
+      background: var(--panel);
+      border: 3px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 16px 20px 24px;
+      box-shadow: 0 12px 0 var(--shadow);
+    }
+    details summary {
+      list-style: none;
+      cursor: pointer;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 2px solid var(--ink);
+      padding: 8px 12px;
+      background: var(--accent-soft);
+      box-shadow: 3px 3px 0 var(--ink);
+      margin-bottom: 16px;
+    }
+    details[open] summary::after {
+      content: "（点击收起）";
+      font-size: 10px;
+      color: var(--ink);
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .field-group input,
+    .field-group select {
+      font-family: var(--font-pixel);
+      font-size: 12px;
+      padding: 8px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.7);
+    }
+    .toggle-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .toggle-line input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+    .slider-line {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+    }
+    .slider-line input[type="range"] {
+      width: 100%;
+    }
+
+    .keyboard-hints {
+      font-size: 11px;
+      margin-top: 16px;
+      padding: 12px;
+      border: 2px dotted var(--panel-border);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.04);
+    }
+    .hint-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .hint-list span {
+      padding: 6px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 6px;
+      background: #fff;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 12px;
+    }
+
+    @keyframes floaty {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+      100% { transform: translateY(0px); }
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+
+    @media (max-width: 640px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .pixel-buddy::after {
+        left: 0;
+        top: -24px;
+      }
+      .control-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body data-theme="day" data-palette="mint">
+  <div class="app-shell">
+    <header class="hero">
+      <div class="pixel-buddy" id="pixelBuddy" data-dialogue="Ready? 🍅"></div>
+      <h1>番茄钟</h1>
+    </header>
+
+    <main>
+      <section class="timer-card">
+        <div class="phase-chip phase-work" id="phaseChip">专注 · WORK</div>
+
+        <div class="time-display" id="timeDisplay">25:00</div>
+
+        <div class="subinfo">
+          <span id="phaseLabel">工作 · 第 1 轮</span>
+          <span id="nextHint">距离长休还有 4 个番茄</span>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="pixel-progress">
+            <div class="pixel-progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div class="control-panel">
+          <button id="startPauseBtn" class="pixel-button primary">开始 ▶</button>
+          <button id="resetBtn" class="pixel-button">重置 (R)</button>
+          <button id="skipBtn" class="pixel-button">跳过 (S)</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">今日完成</span>
+            <span class="stat-value" id="todayCount">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">距长休</span>
+            <span class="stat-value" id="distanceCount">4</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">自动播放</span>
+            <span class="stat-value" id="autoPlayState">开</span>
+          </div>
+        </div>
+
+        <div class="status-bar" id="statusBar">准备就绪 ✔︎</div>
+      </section>
+
+      <section class="settings-panel">
+        <details open>
+          <summary>像素设置面板</summary>
+          <form id="settingsForm">
+            <div class="settings-grid">
+              <div class="field-group">
+                <label for="workInput">工作时长 (分钟)</label>
+                <input type="number" id="workInput" min="1" max="180" step="1" />
+              </div>
+              <div class="field-group">
+                <label for="shortInput">短休时长 (分钟)</label>
+                <input type="number" id="shortInput" min="1" max="60" step="1" />
+              </div>
+              <div class="field-group">
+                <label for="longInput">长休时长 (分钟)</label>
+                <input type="number" id="longInput" min="1" max="120" step="1" />
+              </div>
+              <div class="field-group">
+                <label for="longIntervalInput">长休间隔（几个番茄后）</label>
+                <input type="number" id="longIntervalInput" min="1" max="10" step="1" />
+              </div>
+              <div class="field-group">
+                <label for="paletteSelect">糖果配色</label>
+                <select id="paletteSelect">
+                  <option value="mint">薄荷泡泡</option>
+                  <option value="peach">桃汽冰沙</option>
+                  <option value="lavender">薰衣草奶昔</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label>主题模式</label>
+                <button type="button" id="themeToggle" class="pixel-button">切换日/夜</button>
+              </div>
+              <div class="toggle-line">
+                <input type="checkbox" id="autoPlayToggle" />
+                <label for="autoPlayToggle">自动播放下一阶段</label>
+              </div>
+              <div class="toggle-line">
+                <input type="checkbox" id="preAlertToggle" />
+                <label for="preAlertToggle">阶段结束前提醒</label>
+              </div>
+              <div class="field-group">
+                <label for="preAlertSeconds">提醒提前秒数</label>
+                <input type="number" id="preAlertSeconds" min="3" max="60" step="1" />
+              </div>
+              <div class="slider-line">
+                <label for="volumeSlider">音量</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" />
+              </div>
+            </div>
+          </form>
+          <div class="keyboard-hints">
+            <strong>键盘快捷键</strong>
+            <div class="hint-list">
+              <span>空格：开始 / 暂停</span>
+              <span>R：重置当前阶段</span>
+              <span>S：跳过当前阶段</span>
+            </div>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer>Made with 🍬 pixels & discipline · 本地数据自动保存</footer>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEYS = {
+        settings: 'pixelPomSettings',
+        daily: 'pixelPomDaily'
+      };
+
+      const defaultSettings = {
+        work: 25,
+        short: 5,
+        long: 15,
+        longInterval: 4,
+        autoPlay: true,
+        volume: 0.5,
+        preAlertEnabled: true,
+        preAlertSeconds: 10,
+        theme: 'day',
+        palette: 'mint'
+      };
+
+      const PHASE_META = {
+        work: { label: '工作', chip: '专注 · WORK', mood: 'focus' },
+        short: { label: '短休', chip: '短休 · BREAK', mood: 'chill' },
+        long: { label: '长休', chip: '长休 · BREAK', mood: 'party' }
+      };
+
+      let settings = loadSettings();
+      let stats = loadDaily();
+      const state = {
+        phase: 'work',
+        remaining: 0,
+        total: 0,
+        isRunning: false,
+        timerId: null,
+        lastTick: null,
+        focusStreak: 0,
+        hasPreAlerted: false
+      };
+
+      const refs = {
+        timeDisplay: document.getElementById('timeDisplay'),
+        phaseChip: document.getElementById('phaseChip'),
+        phaseLabel: document.getElementById('phaseLabel'),
+        nextHint: document.getElementById('nextHint'),
+        progressFill: document.getElementById('progressFill'),
+        startPauseBtn: document.getElementById('startPauseBtn'),
+        resetBtn: document.getElementById('resetBtn'),
+        skipBtn: document.getElementById('skipBtn'),
+        todayCount: document.getElementById('todayCount'),
+        distanceCount: document.getElementById('distanceCount'),
+        autoPlayState: document.getElementById('autoPlayState'),
+        statusBar: document.getElementById('statusBar'),
+        buddy: document.getElementById('pixelBuddy'),
+        title: document.title,
+        inputs: {
+          work: document.getElementById('workInput'),
+          short: document.getElementById('shortInput'),
+          long: document.getElementById('longInput'),
+          longInterval: document.getElementById('longIntervalInput'),
+          autoPlay: document.getElementById('autoPlayToggle'),
+          palette: document.getElementById('paletteSelect'),
+          themeToggle: document.getElementById('themeToggle'),
+          volume: document.getElementById('volumeSlider'),
+          preAlertToggle: document.getElementById('preAlertToggle'),
+          preAlertSeconds: document.getElementById('preAlertSeconds')
+        }
+      };
+
+      applySettingsToUI();
+      applyTheme();
+      setPhase('work', { announce: false });
+      updateAllUI();
+      wireEvents();
+      setStatus('准备就绪 ✔︎');
+
+      /* ------------------- Core Logic ------------------- */
+
+      function loadSettings() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings));
+          return { ...defaultSettings, ...stored };
+        } catch {
+          return { ...defaultSettings };
+        }
+      }
+
+      function saveSettings() {
+        localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+      }
+
+      function loadDaily() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.daily));
+          const today = todayString();
+          if (!stored || stored.date !== today) {
+            const fresh = { date: today, count: 0 };
+            localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(fresh));
+            return fresh;
+          }
+          return stored;
+        } catch {
+          const fallback = { date: todayString(), count: 0 };
+          localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(fallback));
+          return fallback;
+        }
+      }
+
+      function saveDaily() {
+        localStorage.setItem(STORAGE_KEYS.daily, JSON.stringify(stats));
+      }
+
+      function todayString() {
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      function setPhase(phase, options = {}) {
+        state.phase = phase;
+        state.remaining = getPhaseSeconds(phase);
+        state.total = state.remaining;
+        state.hasPreAlerted = false;
+        updatePhaseChip();
+        updateBuddy();
+        updateAllUI();
+        if (options.announce !== false) {
+          const tip = phase === 'work' ? '冲刺时间！' : (phase === 'short' ? '伸展休息～' : '长休模式，深呼吸');
+          setStatus(tip);
+        }
+      }
+
+      function getPhaseSeconds(phase) {
+        const minutes = {
+          work: settings.work,
+          short: settings.short,
+          long: settings.long
+        }[phase];
+        return Math.max(1, Math.round(minutes * 60));
+      }
+
+      function startTimer() {
+        if (state.isRunning) return;
+        state.isRunning = true;
+        state.lastTick = Date.now();
+        refs.startPauseBtn.textContent = '暂停 ❚❚';
+        setStatus('开始专注，冲啊！');
+        playChime('start');
+        state.timerId = setInterval(tick, 250);
+        updateTitle();
+      }
+
+      function pauseTimer() {
+        if (!state.isRunning) return;
+        state.isRunning = false;
+        clearInterval(state.timerId);
+        state.timerId = null;
+        refs.startPauseBtn.textContent = '开始 ▶';
+        setStatus('已暂停，可以喘口气');
+        updateTitle();
+      }
+
+      function resetPhase() {
+        const wasRunning = state.isRunning;
+        pauseTimer();
+        state.remaining = state.total = getPhaseSeconds(state.phase);
+        state.hasPreAlerted = false;
+        updateAllUI();
+        setStatus('当前阶段已重置');
+        if (wasRunning) {
+          startTimer();
+        }
+      }
+
+      function skipPhase() {
+        const current = state.phase;
+        pauseTimer();
+        setStatus('阶段已跳过');
+        const next = determineNextPhase(current);
+        setPhase(next);
+      }
+
+      function tick() {
+        if (!state.isRunning) return;
+        const now = Date.now();
+        const elapsed = Math.floor((now - state.lastTick) / 1000);
+        if (elapsed >= 1) {
+          state.remaining = Math.max(0, state.remaining - elapsed);
+          state.lastTick += elapsed * 1000;
+          updateAllUI();
+          handlePreAlert();
+          if (state.remaining <= 0) {
+            completePhase();
+          }
+        }
+      }
+
+      function handlePreAlert() {
+        if (
+          settings.preAlertEnabled &&
+          !state.hasPreAlerted &&
+          state.phase === 'work' &&
+          state.remaining <= settings.preAlertSeconds &&
+          state.remaining > 0
+        ) {
+          state.hasPreAlerted = true;
+          playChime('remind');
+          setStatus(`还有 ${state.remaining} 秒，准备收尾～`);
+        }
+      }
+
+      function completePhase() {
+        pauseTimer();
+        playChime('end');
+
+        if (state.phase === 'work') {
+          stats.count += 1;
+          saveDaily();
+          state.focusStreak += 1;
+          setStatus('恭喜完成一个番茄！🍅');
+        } else {
+          setStatus('休息结束，回到节奏！');
+        }
+
+        const nextPhase = determineNextPhase(state.phase, { completedFocus: state.phase === 'work' });
+        if (state.phase === 'long') {
+          state.focusStreak = 0;
+        } else if (state.phase === 'short' || state.phase === 'long') {
+          // no additional action
+        } else if (state.phase === 'work' && nextPhase === 'long') {
+          state.focusStreak = 0;
+        }
+
+        setPhase(nextPhase);
+
+        if (settings.autoPlay) {
+          startTimer();
+        }
+      }
+
+      function determineNextPhase(current, options = {}) {
+        if (current === 'work') {
+          const nextIsLong = (state.focusStreak % settings.longInterval === 0) && options.completedFocus;
+          return nextIsLong ? 'long' : 'short';
+        }
+        return 'work';
+      }
+
+      function toggleStartPause() {
+        state.isRunning ? pauseTimer() : startTimer();
+      }
+
+      function updateAllUI() {
+        refs.timeDisplay.textContent = formatTime(state.remaining);
+        const progress = 1 - state.remaining / state.total;
+        refs.progressFill.style.width = `${Math.min(1, progress) * 100}%`;
+        refs.todayCount.textContent = stats.count;
+        const distance = state.focusStreak === 0 ? settings.longInterval : Math.max(0, settings.longInterval - state.focusStreak);
+        refs.distanceCount.textContent = distance;
+        refs.phaseLabel.textContent = `${PHASE_META[state.phase].label} · ${state.phase === 'work' ? '燃起来' : '放松片刻'}`;
+        refs.nextHint.textContent = state.phase === 'work'
+          ? `距离长休还有 ${distance} 个番茄`
+          : '下一阶段将回到工作模式';
+        refs.autoPlayState.textContent = settings.autoPlay ? '开' : '关';
+        updateTitle();
+      }
+
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+
+      function updatePhaseChip() {
+        const meta = PHASE_META[state.phase];
+        refs.phaseChip.textContent = meta.chip;
+        refs.phaseChip.className = `phase-chip phase-${state.phase}`;
+      }
+
+      function updateBuddy() {
+        const meta = PHASE_META[state.phase];
+        refs.buddy.dataset.dialogue = {
+          focus: 'Fight! 🔥',
+          chill: '喝水伸展~',
+          party: '长休派对!'
+        }[meta.mood] || '٩(ˊᗜˋ*)و';
+      }
+
+      function setStatus(message) {
+        refs.statusBar.textContent = message;
+      }
+
+      function updateTitle() {
+        if (state.isRunning) {
+          document.title = `${formatTime(state.remaining)} · 番茄钟`;
+        } else {
+          document.title = '番茄钟';
+        }
+      }
+
+      /* ------------------- Audio ------------------- */
+
+      let audioCtx;
+      function getAudioContext() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        return audioCtx;
+      }
+
+      function playChime(type) {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const baseVol = settings.volume || 0;
+
+        const configs = {
+          start: { freq: 720, duration: 0.12 },
+          end: { freq: 480, duration: 0.25 },
+          remind: { freq: 900, duration: 0.1 }
+        };
+        const cfg = configs[type] || configs.end;
+
+        osc.frequency.value = cfg.freq;
+        gain.gain.value = baseVol;
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + cfg.duration);
+      }
+
+      /* ------------------- Settings & UI Binding ------------------- */
+
+      function applySettingsToUI() {
+        refs.inputs.work.value = settings.work;
+        refs.inputs.short.value = settings.short;
+        refs.inputs.long.value = settings.long;
+        refs.inputs.longInterval.value = settings.longInterval;
+        refs.inputs.autoPlay.checked = settings.autoPlay;
+        refs.inputs.palette.value = settings.palette;
+        refs.inputs.volume.value = settings.volume;
+        refs.inputs.preAlertToggle.checked = settings.preAlertEnabled;
+        refs.inputs.preAlertSeconds.value = settings.preAlertSeconds;
+      }
+
+      function applyTheme() {
+        document.body.dataset.theme = settings.theme;
+        document.body.dataset.palette = settings.palette;
+      }
+
+      function wireEvents() {
+        refs.startPauseBtn.addEventListener('click', toggleStartPause);
+        refs.resetBtn.addEventListener('click', resetPhase);
+        refs.skipBtn.addEventListener('click', skipPhase);
+
+        refs.inputs.work.addEventListener('change', () => updateDuration('work'));
+        refs.inputs.short.addEventListener('change', () => updateDuration('short'));
+        refs.inputs.long.addEventListener('change', () => updateDuration('long'));
+        refs.inputs.longInterval.addEventListener('change', () => {
+          const value = clampNumber(refs.inputs.longInterval.value, 1, 10, settings.longInterval);
+          settings.longInterval = value;
+          refs.inputs.longInterval.value = value;
+          saveSettings();
+          updateAllUI();
+          setStatus(`长休间隔已设为 ${value} 个番茄`);
+        });
+
+        refs.inputs.autoPlay.addEventListener('change', (e) => {
+          settings.autoPlay = e.target.checked;
+          saveSettings();
+          updateAllUI();
+          setStatus(`自动播放已${settings.autoPlay ? '开启' : '关闭'}`);
+        });
+
+        refs.inputs.volume.addEventListener('input', (e) => {
+          settings.volume = parseFloat(e.target.value);
+          saveSettings();
+          setStatus(`音量：${Math.round(settings.volume * 100)}%`);
+        });
+
+        refs.inputs.preAlertToggle.addEventListener('change', (e) => {
+          settings.preAlertEnabled = e.target.checked;
+          saveSettings();
+          setStatus(settings.preAlertEnabled ? '预提醒开启' : '预提醒关闭');
+        });
+
+        refs.inputs.preAlertSeconds.addEventListener('change', () => {
+          const value = clampNumber(refs.inputs.preAlertSeconds.value, 3, 60, settings.preAlertSeconds);
+          settings.preAlertSeconds = value;
+          refs.inputs.preAlertSeconds.value = value;
+          saveSettings();
+          setStatus(`预提醒提前 ${value} 秒`);
+        });
+
+        refs.inputs.palette.addEventListener('change', (e) => {
+          settings.palette = e.target.value;
+          saveSettings();
+          applyTheme();
+          setStatus('配色已刷新 ✨');
+        });
+
+        refs.inputs.themeToggle.addEventListener('click', () => {
+          settings.theme = settings.theme === 'day' ? 'night' : 'day';
+          saveSettings();
+          applyTheme();
+          setStatus(`已切换至${settings.theme === 'day' ? '日间' : '夜间'}主题`);
+        });
+
+        document.addEventListener('keydown', (event) => {
+          if (['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;
+          if (event.code === 'Space') {
+            event.preventDefault();
+            toggleStartPause();
+          } else if (event.key === 'r' || event.key === 'R') {
+            resetPhase();
+          } else if (event.key === 's' || event.key === 'S') {
+            skipPhase();
+          }
+        });
+      }
+
+      function clampNumber(value, min, max, fallback) {
+        const num = Number(value);
+        if (Number.isNaN(num)) return fallback;
+        return Math.min(max, Math.max(min, Math.round(num)));
+      }
+
+      function updateDuration(key) {
+        const map = { work: refs.inputs.work, short: refs.inputs.short, long: refs.inputs.long };
+        const limits = { work: [1, 180], short: [1, 60], long: [1, 180] };
+        const [min, max] = limits[key];
+        const value = clampNumber(map[key].value, min, max, settings[key]);
+        settings[key] = value;
+        map[key].value = value;
+        saveSettings();
+        setStatus(`${PHASE_META[key].label}时长设为 ${value} 分钟`);
+        if (state.phase === key) {
+          pauseTimer();
+          state.remaining = state.total = value * 60;
+          updateAllUI();
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
