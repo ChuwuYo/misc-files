@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄钟</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 糖果粉主题 */
+            --primary: #ff69b4;
+            --secondary: #ffb6c1;
+            --accent: #ff1493;
+            --bg: #fff0f5;
+            --bg-secondary: #ffe4e1;
+            --text: #333;
+            --text-light: #666;
+            --border: #ff69b4;
+            --success: #32cd32;
+            --shadow: 0 4px 8px rgba(255,105,180,0.3);
+            --glow: 0 0 10px var(--primary);
+        }
+        [data-theme="mint"] {
+            --primary: #98fb98;
+            --secondary: #90ee90;
+            --accent: #32cd32;
+            --bg: #f0fff0;
+            --bg-secondary: #e0ffff;
+            --border: #32cd32;
+            --shadow: 0 4px 8px rgba(50,205,50,0.3);
+            --glow: 0 0 10px #32cd32;
+        }
+        [data-theme="sakura"] {
+            --primary: #ffc0cb;
+            --secondary: #ffb6c1;
+            --accent: #ff69b4;
+            --bg: #fff5ee;
+            --bg-secondary: #fff0f5;
+            --border: #ffc0cb;
+            --shadow: 0 4px 8px rgba(255,192,203,0.3);
+            --glow: 0 0 10px #ffc0cb;
+        }
+        body.light { --bg: #fff0f5; --text: #333; }
+        body.dark {
+            --bg: #2c1810;
+            --bg-secondary: #3c2818;
+            --text: #f0e6d2;
+            --text-light: #b8a898;
+            --border: #ff69b4;
+            --primary: #ff69b4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: linear-gradient(135deg, var(--bg) 0%, var(--bg-secondary) 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: all 0.3s ease;
+            image-rendering: pixelated;
+        }
+        h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            text-shadow: var(--glow);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .timer-container {
+            text-align: center;
+            background: rgba(255,255,255,0.8);
+            border: 4px solid var(--border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        #time-display {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-shadow: 2px 2px 0 #000;
+            margin: 20px 0;
+            letter-spacing: 8px;
+            image-rendering: pixelated;
+        }
+        #phase-label {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            margin: 20px 0;
+            display: flex;
+            overflow: hidden;
+        }
+        .progress-pixel {
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            border-right: 1px solid var(--border);
+            transition: background 0.3s ease;
+        }
+        .progress-pixel.active { background: var(--primary); box-shadow: var(--glow); }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            font-family: inherit;
+            font-size: 0.8rem;
+            padding: 12px 24px;
+            border: 3px solid var(--border);
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            image-rendering: pixelated;
+            text-shadow: 1px 1px 0 #000;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--glow);
+        }
+        button:active { transform: scale(0.95); }
+        button.pause { background: #ff4500; border-color: #ff4500; }
+        .stats {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        .goal-ring {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--bg-secondary);
+            border-radius: 50%;
+            position: relative;
+            background: conic-gradient(var(--success) 0deg var(--goal-deg, 0deg), var(--bg-secondary) var(--goal-deg, 0deg) 360deg);
+        }
+        .goal-ring::after {
+            content: attr(data-count);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            color: var(--text);
+        }
+        .pixel-girl {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 64px;
+            height: 64px;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2IDMyQzE2IDI0IDE4IDE2IDI0IDE2SDQwQzQ2IDE2IDQ4IDI0IDQ4IDMyVjQ4SDMyQzI0IDQ4IDE2IDQwIDE2IDMyWiIgZmlsbD0iI2ZmZjlhMCIvPgo8cGF0aCBkPSJNMjQgMTZIMjRDNDMgMTYgNDggMjEgNDggMzJIMzJWMzZIMjRWMzJIMThDMTEgMzIgMTYgMjcgMTYgMjBIMjRWMTRIMjQiIGZpbGw9IiNmZmIyOWIiLz4KPHBhdGggZD0iTTI0IDIyQzI0IDIyIDI0IDIyIDI0IDIyQzI0IDIyIDI0IDIyIDI0IDIyWiIgZmlsbD0iIzMzMyIvPgo8Y2lyY2xlIGN4PSIxOCIgY3k9IjE4IiByPSIzIiBmaWxsPSIjZmZiMjliIi8+CjxjaXJjbGUgY3g9IjM2IiBjeT0iMTgiIHI9IjMiIGZpbGw9IiNmZmIyOWIiLz4KPGNpcmNsZSBjeD0iMTgiIGN5PSIxOCIgcj0iMSIgZmlsbD0iIzMzMyIvPgo8Y2lyY2xlIGN4PSIzNiIgY3k9IjE4IiByPSIxIiBmaWxsPSIjMzMzIi8+CjxwYXRoIGQ9Ik0yNCAyMkMyNCAyMSAyNCAyMCAyNCAyMEMyNCAyMCAyNCAyMSAyNCAyMloiIGZpbGw9IiNmZjZxcWMiLz4KPC9zdmc+') no-repeat center/contain; /* 简化像素女孩SVG */
+            animation: girlIdle 2s infinite steps(4);
+        }
+        @keyframes girlIdle {
+            0%, 100% { background-position: 0 0; }
+            25% { background-position: -64px 0; }
+            50% { background-position: -128px 0; }
+            75% { background-position: -192px 0; }
+        }
+        .girl-work { animation: girlWork 1s infinite; }
+        .girl-rest { animation: girlHappy 0.5s infinite; }
+        @keyframes girlWork { /* 眨眼帧 */ }
+        @keyframes girlHappy {
+            /* 跳跃 */
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-5px) scale(1.1); }
+        }
+        #settings-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg);
+            border: 4px solid var(--border);
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 16px;
+        }
+        .setting-group {
+            margin-bottom: 20px;
+        }
+        label { display: block; margin-bottom: 5px; font-size: 0.7rem; }
+        input[type="range"], input[type="number"] {
+            width: 100%; height: 8px; border-radius: 4px;
+            background: var(--bg-secondary); outline: none;
+        }
+        select { width: 100%; padding: 8px; font-family: inherit; }
+        .close { position: absolute; top: 10px; right: 20px; background: none; border: none; font-size: 2rem; cursor: pointer; }
+        @media (max-width: 600px) {
+            #time-display { font-size: 3rem; letter-spacing: 4px; }
+            .timer-container { padding: 20px; }
+            .pixel-girl { display: none; }
+            h1 { font-size: 1.5rem; }
+        }
+        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+        .particle {
+            position: absolute;
+            width: 8px; height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="light" data-theme="candy">
+    <h1 id="page-title">番茄钟</h1>
+    <div class="timer-container">
+        <div id="phase-label">工作时间</div>
+        <div id="time-display">25:00</div>
+        <div class="progress-container" id="progress-bar"></div>
+        <div class="controls">
+            <button id="start-pause">开始</button>
+            <button id="reset">重置</button>
+            <button id="skip">跳过</button>
+        </div>
+        <div class="stats">
+            <div class="goal-ring" id="goal-ring" data-count="0"></div>
+            <span>今日: <span id="today-count">0</span> / <span id="daily-goal">4</span></span>
+        </div>
+    </div>
+    <div class="pixel-girl" id="pixel-girl"></div>
+
+    <button id="settings-btn" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; font-size: 0.7rem;">⚙</button>
+
+    <div id="settings-modal">
+        <div class="modal-content">
+            <button class="close" id="close-modal">&times;</button>
+            <div class="setting-group">
+                <label>工作时间 (min)</label>
+                <input type="range" id="work-min" min="1" max="60" value="25">
+                <span id="work-val">25</span>
+            </div>
+            <div class="setting-group">
+                <label>短休息 (min)</label>
+                <input type="range" id="short-min" min="1" max="15" value="5">
+                <span id="short-val">5</span>
+            </div>
+            <div class="setting-group">
+                <label>长休息 (min)</label>
+                <input type="range" id="long-min" min="5" max="60" value="15">
+                <span id="long-val">15</span>
+            </div>
+            <div class="setting-group">
+                <label>音量</label>
+                <input type="range" id="volume" min="0" max="100" value="50">
+                <span id="vol-val">50%</span>
+            </div>
+            <div class="setting-group">
+                <label>自动下一阶段</label>
+                <input type="checkbox" id="auto-next" checked>
+            </div>
+            <div class="setting-group">
+                <label>每日目标</label>
+                <input type="number" id="daily-goal-input" min="1" max="20" value="4">
+            </div>
+            <div class="setting-group">
+                <label>主题</label>
+                <select id="theme-select">
+                    <option value="light">浅色</option>
+                    <option value="dark">暗色</option>
+                </select>
+            </div>
+            <div class="setting-group">
+                <label>色系</label>
+                <select id="color-select">
+                    <option value="candy">糖果粉</option>
+                    <option value="mint">薄荷绿</option>
+                    <option value="sakura">樱花粉</option>
+                </select>
+            </div>
+            <label><input type="checkbox" id="mute-all"> 全局静音</label>
+        </div>
+    </div>
+
+    <canvas id="particles" class="particles"></canvas>
+
+    <script>
+        // 全局状态
+        let timerId = null;
+        let isRunning = false;
+        let currentPhase = 'work';
+        let timeLeft = 25 * 60;
+        let pomodoroCount = 0;
+        let workCount = 0; // 连续工作计数，4后长休
+        let settings = {
+            workMin: 25, shortMin: 5, longMin: 15, volume: 0.5,
+            autoNext: true, dailyGoal: 4, theme: 'light', colorScheme: 'candy', mute: false
+        };
+        let audioCtx = null;
+        let notificationGranted = false;
+
+        // DOM元素
+        const els = {
+            timeDisplay: document.getElementById('time-display'),
+            phaseLabel: document.getElementById('phase-label'),
+            progressBar: document.getElementById('progress-bar'),
+            startPause: document.getElementById('start-pause'),
+            resetBtn: document.getElementById('reset'),
+            skipBtn: document.getElementById('skip'),
+            todayCount: document.getElementById('today-count'),
+            dailyGoalEl: document.getElementById('daily-goal'),
+            goalRing: document.getElementById('goal-ring'),
+            pageTitle: document.getElementById('page-title'),
+            pixelGirl: document.getElementById('pixel-girl'),
+            settingsBtn: document.getElementById('settings-btn'),
+            modal: document.getElementById('settings-modal'),
+            closeModal: document.getElementById('close-modal'),
+            particles: document.getElementById('particles')
+        };
+
+        // 初始化
+        function init() {
+            loadStorage();
+            updateDisplay();
+            createProgressBar();
+            setupAudio();
+            requestNotificationPermission();
+            updateTheme();
+            bindEvents();
+            checkDailyReset();
+        }
+
+        // 加载localStorage
+        function loadStorage() {
+            const savedSettings = localStorage.getItem('pomodoroSettings');
+            if (savedSettings) Object.assign(settings, JSON.parse(savedSettings));
+            const savedStats = localStorage.getItem('pomodoroStats');
+            if (savedStats) {
+                const stats = JSON.parse(savedStats);
+                pomodoroCount = stats.today || 0;
+            }
+            applySettingsToUI();
+        }
+
+        function saveStorage() {
+            localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+            localStorage.setItem('pomodoroStats', JSON.stringify({ today: pomodoroCount, date: new Date().toDateString() }));
+        }
+
+        // 每日重置
+        function checkDailyReset() {
+            const saved = localStorage.getItem('pomodoroStats');
+            if (saved) {
+                const stats = JSON.parse(saved);
+                if (stats.date !== new Date().toDateString()) {
+                    pomodoroCount = 0;
+                    saveStorage();
+                }
+            }
+        }
+
+        // 应用设置到UI
+        function applySettingsToUI() {
+            document.getElementById('work-min').value = settings.workMin;
+            document.getElementById('work-val').textContent = settings.workMin;
+            document.getElementById('short-min').value = settings.shortMin;
+            document.getElementById('short-val').textContent = settings.shortMin;
+            document.getElementById('long-min').value = settings.longMin;
+            document.getElementById('long-val').textContent = settings.longMin;
+            document.getElementById('volume').value = settings.volume * 100;
+            document.getElementById('vol-val').textContent = (settings.volume * 100) + '%';
+            document.getElementById('auto-next').checked = settings.autoNext;
+            document.getElementById('daily-goal-input').value = settings.dailyGoal;
+            document.getElementById('theme-select').value = settings.theme;
+            document.getElementById('color-select').value = settings.colorScheme;
+            document.getElementById('mute-all').checked = settings.mute;
+            updateStats();
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            els.timeDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            els.pageTitle.textContent = isRunning ? els.timeDisplay.textContent : '番茄钟';
+            const phaseLabels = { work: '工作时间', short: '短休息', long: '长休息' };
+            els.phaseLabel.textContent = phaseLabels[currentPhase];
+            updateProgress();
+            updateGirlAnimation();
+        }
+
+        // 进度条
+        function createProgressBar() {
+            const totalPixels = 50;
+            els.progressBar.innerHTML = Array(totalPixels).fill().map(() => '<div class="progress-pixel"></div>').join('');
+        }
+
+        function updateProgress() {
+            const totalTime = { work: settings.workMin * 60, short: settings.shortMin * 60, long: settings.longMin * 60 }[currentPhase];
+            const progress = Math.max(0, Math.floor((totalTime - timeLeft) / totalTime * 50));
+            Array.from(els.progressBar.children).forEach((pixel, i) => {
+                pixel.classList.toggle('active', i < progress);
+            });
+            els.goalRing.style.setProperty('--goal-deg', `${(pomodoroCount / settings.dailyGoal) * 360}deg`);
+            els.goalRing.dataset.count = pomodoroCount;
+        }
+
+        // 小女孩动画
+        function updateGirlAnimation() {
+            els.pixelGirl.className = `pixel-girl ${currentPhase === 'work' ? 'girl-work' : 'girl-rest'}`;
+        }
+
+        // 计时器控制
+        function startTimer() {
+            if (!isRunning) {
+                isRunning = true;
+                els.startPause.textContent = '暂停';
+                els.startPause.classList.add('pause');
+                timerId = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        timerComplete();
+                    } else if (timeLeft <= 10) {
+                        playSound('remind');
+                    }
+                    updateDisplay();
+                }, 1000);
+                playSound('start');
+                showNotification(`${els.phaseLabel.textContent} 开始！`);
+            } else {
+                pauseTimer();
+            }
+        }
+
+        function pauseTimer() {
+            isRunning = false;
+            clearInterval(timerId);
+            els.startPause.textContent = '开始';
+            els.startPause.classList.remove('pause');
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            currentPhase = 'work';
+            timeLeft = settings.workMin * 60;
+            workCount = 0;
+            updateDisplay();
+        }
+
+        function skipPhase() {
+            timerComplete(true);
+        }
+
+        function timerComplete(skipped = false) {
+            pauseTimer();
+            playSound('end');
+            createParticles();
+            if (currentPhase === 'work') {
+                pomodoroCount++;
+                workCount++;
+                updateStats();
+                saveStorage();
+                showNotification('工作完成！休息一下吧~');
+            } else {
+                showNotification(`${els.phaseLabel.textContent} 结束！`);
+            }
+            if (settings.autoNext || skipped) {
+                nextPhase();
+            }
+        }
+
+        function nextPhase() {
+            if (workCount >= 4) {
+                currentPhase = 'long';
+                timeLeft = settings.longMin * 60;
+                workCount = 0;
+            } else if (currentPhase === 'work' || currentPhase === 'long') {
+                currentPhase = 'short';
+                timeLeft = settings.shortMin * 60;
+            } else {
+                currentPhase = 'work';
+                timeLeft = settings.workMin * 60;
+            }
+            updateDisplay();
+        }
+
+        function updateStats() {
+            els.todayCount.textContent = pomodoroCount;
+            els.dailyGoalEl.textContent = settings.dailyGoal;
+        }
+
+        // 音效
+        function setupAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            if (settings.mute) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(settings.volume, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            const freqs = { start: 800, end: 600, remind: 1000 };
+            osc.frequency.value = freqs[type] || 800;
+            osc.type = 'sine';
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // 粒子效果
+        function createParticles() {
+            const canvas = els.particles;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.setProperty('--dx', (Math.random() - 0.5) * 200 + 'px');
+                particle.style.setProperty('--dy', (Math.random() - 0.5) * 200 + 'px');
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // 通知
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(perm => notificationGranted = perm === 'granted');
+            }
+        }
+
+        function showNotification(title) {
+            if (notificationGranted) {
+                new Notification('番茄钟', { body: title, icon: 'data:image/svg+xml;base64,...' }); // 简化
+            }
+        }
+
+        // 主题
+        function updateTheme() {
+            document.body.className = settings.theme;
+            document.body.dataset.theme = settings.colorScheme;
+        }
+
+        // 事件绑定
+        function bindEvents() {
+            els.startPause.onclick = startTimer;
+            els.resetBtn.onclick = resetTimer;
+            els.skipBtn.onclick = skipPhase;
+
+            // 设置
+            els.settingsBtn.onclick = () => els.modal.style.display = 'flex';
+            els.closeModal.onclick = () => els.modal.style.display = 'none';
+            els.modal.onclick = (e) => { if (e.target === els.modal) els.modal.style.display = 'none'; };
+
+            // 设置滑块
+            document.getElementById('work-min').oninput = (e) => {
+                settings.workMin = +e.target.value;
+                document.getElementById('work-val').textContent = settings.workMin;
+                if (currentPhase === 'work') timeLeft = settings.workMin * 60;
+                saveStorage();
+                updateDisplay();
+            };
+            document.getElementById('short-min').oninput = (e) => {
+                settings.shortMin = +e.target.value;
+                document.getElementById('short-val').textContent = settings.shortMin;
+                saveStorage();
+            };
+            document.getElementById('long-min').oninput = (e) => {
+                settings.longMin = +e.target.value;
+                document.getElementById('long-val').textContent = settings.longMin;
+                saveStorage();
+            };
+            document.getElementById('volume').oninput = (e) => {
+                settings.volume = e.target.value / 100;
+                document.getElementById('vol-val').textContent = e.target.value + '%';
+                saveStorage();
+            };
+            document.getElementById('auto-next').onchange = (e) => { settings.autoNext = e.target.checked; saveStorage(); };
+            document.getElementById('daily-goal-input').onchange = (e) => {
+                settings.dailyGoal = +e.target.value;
+                updateStats();
+                saveStorage();
+            };
+            document.getElementById('theme-select').onchange = (e) => {
+                settings.theme = e.target.value;
+                updateTheme();
+                saveStorage();
+            };
+            document.getElementById('color-select').onchange = (e) => {
+                settings.colorScheme = e.target.value;
+                updateTheme();
+                saveStorage();
+            };
+            document.getElementById('mute-all').onchange = (e) => {
+                settings.mute = e.target.checked;
+                saveStorage();
+            };
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT') {
+                    switch(e.code) {
+                        case 'Space': e.preventDefault(); startTimer(); break;
+                        case 'KeyR': resetTimer(); break;
+                        case 'KeyS': skipPhase(); break;
+                    }
+                }
+            });
+
+            // 窗口resize
+            window.addEventListener('resize', () => {
+                els.particles.width = window.innerWidth;
+                els.particles.height = window.innerHeight;
+            });
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>
