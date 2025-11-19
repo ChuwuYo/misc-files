@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fresh Pixel Pomo</title>
+    <!-- 引入 Google Pixel 字体 和 可爱的圆体（用于中文兜底） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Fredoka:wght@400;600&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* 全局变量：初始为专注模式（粉色系） */
+            --theme-primary: #FF9AA2;     /* 主色 */
+            --theme-secondary: #FFB7B2;   /* 次色 */
+            --theme-bg: #FFF5F5;          /* 背景色 */
+            --theme-shadow: #E5737D;      /* 阴影色 */
+            --text-main: #6D4C41;         /* 深棕色文字，比纯黑更柔和 */
+            --text-light: #FFF;
+            
+            --pixel-size: 4px;
+            --radius-lg: 24px;
+            --radius-sm: 12px;
+            
+            --font-pixel: 'DotGothic16', sans-serif; /* 像素英文字体 */
+            --font-cute: 'ZCOOL KuaiLe', 'Fredoka', cursive; /* 可爱中文字体 */
+        }
+
+        /* 模式特定配色变量 */
+        [data-theme="work"] {
+            --theme-primary: #FF9AA2;
+            --theme-secondary: #FFB7B2;
+            --theme-bg: #FFF0F0;
+            --theme-shadow: #E08088;
+        }
+        [data-theme="short"] {
+            --theme-primary: #B5EAD7;
+            --theme-secondary: #C7F3E3;
+            --theme-bg: #F0FFF9;
+            --theme-shadow: #88D8B0;
+        }
+        [data-theme="long"] {
+            --theme-primary: #A0E7E5;
+            --theme-secondary: #B4F8F6;
+            --theme-bg: #F0FCFC;
+            --theme-shadow: #76C7C5;
+        }
+
+        * { box-sizing: border-box; user-select: none; outline: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-pixel);
+            background-color: var(--theme-bg);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.6s ease;
+            /* 动态背景网格 */
+            background-image: 
+                linear-gradient(var(--theme-secondary) 1px, transparent 1px),
+                linear-gradient(90deg, var(--theme-secondary) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+        }
+
+        /* --- 动态云朵背景 --- */
+        .clouds {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6;
+        }
+        .cloud {
+            position: absolute;
+            width: 60px; height: 20px;
+            background: #FFF;
+            border-radius: 20px;
+            box-shadow: 0 4px 0 var(--theme-secondary);
+            animation: floatCloud linear infinite;
+        }
+        .cloud::after {
+            content: ''; position: absolute;
+            top: -10px; left: 10px;
+            width: 20px; height: 20px;
+            background: #FFF; border-radius: 50%;
+        }
+        @keyframes floatCloud {
+            from { transform: translateX(-100px); }
+            to { transform: translateX(110vw); }
+        }
+
+        /* --- 主卡片容器 --- */
+        .app-card {
+            position: relative;
+            width: 90%; max-width: 420px;
+            background: #fff;
+            border: 4px solid var(--text-main);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 12px 12px 0 var(--theme-shadow);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: box-shadow 0.6s ease;
+        }
+
+        /* --- 顶部栏 --- */
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .badge {
+            font-family: var(--font-cute);
+            background: var(--theme-secondary);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--text-main);
+            font-size: 14px;
+            box-shadow: 2px 2px 0 var(--theme-shadow);
+        }
+
+        .btn-icon {
+            background: #fff;
+            border: 2px solid var(--text-main);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 var(--theme-shadow);
+            transition: transform 0.1s;
+            font-size: 16px;
+        }
+        .btn-icon:active { transform: translate(2px, 2px); box-shadow: none; }
+
+        /* --- 像素宠物展示区 --- */
+        .mascot-stage {
+            width: 100%;
+            height: 120px;
+            background: var(--theme-bg);
+            border: 3px solid var(--text-main);
+            border-radius: var(--radius-sm);
+            position: relative;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 4px 4px 0 rgba(0,0,0,0.05);
+            transition: background-color 0.6s;
+        }
+
+        /* CSS 像素画 - 小鸡/史莱姆 */
+        .pixel-pet {
+            width: 8px; height: 8px;
+            background: transparent;
+            color: var(--text-main); /* 轮廓色 */
+            transform: scale(6); 
+            image-rendering: pixelated;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        /* 状态：专注中 (睁眼) */
+        .pet-work {
+            /* 利用 box-shadow 绘制 8x8 像素画 */
+            /* 这是一个简单的白色团子 */
+            box-shadow: 
+                -1em -2em 0 -0em var(--text-main), 0em -2em 0 -0em var(--text-main), 1em -2em 0 -0em var(--text-main),
+                -2em -1em 0 -0em var(--text-main), 2em -1em 0 -0em var(--text-main),
+                -2em 0em 0 -0em var(--text-main), -1em 0em 0 0em #000, 1em 0em 0 0em #000, 2em 0em 0 -0em var(--text-main),
+                -2em 1em 0 -0em var(--text-main), 0em 1em 0 -0em #FF9AA2, 2em 1em 0 -0em var(--text-main), /* 腮红 */
+                -1em 2em 0 -0em var(--text-main), 0em 2em 0 -0em var(--text-main), 1em 2em 0 -0em var(--text-main);
+            animation: bounce 1s infinite;
+        }
+        
+        /* 状态：休息中 (闭眼睡觉 Zzz) */
+        .pet-sleep {
+             box-shadow: 
+                -1em -2em 0 -0em var(--text-main), 0em -2em 0 -0em var(--text-main), 1em -2em 0 -0em var(--text-main),
+                -2em -1em 0 -0em var(--text-main), 2em -1em 0 -0em var(--text-main),
+                -2em 0em 0 -0em var(--text-main), -1em 0em 0 0em var(--text-main), 1em 0em 0 0em var(--text-main), 2em 0em 0 -0em var(--text-main),
+                -2em 1em 0 -0em var(--text-main), 2em 1em 0 -0em var(--text-main),
+                -1em 2em 0 -0em var(--text-main), 0em 2em 0 -0em var(--text-main), 1em 2em 0 -0em var(--text-main);
+            animation: breathe 3s infinite ease-in-out;
+        }
+        
+        /* 睡觉时的气泡 Zzz */
+        .zzz {
+            position: absolute;
+            right: 20px; top: 20px;
+            font-family: var(--font-pixel);
+            font-size: 20px;
+            color: var(--text-main);
+            opacity: 0;
+        }
+        [data-theme="short"] .zzz, [data-theme="long"] .zzz {
+            animation: zzzFloat 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(6) translateY(0); }
+            50% { transform: scale(6) translateY(-1px); } /* 像素尺度小幅跳动 */
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(6) translateY(1px) scaleY(0.95); }
+            50% { transform: scale(6) translateY(0) scaleY(1); }
+        }
+        @keyframes zzzFloat {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(10px, -20px) scale(1.2); opacity: 0; }
+        }
+
+        /* --- 计时器 --- */
+        .timer-box {
+            text-align: center;
+            margin: 10px 0 30px 0;
+        }
+        .time-text {
+            font-size: 64px;
+            line-height: 1;
+            font-family: var(--font-pixel);
+            color: var(--text-main);
+            text-shadow: 3px 3px 0 var(--theme-secondary);
+            letter-spacing: 2px;
+        }
+        .status-text {
+            font-family: var(--font-cute);
+            font-size: 18px;
+            margin-top: 8px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
+        /* --- 进度条 (胶囊风) --- */
+        .progress-container {
+            width: 100%;
+            height: 16px;
+            background: #eee;
+            border: 2px solid var(--text-main);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--theme-primary);
+            width: 100%;
+            border-right: 2px solid var(--text-main);
+            transition: width 1s linear, background-color 0.6s;
+            /* 斜纹纹理 */
+            background-image: linear-gradient(45deg, rgba(255,255,255,.3) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.3) 50%, rgba(255,255,255,.3) 75%, transparent 75%, transparent);
+            background-size: 20px 20px;
+            animation: stripeMove 1s linear infinite;
+        }
+        @keyframes stripeMove { from { background-position: 0 0; } to { background-position: 20px 20px; } }
+
+        /* --- 按钮组 --- */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 16px;
+            width: 100%;
+        }
+        
+        .btn {
+            font-family: var(--font-cute); /* 中文按钮用可爱字体 */
+            border: 3px solid var(--text-main);
+            border-radius: var(--radius-sm);
+            padding: 16px 0;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: center;
+            background: #fff;
+            box-shadow: 4px 4px 0 var(--theme-shadow);
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+        }
+        .btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 0 0 0 transparent;
+        }
+        .btn-primary {
+            background: var(--theme-primary);
+            color: #fff;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+        }
+        
+        /* --- 统计 --- */
+        .stats {
+            margin-top: 20px;
+            font-family: var(--font-cute);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tomato-icon {
+            width: 20px; height: 20px;
+            background: #FF6B6B;
+            border: 2px solid var(--text-main);
+            border-radius: 50%;
+            position: relative;
+        }
+        .tomato-icon::after {
+            content: ''; position: absolute; top: 0; left: 6px;
+            width: 6px; height: 4px; background: #6BCB77;
+        }
+
+        /* --- 设置弹窗 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .modal {
+            background: #fff;
+            border: 4px solid var(--text-main);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            width: 85%; max-width: 360px;
+            box-shadow: 10px 10px 0 var(--theme-shadow);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .modal h2 {
+            margin: 0 0 20px 0;
+            font-family: var(--font-cute);
+            text-align: center;
+            color: var(--text-main);
+            border-bottom: 2px dashed var(--theme-secondary);
+            padding-bottom: 10px;
+        }
+
+        .setting-row { margin-bottom: 16px; }
+        .setting-row label { display: block; font-family: var(--font-cute); font-size: 14px; margin-bottom: 6px; }
+        
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--theme-primary);
+            height: 6px;
+            border-radius: 3px;
+            background: #eee;
+        }
+        
+        /* 开关样式 */
+        .toggle-switch {
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            font-family: var(--font-cute); font-size: 14px;
+        }
+        .switch-box {
+            width: 40px; height: 20px;
+            background: #eee;
+            border: 2px solid var(--text-main);
+            border-radius: 20px;
+            position: relative;
+            transition: background 0.3s;
+        }
+        .switch-knob {
+            width: 12px; height: 12px;
+            background: var(--text-main);
+            border-radius: 50%;
+            position: absolute; top: 2px; left: 2px;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .switch-box.active { background: var(--theme-primary); }
+        .switch-box.active .switch-knob { transform: translateX(20px); background: #fff; }
+
+    </style>
+</head>
+<body data-theme="work">
+
+    <!-- 动态背景云 -->
+    <div class="clouds">
+        <div class="cloud" style="top: 10%; left: 0; animation-duration: 20s;"></div>
+        <div class="cloud" style="top: 30%; left: 50%; animation-duration: 25s; animation-delay: -10s;"></div>
+        <div class="cloud" style="top: 70%; left: 20%; animation-duration: 30s; animation-delay: -5s;"></div>
+    </div>
+
+    <div class="app-card">
+        <div class="header">
+            <button class="btn-icon" id="btn-lang" title="Switch Language">文</button>
+            <div class="badge" id="round-display">ROUND 1/4</div>
+            <button class="btn-icon" id="btn-settings" title="Settings">⚙</button>
+        </div>
+
+        <!-- 宠物展示区 -->
+        <div class="mascot-stage">
+            <div class="zzz">Zzz...</div>
+            <div class="pixel-pet pet-work" id="pet"></div>
+        </div>
+
+        <div class="timer-box">
+            <div class="time-text" id="timer">25:00</div>
+            <div class="status-text" id="mode-text">FOCUS TIME</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="btn-reset">RESET</button>
+            <button class="btn btn-primary" id="btn-toggle">START</button>
+            <button class="btn" id="btn-skip">SKIP</button>
+        </div>
+
+        <div class="stats">
+            <div class="tomato-icon"></div>
+            <span id="stats-label">Total:</span> 
+            <span id="stats-count">0</span>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="st-title">SETTINGS</h2>
+            
+            <div class="setting-row">
+                <label id="st-work">Focus Time: <span id="val-work">25</span>m</label>
+                <input type="range" id="input-work" min="1" max="60" value="25">
+            </div>
+
+            <div class="setting-row">
+                <label id="st-short">Short Break: <span id="val-short">5</span>m</label>
+                <input type="range" id="input-short" min="1" max="30" value="5">
+            </div>
+
+            <div class="setting-row">
+                <label id="st-long">Long Break: <span id="val-long">15</span>m</label>
+                <input type="range" id="input-long" min="5" max="60" value="15">
+            </div>
+
+            <div class="setting-row">
+                <label id="st-vol">Volume: <span id="val-vol">50</span>%</label>
+                <input type="range" id="input-volume" min="0" max="100" value="50">
+            </div>
+
+            <div class="setting-row">
+                <div class="toggle-switch" id="toggle-auto">
+                    <div class="switch-box" id="check-auto">
+                        <div class="switch-knob"></div>
+                    </div>
+                    <span id="st-auto">Auto Start Next</span>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" id="btn-save" style="width: 100%;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- I18n Data --- */
+        const i18n = {
+            en: {
+                work_mode: "FOCUS TIME",
+                short_mode: "SHORT BREAK",
+                long_mode: "LONG BREAK",
+                btn_start: "START",
+                btn_pause: "PAUSE",
+                btn_reset: "RESET",
+                btn_skip: "SKIP",
+                stats_label: "Total:",
+                st_title: "SETTINGS",
+                st_work: "Focus Time",
+                st_short: "Short Break",
+                st_long: "Long Break",
+                st_vol: "Volume",
+                st_auto: "Auto Start Next",
+                round: "ROUND"
+            },
+            zh: {
+                work_mode: "专注时间",
+                short_mode: "小憩一下",
+                long_mode: "深度休息",
+                btn_start: "开始",
+                btn_pause: "暂停",
+                btn_reset: "重置",
+                btn_skip: "跳过",
+                stats_label: "今日完成:",
+                st_title: "设置",
+                st_work: "专注时长",
+                st_short: "短休时长",
+                st_long: "长休时长",
+                st_vol: "音效音量",
+                st_auto: "自动开始下一段",
+                round: "轮次"
+            }
+        };
+
+        /* --- State & Config --- */
+        const App = {
+            lang: 'zh', // 'zh' or 'en'
+            mode: 'work', // work, short, long
+            timeLeft: 1500,
+            totalTime: 1500,
+            isRunning: false,
+            timerId: null,
+            round: 1,
+            dailyCount: 0,
+            settings: {
+                work: 25,
+                short: 5,
+                long: 15,
+                volume: 50,
+                autoStart: false
+            }
+        };
+
+        /* --- Audio Synth (Cute Tones) --- */
+        const AudioSys = {
+            ctx: null,
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playTone(type, freq, duration, delay=0) {
+                if (!this.ctx) return;
+                const vol = App.settings.volume / 100;
+                if (vol <= 0.01) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.value = freq;
+                
+                gain.gain.setValueAtTime(0, this.ctx.currentTime + delay);
+                gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + delay + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(this.ctx.currentTime + delay);
+                osc.stop(this.ctx.currentTime + delay + duration);
+            },
+            playStart() {
+                this.init();
+                // Cute 'Ding-Dong'
+                this.playTone('sine', 659, 0.3, 0); // E5
+                this.playTone('sine', 880, 0.6, 0.2); // A5
+            },
+            playPause() {
+                this.init();
+                // Falling bloop
+                this.playTone('triangle', 440, 0.2, 0);
+                this.playTone('triangle', 349, 0.2, 0.15);
+            },
+            playDone() {
+                this.init();
+                // Victory melody
+                [523, 659, 783, 1046].forEach((f, i) => this.playTone('square', f, 0.2, i*0.1));
+            }
+        };
+
+        /* --- DOM Refs --- */
+        const $ = id => document.getElementById(id);
+        const els = {
+            body: document.body,
+            timer: $('timer'),
+            mode: $('mode-text'),
+            progress: $('progress-bar'),
+            btnToggle: $('btn-toggle'),
+            round: $('round-display'),
+            pet: $('pet'),
+            checkAuto: $('check-auto'),
+            statsCount: $('stats-count'),
+            statsLabel: $('stats-label'),
+            inputs: {
+                work: $('input-work'), short: $('input-short'), long: $('input-long'), volume: $('input-volume')
+            },
+            labels: {
+                work: $('val-work'), short: $('val-short'), long: $('val-long'), vol: $('val-vol')
+            }
+        };
+
+        /* --- Logic --- */
+
+        function t(key) { return i18n[App.lang][key]; }
+
+        function updateUI() {
+            // 1. Time
+            const m = Math.floor(App.timeLeft / 60).toString().padStart(2, '0');
+            const s = (App.timeLeft % 60).toString().padStart(2, '0');
+            els.timer.textContent = `${m}:${s}`;
+            document.title = App.isRunning ? `[${m}:${s}] ${t(App.mode+'_mode')}` : 'Pixel Pomo';
+
+            // 2. Progress
+            const pct = ((App.totalTime - App.timeLeft) / App.totalTime) * 100;
+            els.progress.style.width = (100 - pct) + '%';
+
+            // 3. Text & Theme
+            els.mode.textContent = t(App.mode + '_mode');
+            els.round.textContent = `${t('round')} ${App.round}/4`;
+            els.statsLabel.textContent = t('stats_label');
+            
+            // 4. Buttons
+            els.btnToggle.textContent = App.isRunning ? t('btn_pause') : t('btn_start');
+            $('btn-reset').textContent = t('btn_reset');
+            $('btn-skip').textContent = t('btn_skip');
+
+            // 5. Settings Modal Translations
+            $('st-title').textContent = t('st_title');
+            $('st-work').firstChild.textContent = t('st_work') + ': ';
+            $('st-short').firstChild.textContent = t('st_short') + ': ';
+            $('st-long').firstChild.textContent = t('st_long') + ': ';
+            $('st-vol').firstChild.textContent = t('st_vol') + ': ';
+            $('st-auto').textContent = t('st_auto');
+
+            // 6. Theme & Mascot
+            els.body.setAttribute('data-theme', App.mode);
+            
+            if (App.mode === 'work') {
+                els.pet.className = 'pixel-pet pet-work';
+            } else {
+                els.pet.className = 'pixel-pet pet-sleep';
+            }
+        }
+
+        function switchMode(m) {
+            App.mode = m;
+            App.totalTime = App.settings[m] * 60;
+            App.timeLeft = App.totalTime;
+            updateUI();
+        }
+
+        function nextPhase() {
+            if (App.mode === 'work') {
+                App.dailyCount++;
+                saveStats();
+                updateStats();
+                
+                if (App.round >= 4) {
+                    switchMode('long');
+                } else {
+                    switchMode('short');
+                }
+            } else {
+                if (App.mode === 'long') App.round = 1;
+                else App.round++;
+                switchMode('work');
+            }
+        }
+
+        function timerLoop() {
+            if (App.timeLeft > 0) {
+                App.timeLeft--;
+                updateUI();
+            } else {
+                stopTimer();
+                AudioSys.playDone();
+                nextPhase();
+                if (App.settings.autoStart) startTimer();
+            }
+        }
+
+        function startTimer() {
+            if (App.isRunning) return;
+            AudioSys.playStart();
+            App.isRunning = true;
+            App.timerId = setInterval(timerLoop, 1000);
+            updateUI();
+        }
+
+        function stopTimer() {
+            clearInterval(App.timerId);
+            App.isRunning = false;
+            if(App.timeLeft > 0) AudioSys.playPause(); // Don't play pause sound if finished
+            updateUI();
+        }
+
+        function loadData() {
+            // Settings
+            const s = localStorage.getItem('pixel_pomo_cfg');
+            if (s) App.settings = { ...App.settings, ...JSON.parse(s) };
+            
+            // Stats
+            const st = localStorage.getItem('pixel_pomo_stat');
+            const today = new Date().toLocaleDateString();
+            if (st) {
+                const d = JSON.parse(st);
+                if (d.date === today) App.dailyCount = d.count;
+            }
+
+            // Sync Settings to UI
+            els.inputs.work.value = App.settings.work;
+            els.inputs.short.value = App.settings.short;
+            els.inputs.long.value = App.settings.long;
+            els.inputs.volume.value = App.settings.volume;
+            if (App.settings.autoStart) els.checkAuto.classList.add('active');
+            
+            updateRangeLabels();
+            updateStats();
+            switchMode('work');
+        }
+
+        function saveSettings() {
+            App.settings.work = parseInt(els.inputs.work.value);
+            App.settings.short = parseInt(els.inputs.short.value);
+            App.settings.long = parseInt(els.inputs.long.value);
+            App.settings.volume = parseInt(els.inputs.volume.value);
+            App.settings.autoStart = els.checkAuto.classList.contains('active');
+            
+            localStorage.setItem('pixel_pomo_cfg', JSON.stringify(App.settings));
+            if (!App.isRunning) switchMode(App.mode); // Refresh time if idle
+        }
+
+        function saveStats() {
+            localStorage.setItem('pixel_pomo_stat', JSON.stringify({
+                date: new Date().toLocaleDateString(),
+                count: App.dailyCount
+            }));
+        }
+
+        function updateStats() {
+            els.statsCount.textContent = App.dailyCount;
+        }
+
+        function updateRangeLabels() {
+            els.labels.work.textContent = els.inputs.work.value;
+            els.labels.short.textContent = els.inputs.short.value;
+            els.labels.long.textContent = els.inputs.long.value;
+            els.labels.vol.textContent = els.inputs.volume.value;
+        }
+
+        /* --- Event Listeners --- */
+        
+        // Controls
+        els.btnToggle.onclick = () => App.isRunning ? stopTimer() : startTimer();
+        $('btn-reset').onclick = () => { stopTimer(); switchMode(App.mode); };
+        $('btn-skip').onclick = () => { stopTimer(); nextPhase(); };
+        $('btn-lang').onclick = () => { 
+            App.lang = App.lang === 'zh' ? 'en' : 'zh'; 
+            updateUI(); 
+        };
+
+        // Settings Modal
+        const modal = $('modal');
+        $('btn-settings').onclick = () => modal.classList.add('open');
+        $('btn-save').onclick = () => { saveSettings(); modal.classList.remove('open'); };
+        modal.onclick = (e) => { if(e.target === modal) modal.classList.remove('open'); };
+
+        // Range Inputs Live Update
+        Object.values(els.inputs).forEach(input => {
+            input.oninput = updateRangeLabels;
+        });
+
+        // Custom Checkbox
+        $('toggle-auto').onclick = () => els.checkAuto.classList.toggle('active');
+
+        // Keyboard
+        document.addEventListener('keydown', e => {
+            if (modal.classList.contains('open')) return;
+            if (e.code === 'Space') { e.preventDefault(); els.btnToggle.click(); }
+            if (e.code === 'KeyR') $('btn-reset').click();
+            if (e.code === 'KeyS') $('btn-skip').click();
+        });
+
+        /* --- Init --- */
+        loadData();
+
+    </script>
+</body>
+</html>
