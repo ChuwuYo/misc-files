@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            禁用鼠标离开网页/窗口失焦监听
 // @namespace       http://tampermonkey.net/
-// @version         0.4.8
+// @version         0.4.9
 // @description     通过多种方式阻止网页检测鼠标离开页面、窗口失去焦点或页面可见性变化，并包含活动模拟，旨在保护用户操作不被意外中断或记录。新增禁用网页自动全屏功能。
 // @author          Chuwu
 // @match           *://*.chaoxing.com/*
@@ -9,8 +9,7 @@
 // @match           *://*.edu.cn/*
 // @match           *://*.icourse163.org/*
 // @match           *://*.linknl.com/*
-// @match           https://*.huawei.com/*
-// @match           https://talent.shixizhi.huawei.com/*
+// @match           *://*.huawei.com/*
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=chaoxing.com
 // @grant           unsafeWindow
 // @grant           GM_setValue
@@ -49,7 +48,9 @@
         'fullscreenchange', // 全屏状态改变时触发
         'webkitfullscreenchange', // Webkit 内核的全屏状态改变事件
         'mozfullscreenchange', // Mozilla 内核的全屏状态改变事件
-        'MSFullscreenChange' // IE/Edge 的全屏状态改变事件
+        'MSFullscreenChange', // IE/Edge 的全屏状态改变事件
+        'beforeunload', // 页面即将卸载时触发
+        'pagehide' // 页面隐藏时触发
     ]);
 
     // 保存原始的 addEventListener 方法引用
@@ -128,7 +129,18 @@
         // 创建一个假的元素作为全屏元素
         const fakeFullscreenElement = pageWindow.document.createElement('div');
         fakeFullscreenElement.style.display = 'none';
-        pageWindow.document.body.appendChild(fakeFullscreenElement);
+        
+        // 修复：因为 @run-at document-start，此时 body 可能不存在，需要判断
+        if (pageWindow.document.body) {
+            pageWindow.document.body.appendChild(fakeFullscreenElement);
+        } else {
+            // 如果 body 还没生成，等待 DOM 加载完成后再添加
+            pageWindow.document.addEventListener('DOMContentLoaded', () => {
+                if (pageWindow.document.body) {
+                    pageWindow.document.body.appendChild(fakeFullscreenElement);
+                }
+            });
+        }
 
         // 重写全屏相关的属性
         const fullscreenProperties = {
@@ -196,21 +208,27 @@
     // 功能3：定期模拟鼠标移动事件
     // 目的：模拟用户活动，以防止某些基于用户长时间无操作的检测。
     try {
-        // 创建一个模拟的 'mousemove' (鼠标移动) 事件对象
-        const fakeMouseEvent = new MouseEvent('mousemove', {
-            bubbles: true, // 事件应冒泡
-            cancelable: true, // 事件可被取消
-            view: pageWindow, // 关联的视图 (通常是 window 对象)
-            clientX: 100, // 模拟的鼠标事件在浏览器可视区域的X坐标
-            clientY: 100 // 模拟的鼠标事件在浏览器可视区域的Y坐标
-        });
+        const activityInterval = 15000; // 模拟活动的间隔时间 (毫秒), 统一为15秒
+        
+        // 创建随机坐标的鼠标移动事件生成函数
+        function createRandomMouseEvent() {
+            const x = Math.floor(Math.random() * 500) + 100; // 100-600 之间的随机X坐标
+            const y = Math.floor(Math.random() * 500) + 100; // 100-600 之间的随机Y坐标
+            return new MouseEvent('mousemove', {
+                bubbles: true,
+                cancelable: true,
+                view: pageWindow,
+                clientX: x,
+                clientY: y
+            });
+        }
 
-        const activityInterval = 30000; // 模拟活动的间隔时间 (毫秒), 此处为30秒
         // 设置定时器，定期在 document 上派发模拟的鼠标移动事件
         const intervalId = pageWindow.setInterval(() => {
-            // 在页面的 document 对象上触发 'mousemove' 事件
+            // 每次生成新的随机坐标事件，使模拟更真实
+            const fakeMouseEvent = createRandomMouseEvent();
             pageWindow.document.dispatchEvent(fakeMouseEvent);
-            if (DEBUG) console.log(`[${SCRIPT_NAME}] 已派发模拟的 mousemove 事件。`);
+            if (DEBUG) console.log(`[${SCRIPT_NAME}] 已派发模拟的 mousemove 事件 (${fakeMouseEvent.clientX}, ${fakeMouseEvent.clientY})。`);
         }, activityInterval);
 
         if (DEBUG) console.log(`[${SCRIPT_NAME}] 已启动模拟鼠标活动 (定时器 ID: ${intervalId})。`);
@@ -272,24 +290,21 @@
         // 打开脚本编辑器的函数
         function openScriptEditor() {
             try {
-                // 尝试使用油猴API打开脚本编辑页面
-                if (typeof GM_openInTab !== 'undefined') {
-                    // 这里使用通用的油猴选项页面URL
-                    GM_openInTab('chrome-extension://dhdgffkkebhmkfjojejmpbldmpobfkfo/options.html#nav=scripts', {active: true});
-                } else {
-                    // 备用方案：直接打开油猴选项页面
-                    window.open('chrome-extension://dhdgffkkebhmkfjojejmpbldmpobfkfo/options.html#nav=scripts', '_blank');
-                }
-            } catch (error) {
-                console.error(`[${SCRIPT_NAME}] 打开脚本编辑器时出错:`, error);
-                showNotification(`无法自动打开编辑器，请手动点击油猴图标 > 管理面板 > 脚本列表`);
-
-                // 备用方案：复制完整的匹配规则文本
+                // 提示用户手动操作，因为扩展ID因浏览器和安装方式而异
+                showNotification(`请手动点击油猴图标 > 管理面板 > 找到本脚本进行编辑`);
+                
+                // 复制完整的匹配规则文本供用户粘贴
+                const url = new URL(window.location.href);
+                const pattern = `*://*.${url.hostname}/*`;
                 const fullMatchText = `// @match           ${pattern}`;
                 GM_setClipboard(fullMatchText, 'text');
+                
                 setTimeout(() => {
-                    showNotification(`已复制完整匹配规则到剪贴板: ${fullMatchText}`);
-                }, 500);
+                    showNotification(`已复制完整匹配规则到剪贴板，请粘贴到脚本的 @match 部分`);
+                }, 1000);
+            } catch (error) {
+                console.error(`[${SCRIPT_NAME}] 打开脚本编辑器时出错:`, error);
+                showNotification(`操作失败: ${error.message}`);
             }
         }
 
