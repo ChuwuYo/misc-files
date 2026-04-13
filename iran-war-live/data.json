@@ -1,22 +1,30 @@
 {
-  "generated_at": "2026-04-13 09:01:26 UTC",
+  "generated_at": "2026-04-13 10:07:50 UTC",
   "total_items": 60,
   "raw_items": 112,
   "tag_counts": {
-    "NAVAL": 17,
-    "DIPLOMACY": 20,
+    "NAVAL": 19,
+    "DIPLOMACY": 17,
     "STRIKE": 3,
-    "POLITICS": 6,
+    "POLITICS": 5,
     "NUCLEAR": 4,
-    "UPDATE": 10
+    "UPDATE": 12
   },
   "items": [
     {
       "source": "Guardian · Iran",
       "title": "Starmer confirms UK will not support US blockade of strait of Hormuz – UK politics live",
       "link": "https://www.theguardian.com/politics/live/2026/apr/13/iran-war-keir-starmer-brexit-trump-strait-hormuz-oil-fuel-southport-latest-news-updates",
-      "desc": "PM says opening waterway is ‘vital’ as he rules out any UK involvement in US moves to blockade straitThe delayed Hillsborough law could come into force after a shift by the government on forcing intelligence services to give evidence to public inquiries, Peter Walker reports.Keir Starmer is at a school in Angela Rayner’s constituency this morning (see 9.45am) to promote this government announcemen",
-      "when": "2026-04-13T09:01:27+00:00",
+      "desc": "PM says opening waterway is ‘vital’ as he rules out any UK involvement in US moves to blockade straitKeir Starmer has confirmed that he wants to stop children being exposed to addictive scrolling features on their phones as part of measures to protect them from social media.The PM is under pressure to implement an Australian-style ban on social media for under-16s, and the government is consulting",
+      "when": "2026-04-13T10:03:29+00:00",
+      "tag": "NAVAL"
+    },
+    {
+      "source": "Guardian · Iran",
+      "title": "Middle East crisis live: US blockade of Iran’s ports to begin today as Pope Leo says he has ‘no intention to debate’ Trump over war",
+      "link": "https://www.theguardian.com/world/live/2026/apr/13/iran-war-live-news-ceasefire-peace-talks-us-trump-strait-hormuz-blockade-middle-east-crisis-latest-updates",
+      "desc": "Centcom says blockade to begin at 10am ET; pontiff says he will not respond to US president’s scathing attackFull report: Trump says US will blockade strait of Hormuz after Iran peace talks failPlaneloads of negotiators and too little time: US and Iran’s 21 hours of talksCircling back to Donald Trump’s coming naval blockade, the US military said it would block all Iranian Gulf ports on Monday at 1",
+      "when": "2026-04-13T09:34:07+00:00",
       "tag": "NAVAL"
     },
     {
@@ -28,34 +36,26 @@
       "tag": "DIPLOMACY"
     },
     {
-      "source": "NPR World",
-      "title": "Oil prices surge after US-Iran peace talks break down",
-      "link": "https://www.npr.org/2026/04/13/nx-s1-5781260/oil-prices-surge-after-us-iran-peace-talks-break-down",
-      "desc": "The U.S. said on Sunday that it will soon block ships from Iranian ports. It comes after the U.S. and Iran failed to reach an agreement during face-to-face peace talks, sending oil prices surging.",
-      "when": "2026-04-13T08:45:21+00:00",
-      "tag": "DIPLOMACY"
+      "source": "Al Jazeera",
+      "title": "What Iran is saying about US plan to blockade ports",
+      "link": "https://www.aljazeera.com/video/newsfeed/2026/4/13/what-iran-is-saying-about-us-plan-to-blockade-ports?traffic_source=rss",
+      "desc": "Iran’s military has called US blockade plans in the Strait of Hormuz an “act of piracy”.",
+      "when": "2026-04-13T08:54:22+00:00",
+      "tag": "NAVAL"
     },
     {
       "source": "NPR World",
-      "title": "Former US special envoy on where US and Iran stand after failed negotiations",
-      "link": "https://www.npr.org/2026/04/13/nx-s1-5780993/former-us-special-envoy-on-where-us-and-iran-stand-after-failed-negotiations",
-      "desc": "NPR's Michel Martin asks Robert Malley, former U.S. special envoy for Iran, about where the weekend's negotiations between the U.S. and Iran leave diplomatic efforts to resolve the war.",
-      "when": "2026-04-13T08:45:18+00:00",
-      "tag": "DIPLOMACY"
-    },
-    {
-      "source": "Guardian · Iran",
-      "title": "Middle East crisis live: US blockade of Iran’s ports to begin later today as Trump says he doesn’t care about further talks",
-      "link": "https://www.theguardian.com/world/live/2026/apr/13/iran-war-live-news-ceasefire-peace-talks-us-trump-strait-hormuz-blockade-middle-east-crisis-latest-updates",
-      "desc": "Centcom says blockade to begin at 10am ET; US president says ‘I don’t care if they come back or not’Full report: Trump says US will blockade strait of Hormuz after Iran peace talks failPlaneloads of negotiators and too little time: US and Iran’s 21 hours of talksCircling back to Donald Trump’s coming naval blockade, the US military said it would block all Iranian Gulf ports on Monday at 10am ET on",
-      "when": "2026-04-13T08:44:42+00:00",
+      "title": "Morning news brief",
+      "link": "https://www.npr.org/2026/04/13/nx-s1-5780733/morning-news-brief",
+      "desc": "President Trump says U.S. will blockade the Strait of Hormuz, failed U.S.-Iran negotiations cause oil prices to surge, Hungary's Viktor Orbán loses reelection bid.",
+      "when": "2026-04-13T08:46:04+00:00",
       "tag": "NAVAL"
     },
     {
       "source": "Al Jazeera",
       "title": "Refugee in my own city: Surviving Tehran’s bombing, with my cat for company",
       "link": "https://www.aljazeera.com/features/2026/4/13/refugee-in-my-own-city-surviving-tehrans-bombing-with-my-cat-for-company?traffic_source=rss",
-      "desc": "Amid relentless bombings, Sana refuses to flee Tehran, clinging to resilience and fleeting moments of normalcy.",
+      "desc": "Despite the relentless bombing, Sana refuses to flee Tehran, clinging to resilience and fleeting moments of normalcy.",
       "when": "2026-04-13T08:37:23+00:00",
       "tag": "STRIKE"
     },
@@ -85,7 +85,7 @@
     },
     {
       "source": "NPR World",
-      "title": "Trump lambasts Pope Leo XIV, extending feud over Iran war with American pontiff",
+      "title": "Pope Leo says he does not fear Trump, as he pushes back in feud over Iran war",
       "link": "https://www.npr.org/2026/04/13/nx-s1-5783008/trump-pope-leo",
       "desc": "President Donald Trump delivered an extraordinary broadside against Pope Leo XIV on Sunday night, saying he didn't think the U.S.-born global leader of the Catholic Church is \"doing a very good job.\"",
       "when": "2026-04-13T04:11:53+00:00",
@@ -132,20 +132,28 @@
       "tag": "NAVAL"
     },
     {
+      "source": "NPR World",
+      "title": "Amid the Iran war, Ukraine makes gains against the Kremlin",
+      "link": "https://www.npr.org/2026/04/12/nx-s1-5779257/amid-the-iran-war-ukraine-makes-gains-against-the-kremlin",
+      "desc": "With attention focused on Iran, Ukraine has made economic, battlefield and diplomatic gains against the Kremlin.",
+      "when": "2026-04-12T21:37:20+00:00",
+      "tag": "UPDATE"
+    },
+    {
+      "source": "NPR World",
+      "title": "Iran-US conflict fought amid censorships and digital fog of war",
+      "link": "https://www.npr.org/2026/04/12/nx-s1-5779592/iran-us-conflict-fought-amid-censorships-and-digital-fog-of-war",
+      "desc": "Amid the war in Iran, countries have been censoring and policing what their citizens are saying about the conflict and what information they have access to.",
+      "when": "2026-04-12T21:37:19+00:00",
+      "tag": "UPDATE"
+    },
+    {
       "source": "Al Jazeera",
       "title": "Could the Iran war pose lasting risks to global food security?",
       "link": "https://www.aljazeera.com/video/inside-story/2026/4/12/could-the-iran-war-pose-lasting-risks-to-global-food-security?traffic_source=rss",
       "desc": "United Nations warns impact could last well beyond conflict.",
       "when": "2026-04-12T20:44:49+00:00",
       "tag": "UPDATE"
-    },
-    {
-      "source": "Al Jazeera",
-      "title": "What’s next for the US-Iran peace process after talks end without a deal?",
-      "link": "https://www.aljazeera.com/video/newsfeed/2026/4/12/whats-next-for-the-us-iran-peace-process-after-talks-end-without-a-deal?traffic_source=rss",
-      "desc": "Sources in Pakistan say “progress has been made” in talks between the US and Iran – even though they ended with no deal.",
-      "when": "2026-04-12T20:19:05+00:00",
-      "tag": "DIPLOMACY"
     },
     {
       "source": "Guardian · Iran",
@@ -482,14 +490,6 @@
       "desc": "Ordinary people from various parts of Iran describe expanding strikes, economic pain and fear of repression.",
       "when": "2026-04-02T16:09:24+00:00",
       "tag": "UPDATE"
-    },
-    {
-      "source": "BBC Middle East",
-      "title": "Iran's focus on survival means same regime still firmly in place",
-      "link": "https://www.bbc.com/news/articles/cq8wzyz998xo?at_medium=RSS&at_campaign=rss",
-      "desc": "Tehran is showing resilience despite Trump's claims of regime change, writes BBC Persian editor Amir Azimi.",
-      "when": "2026-04-02T13:45:09+00:00",
-      "tag": "POLITICS"
     }
   ]
 }
