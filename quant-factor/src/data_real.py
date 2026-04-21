@@ -95,6 +95,39 @@ def _wide_yf_to_long(wide: pd.DataFrame) -> pd.DataFrame:
     return long[["date", "symbol", "open", "high", "low", "close", "volume"]]
 
 
+def fetch_sector_map(symbols: Sequence[str] = tuple(SP50), use_cache: bool = True) -> pd.DataFrame:
+    """Fetch sector / industry / marketCap metadata via yfinance.Ticker.info.
+
+    Returns DataFrame indexed by symbol with columns: sector, industry, market_cap.
+    Cached to data_cache/sector_map_<hash>.parquet.
+    """
+    import hashlib
+    syms = tuple(sorted(set(symbols)))
+    tag = hashlib.md5(",".join(syms).encode()).hexdigest()[:10]
+    cache = CACHE_DIR / f"sector_map_{tag}.parquet"
+    if use_cache and cache.exists():
+        return pd.read_parquet(cache)
+
+    import yfinance as yf
+    rows = []
+    for s in syms:
+        try:
+            info = yf.Ticker(s).info
+            rows.append(
+                dict(
+                    symbol=s,
+                    sector=info.get("sector", "Unknown"),
+                    industry=info.get("industry", "Unknown"),
+                    market_cap=float(info.get("marketCap", np.nan)),
+                )
+            )
+        except Exception:
+            rows.append(dict(symbol=s, sector="Unknown", industry="Unknown", market_cap=np.nan))
+    df = pd.DataFrame(rows).set_index("symbol")
+    df.to_parquet(cache)
+    return df
+
+
 def coverage_report(panel: pd.DataFrame) -> dict:
     """Quick QA on a fetched panel."""
     return dict(

@@ -66,7 +66,27 @@ OHLCV_AGG = {
     "low": "min",
     "close": "last",
     "volume": "sum",
+    # Crypto-extension fields (v0.18+): rates/levels aggregate as mean/last.
+    "funding": "mean",
+    "open_interest": "last",
+    "basis": "mean",
 }
+
+
+# pandas resample defaults: 'D' and sub-daily freqs → closed='left', label='left'.
+# Only 'W', 'M', 'Q', 'A' and their business variants default to right. Any
+# left-labeled TF, when used as a COARSER TF in MTF and ffilled to a finer grid,
+# leaks future data (bar at 00:00 contains 00:00-04:00 period). We track this
+# set so the MTF alignment stage can shift(1) them before ffill.
+LEFT_LABELED_TFS: frozenset = frozenset({
+    TimeFrame.M1,
+    TimeFrame.M5,
+    TimeFrame.M15,
+    TimeFrame.M30,
+    TimeFrame.H1,
+    TimeFrame.H4,
+    TimeFrame.D1,
+})
 
 
 def resample_panel(panel: pd.DataFrame, tf: TimeFrame) -> pd.DataFrame:
@@ -80,6 +100,9 @@ def resample_panel(panel: pd.DataFrame, tf: TimeFrame) -> pd.DataFrame:
     panel["date"] = pd.to_datetime(panel["date"])
 
     # Per-symbol resample then concat — preserves MultiIndex semantics.
+    # Keep pandas default labels (left for intraday/D1, right for W/M/Q/A) —
+    # we fix lookahead in the MTF alignment stage via shift(1) on LEFT-labeled
+    # coarser TFs (see compute_pool_factor / _align_to_finest).
     parts = []
     for sym, grp in panel.groupby("symbol", sort=False):
         g = grp.set_index("date").sort_index()

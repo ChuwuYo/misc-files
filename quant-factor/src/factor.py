@@ -36,7 +36,7 @@ from .pipeline import (
     vol_dampen,
     winsorize,
 )
-from .timeframes import TimeFrame, resample_panel
+from .timeframes import LEFT_LABELED_TFS, TimeFrame, resample_panel
 
 
 def build_pipeline(
@@ -74,16 +74,32 @@ CombinerName = Literal["equal", "ic_weight"]
 
 
 def _align_to_finest(
-    signals: dict[TimeFrame, pd.DataFrame], finest_index: pd.DatetimeIndex
+    signals: dict[TimeFrame, pd.DataFrame],
+    finest_index: pd.DatetimeIndex,
+    finest: TimeFrame | None = None,
 ) -> dict[TimeFrame, pd.DataFrame]:
     """Forward-fill each TF's signal onto the finest TF's index.
 
-    HTF signals stay constant within their bar; LTF signals are unchanged.
+    **Lookahead fix**: pandas resample left-labels intraday/daily TFs
+    (a D1 bar at Mon contains Mon 00:00–23:59; an H4 bar at 00:00 contains
+    00:00–04:00). When such a signal is ffilled to a finer grid, the value
+    at the bar's label encodes future data relative to any intra-bar finer
+    timestamp. For each coarser-than-finest TF that is left-labeled, we
+    shift(1) on its native grid before reindex — so the signal only becomes
+    visible AFTER its window has closed.
+
+    TFs that pandas defaults to right-labels (W/M/Q/A) are NOT shifted —
+    their labels already coincide with window end.
     """
     out = {}
     for tf, sig in signals.items():
-        common_cols = sig.columns
-        out[tf] = sig.reindex(finest_index).ffill()[common_cols]
+        if (
+            finest is not None
+            and tf is not finest
+            and tf in LEFT_LABELED_TFS
+        ):
+            sig = sig.shift(1)
+        out[tf] = sig.reindex(finest_index).ffill()
     return out
 
 
@@ -178,7 +194,7 @@ def compute_mtf_factor(
         per_tf_signal[tf] = sig
 
     finest_idx = per_tf_signal[finest].index
-    aligned = _align_to_finest(per_tf_signal, finest_idx)
+    aligned = _align_to_finest(per_tf_signal, finest_idx, finest=finest)
 
     if combiner == "equal":
         zs = {tf: ((s.sub(s.mean(axis=1), axis=0))
@@ -214,7 +230,15 @@ __version__ = "0.9.0"
 
 
 def _to_ohlcv_wide(panel: pd.DataFrame) -> WideOHLCV:
-    fields = [c for c in ("open", "high", "low", "close", "volume") if c in panel.columns]
+    # Include any of the standard OHLCV + optional extras (funding for v0.18,
+    # OI/basis/etc for future crypto alphas). Any column in the panel beyond
+    # date/symbol is exposed to alphas by name.
+    extras = ("funding", "open_interest", "basis")
+    fields = [
+        c
+        for c in ("open", "high", "low", "close", "volume", *extras)
+        if c in panel.columns
+    ]
     return {f: to_wide(panel, field=f) for f in fields}
 
 
@@ -236,6 +260,9 @@ def compute_pool_factor(
     pca_k: int | None = None,
     pca_auto: bool = False,
     smooth_lambda: float = 0.0,
+    sector_map: pd.Series | None = None,
+    size_map: pd.Series | None = None,
+    within_sector: bool = False,
     return_components: bool = False,
 ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
     """Signal pool: every (alpha, timeframe) becomes one signal.
@@ -280,9 +307,25 @@ def compute_pool_factor(
 
     finest_close = to_wide(resample_panel(panel, finest), "close")
     finest_idx = finest_close.index
-    aligned = {
-        k: v.reindex(finest_idx).ffill() for k, v in components.items()
-    }
+    # Left-labeled coarser TFs need shift(1) pre-ffill (see _align_to_finest).
+    # Key format is "alpha@TF.name"; look up TF by name.
+    aligned = {}
+    for k, v in components.items():
+        tf_name = k.split("@")[-1]
+        tf_obj = TimeFrame[tf_name]
+        if tf_obj is not finest and tf_obj in LEFT_LABELED_TFS:
+            v = v.shift(1)
+        aligned[k] = v.reindex(finest_idx).ffill()
+
+    # v0.13: optional within-sector pre-ranking — each alpha is ranked inside
+    # its sector group BEFORE the combiner, so the resulting signals are
+    # natively sector-neutral (no post-hoc demean degrade).
+    if within_sector and sector_map is not None:
+        from .neutralize import cs_rank_grouped
+        aligned = {
+            k: cs_rank_grouped(s, sector_map, min_group_size=4)
+            for k, s in aligned.items()
+        }
 
     # v0.8: optional Gram-Schmidt orthogonalization in t-stat order to remove
     # signal redundancy (KBAR alphas are highly cross-correlated).
@@ -346,6 +389,14 @@ def compute_pool_factor(
     if smooth_lambda > 0:
         from .denoise import ewma_smooth
         combined = ewma_smooth(combined, lambda_=smooth_lambda)
+
+    # v0.12: optional sector / size neutralization — strip Barra-style risk
+    # exposures so what remains is closer to pure alpha.
+    if sector_map is not None or size_map is not None:
+        from .neutralize import neutralize_combined
+        combined = neutralize_combined(combined, sector_map=sector_map, size_map=size_map)
+        # re-rank to keep output in [-1, 1] after neutralization
+        combined = (combined.rank(axis=1, pct=True) - 0.5) * 2.0
 
     if return_components:
         return combined, components

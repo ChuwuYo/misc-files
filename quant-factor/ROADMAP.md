@@ -20,6 +20,29 @@
        —— OOS h=10 IC 从 -0.012 翻到 +0.019 (t=+1.87)，IS-OOS gap 显著缩小
 - [x] **v0.9** PCA k=3 去噪 + EWMA λ 平滑（Marchenko-Pastur RMT）
        —— **OOS h=10 IC=+0.036 t=+3.18 真显著**，ewma0.7 把 TO 从 30% 降到 12%
+- [x] **v0.10** 性能向量化（ts_rank/ts_argmax stride_tricks + Gram-Schmidt numpy）
+       —— **端到端 2.14s → 0.48s（4.4x）**，IC 不变；ts_rank 单独提速 ~2000x
+- [x] **v0.11** Walk-forward 5 折滚动 CV（López de Prado 方法论）
+       —— **翻案**：pca3 fold 0 暴负 t=-3，真赢家 ortho+ewma λ=0.7 + lookback=90，
+       mean IC +0.044，agg_t +3.64，h=10/h=20 全 100% win rate
+- [x] **v0.12** Sector / Size 中性化（Asness 灵魂拷问）
+       —— **诚实暴击**：67% IC 来自 sector exposure，纯 alpha 仅 +0.012 t=+1.08；
+       因子实质是 "sector rotation + 小 alpha" 而非 stock-picking
+- [x] **v0.13** Within-sector pre-rank（**失败 + SP50 universe 天花板**）
+       —— std 暴增 3x，agg_t 反降，纯 alpha -43%；触发 universe 扩展决策
+- [x] **v0.14** Crypto 接入（Binance 公共 API）+ per-market 调参
+       —— 49 主流币 3y daily，per-market 最优 lookback=180/ewma=0；
+       h=3 agg_t +3.26 (100% win)、h=30 agg_t +2.69 (100% win)；框架完全泛化
+- [x] **v0.15** Crypto sector 分类（手工 8 类）+ 中性化（**诊断，无改进**）
+       —— Crypto 损 55% IC vs SP50 损 67%；同结构性问题；纯 alpha 仅 +0.027 (t≈1.2)；
+       结论：纯 OHLCV 信号无法逃 sector exposure，需 intraday 或新数据源
+- [x] **v0.16** Intraday H1 crypto MTF + **两次修 MTF lookahead bug**
+       —— 发现 pandas resample 默认 left-label 在 H4/D1 均致 ffill 泄漏未来；
+       修后 intraday IC 缩水 9x（+0.18 → +0.02），**证伪"intraday 比 daily 更强"**；
+       SP50/crypto daily 结论不受影响（W1 右标签默认安全）
+- [x] **v0.17** Lookahead 自动测试套件（防 v0.16 bug 复发）
+       —— 5 零依赖测试，revert fix 时精准抓到 ratio=29.1x (H4) / 15.9x (D1)；
+       首次拥有自动化 lookahead 护栏，可 CI / pre-commit
 
 ## 计划中
 - [ ] **v0.6** 量价背离信号（Qlib KMID/KLEN 类）作为残差增强

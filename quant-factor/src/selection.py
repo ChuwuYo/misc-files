@@ -87,28 +87,31 @@ def gram_schmidt_orthogonalize(
     """Sequentially regress each signal on the prior selected signals (per-row),
     keeping only the residual. Order matters: process the strongest signal first.
 
-    All signals must share index; columns may differ — we align per row.
+    Vectorized via numpy: per-row beta = sum(r*p) / sum(p*p) computed in
+    array-wise sums (no pd.loc indexing). Assumes all signals share the same
+    (index, columns) — true for our pool since we reindex to finest TF before
+    calling this.
     """
+    if not order:
+        return {}
+    ref = signals[order[0]]
+    idx, cols = ref.index, ref.columns
+
     ortho: dict[str, pd.DataFrame] = {}
-    selected: list[pd.DataFrame] = []
+    selected_arrs: list[np.ndarray] = []
+
     for name in order:
-        s = signals[name]
-        if not selected:
-            ortho[name] = s
-            selected.append(s)
-            continue
-        # Per-row OLS: regress s on stacked selected signals, return residual.
-        residual = s.copy()
-        for prev in selected:
-            common_idx = residual.index.intersection(prev.index)
-            common_cols = residual.columns.intersection(prev.columns)
-            r = residual.loc[common_idx, common_cols]
-            p = prev.loc[common_idx, common_cols]
-            # Per-row beta = sum(r*p) / sum(p*p)
-            denom = (p * p).sum(axis=1).replace(0, np.nan)
-            beta = (r * p).sum(axis=1) / denom
-            r_new = r.sub(p.mul(beta, axis=0), axis=0)
-            residual.loc[common_idx, common_cols] = r_new
-        ortho[name] = residual
-        selected.append(residual)
+        s_df = signals[name].reindex(index=idx, columns=cols)
+        s_arr = s_df.to_numpy(dtype=float, copy=True)
+        residual = s_arr
+        for p_arr in selected_arrs:
+            # Per-row OLS beta: sum_cols(r*p) / sum_cols(p*p), NaN-safe.
+            num = np.nansum(residual * p_arr, axis=1)
+            den = np.nansum(p_arr * p_arr, axis=1)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                beta = np.where(den > 0, num / den, 0.0)
+            residual = residual - beta[:, None] * p_arr
+        ortho[name] = pd.DataFrame(residual, index=idx, columns=cols)
+        selected_arrs.append(residual)
+
     return ortho
