@@ -4,7 +4,7 @@
 // @namespace    https://github.com/ChuwuYo
 // @homepageURL  https://github.com/ChuwuYo/misc-files/blob/main/userscripts/HTML%20Content%20to%20Markdown.user.js
 // @supportURL   https://github.com/ChuwuYo/misc-files/issues
-// @version      0.4.0
+// @version      0.4.1
 // @description  Convert selected HTML Content to Markdown
 // @description:zh 将选定的HTML内容转换为Markdown
 // @author       ChuwuYo
@@ -895,6 +895,20 @@
         #h2m-tip-instance ul { margin-left: 20px; padding-left: 0; }
         #h2m-tip-instance li { margin-bottom: 0.3em; }
 
+        /* a11y：用户启用「减少动态效果」时关掉所有 transition/fade，避免前庭敏感触发
+           覆盖范围：选择框悬浮过渡、tip 淡入淡出、按钮 hover、关闭按钮图标色变化 */
+        @media (prefers-reduced-motion: reduce) {
+            .h2m-selection-box,
+            #h2m-tip-instance,
+            .h2m-modal-footer button,
+            .h2m-modal-footer button.h2m-copy,
+            .h2m-modal-footer button.h2m-download,
+            .h2m-modal .h2m-close,
+            .h2m-modal .h2m-close svg path {
+                transition: none !important;
+            }
+        }
+
         /* 手机竖屏：编辑区与预览区改为上下布局，避免两列各挤一半宽度 */
         @media (max-width: 700px) {
             .h2m-modal { width: 96%; height: 92%; }
@@ -911,7 +925,7 @@
         }
     `);
 
-    console.log('[HTML Content to Markdown] Script loaded. Version 0.4.0. Shortcut:', shortCutConfig, "Filters:", filterConfig);
+    console.log('[HTML Content to Markdown] Script loaded. Version 0.4.1. Shortcut:', shortCutConfig, "Filters:", filterConfig);
     // 依赖未加载时仅 console 告警，不再每页 alert 打扰；处理失败时 processSelection 会走 processError 提示
     if (!TurndownPluginGfmService || typeof TurndownPluginGfmService.gfm !== 'function') {
         console.error("[HTML to MD]", I18N[lang].gfmError);

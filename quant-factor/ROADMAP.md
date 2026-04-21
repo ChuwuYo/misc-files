@@ -14,6 +14,12 @@
        —— alphas 在合成数据上接近噪声但池+稀疏化框架已就位，等真数据验真值
 - [x] **v0.6** Qlib KBAR 9 + 量价 corr20/cord20 + rsv20，共 12 alphas
        —— IC 0.150 → 0.386（**2.5x**），IR 17.9 → 25.6，IS=OOS 完全无过拟合，跨 4 seed 极稳
+- [x] **v0.7** yfinance 真数据接入（SP50 美股 3 年日线）
+       —— 现实暴击：合成调参不转移；klen+alpha001 是仅有真信号 t≈2；ic_weight 在真数据过参数化
+- [x] **v0.8** Gram-Schmidt 正交化 + warmup t-stat 预筛
+       —— OOS h=10 IC 从 -0.012 翻到 +0.019 (t=+1.87)，IS-OOS gap 显著缩小
+- [x] **v0.9** PCA k=3 去噪 + EWMA λ 平滑（Marchenko-Pastur RMT）
+       —— **OOS h=10 IC=+0.036 t=+3.18 真显著**，ewma0.7 把 TO 从 30% 降到 12%
 
 ## 计划中
 - [ ] **v0.6** 量价背离信号（Qlib KMID/KLEN 类）作为残差增强

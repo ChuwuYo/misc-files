@@ -207,7 +207,7 @@ def compute_mtf_factor(
     return combined
 
 
-__version__ = "0.5.0"
+__version__ = "0.9.0"
 
 
 # ---------- v0.5: signal pool (alpha × timeframe) ----------
@@ -231,6 +231,11 @@ def compute_pool_factor(
     combiner: CombinerName = "ic_weight",
     ic_lookback: int = 60,
     min_abs_ic: float = 0.0,
+    warmup_screen: dict | None = None,
+    orthogonalize: bool = False,
+    pca_k: int | None = None,
+    pca_auto: bool = False,
+    smooth_lambda: float = 0.0,
     return_components: bool = False,
 ) -> pd.DataFrame | tuple[pd.DataFrame, dict[str, pd.DataFrame]]:
     """Signal pool: every (alpha, timeframe) becomes one signal.
@@ -245,11 +250,30 @@ def compute_pool_factor(
     finest = min(tfs, key=lambda t: list(TimeFrame).index(t))
     alphas = list(alphas)
 
+    # v0.8: optional warmup t-stat screening to drop dead slots before pooling.
+    if warmup_screen is not None:
+        from .selection import screen_alphas_by_warmup
+        kept_pairs, _ = screen_alphas_by_warmup(
+            panel, alphas, tfs,
+            warmup_frac=warmup_screen.get("warmup_frac", 0.5),
+            min_abs_t=warmup_screen.get("min_abs_t", 2.0),
+            top_k=warmup_screen.get("top_k"),
+            horizon=warmup_screen.get("horizon", 1),
+        )
+        if not kept_pairs:
+            raise ValueError("warmup_screen left zero slots — relax min_abs_t or top_k")
+        # Constrain to (alpha, tf) survivors only.
+        keep_set = set((a, t.name) for a, t in kept_pairs)
+    else:
+        keep_set = None
+
     components: dict[str, pd.DataFrame] = {}
     for tf in tfs:
         rs = resample_panel(panel, tf)
         ohlcv = _to_ohlcv_wide(rs)
         for name in alphas:
+            if keep_set is not None and (name, tf.name) not in keep_set:
+                continue
             fn = ALPHA_REGISTRY[name]
             sig = fn(ohlcv)
             components[f"{name}@{tf.name}"] = sig
@@ -259,6 +283,26 @@ def compute_pool_factor(
     aligned = {
         k: v.reindex(finest_idx).ffill() for k, v in components.items()
     }
+
+    # v0.8: optional Gram-Schmidt orthogonalization in t-stat order to remove
+    # signal redundancy (KBAR alphas are highly cross-correlated).
+    if orthogonalize and len(aligned) > 1:
+        from .selection import gram_schmidt_orthogonalize, _signal_tstat
+        # rank by warmup-period |t|
+        fwd_full = finest_close.shift(-1) / finest_close - 1.0
+        scored = []
+        for k, s in aligned.items():
+            _, t, _ = _signal_tstat(s, fwd_full)
+            scored.append((abs(t), k))
+        order = [k for _, k in sorted(scored, reverse=True)]
+        aligned = gram_schmidt_orthogonalize(aligned, order)
+
+    # v0.9: optional PCA denoising — collapse to top-k principal components.
+    if (pca_k is not None or pca_auto) and len(aligned) > 1:
+        from .denoise import pca_denoise_signals
+        aligned = pca_denoise_signals(
+            aligned, k=pca_k, use_mp_threshold=pca_auto and pca_k is None
+        )
 
     if combiner == "equal":
         zs = {k: _zscore_cs(s) for k, s in aligned.items()}
@@ -297,6 +341,11 @@ def compute_pool_factor(
 
     else:
         raise ValueError(f"unknown combiner: {combiner}")
+
+    # v0.9: optional EWMA factor smoothing — slashes turnover.
+    if smooth_lambda > 0:
+        from .denoise import ewma_smooth
+        combined = ewma_smooth(combined, lambda_=smooth_lambda)
 
     if return_components:
         return combined, components
