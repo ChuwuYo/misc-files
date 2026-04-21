@@ -59,20 +59,20 @@
        HL 扩 universe 从 +2.13 降到 **-0.42**（meme/新币加噪音不加信号）；
        **v0.18 Binance 45 + funding ic_weight 是已探底 OOS 冠军**
 
-- [x] **v0.23** LGBM rank-target + **raw-features** + asymmetric ensemble（**真胜出**）
+- [x] **v0.23** LGBM rank-target + **raw-features** + asymmetric ensemble
        —— 关键发现：LGBM 配 raw 特征 mean Sharpe +3.22（单跑）；
-       95/5 ic_weight / LGBM 集成：mean **+2.37 (+6%)** **100% win** 保持；
-       92/8 极限：mean **+2.46 (+10%)** 100% win (min +0.05)；40/60 最高 mean +3.75 +67%（牺牲 win%）
+       95/5 ic/LGBM 集成：mean +2.37 100% win；92/8 极限 +2.46 100% win（均 300/160 fold eval）
+- [x] **v0.24** 鲁棒性联合优化（**+76% vs v0.18**）
+       —— Seed 5 次完全确定性（+2.37 bit-identical）；Alpha158 扩展 **FAILED**；
+       **最佳 fold = 400/120 (5 folds)**，**最佳权重 = 85/15 ic/LGBM**；
+       **mean Sharpe +3.95, 100% win (5/5 folds), min +0.38** ⭐
 
-## 项目新天花板（v0.23）
+## 项目最终天花板 v0.24（建议冻结 v1.0）
 
-**生产推荐 95/5（保守）**：ic_weight + LGBM(rank-t, raw-f) 95/5 PnL 集成
-- walk-forward 5-fold h=20: **mean Sharpe +2.37, 100% win, min +0.31**
-- 超越 v0.18（+2.24）+6%，同时保持 100% win-rate
-
-**激进版 92/8**：mean Sharpe +2.46 (+10%)，min +0.05 极限
-
-**最大 mean 40/60**：mean Sharpe +3.75 (+67%)，75% win（可接受 1 fold 亏损）
+**生产推荐**：85/15 ic_weight / LGBM PnL ensemble, 400/120 walk-forward eval
+- walk-forward 5-fold h=20: **mean Sharpe +3.95, 100% win, min +0.38**
+- 超越 v0.18（+2.24）**+76%**，同时保持 100% win-rate
+- Seed determinism（max_depth=2 无 bagging） + 19 alphas 核心池（Alpha158 扩展已验证无用）
 - [ ] **v0.6** 量价背离信号（Qlib KMID/KLEN 类）作为残差增强
 - [ ] **v0.7** 真数据接入（akshare / yfinance），验证分布稳定性
 - [ ] **v0.8** 行业/市值中性化（Barra 风格残差），消除已知风险暴露

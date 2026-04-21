@@ -268,6 +268,70 @@ def cord20_dret_dvol(o: WideOHLCV) -> pd.DataFrame:
     return correlation(pr_chg, log_vr, 20).fillna(0)
 
 
+# ---------- Qlib Alpha158 rolling features (v0.24) ----------
+# Source: reference/qlib/qlib/contrib/data/loader.py
+# All normalized so they're scale-invariant across symbols.
+
+
+def _roc(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """ROC{w} = Ref(close, w) / close — past w-bar return ratio."""
+    c = o["close"]
+    return c.shift(w) / c
+
+
+def _ma(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """MA{w} = Mean(close, w) / close — smoothed trend ratio."""
+    c = o["close"]
+    return ts_mean(c, w) / c
+
+
+def _std(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """STD{w} = Std(close, w) / close — rolling vol ratio."""
+    c = o["close"]
+    return ts_std(c, w) / c
+
+
+def _sump(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """SUMP{w} = Sum(max(Δclose, 0), w) / Sum(|Δclose|, w) — RSI numerator."""
+    dc = o["close"].diff()
+    pos = dc.clip(lower=0)
+    abs_ = dc.abs()
+    return pos.rolling(w, min_periods=w).sum() / (abs_.rolling(w, min_periods=w).sum() + EPS)
+
+
+def _rank_in_window(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """RANK{w} — percentile of current close within trailing w-window."""
+    c = o["close"]
+    return ts_rank(c, w)
+
+
+def _max_ratio(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """MAX{w} = Max(high, w) / close — distance-to-resistance ratio."""
+    return ts_max(o["high"], w) / o["close"]
+
+
+def _min_ratio(o: WideOHLCV, w: int) -> pd.DataFrame:
+    """MIN{w} = Min(low, w) / close — distance-to-support ratio."""
+    return ts_min(o["low"], w) / o["close"]
+
+
+# Instantiate multi-window Alpha158 features
+def roc5(o): return _roc(o, 5)
+def roc10(o): return _roc(o, 10)
+def roc20(o): return _roc(o, 20)
+def roc30(o): return _roc(o, 30)
+def ma5(o): return _ma(o, 5)
+def ma10(o): return _ma(o, 10)
+def ma20(o): return _ma(o, 20)
+def std5(o): return _std(o, 5)
+def std20(o): return _std(o, 20)
+def sump5(o): return _sump(o, 5)
+def sump20(o): return _sump(o, 20)
+def rank20(o): return _rank_in_window(o, 20)
+def max20(o): return _max_ratio(o, 20)
+def min20(o): return _min_ratio(o, 20)
+
+
 # ---------- crypto-specific: perpetual funding rate (v0.18) ----------
 #
 # Binance perpetuals pay funding every 8h. High positive funding means
@@ -336,6 +400,13 @@ ALPHA_REGISTRY: dict[str, Alpha] = {
     # Crypto-specific: perpetual funding (v0.18)
     "funding_reversal": funding_reversal,
     "funding_zscore": funding_zscore,
+    # Qlib Alpha158 rolling features (v0.24)
+    "roc5": roc5, "roc10": roc10, "roc20": roc20, "roc30": roc30,
+    "ma5": ma5, "ma10": ma10, "ma20": ma20,
+    "std5": std5, "std20": std20,
+    "sump5": sump5, "sump20": sump20,
+    "rank20": rank20,
+    "max20": max20, "min20": min20,
 }
 
 
@@ -346,5 +417,12 @@ ALPHA_GROUPS = {
     "kbar": ["kmid", "klen", "kmid2", "kup", "kup2", "klow", "klow2", "ksft", "ksft2"],
     "qlib_pv": ["rsv20", "corr20", "cord20"],
     "funding": ["funding_reversal", "funding_zscore"],
+    "alpha158_rolling": [
+        "roc5", "roc10", "roc20", "roc30",
+        "ma5", "ma10", "ma20",
+        "std5", "std20",
+        "sump5", "sump20",
+        "rank20", "max20", "min20",
+    ],
     "all": list(ALPHA_REGISTRY.keys()),
 }
