@@ -50,8 +50,20 @@
 - [x] **v0.19** 跨市场 ensemble（OI history 太短转向，**ensemble 假设 OOS 失败**）
        —— 跨市场 PnL 相关 ≈ 0 ✓；但 50/50 ensemble walk-forward Sharpe +1.87 <
        SP-only +2.63。引入 portfolio.py（Sharpe/DD 评估基础设施）+ 揭示 IC vs Sharpe 双指标互补
+- [x] **v0.20 + v0.21** Hyperliquid 数据 + LightGBM combiner（**基建胜，OOS 打平**）
+       —— HL adapter（229 perps + 3y candles + hourly funding）+ LGBM combiner + lookahead 测试 #6
+       都 ship。但 WF h=20 Sharpe：ic_weight +2.24 100% win 仍胜；LGBM +0.63 （fold 1 过拟合崩盘 -10.95）；
+       HL 15 sym +2.13 ≈ Binance 45。universe 太小 / fold 间 regime shift 抑制 ML 优势
+- [x] **v0.22** LGBM 深度探索（7 正则 config + 快 refit + ensemble + HL 扩 37）—— **全部失败**
+       —— fold 1 崩盘是架构性（committed prediction vs rolling avg），不是参数问题；
+       HL 扩 universe 从 +2.13 降到 **-0.42**（meme/新币加噪音不加信号）；
+       **v0.18 Binance 45 + funding ic_weight 是已探底 OOS 冠军**
 
-## 计划中
+## 项目真天花板 — 建议冻结到 v1.0
+
+**生产推荐**：Binance 45 + funding + ic_weight, lookback=180, orthogonalize, horizon=20
+- walk-forward 5-fold: mean IC +0.055, **Sharpe +2.24, 100% win, min +0.73**
+- 已验证：ML / ensemble / 扩 universe 三方向都无法突破
 - [ ] **v0.6** 量价背离信号（Qlib KMID/KLEN 类）作为残差增强
 - [ ] **v0.7** 真数据接入（akshare / yfinance），验证分布稳定性
 - [ ] **v0.8** 行业/市值中性化（Barra 风格残差），消除已知风险暴露

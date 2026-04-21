@@ -221,6 +221,44 @@ def test_combiner_weights_are_shifted() -> None:
     print(f"  ✓ |IC| = {abs(ic):.4f} (< 0.1)")
 
 
+def test_lgbm_combiner_does_not_leak() -> None:
+    """LGBM combiner (v0.21) does walk-forward fitting — trained only on
+    data strictly before each test date (with horizon-purge). Verify that
+    a pure-noise input signal pool gives |IC| ≈ 0.
+
+    If the combiner accidentally peeked at future data in the fit set,
+    noise would get high IC.
+    """
+    from src.lgbm_combiner import lgbm_combine, _HAS_LGBM
+    if not _HAS_LGBM:
+        print("  (lightgbm not installed — skipping)")
+        return
+
+    panel = _make_panel(n_days=120, n_symbols=20, bar_minutes=60)
+    close = to_wide(resample_panel(panel, TimeFrame.H1), "close")
+    # Pure noise "signals" — independent of close
+    rng = np.random.default_rng(7)
+    signals = {
+        "noise1": pd.DataFrame(
+            rng.standard_normal(close.shape), index=close.index, columns=close.columns
+        ),
+        "noise2": pd.DataFrame(
+            rng.standard_normal(close.shape), index=close.index, columns=close.columns
+        ),
+    }
+    f = lgbm_combine(
+        signals, close, horizon=5, refit_every=50, min_train_obs=500,
+        n_estimators=50, learning_rate=0.05, max_depth=3,
+    )
+    ic = _ic(f, close, horizon=5)
+    print(f"  noise pool through LGBM |IC| = {abs(ic):.4f}")
+    _require(
+        abs(ic) < 0.05,
+        f"LGBM on pure noise produced |IC|={abs(ic):.3f} — data leak suspected",
+    )
+    print(f"  ✓ LGBM noise |IC| = {abs(ic):.4f} (< 0.05)")
+
+
 # ---------- runner ----------
 
 
@@ -231,6 +269,7 @@ def run_all() -> int:
         test_mtf_no_future_leak_h1_plus_h4,
         test_mtf_no_future_leak_h1_plus_d1,
         test_combiner_weights_are_shifted,
+        test_lgbm_combiner_does_not_leak,
     ]
     failed = 0
     print(f"running {len(tests)} lookahead tests...\n")
