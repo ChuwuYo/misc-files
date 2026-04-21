@@ -4,11 +4,12 @@
 // @namespace    https://github.com/ChuwuYo
 // @homepageURL  https://github.com/ChuwuYo/misc-files/blob/main/userscripts/HTML%20Content%20to%20Markdown.user.js
 // @supportURL   https://github.com/ChuwuYo/misc-files/issues
-// @version      0.3.1
+// @version      0.4.0
 // @description  Convert selected HTML Content to Markdown
 // @description:zh 将选定的HTML内容转换为Markdown
 // @author       ChuwuYo
 // @match        *://*/*
+// @noframes
 // @grant        GM_addStyle
 // @grant        GM_registerMenuCommand
 // @grant        GM_setClipboard
@@ -16,12 +17,13 @@
 // @require      https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js
 // @require      https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js
 // @require      https://cdn.jsdelivr.net/npm/@guyplusplus/turndown-plugin-gfm@1.0.7/dist/turndown-plugin-gfm.js
+// @require      https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js
 // @license      AGPL-3.0
 // @downloadURL  https://raw.githubusercontent.com/ChuwuYo/misc-files/main/userscripts/HTML%20Content%20to%20Markdown.user.js
 // @updateURL    https://raw.githubusercontent.com/ChuwuYo/misc-files/main/userscripts/HTML%20Content%20to%20Markdown.user.js
 // ==/UserScript==
 
-/* global TurndownService, TurndownPluginGfmService, marked,
+/* global TurndownService, TurndownPluginGfmService, marked, DOMPurify,
    GM_addStyle, GM_registerMenuCommand, GM_setClipboard */
 (function () {
     'use strict';
@@ -52,9 +54,11 @@
         },
         removeElementsWithClasses: ['advertisement', 'ads', 'sidebar', 'footer', 'header', 'nav', 'menu'],
         removeElementsWithIds: ['advertisement', 'ads', 'sidebar', 'footer', 'header', 'nav', 'menu'],
-        smartContentDetection: true,
-        preserveCodeBlocks: true
+        smartContentDetection: true
     };
+
+    // 键盘导航时判定「内容元素」的最短文本阈值；小于此长度且非语义标签的元素会被跳过
+    const CONTENT_MIN_TEXT_LENGTH = 20;
 
     // --- Global Variables ---
     let isSelecting = false;
@@ -62,8 +66,9 @@
     let hoveredElement = null;
     let selectedElements = [];
     // 不再持久化到 GM 存储，也不再提供 UI 修改入口：直接使用默认值
-    const shortCutConfig = { ...DEFAULT_SHORTCUT_CONFIG };
-    const filterConfig = { ...DEFAULT_FILTER_CONFIG };
+    // Object.freeze 防止第三方库或意外代码篡改配置（零成本防御）
+    const shortCutConfig = Object.freeze({ ...DEFAULT_SHORTCUT_CONFIG });
+    const filterConfig = Object.freeze({ ...DEFAULT_FILTER_CONFIG });
     const _langs = (Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language]).map(l => (l || '').toLowerCase());
     const lang = _langs.some(l => l.includes('zh')) ? 'zh' : 'en';
     const I18N = {
@@ -76,6 +81,10 @@
             copied: 'Copied!',
             download: 'Download as MD',
             startSelection: 'Start Selection',
+            modalTitle: 'HTML to Markdown converter',
+            editorLabel: 'Markdown source editor',
+            previewLabel: 'Rendered Markdown preview',
+            closeLabel: 'Close dialog',
             gfmError: '[HTML to MD] Error: GFM plugin failed to load. Some Markdown features might not work correctly.',
             markedError: '[HTML to MD] Error: Markdown preview library (Marked) failed to load.',
             processError: 'Error processing selection. Check console for details.'
@@ -89,6 +98,10 @@
             copied: '已复制！',
             download: '下载为 MD',
             startSelection: '开始选择',
+            modalTitle: 'HTML 转 Markdown 工具',
+            editorLabel: 'Markdown 源码编辑区',
+            previewLabel: 'Markdown 渲染预览区',
+            closeLabel: '关闭对话框',
             gfmError: '[HTML to MD] 错误：GFM 插件加载失败，部分 Markdown 功能可能不可用。',
             markedError: '[HTML to MD] 错误：Marked 预览库加载失败。',
             processError: '处理选择内容时出错，请查看控制台。'
@@ -134,14 +147,18 @@
             return title ? `[${content}](${href} "${title}")` : `[${content}](${href})`;
         }
     });
+    // Turndown 的 filter 回调传入的是 Node（可能非 Element，如 Text），保留对 getAttribute 的存在性判断
+    const readClassAttr = (n) => ((n && n.getAttribute && n.getAttribute('class')) || '').toLowerCase();
     turndownService.addRule('mermaidBlocks', {
         filter: function (node) {
-            const cls = node.classList ? Array.from(node.classList).map(c => c.toLowerCase()) : [];
-            const hasMermaidClass = cls.some(c => c.includes('mermaid'));
+            const hasMermaidClass = readClassAttr(node).includes('mermaid');
             const isCodeMermaid = node.nodeName === 'CODE' && hasMermaidClass;
             const isDivMermaid = node.nodeName === 'DIV' && hasMermaidClass;
-            const isPreMermaid = node.nodeName === 'PRE' && node.querySelector('code') && Array.from(node.querySelector('code').classList || []).some(c => c.toLowerCase().includes('mermaid'));
-            const hasAttr = (node.getAttribute && ((node.getAttribute('data-mermaid') !== null) || (node.getAttribute('data-graph-type') || '').toLowerCase() === 'mermaid'));
+            const childCode = node.nodeName === 'PRE' ? node.querySelector('code') : null;
+            const isPreMermaid = !!childCode && readClassAttr(childCode).includes('mermaid');
+            const hasAttr = !!(node.getAttribute
+                && (node.getAttribute('data-mermaid') !== null
+                    || (node.getAttribute('data-graph-type') || '').toLowerCase() === 'mermaid'));
             return isCodeMermaid || isDivMermaid || isPreMermaid || hasAttr;
         },
         replacement: function (content, node) {
@@ -214,13 +231,26 @@
             // 2. 单次遍历合并「属性清洗 + 智能噪声检测」
             const removeAttrsList = Array.isArray(filterConfig.removeAttributes) ? filterConfig.removeAttributes : [];
             const smartNoise = /\b(ad|ads|advertisement|banner|popup|modal|overlay|sidebar|footer|header|nav|menu|social|share|comment|related|recommend)\b/;
+
+            // 预编译：把 removeAttributes 每条规则编译成 { kind, test(attrName) }，避免在每个属性每轮都重建 RegExp
+            // 对于含 \w+ 的通配模式走正则分支，精确名称走直接字符串比较分支
+            const compiledRemovers = removeAttrsList.map(pattern => {
+                if (pattern.includes('\\w+')) {
+                    const re = new RegExp('^' + pattern + '$', 'i');
+                    return (name) => re.test(name);
+                }
+                const exact = pattern.toLowerCase();
+                return (name) => name === exact;
+            });
+
             const allNodes = Array.from(clonedElement.querySelectorAll('*'));
             allNodes.forEach(el => {
                 // 祖先在早期已被移除则整棵子树都不在 cloneRoot 内，跳过
                 if (!clonedElement.contains(el)) return;
 
                 if (filterConfig.smartContentDetection) {
-                    const classList = el.classList ? Array.from(el.classList).join(' ').toLowerCase() : '';
+                    // querySelectorAll('*') 返回的都是 Element，直接读 class 属性
+                    const classList = (el.getAttribute('class') || '').toLowerCase();
                     const id = (el.id || '').toLowerCase();
                     if (smartNoise.test(classList) || smartNoise.test(id)) {
                         el.remove();
@@ -228,28 +258,22 @@
                     }
                 }
 
-                if (removeAttrsList.length > 0) {
+                if (compiledRemovers.length > 0) {
                     const tagName = el.tagName.toLowerCase();
                     const attributesToKeep = (filterConfig.keepAttributesOnTags && filterConfig.keepAttributesOnTags[tagName]) || [];
                     Array.from(el.attributes).forEach(attr => {
                         const attrName = attr.name.toLowerCase();
                         if (attributesToKeep.includes(attrName)) return;
-                        for (const pattern of removeAttrsList) {
-                            if (pattern.includes('\\w+')) {
-                                const regex = new RegExp('^' + pattern + '$', 'i');
-                                if (regex.test(attrName)) { el.removeAttribute(attr.name); return; }
-                            } else if (attrName === pattern.toLowerCase()) {
-                                el.removeAttribute(attr.name);
-                                return;
-                            }
+                        for (const test of compiledRemovers) {
+                            if (test(attrName)) { el.removeAttribute(attr.name); return; }
                         }
                     });
                 }
             });
         }
 
-        const html = clonedElement.outerHTML;
-        let turndownMd = turndownService.turndown(html);
+        // Turndown 支持直接传入 Element，省去 outerHTML → 再 parse 的往返
+        let turndownMd = turndownService.turndown(clonedElement);
 
         // Enhanced post-processing Markdown cleanup
         turndownMd = turndownMd.replace(/\[\s*]\(\s*\)/g, ''); // Remove completely empty links
@@ -258,16 +282,23 @@
         turndownMd = turndownMd.replace(/\[([^\]]+)]\(\1\)/g, '$1'); // Remove redundant links where text equals URL
         turndownMd = turndownMd.replace(/!\[\s*]\(\s*\)/g, ''); // Remove empty images
         turndownMd = turndownMd.replace(/\n{3,}/g, '\n\n'); // Consolidate multiple blank lines
-        turndownMd = turndownMd.replace(/^\s*\n+|\n+\s*$/g, ''); // Trim leading/trailing whitespace
         turndownMd = turndownMd.replace(/(\*\*|__)\s*\1/g, ''); // Remove empty bold/italic markers
         turndownMd = turndownMd.replace(/`\s*`/g, ''); // Remove empty code spans
+        // 去除首尾空白由 normalizeMarkdown 统一处理，此处不再重复 trim
 
-        return normalizeMarkdown(turndownMd.trim());
+        return normalizeMarkdown(turndownMd);
     }
 
-    // 轻量 XSS 兜底：去掉 marked 输出里的危险标签 / 事件属性 / javascript: 协议
-    // 未引入 DOMPurify（+25KB），适用于私人使用场景；正式环境建议接 DOMPurify
+    // 预览 HTML 净化：首选 DOMPurify（权威 XSS 过滤库，覆盖 mutation XSS 等角落场景）
+    // 加载失败时回退到内置手写净化，保证功能不中断
     function sanitizePreviewHtml(html) {
+        if (typeof DOMPurify !== 'undefined' && typeof DOMPurify.sanitize === 'function') {
+            return DOMPurify.sanitize(html, {
+                USE_PROFILES: { html: true },
+                FORBID_TAGS: ['style', 'link', 'meta', 'iframe', 'object', 'embed']
+            });
+        }
+        // Fallback: 手写净化（DOMPurify 未加载或失败）
         const container = document.createElement('div');
         container.innerHTML = html;
         container.querySelectorAll('script, style, iframe, object, embed, link, meta').forEach(n => n.remove());
@@ -286,30 +317,39 @@
     }
 
     function showMarkdownModal(markdown) {
+        const t = I18N[lang];
         const modal = document.createElement('div');
         modal.className = 'h2m-modal-overlay';
+        // role/aria-modal 声明对话框语义；tabindex=0 让预览区可键盘聚焦滚动；type=button 防止潜在 form submit
         modal.innerHTML = `
-            <div class="h2m-modal">
+            <div class="h2m-modal" role="dialog" aria-modal="true">
                 <div class="h2m-modal-body">
                     <textarea class="h2m-markdown-area" spellcheck="false"></textarea>
-                    <div class="h2m-preview"></div>
+                    <div class="h2m-preview" role="region" tabindex="0"></div>
                 </div>
                 <div class="h2m-modal-footer">
-                    <button class="h2m-copy"></button>
-                    <button class="h2m-download"></button>
+                    <button class="h2m-copy" type="button"></button>
+                    <button class="h2m-download" type="button"></button>
                 </div>
-                <button class="h2m-close">${closeButtonSvgIcon}</button>
+                <button class="h2m-close" type="button">${closeButtonSvgIcon}</button>
             </div>
         `;
 
+        const dialog = modal.querySelector('.h2m-modal');
         const markdownArea = modal.querySelector('.h2m-markdown-area');
         const previewArea = modal.querySelector('.h2m-preview');
         const copyButton = modal.querySelector('.h2m-copy');
         const downloadButton = modal.querySelector('.h2m-download');
         const closeButton = modal.querySelector('.h2m-close');
 
-        copyButton.textContent = I18N[lang].copy;
-        downloadButton.textContent = I18N[lang].download;
+        // aria-label 用 setAttribute 设置，避免 i18n 字串若含特殊字符时 innerHTML 模板注入风险
+        dialog.setAttribute('aria-label', t.modalTitle);
+        markdownArea.setAttribute('aria-label', t.editorLabel);
+        previewArea.setAttribute('aria-label', t.previewLabel);
+        closeButton.setAttribute('aria-label', t.closeLabel);
+
+        copyButton.textContent = t.copy;
+        downloadButton.textContent = t.download;
         markdownArea.value = markdown;
         previewArea.innerHTML = sanitizePreviewHtml(marked.parse(markdown));
 
@@ -317,28 +357,54 @@
         const modalCtrl = new AbortController();
         const { signal } = modalCtrl;
 
+        // 异步资源追踪：rAF 帧 id + 复制按钮复位 timer，关闭时集中清理，避免写入已移除节点
+        let renderFrame = 0;
+        let scrollFrame = 0;
+        let copyResetTimer = null;
+
+        // a11y：保存触发模态前的焦点元素，关闭时归还焦点给原位置（screen reader + 键盘用户的连续性）
+        const previouslyFocused = document.activeElement;
+
         // 打开时锁定背景滚动，关闭时恢复用户原值（不覆盖网站自有的 overflow 设置）
         const previousBodyOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         const closeModal = () => {
+            if (renderFrame) cancelAnimationFrame(renderFrame);
+            if (scrollFrame) cancelAnimationFrame(scrollFrame);
+            if (copyResetTimer) clearTimeout(copyResetTimer);
             modalCtrl.abort();
             modal.remove();
             document.body.style.overflow = previousBodyOverflow;
+            // 还原焦点；元素已不在 DOM 或失效时静默忽略
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function' && previouslyFocused.isConnected) {
+                try { previouslyFocused.focus(); } catch (_) {}
+            }
         };
 
-        markdownArea.addEventListener('input', () => {
-            previewArea.innerHTML = sanitizePreviewHtml(marked.parse(markdownArea.value));
-        }, { signal });
+        // 预览渲染用 rAF 节流：快速敲键时多次 input 合并为一帧一次 parse+sanitize+innerHTML
+        const renderPreview = () => {
+            if (renderFrame) return;
+            renderFrame = requestAnimationFrame(() => {
+                renderFrame = 0;
+                previewArea.innerHTML = sanitizePreviewHtml(marked.parse(markdownArea.value));
+            });
+        };
+        markdownArea.addEventListener('input', renderPreview, { signal });
 
         modal.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); }, { signal });
+        // 模态 DOM 连通性判定用 modal.isConnected 替代对 .h2m-modal-overlay 的全局查询，避免多模态环境下误判
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.querySelector('.h2m-modal-overlay')) closeModal();
+            if (e.key === 'Escape' && modal.isConnected) closeModal();
         }, { signal });
 
         copyButton.addEventListener('click', () => {
             GM_setClipboard(markdownArea.value);
             copyButton.textContent = I18N[lang].copied;
-            setTimeout(() => { copyButton.textContent = I18N[lang].copy; }, 1000);
+            if (copyResetTimer) clearTimeout(copyResetTimer);
+            copyResetTimer = setTimeout(() => {
+                copyButton.textContent = I18N[lang].copy;
+                copyResetTimer = null;
+            }, 1000);
         }, { signal });
 
         downloadButton.addEventListener('click', () => {
@@ -357,22 +423,47 @@
 
         closeButton.addEventListener('click', closeModal, { signal });
 
-        let isScrolling = false;
+        // 滚动同步：用 rAF 替代 setTimeout(50) 去抖，与浏览器刷新节奏对齐；ignoreScroll 打断主被动触发的无限回环
+        let ignoreScroll = false;
         const syncScroll = (source, target) => {
-            if (isScrolling) { isScrolling = false; return; }
-            isScrolling = true;
-            const sh = source.scrollHeight - source.offsetHeight;
-            if (sh <= 0) { isScrolling = false; return; }
-            const scrollPercentage = source.scrollTop / sh;
-            target.scrollTop = scrollPercentage * (target.scrollHeight - target.offsetHeight);
-            setTimeout(() => { isScrolling = false; }, 50);
+            if (ignoreScroll || scrollFrame) return;
+            scrollFrame = requestAnimationFrame(() => {
+                scrollFrame = 0;
+                const sh = source.scrollHeight - source.offsetHeight;
+                if (sh <= 0) return;
+                const scrollPercentage = source.scrollTop / sh;
+                ignoreScroll = true;
+                target.scrollTop = scrollPercentage * (target.scrollHeight - target.offsetHeight);
+                // 下一帧释放 ignore，确保被动 scroll 事件已完成派发并被忽略
+                requestAnimationFrame(() => { ignoreScroll = false; });
+            });
         };
         markdownArea.addEventListener('scroll', () => syncScroll(markdownArea, previewArea), { signal });
         previewArea.addEventListener('scroll', () => syncScroll(previewArea, markdownArea), { signal });
 
+        // a11y：焦点陷阱 —— Tab / Shift+Tab 只在模态内可聚焦元素间循环
+        const focusableSelector = 'button:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+        const getFocusables = () => Array.from(modal.querySelectorAll(focusableSelector))
+            .filter(el => el.offsetParent !== null);
+        modal.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            const list = getFocusables();
+            if (list.length === 0) return;
+            const first = list[0];
+            const last = list[list.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }, { signal });
+
         document.body.appendChild(modal);
-        // 触发 input 事件确保预览同步（以防复杂 Markdown 需要重跑一次渲染）
-        markdownArea.dispatchEvent(new Event('input', { bubbles: true }));
+        // 初始预览已在 previewArea.innerHTML 赋值时渲染，无需再触发 input 事件重跑一次
+        // 下一个微任务聚焦到编辑区，确保 append 完成 + 样式应用后焦点可见
+        setTimeout(() => { try { markdownArea.focus(); } catch (_) {} }, 0);
     }
 
     function updateTip() {
@@ -414,7 +505,7 @@
 
     function _interactionBlocker(e) {
         if (!isSelecting) return;
-        if (e.target && e.target.closest && e.target.closest('#h2m-tip-instance, .h2m-modal-overlay')) return;
+        if (e.target instanceof Element && e.target.closest('#h2m-tip-instance, .h2m-modal-overlay')) return;
         e.preventDefault();
         e.stopPropagation();
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
@@ -437,6 +528,13 @@
         isSelecting = true;
         isMultiSelectMode = false;
         selectedElements = [];
+        // 一次性插入全屏暗色 overlay，替代之前每个悬浮元素上的 9999px box-shadow
+        // 改动前：每次 hover 都触发整屏重绘；改动后：开启/结束各重绘一次
+        if (!document.getElementById('h2m-selection-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.id = 'h2m-selection-overlay';
+            document.body.appendChild(overlay);
+        }
         hoveredElement = document.body.firstElementChild || document.body;
         applyHoverMark(hoveredElement);
         updateTip();
@@ -450,29 +548,32 @@
         document.querySelectorAll('.h2m-selected-item').forEach(el => el.classList.remove('h2m-selected-item'));
         const existingTip = document.getElementById('h2m-tip-instance');
         if (existingTip) existingTip.remove();
+        const overlay = document.getElementById('h2m-selection-overlay');
+        if (overlay) overlay.remove();
         hoveredElement = null;
         selectedElements = [];
         disableInteractionBlockers();
     }
     function isContentElement(el) {
         const contentTags = ['P', 'DIV', 'ARTICLE', 'SECTION', 'MAIN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE', 'TABLE'];
-        return contentTags.includes(el.tagName) || el.textContent.trim().length > 20;
+        return contentTags.includes(el.tagName) || el.textContent.trim().length > CONTENT_MIN_TEXT_LENGTH;
     }
 
     function getSelectableElement(el) {
         if (!el) return el;
-        const tableRoot = el.closest ? el.closest('table') : null;
+        // 调用方保证传入 Element（来自 e.target 或 hoveredElement），不再做 el.closest 存在性判断
+        const tableRoot = el.closest('table');
         if (tableRoot) return tableRoot;
-        const codeMermaid = el.closest ? el.closest('pre, code') : null;
+        const codeMermaid = el.closest('pre, code');
         if (codeMermaid) {
-            const classes = codeMermaid.classList ? Array.from(codeMermaid.classList).map(c => c.toLowerCase()) : [];
-            const childCode = codeMermaid.querySelector && codeMermaid.querySelector('code');
-            const childClasses = childCode && childCode.classList ? Array.from(childCode.classList).map(c => c.toLowerCase()) : [];
-            if (classes.some(c => c.includes('mermaid')) || childClasses.some(c => c.includes('mermaid'))) {
+            const selfClass = (codeMermaid.getAttribute('class') || '').toLowerCase();
+            const childCode = codeMermaid.querySelector('code');
+            const childClass = childCode ? (childCode.getAttribute('class') || '').toLowerCase() : '';
+            if (selfClass.includes('mermaid') || childClass.includes('mermaid')) {
                 return codeMermaid.nodeName === 'PRE' ? codeMermaid : (codeMermaid.closest('pre') || codeMermaid);
             }
         }
-        const divMermaid = el.closest ? el.closest('.mermaid,[data-mermaid],[data-graph-type="mermaid"]') : null;
+        const divMermaid = el.closest('.mermaid,[data-mermaid],[data-graph-type="mermaid"]');
         if (divMermaid) return divMermaid;
         return el;
     }
@@ -585,7 +686,7 @@
     }
     // 全局交互：快捷键触发 + 选择模式下的鼠标悬停/点击处理。这几个监听常驻，无需解绑。
     const isInsideModalOrTip = (target) => {
-        return !!(target && target.closest && target.closest('#h2m-tip-instance, .h2m-modal-overlay'));
+        return target instanceof Element && !!target.closest('#h2m-tip-instance, .h2m-modal-overlay');
     };
 
     document.addEventListener('keydown', (e) => {
@@ -647,11 +748,19 @@
         .h2m-selection-box {
             outline: 2px dashed #0B57D0 !important;
             background-color: rgba(11, 87, 208, 0.1) !important;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(11, 87, 208, 0.3) !important;
+            /* 旧版 0 0 0 9999px 全屏阴影每次 hover 都触发整屏重绘，改用一次性插入的 overlay，仅保留 inset 描边 */
+            box-shadow: inset 0 0 0 1px rgba(11, 87, 208, 0.3) !important;
             position: relative;
             z-index: 9999998;
             /* 只过渡颜色相关属性，避免 transition: all 在快速鼠标移动时造成重绘抖动 */
             transition: outline-color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
+        }
+        #h2m-selection-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.05);
+            pointer-events: none;
+            z-index: 9999997;
         }
         .h2m-selected-item {
             outline: 2px solid #D00B0B !important;
@@ -678,7 +787,8 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .h2m-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 9999999; display: flex; align-items: center; justify-content: center; }
+        /* z-index 高于 tip (10000000) 与 selection-box::before (10000000)，确保模态始终在最上层 */
+        .h2m-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 10000002; display: flex; align-items: center; justify-content: center; }
         .h2m-modal {
             width: 90%; height: 85%; max-width: 1600px; max-height: 95vh;
             background: #FFFFFF; border-radius: 16px;
@@ -741,6 +851,19 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.1);
         }
 
+        /* a11y：键盘聚焦时显示可见轮廓。用金黄色与模态主色 (#0B57D0 蓝) 和 close (#B3261E 红) 都形成对比 */
+        .h2m-modal-footer button:focus-visible,
+        .h2m-modal .h2m-close:focus-visible,
+        .h2m-modal .h2m-preview:focus-visible {
+            outline: 2px solid #FFBF47 !important;
+            outline-offset: 2px !important;
+        }
+        .h2m-modal textarea.h2m-markdown-area:focus-visible {
+            outline: 2px solid #FFBF47 !important;
+            outline-offset: -2px !important;
+            box-shadow: none !important;
+        }
+
         .h2m-modal .h2m-close { position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; background-color: transparent !important; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; padding: 0; box-shadow: none !important; z-index: 20; transition: opacity 0.2s ease-in-out; }
         .h2m-modal .h2m-close svg { width: 24px; height: 24px; display: block; }
         .h2m-modal .h2m-close svg path { fill: #B3261E !important; transition: fill 0.2s ease-in-out; }
@@ -788,7 +911,7 @@
         }
     `);
 
-    console.log('[HTML Content to Markdown] Script loaded. Version 0.3.1. Shortcut:', shortCutConfig, "Filters:", filterConfig);
+    console.log('[HTML Content to Markdown] Script loaded. Version 0.4.0. Shortcut:', shortCutConfig, "Filters:", filterConfig);
     // 依赖未加载时仅 console 告警，不再每页 alert 打扰；处理失败时 processSelection 会走 processError 提示
     if (!TurndownPluginGfmService || typeof TurndownPluginGfmService.gfm !== 'function') {
         console.error("[HTML to MD]", I18N[lang].gfmError);
