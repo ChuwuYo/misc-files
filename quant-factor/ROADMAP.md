@@ -43,6 +43,13 @@
 - [x] **v0.17** Lookahead 自动测试套件（防 v0.16 bug 复发）
        —— 5 零依赖测试，revert fix 时精准抓到 ratio=29.1x (H4) / 15.9x (D1)；
        首次拥有自动化 lookahead 护栏，可 CI / pre-commit
+- [x] **v0.18** Crypto 永续 funding rate alpha（**真增量改进**）
+       —— Binance public API 拉 45 币 funding；非 OHLCV 维度，与现有 alpha 几乎正交；
+       walk-forward h=20 mean IC +0.038 → **+0.055**, agg_t **+2.37 → +3.59** (+52%)；
+       crypto 因子首次追上 SP50 水平
+- [x] **v0.19** 跨市场 ensemble（OI history 太短转向，**ensemble 假设 OOS 失败**）
+       —— 跨市场 PnL 相关 ≈ 0 ✓；但 50/50 ensemble walk-forward Sharpe +1.87 <
+       SP-only +2.63。引入 portfolio.py（Sharpe/DD 评估基础设施）+ 揭示 IC vs Sharpe 双指标互补
 
 ## 计划中
 - [ ] **v0.6** 量价背离信号（Qlib KMID/KLEN 类）作为残差增强
