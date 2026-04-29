@@ -1,0 +1,11 @@
+[package]
+name = "fib-guest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+risc0-zkvm = { version = "3.0", default-features = false, features = ["std"] }
+
+[[bin]]
+name = "fib_guest"
+path = "src/bin/fib_guest.rs"

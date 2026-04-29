@@ -1,0 +1,46 @@
+// 演示：在 CreatePost 里收取 1 BLOG 提交费 (转入 module account)
+// 把生成的 blogchain/x/blog/keeper/msg_server_post.go 中的 CreatePost 替换为下面的实现，
+// 并在 module 注册时给 blog module 绑定 bankKeeper（默认已注入）。
+//
+// 同时需要在 expected_keepers.go 加：
+//   type BankKeeper interface {
+//       SendCoinsFromAccountToModule(ctx context.Context, from sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+//   }
+
+package keeper
+
+import (
+	"context"
+	"fmt"
+
+	"cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/example/blogchain/x/blog/types"
+)
+
+func (k msgServer) CreatePost(goCtx context.Context, msg *types.MsgCreatePost) (*types.MsgCreatePostResponse, error) {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+
+	creator, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return nil, errors.Wrap(sdkerrors.ErrInvalidAddress, "invalid creator")
+	}
+
+	// 收取 1 BLOG 提交费 (denom = "blog")
+	fee := sdk.NewCoins(sdk.NewInt64Coin("blog", 1_000_000)) // 6 位小数 = 1 BLOG
+	if err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, creator, types.ModuleName, fee); err != nil {
+		return nil, errors.Wrap(err, "submit fee")
+	}
+
+	post := types.Post{Creator: msg.Creator, Title: msg.Title, Body: msg.Body}
+	id := k.AppendPost(ctx, post)
+
+	ctx.EventManager().EmitEvent(sdk.NewEvent(
+		"post_created",
+		sdk.NewAttribute("id", fmt.Sprint(id)),
+		sdk.NewAttribute("creator", msg.Creator),
+	))
+
+	return &types.MsgCreatePostResponse{Id: id}, nil
+}

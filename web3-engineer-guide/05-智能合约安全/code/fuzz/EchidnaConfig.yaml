@@ -1,0 +1,31 @@
+# Echidna 2.2.x 配置示例
+# 用法：echidna ./code -c code/fuzz/EchidnaConfig.yaml --contract NaiveVaultEcho
+
+testMode: assertion
+testLimit: 500000
+seqLen: 100
+shrinkLimit: 5000
+coverage: true
+corpusDir: "corpus"
+
+# 多 worker 并行
+workers: 4
+
+# 缩短 trace 输出
+format: "text"
+
+# 让 Echidna 不只 mint，也走 owner / admin 设定路径
+allContracts: false
+
+# 关键：把高风险函数 blacklist 掉，保留 invariant 关注点
+filterFunctions:
+  - "echidna_*"
+
+# 模糊器优先调用我们关心的入口
+mutator: "AST"
+
+# 给某些参数设定 sender pool
+sender:
+  - "0x10000"
+  - "0x20000"
+  - "0x30000"

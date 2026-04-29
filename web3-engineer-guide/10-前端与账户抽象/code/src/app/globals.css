@@ -1,0 +1,76 @@
+:root {
+  --bg: #fafafa;
+  --fg: #111;
+  --border: #e5e5e5;
+  --accent: #3a7afe;
+  --warn: #f5a524;
+  --danger: #e5484d;
+  --ok: #16a34a;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 96px;
+}
+
+h1, h2, h3 { line-height: 1.25; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 24px 0 8px; }
+h3 { font-size: 14px; margin: 16px 0 6px; }
+
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 12px 0;
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary { background: #fff; color: var(--fg); border: 1px solid var(--border); }
+button.danger { background: var(--danger); }
+
+input, select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+code, pre, .mono { font-family: var(--mono); font-size: 12px; }
+
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.kv { display: grid; grid-template-columns: 160px 1fr; gap: 4px 12px; font-size: 13px; }
+.kv > div:nth-child(odd) { color: #555; }
+
+.tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px; }
+.tag.low { background: #e8f5e9; color: var(--ok); }
+.tag.med { background: #fff8e1; color: var(--warn); }
+.tag.high { background: #fde8e8; color: var(--danger); }
+
+.muted { color: #666; }
+.hint  { color: #888; font-size: 12px; }

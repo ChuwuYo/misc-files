@@ -1,0 +1,24 @@
+{
+  "name": "forta-large-transfer-agent",
+  "version": "0.1.0",
+  "description": "Forta agent: 大额 ERC20 转账检测",
+  "main": "dist/agent.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "forta-agent run",
+    "tx": "forta-agent run --tx",
+    "block": "forta-agent run --block",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@fortanetwork/forta-bot": "^0.3.0",
+    "ethers": "^6.13.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.6.0"
+  }
+}

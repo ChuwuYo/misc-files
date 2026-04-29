@@ -1,0 +1,15 @@
+# 本指南固定版本（任务硬约束: coincurve==20.0.0 / eth-keys==0.5.x / pycryptodome==3.20.x）
+# 这些版本在 Python 3.10-3.13 上实测可装可用。
+# 各包当前最新（2026-04 检索）见 README §15.5：
+#   - coincurve 21.0.0 (2025-03-08)  https://pypi.org/project/coincurve/
+#   - eth-keys  0.7.0  (2025-04-07)  https://pypi.org/project/eth-keys/
+#   - eth-account 0.13.7             https://pypi.org/project/eth-account/
+#   - pycryptodome 3.23.0 (2025-05)  https://pypi.org/project/pycryptodome/
+#   - py_ecc    5.0.0                https://github.com/ethereum/py_ecc/releases
+coincurve==20.0.0
+eth-keys==0.5.1
+eth-utils==4.1.1
+eth-account==0.13.4
+pycryptodome==3.20.0
+py-ecc==5.0.0
+rlp==4.0.1

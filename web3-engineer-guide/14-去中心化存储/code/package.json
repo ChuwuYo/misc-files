@@ -1,0 +1,29 @@
+{
+  "name": "web3-storage-examples",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Module 14: Decentralized Storage - runnable examples (Helia / Pinata / Lighthouse / Irys / Walrus)",
+  "scripts": {
+    "cid:local": "node 01-helia-local-cid.mjs",
+    "upload:pinata": "node 02-pinata-upload.mjs",
+    "upload:lighthouse": "node 03-lighthouse-upload.mjs",
+    "upload:irys": "node 04-irys-upload.mjs",
+    "verify:cid": "node 06-cid-verify.mjs",
+    "redundancy": "node 07-multi-platform-redundancy.mjs",
+    "health": "node health-check.mjs"
+  },
+  "dependencies": {
+    "@helia/unixfs": "^4.0.0",
+    "@irys/sdk": "^0.2.11",
+    "@lighthouse-web3/sdk": "^0.3.7",
+    "dotenv": "^16.4.5",
+    "helia": "^4.2.0",
+    "multiformats": "^13.3.0",
+    "pinata": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

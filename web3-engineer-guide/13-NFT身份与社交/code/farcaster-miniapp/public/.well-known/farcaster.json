@@ -1,0 +1,18 @@
+{
+  "_comment": "Mini App manifest。accountAssociation 三个字段需要项目方用 fid 私钥签发，spec: https://miniapps.farcaster.xyz/docs/specification（检索 2026-04）",
+  "accountAssociation": {
+    "header": "REPLACE_WITH_BASE64_HEADER",
+    "payload": "REPLACE_WITH_BASE64_PAYLOAD",
+    "signature": "REPLACE_WITH_HEX_SIGNATURE"
+  },
+  "miniapp": {
+    "version": "next",
+    "name": "MyNFT Collector",
+    "iconUrl": "https://my.app/icon.png",
+    "homeUrl": "https://my.app",
+    "imageUrl": "https://my.app/cover.png",
+    "buttonTitle": "Collect NFT",
+    "splashImageUrl": "https://my.app/splash.png",
+    "splashBackgroundColor": "#000000"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "sui-counter-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "call": "tsx call.ts"
+  },
+  "dependencies": {
+    "@mysten/sui": "^2.15.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

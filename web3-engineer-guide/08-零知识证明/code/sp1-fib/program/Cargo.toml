@@ -1,0 +1,11 @@
+[package]
+name = "fibonacci-program"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+sp1-zkvm = "5.0"
+
+[[bin]]
+name = "fibonacci-program"
+path = "src/main.rs"

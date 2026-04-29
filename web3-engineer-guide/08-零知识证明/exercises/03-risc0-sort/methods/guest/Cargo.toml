@@ -1,0 +1,11 @@
+[package]
+name = "sort-guest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+risc0-zkvm = { version = "3.0", default-features = false, features = ["std"] }
+
+[[bin]]
+name = "sort_guest"
+path = "src/bin/sort_guest.rs"

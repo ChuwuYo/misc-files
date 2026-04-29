@@ -1,0 +1,19 @@
+{
+  "name": "blob-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Watch type-3 blob txs on Ethereum mainnet and label by L2 batcher",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.0.0"
+  }
+}

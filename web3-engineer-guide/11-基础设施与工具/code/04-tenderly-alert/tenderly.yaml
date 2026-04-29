@@ -1,0 +1,58 @@
+# Tenderly 项目配置 (CLI 自动同步)
+# 安装: npm i -g @tenderly/cli && tenderly login
+# 推送: tenderly push  (会上传源码 + 创建 alert)
+# 验证日期: 2026-04
+project_slug: my-defi-team/lending-pool
+account_id: my-defi-team
+
+contracts:
+  mainnet:
+    # 受监控的代理合约地址
+    LendingPool: "0xC57c1b0eAD9eB3eA9e9Ee1AE9D8f0E3a7c2b1ce5"
+  sepolia:
+    LendingPool: "0xAA00..." # 测试环境
+
+# Alerts: 异常调用检测
+# 文档: https://docs.tenderly.co/alerts/intro-to-alerts
+alerts:
+  - name: "Large withdrawal > 1M USDC"
+    description: "Detect withdrawal > 1,000,000 USDC from LendingPool"
+    network: mainnet
+    address: "0xC57c1b0eAD9eB3eA9e9Ee1AE9D8f0E3a7c2b1ce5"
+    type: function_call
+    function: "withdraw(address,uint256,address)"
+    parameters:
+      - name: amount
+        operator: ">"
+        value: "1000000000000"   # 1M * 1e6 (USDC decimals)
+    destinations:
+      - slack-defi-alerts
+      - pagerduty-oncall
+
+  - name: "Owner role changed"
+    description: "Detect Ownable.transferOwnership"
+    network: mainnet
+    address: "0xC57c1b0eAD9eB3eA9e9Ee1AE9D8f0E3a7c2b1ce5"
+    type: event
+    event: "OwnershipTransferred(address,address)"
+    destinations:
+      - pagerduty-oncall
+
+  - name: "Failed transaction spike"
+    description: "30 failed tx in 10 min from same EOA"
+    network: mainnet
+    address: "0xC57c1b0eAD9eB3eA9e9Ee1AE9D8f0E3a7c2b1ce5"
+    type: failed_transaction
+    threshold:
+      count: 30
+      window_minutes: 10
+    destinations:
+      - slack-defi-alerts
+
+destinations:
+  slack-defi-alerts:
+    type: slack
+    webhook: ${SLACK_WEBHOOK_DEFI}      # 通过 env 注入
+  pagerduty-oncall:
+    type: pagerduty
+    routing_key: ${PAGERDUTY_ROUTING_KEY}

@@ -1,0 +1,15 @@
+{
+  "detectors_to_exclude": "naming-convention,solc-version,pragma",
+  "exclude_informational": false,
+  "exclude_low": false,
+  "exclude_medium": false,
+  "exclude_high": false,
+  "filter_paths": "lib|node_modules|test",
+  "solc_remaps": [
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "forge-std/=lib/forge-std/src/"
+  ],
+  "fail_on": "medium",
+  "json": "slither-report.json",
+  "sarif": "slither.sarif"
+}

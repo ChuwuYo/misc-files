@@ -1,0 +1,21 @@
+{
+  "name": "module-03-evm-code",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "scripts": {
+    "read": "tsx 01-read-mainnet.ts",
+    "send": "tsx 02-sign-and-send-1559.ts",
+    "delegate": "tsx 03-eip7702-delegate.ts"
+  },
+  "dependencies": {
+    "viem": "2.43.3"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}

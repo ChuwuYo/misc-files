@@ -1,0 +1,11 @@
+{
+  "agentId": "0xLARGE_TRANSFER_AGENT_ID",
+  "version": "0.1.0",
+  "displayName": "Large ERC20 Transfer Detector",
+  "description": "Alert when USDC/USDT/DAI transfer >= 1,000,000 in a single tx",
+  "longDescription": "Watches the three biggest stablecoins on Ethereum mainnet. Designed for whale-watching, treasury alerts, and pre-emptive risk monitoring. Use Forta's Subscription API to push to Discord/Telegram/PagerDuty.",
+  "repository": "https://github.com/your-org/forta-large-transfer",
+  "imageReference": "your-org/large-transfer-agent:latest",
+  "chainIds": [1, 8453, 42161, 10],
+  "documentation": "README.md"
+}

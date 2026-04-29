@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["host", "methods"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+risc0-zkvm = { version = "3.0", default-features = false }
+risc0-build = { version = "3.0" }
+methods = { path = "methods" }

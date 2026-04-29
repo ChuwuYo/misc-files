@@ -1,0 +1,14 @@
+{
+  "name": "circom-poseidon-demo",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "compute-hash": "node compute_hash.js",
+    "all": "bash run.sh"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "^0.7.6"
+  }
+}

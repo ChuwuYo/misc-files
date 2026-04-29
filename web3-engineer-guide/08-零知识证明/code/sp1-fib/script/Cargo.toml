@@ -1,0 +1,10 @@
+[package]
+name = "fibonacci-script"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+sp1-sdk = "5.0"
+
+[build-dependencies]
+sp1-build = "5.0"

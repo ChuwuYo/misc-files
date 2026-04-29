@@ -1,0 +1,19 @@
+{
+  "name": "sandwich-sim",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Educational sandwich-attack simulator. Local anvil fork only. NOT for mainnet.",
+  "type": "module",
+  "scripts": {
+    "simulate": "tsx scripts/simulate-sandwich.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.5.0"
+  }
+}

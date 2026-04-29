@@ -1,0 +1,56 @@
+# 自动部署 + 验证, 触发条件: 给 main 打 v* tag
+name: Deploy & Verify
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      network:
+        description: "Target network (sepolia | base-sepolia | mainnet)"
+        required: true
+        default: "sepolia"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: forge script Deploy.s.sol
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.network || 'sepolia' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build
+        run: forge build --sizes
+
+      - name: forge script (broadcast + verify)
+        run: |
+          forge script script/Deploy.s.sol:DeployScript \
+            --rpc-url $RPC_URL \
+            --broadcast \
+            --verify \
+            --etherscan-api-key $ETHERSCAN_API_KEY \
+            --slow \
+            --private-key $DEPLOYER_PK
+        env:
+          RPC_URL: ${{ secrets.RPC_URL }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          # 推荐改用 --account <keystore-name> 而非 --private-key,
+          # 这里为 CI 演示; 生产用 GitHub OIDC -> AWS KMS / Fireblocks
+          DEPLOYER_PK: ${{ secrets.DEPLOYER_PK }}
+
+      - name: Upload broadcast artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: broadcast-${{ github.ref_name }}
+          path: broadcast/
+          retention-days: 90

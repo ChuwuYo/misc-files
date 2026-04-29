@@ -1,0 +1,22 @@
+{
+  "name": "btc-p2tr-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "keypath": "tsx build_keypath.ts",
+    "scriptpath": "tsx build_scriptpath.ts",
+    "decode": "tsx decode_taproot_tx.ts"
+  },
+  "dependencies": {
+    "bitcoinjs-lib": "^7.0.1",
+    "@bitcoinerlab/secp256k1": "^1.1.1",
+    "ecpair": "^2.1.0",
+    "tiny-secp256k1": "^2.2.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}

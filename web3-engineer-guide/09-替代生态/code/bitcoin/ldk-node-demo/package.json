@@ -1,0 +1,6 @@
+{
+  "name": "ldk-node-demo",
+  "version": "0.1.0",
+  "private": true,
+  "//": "Stub package. ldk-node 的 Node.js 绑定截至 2026-04 尚未在 npm 发布稳定版本（无 0.4.x）。demo.ts 仅作为概念示例阅读，不可直接安装运行。等官方 Node.js 绑定发布后，再按其 README 添加 dependencies/scripts/devDependencies。详见同目录 README 与 demo.ts 注释。"
+}

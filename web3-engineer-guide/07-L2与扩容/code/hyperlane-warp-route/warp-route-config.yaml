@@ -1,0 +1,14 @@
+# Hyperlane Warp Route 配置示例
+# 需要先确保两端 chain 都在 Hyperlane registry，或者本地 init 过
+
+sepolia:
+  type: collateral
+  # token: 已存在的 ERC20 合约地址；留空则自动 deploy 一个 mintable test token
+  token: ''
+  owner: ''  # 部署后管理员地址
+  mailbox: ''  # 可选：覆盖默认 Mailbox 地址
+
+basesepolia:
+  type: synthetic
+  owner: ''
+  mailbox: ''

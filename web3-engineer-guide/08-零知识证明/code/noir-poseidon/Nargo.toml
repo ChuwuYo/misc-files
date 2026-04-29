@@ -1,0 +1,7 @@
+[package]
+name = "noir_poseidon"
+type = "bin"
+authors = ["web3-engineer-guide"]
+compiler_version = ">=1.0.0-beta.0"
+
+[dependencies]

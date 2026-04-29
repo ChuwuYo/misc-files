@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# 关键指标:
+#   reth_rpc_request_duration_seconds  - RPC 延迟
+#   reth_chain_height                  - 当前 head
+#   reth_sync_progress                 - 同步进度
+#   beacon_head_state_slot             - 共识层 head slot
+#   process_resident_memory_bytes      - 内存
+scrape_configs:
+  - job_name: reth
+    static_configs:
+      - targets: [reth:9001]
+  - job_name: lighthouse
+    static_configs:
+      - targets: [lighthouse:5054]
+
+# 告警规则示例 (extra_rules.yml 中定义):
+#   - alert: NodeOutOfSync
+#     expr: reth_chain_height < beacon_head_state_slot - 5
+#     for: 5m
+#   - alert: HighRpcLatencyP99
+#     expr: histogram_quantile(0.99, sum(rate(reth_rpc_request_duration_seconds_bucket[5m])) by (le)) > 2
+#     for: 10m

@@ -1,0 +1,23 @@
+# Postgres 16 容器配套 Ponder indexer
+# 启动: docker compose up -d
+# DATABASE_URL=postgres://ponder:ponder@localhost:5432/ponder
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ponder
+      POSTGRES_PASSWORD: ponder
+      POSTGRES_DB: ponder
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ponder-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "ponder"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  ponder-pg:

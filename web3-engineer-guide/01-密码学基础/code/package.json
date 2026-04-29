@@ -1,0 +1,18 @@
+{
+  "name": "web3-guide-01-crypto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web3 工程师指南 模块 01 · 密码学基础 · JS/TS 侧示例",
+  "type": "module",
+  "scripts": {
+    "_note": "本目录的 JS/TS 端示例待补；当前 Python/Solidity 代码已可独立运行。"
+  },
+  "dependencies": {
+    "@noble/curves": "2.2.0",
+    "@noble/hashes": "2.0.0",
+    "viem": "2.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
