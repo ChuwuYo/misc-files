@@ -1536,11 +1536,7 @@ flowchart LR
 
 ### 11.4 Flashbots Protect
 
-给用户/钱包的 RPC, 不进 public mempool 而直接发给 builder 网络, 防三明治攻击.
-
-```js
-const rpc = "https://rpc.flashbots.net/fast";
-```
+用户/钱包侧 RPC, 把 tx 直发 builder 网络, 不进 public mempool, 防三明治攻击. fast / default 端点配置差异详见 §11.8.
 
 ### 11.5 ePBS (Glamsterdam, 2026 H1 计划)
 

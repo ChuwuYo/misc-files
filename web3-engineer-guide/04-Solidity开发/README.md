@@ -33,8 +33,11 @@ flowchart TD
     H --> I[第 10 章：Foundry 测试体系]
     I --> J[第 11 章：部署与运维]
     J --> K[第 12 章：Gas 优化清单]
-    K --> L[第 13 章：AI 辅助开发]
-    L --> M[第 14 章：实战 + 习题]
+    K --> L[第 13 章：框架选型与备选语言生态]
+    L --> M[第 14 章：AI 辅助开发]
+    M --> N[第 15 章：实战项目]
+    N --> O[第 16 章：习题与参考解答]
+    O --> P[第 17 章：延伸阅读]
 ```
 
 完成后能：
@@ -3073,7 +3076,7 @@ Solady 优势在 happy path：免去 OZ `address.functionCall` 分配 memory 的
 - [Solidity NatSpec Format](https://docs.soliditylang.org/en/latest/natspec-format.html)
 - [Solidity SMTChecker](https://docs.soliditylang.org/en/latest/smtchecker.html)
 
-### 17.1.x 备选语言/框架文档
+### 17.2 备选语言/框架文档
 
 - [Vyper 文档](https://docs.vyperlang.org/)（v0.4.3+）
 - [Huff 文档](https://docs.huff.sh/)
@@ -3084,7 +3087,7 @@ Solady 优势在 happy path：免去 OZ `address.functionCall` 分配 memory 的
 - [ApeWorX (Ape) 文档](https://docs.apeworx.io/)（Brownie 继任者）
 - [Permit2 文档](https://docs.uniswap.org/contracts/permit2/overview)
 
-### 17.2 课程
+### 17.3 课程
 
 - [Cyfrin Updraft](https://updraft.cyfrin.io/)（前 Patrick Collins / Chainlink Labs 团队，免费）
 - [Patrick Collins's Foundry Full Course](https://www.youtube.com/watch?v=umepbfKp5rI)（YouTube 32 小时免费课）
@@ -3092,7 +3095,7 @@ Solady 优势在 happy path：免去 OZ `address.functionCall` 分配 memory 的
 - [Secureum](https://www.secureum.xyz/)（合约安全速成）
 - [LearnWeb3](https://learnweb3.io/)（前端→合约转型路径）
 
-### 17.3 必读源码
+### 17.4 必读源码
 
 | 仓库 | 学什么 |
 |---|---|
@@ -3106,7 +3109,7 @@ Solady 优势在 happy path：免去 OZ `address.functionCall` 分配 memory 的
 | [EigenLayer](https://github.com/Layr-Labs/eigenlayer-contracts) | restaking + AVS 架构 |
 | [Permit2](https://github.com/Uniswap/permit2) | 跨协议授权基础设施 |
 
-### 17.4 工具与静态分析
+### 17.5 工具与静态分析
 
 - [Slither](https://github.com/crytic/slither)（Crytic / Trail of Bits 静态分析，事实标准）
 - [Aderyn](https://github.com/Cyfrin/aderyn)（Cyfrin Rust 静态分析，2026 主流）
@@ -3117,7 +3120,7 @@ Solady 优势在 happy path：免去 OZ `address.functionCall` 分配 memory 的
 - [horsefacts/weth-invariant-testing](https://github.com/horsefacts/weth-invariant-testing)（不变量测试经典实战范本）
 - [Cyfrin/fuzz-testing-on-foundry](https://github.com/Cyfrin/fuzz-testing-on-foundry)（fuzz / invariant 教学示例）
 
-### 17.5 常见坑
+### 17.6 常见坑
 
 - `address(this).balance` 不是内部账本（selfdestruct 转入会超出记账）
 - `tx.origin` 永远不用于鉴权（钓鱼合约绕过）

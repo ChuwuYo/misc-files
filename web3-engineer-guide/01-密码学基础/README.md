@@ -2247,7 +2247,7 @@ assert pairing(G1, sig_M) == pairing(pk_agg, H)
 - BIP-341 (Taproot). <https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki>
 - BIP-342 (Tapscript). <https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki>
 
-### 18.2.1 后量子标准
+#### 18.2.1 后量子标准
 
 - (★) NIST FIPS 203 (ML-KEM). <https://csrc.nist.gov/pubs/fips/203/final>
 - (★) NIST FIPS 204 (ML-DSA). <https://csrc.nist.gov/pubs/fips/204/final>

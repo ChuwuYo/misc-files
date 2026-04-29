@@ -46,9 +46,9 @@
                        36-38 实战三章（PoW / PBFT / CometBFT）
                        39 习题 / 40 AI 影响 / 41 自审 / 42 延伸阅读
 
-块 H：前沿主题 (44-55)  44 机制设计 / 45 MEV-Boost / 46 ePBS / 47 SSF / 48 VDF /
-                       49 Restaking / 50 Long-Range / 51 LST / 52 History Expiry /
-                       53 Verkle / 54 Bitcoin Covenants / 55 本册划界
+块 H：前沿主题 (43-55)  43 前沿主题导引 / 44 机制设计 / 45 MEV-Boost / 46 ePBS /
+                       47 SSF / 48 VDF / 49 Restaking / 50 Long-Range / 51 LST /
+                       52 History Expiry / 53 Verkle / 54 Bitcoin Covenants / 55 本册划界
 ```
 
 每章独立可跳读。
@@ -2006,6 +2006,14 @@ PBFT 变体，加了**lockout 机制**：
 → 32 次连续投票后，承诺达到最大 lockout
 → 该分支被认为 economically finalized
 ```
+
+### 26.4 PoH 与 Tower BFT 的协作
+
+PoH 负责"打时间戳 / 排事件顺序"，Tower BFT 负责"决定哪条链合法"。两者分工：
+
+- **PoH**：Leader 持续生成哈希链条，其他节点验证顺序合法性（无需通信）。
+- **Tower BFT**：每个 slot 结束后，Validator 对 PoH 记录的区块投票；lockout 机制保证切换分支成本指数增加。
+- 合并效果：PoH 节省了 BFT 投票中"排序消息"的通信开销，Tower BFT 提供拜占庭容错安全保证。
 
 ### 26.5 当前性能（2026-04）
 

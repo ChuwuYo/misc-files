@@ -204,7 +204,7 @@ balances[msg.sender] = 0; // Effect 先
 (bool ok, ) = msg.sender.call{value: bal}(""); // Interaction 后
 ```
 
-更稳的做法：套一层 OZ `nonReentrant` modifier。`nonReentrant` 内部用一个 `_status` 状态变量在进入时翻转，再次进入则 revert。OZ 5.x 把 `_status` 放在 transient storage（EIP-1153，Cancun 启用），单 tx 结束后自动清 0，省 gas。
+更稳的做法：套一层 OZ `nonReentrant` modifier。`nonReentrant` 内部用一个 `_status` 状态变量在进入时翻转，再次进入则 revert。OZ 5.1 起新增了 `ReentrancyGuardTransient`（基于 transient storage，EIP-1153，Cancun 启用），需要显式 import；普通 `ReentrancyGuard` 仍用 SSTORE，更兼容。详见 §2.6。
 
 ### 2.3 跨函数重入（Cross-function）
 

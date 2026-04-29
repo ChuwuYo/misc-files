@@ -366,7 +366,7 @@ flowchart LR
 
 ## 5 · Anchor：Solana 的声明式框架
 
-Anchor (`solana-foundation/anchor`，主线 1.0.1) 用 Rust 过程宏把指令分发、账户校验、序列化、PDA 派生声明化，省去 60-70% 手写代码。
+Anchor (`solana-foundation/anchor`，本教程用 0.31.1；Anchor 1.0 已发布但生态尚未全量迁移，0.31.1 仍是主流兼容版本) 用 Rust 过程宏把指令分发、账户校验、序列化、PDA 派生声明化，省去 60-70% 手写代码。
 
 #### 三件套：程序 + IDL + 客户端
 
@@ -462,8 +462,9 @@ pub enum CounterError {
 | `Account<'info, T>` | 反序列化 + 校验 owner == 本程序 + 校验 discriminator |
 | `Signer<'info>` | 校验 `is_signer == true` |
 
-> **思考框 · 提示**：Anchor 1.0.1 与 0.30.x 的主要差异是 **栈使用优化** + **Solana v2 工具链兼容**。
-> 0.30 的 IDL 用 SPL Account Compression + DAS 索引器普遍能识别，1.0 IDL 格式不变向后兼容。
+> **思考框 · 提示**：Anchor 0.31.1 相对 0.30.x 的主要变化是 **栈使用优化** + **Solana v2 工具链兼容**。
+> 0.30 的 IDL 用 SPL Account Compression + DAS 索引器普遍能识别，0.31 IDL 格式向后兼容。
+> Anchor 1.0 已发布（2026-04 初），但生态（钱包、索引器、第三方框架）尚未全量迁移；本教程用 0.31.1 兼容主流。
 
 #### 对照：Native（无 Anchor）等价骨架
 
@@ -3349,7 +3350,66 @@ flowchart LR
 | Move (Aptos) | Cursor + aptos-cli + Aptos Build LLM helper |
 | Bitcoin | Cursor + bitcoinjs-lib types；多依赖 mempool.space + Optech 周报手动验证 |
 
-详细决策建议、职业地图见第 51 章（本文件末尾）。
+详细决策建议、职业地图见第 51 章。
+
+---
+
+## 51 · 决策建议
+
+### 51.0 决策矩阵（假设已熟练 EVM；横轴 = 周学习时间）
+
+| 目标 | 4 h/周 | 8 h/周 | 16 h/周 |
+|------|--------|--------|---------|
+| 找下一份工作（拿薪水） | Solana 基础（Anchor） | Solana 深 + 1 个 SVM 项目作品 | Solana 深 + Pinocchio + 一个 mainnet 部署 |
+| 做 C 端产品 | Solana / TON 任一 | + Solana Mobile 或 TON Mini App | + 全栈（前端 + 合约 + indexer） |
+| 做基建 / 安全 | Bitcoin Taproot 基础 | + LDK / BitVM 论文精读 | + 写一个 BIP 提案 / 实现 BitVM2 桥 demo |
+| RWA / 机构 | Cosmos 基础 + IBC | + CosmWasm + ICS | + 起一条 app-chain + Mesh Security |
+| 押注下一代抽象 | Sui Move counter | + 形式化验证 / Move Prover | + 一个完整 DeFi 协议 + spec 全 prove |
+| 横扫式综合 | 4 个生态各 hello-world | + 1 个深入 + 3 个粗通 | + 写一篇跨生态对比文章 |
+
+### 51.1 工程师建议
+
+**结论：必须粗通四家，至少深入一家。**
+
+1. **职业回报最大化** → **Solana**。招聘溢价 ~30%，AI 工具最成熟，SVM 外延可迁移到 Eclipse/MagicBlock 等多条链。
+2. **长线技术稀缺性** → **Bitcoin**。BitVM/Lightning/Babylon 三条主线快速演进，但工程师极少；学透 BIP-340/341/342 + Taproot + LDK 后五年不愁项目。
+3. **押注下一代抽象** → **Move**。资源类型 + 形式化验证是软件工程未来方向；缺点是生态体量仍小。
+4. **企业 / RWA / 合规** → **Cosmos**（dYdX、Babylon、Neutron）。app-chain + IBC + ICS 是 B2B 友好全套方案。
+
+**不要做的事**：
+
+- All-in EVM——5 年后变成"区块链领域的 PHP 开发者"
+- 同时学 5 条链——样样松，最后回归 EVM
+- 追每周新链——看 GitHub 提交活跃度 + 真实 TVL，不要看价格
+
+**最重要的事**：
+
+- **学透抽象**比"会写代码"重要。Solana"显式账户列表"、Move"线性类型"、Bitcoin"UTXO + Script"、Cosmos"app-chain"——这四个概念是非 EVM 世界的全部杠杆，理解了它们，任何新链 30 分钟上手。
+- **AI 工具弱的地方就是机会**。给 Cosmos/Bitcoin 写好的 MCP/SDK/agent kit 比再做一个 EVM 项目更值钱，这个窗口至少还有 2-3 年。
+
+### 51.2 五年职业地图（2026-04 趋势外推）
+
+| 时间 | 推荐重心 | 风险敞口 |
+|------|---------|---------|
+| 2026 H2 | Solana / Bitcoin L2（Citrea / Babylon） | EVM L2 同质化加剧 |
+| 2027 | Move（Sui 主导）+ JAM 实验 | Solana 客户端多元化完成后基础设施红利消退 |
+| 2028 | 链抽象（NEAR / Hyperliquid / Particle）+ AI 链上 | 单链思维过时 |
+| 2029-2030 | 后量子签名 / FHE / 链上 AI | EVM/SVM/MoveVM 之外可能出现新 VM |
+
+### 51.3 哪些不要碰
+
+- 白皮书 > 代码的链（融资极多但 GitHub 半年无 commit）
+- 团队 ≤ 5 人 + 无大基金支持的"创新链"
+- DAU 靠点击 mining 撑起来的链
+- 主网 6 个月内停机 ≥ 3 次的链
+
+### 51.4 五个反直觉建议
+
+1. **学 Bitcoin 比学第三个 EVM L2 更值钱**
+2. **Move Prover / TLA+ 一次学，受用一生**
+3. **AI Agent SDK 是新一代"前端"**——给新链写 Agent Kit 等于占据它的 npm install
+4. **Solana Mobile / TON Mini App 是真实 Web3 用户增长引擎**
+5. **多链桥不要造**——选 Wormhole / LayerZero / Chain Signatures / IBC Eureka 之一
 
 ---
 
@@ -3430,67 +3490,6 @@ exercises/
 ```
 
 每个目录有 `README.md`（题目）+ `ANSWERS.md` 或 `solution/`（参考答案）。
-
----
-
-## 51 · 决策建议
-
-### 51.0 决策矩阵（假设已熟练 EVM；横轴 = 周学习时间）
-
-| 目标 | 4 h/周 | 8 h/周 | 16 h/周 |
-|------|--------|--------|---------|
-| 找下一份工作（拿薪水） | Solana 基础（Anchor） | Solana 深 + 1 个 SVM 项目作品 | Solana 深 + Pinocchio + 一个 mainnet 部署 |
-| 做 C 端产品 | Solana / TON 任一 | + Solana Mobile 或 TON Mini App | + 全栈（前端 + 合约 + indexer） |
-| 做基建 / 安全 | Bitcoin Taproot 基础 | + LDK / BitVM 论文精读 | + 写一个 BIP 提案 / 实现 BitVM2 桥 demo |
-| RWA / 机构 | Cosmos 基础 + IBC | + CosmWasm + ICS | + 起一条 app-chain + Mesh Security |
-| 押注下一代抽象 | Sui Move counter | + 形式化验证 / Move Prover | + 一个完整 DeFi 协议 + spec 全 prove |
-| 横扫式综合 | 4 个生态各 hello-world | + 1 个深入 + 3 个粗通 | + 写一篇跨生态对比文章 |
-
-### 51.1 工程师建议
-
-**结论：必须粗通四家，至少深入一家。**
-
-1. **职业回报最大化** → **Solana**。招聘溢价 ~30%，AI 工具最成熟，SVM 外延可迁移到 Eclipse/MagicBlock 等多条链。
-2. **长线技术稀缺性** → **Bitcoin**。BitVM/Lightning/Babylon 三条主线快速演进，但工程师极少；学透 BIP-340/341/342 + Taproot + LDK 后五年不愁项目。
-3. **押注下一代抽象** → **Move**。资源类型 + 形式化验证是软件工程未来方向；缺点是生态体量仍小。
-4. **企业 / RWA / 合规** → **Cosmos**（dYdX、Babylon、Neutron）。app-chain + IBC + ICS 是 B2B 友好全套方案。
-
-**不要做的事**：
-
-- All-in EVM——5 年后变成"区块链领域的 PHP 开发者"
-- 同时学 5 条链——样样松，最后回归 EVM
-- 追每周新链——看 GitHub 提交活跃度 + 真实 TVL，不要看价格
-
-**最重要的事**：
-
-- **学透抽象**比"会写代码"重要。Solana"显式账户列表"、Move"线性类型"、Bitcoin"UTXO + Script"、Cosmos"app-chain"——这四个概念是非 EVM 世界的全部杠杆，理解了它们，任何新链 30 分钟上手。
-- **AI 工具弱的地方就是机会**。给 Cosmos/Bitcoin 写好的 MCP/SDK/agent kit 比再做一个 EVM 项目更值钱，这个窗口至少还有 2-3 年。
-
-### 51.2 五年职业地图（2026-04 趋势外推）
-
-| 时间 | 推荐重心 | 风险敞口 |
-|------|---------|---------|
-| 2026 H2 | Solana / Bitcoin L2（Citrea / Babylon） | EVM L2 同质化加剧 |
-| 2027 | Move（Sui 主导）+ JAM 实验 | Solana 客户端多元化完成后基础设施红利消退 |
-| 2028 | 链抽象（NEAR / Hyperliquid / Particle）+ AI 链上 | 单链思维过时 |
-| 2029-2030 | 后量子签名 / FHE / 链上 AI | EVM/SVM/MoveVM 之外可能出现新 VM |
-
-### 51.3 哪些不要碰
-
-- 白皮书 > 代码的链（融资极多但 GitHub 半年无 commit）
-- 团队 ≤ 5 人 + 无大基金支持的"创新链"
-- DAU 靠点击 mining 撑起来的链
-- 主网 6 个月内停机 ≥ 3 次的链
-
-### 51.4 五个反直觉建议
-
-1. **学 Bitcoin 比学第三个 EVM L2 更值钱**
-2. **Move Prover / TLA+ 一次学，受用一生**
-3. **AI Agent SDK 是新一代"前端"**——给新链写 Agent Kit 等于占据它的 npm install
-4. **Solana Mobile / TON Mini App 是真实 Web3 用户增长引擎**
-5. **多链桥不要造**——选 Wormhole / LayerZero / Chain Signatures / IBC Eureka 之一
-
----
 
 ## 53.x 来源（2026-04 实测，按引用频次排序）
 

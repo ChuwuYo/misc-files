@@ -6,7 +6,7 @@
 ## 环境（2026-04 实测）
 
 - **Solana CLI 3.1.10**（Anza 维护，安装地址已迁到 `release.anza.xyz`）
-- **Anchor CLI 1.0.1**（仓库已从 `coral-xyz/anchor` 迁到 `solana-foundation/anchor`）
+- **Anchor CLI 0.31.1**（仓库已从 `coral-xyz/anchor` 迁到 `solana-foundation/anchor`；Anchor 1.0 已发布但生态尚未全量迁移，本教程用 0.31.1 兼容主流）
 - Node 20.x、pnpm 9.x
 - Rust 1.85+
 

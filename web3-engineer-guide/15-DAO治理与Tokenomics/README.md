@@ -46,6 +46,9 @@ graph TD
     Y --> Z[第26章 Bribe 经济]
     Z --> AA[第27章 完整 Governor + ve-token 部署实战]
     AA --> AB[第28章 ERC-3643 + QF 计算实战]
+    AB --> AC[第29章 综合习题]
+    AC --> AD[第30章 延伸阅读]
+    AD --> AE[第31章 自审查清单]
 ```
 
 ---
