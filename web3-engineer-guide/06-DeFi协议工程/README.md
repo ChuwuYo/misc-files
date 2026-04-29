@@ -401,7 +401,14 @@ flowchart LR
 - 永续 short delta = $-x$
 - 组合 delta = $0$
 
-ETH 涨跌都不影响组合美元价值。USDe 因此能 1:1 锚定美元——**只要 funding rate 是正的且 CEX 不出事**。
+ETH 涨跌都不影响组合美元价值——**但只是 mark-to-market 意义上的不变**。
+
+> **Caveat**：delta = 0 不等于「USDe 自然 1:1 锚定」。三个独立风险层：
+> (a) **永续 funding 倒挂**（短端熊市永续多头收 funding）→ 收益为负，sUSDe 反向蚀本；
+> (b) **保证金率波动**：CEX 永续短仓需维持保证金，ETH 急涨触发 maintenance margin，被迫加保证金或减仓——deleveraging 过程中 delta 短暂偏离 0；
+> (c) **CEX custody risk 是非线性的**：Bybit / Binance 任一冻结/hack，整段对冲腿失效，损失不是线性折价而是阶跃。
+>
+> 因此 USDe 锚定本质是 **delta-neutral + counterparty + funding-positive 三重假设**的合成产物，而非纯数学锚定。三者任一破裂时锚定即受压（详见 §5.1.3 与 2025-10 解杠杆事件）。
 
 **收益来源**：
 1. 现货 stETH staking yield ≈ 3%
@@ -836,11 +843,20 @@ while amountRemaining > 0 and currentTick != targetTick:
     )
     amountRemaining -= amountIn; amountOut_total += amountOut
     if 跨过 nextTick:
-        liquidity += liquidityNet[nextTick]
+        # 方向至关重要——zeroForOne（价跌、token0→token1）从右向左跨 tick：
+        #   liquidity -= liquidityNet[nextTick]
+        # oneForZero（价涨、token1→token0）从左向右跨 tick：
+        #   liquidity += liquidityNet[nextTick]
+        if zeroForOne:
+            liquidity -= liquidityNet[nextTick]
+        else:
+            liquidity += liquidityNet[nextTick]
         currentTick = nextTick
 ```
 
 `liquidityNet[tick]` 记录"从这个 tick 开始流动性变化多少"——LP 在 $[t_a, t_b]$ 提供 $L$ 时 `liquidityNet[t_a] += L`、`liquidityNet[t_b] -= L`。让 V3 在 LP 数量任意多时仍 O(跨 tick 数) 完成 swap。
+
+> **方向陷阱**：把方向写错（无论 swap 哪边都 `+=`）会让 swap 路径上的有效流动性偏离实际 LP 部署，结果是输出量 / 价格更新错——KyberSwap Elastic 类似精度+方向问题在 2023-11 直接导致 $47M 损失（见 §7.7）。Uniswap V3 reference impl 见 [`UniswapV3Pool.sol#swap` 中 `liquidityNet` 的 `if (zeroForOne) liquidityNet = -liquidityNet;` 手法](https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Pool.sol)。
 
 ### 7.6 V3 LP 实质上是在卖期权
 
@@ -1359,6 +1375,8 @@ flowchart TD
 
 ### 14.4 反例：rsETH/wETH 2026-04 危机
 
+> **审稿注（2026-04-29）**：本案例基于 hypothetical LayerZero DVN compromise scenario 推演——审稿时点本人未独立确认 Kelp DAO 是否真在 2026-04-18 发生该事件、或上述数额是否准确。线索来源标注于下方但**需作者核实**。读者请在引用前自行交叉验证 [Aave governance forum](https://governance.aave.com/)、[L2BEAT incidents](https://l2beat.com/scaling/risk/)、Kelp 官方公告，避免把演练材料当成既成事实流出。
+
 Kelp DAO 跨链桥被攻击（1-of-1 DVN 单点被攻陷），$292M 伪造 rsETH 被用作 Aave 抵押借走 wETH，造成 ~$196M 坏账。Aave TVL 单日跌 $6.6B、AAVE 代币跌 16%。完整复盘见第 24.3 节。
 
 来源：[Aave Records $6B TVL Drop](https://www.coindesk.com/tech/2026/04/19/aave-records-usd6-billion-tvl-drop-as-kelp-hack-exposes-structural-risk-at-defi-lender)、[rsETH Incident Report](https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580)。
@@ -1724,6 +1742,8 @@ $$
 $$
 
 long OI > short OI 时多头付 funding，反之亦然——越拥挤一侧 funding 越高，激励对面开仓平衡。
+
+**dual-slope 动态调整**（V2 上线后引入）：funding rate 不是一次性根据当前 imbalance 算出，而是**按秒迭代**——每秒以 `fundingIncreaseFactorPerSecond × imbalance` 上调（imbalance 仍为同侧时），以 `fundingDecreaseFactorPerSecond` 回落（imbalance 反转时）。受 `maxFundingFactorPerSecond` 上限约束。优点：避免 imbalance 抖动 → funding 抖动；缺点：funding 反应有滞后，单边 OI 持续累积时仍可能压到上限并触发 ADL。参考 GMX synthetics `MarketUtils.getFundingFactorPerSecond`。
 
 ### 19.4 LP 收益拆分
 
@@ -2095,6 +2115,8 @@ LRT 把"再质押的复杂性"打包成单个代币——用户买进 ezETH/eETH
 
 ### 24.3 Kelp DAO 2026-04 事件完整复盘
 
+> **审稿注（2026-04-29）**：本节为 hypothetical DVN compromise scenario 复盘，审稿时点尚无法在公开渠道独立确认全部事实/金额/治理动议（[需作者核实]）。引用见末尾链接，但读者应将本节视作架构推演与 incident-response 训练材料，而非 final post-mortem。
+
 **时间线**：
 - **2026-04-18**：Kelp DAO 跨链桥被攻击，攻击者铸造 ~$292M rsETH（实际无对应抵押）。
 - **2026-04-19**：攻击者用伪造 rsETH 在 Aave V3 抵押借走 wETH。Aave 出现 ~$196M 坏账集中在 rsETH/wETH 配对。Aave 紧急把 rsETH LT 调到 0、暂停 borrow。Aave TVL 单日跌 $6.6B、AAVE 代币跌 16%。
@@ -2192,7 +2214,9 @@ $$
 - PT 价格随到期日临近**收敛到 1**（从 0.97 → 0.98 → 0.99 → 1）。
 - YT 价格随到期日临近**衰减到 0**（从 0.03 → 0.02 → 0.01 → 0）。
 
-**PY 索引棘轮机制**：SY 索引下降时 PT 索引冻结，直到 SY 索引恢复赶上——PT 持有者下行有限保护，任何损失由 YT 持有者承担。
+**PY 索引机制（修正）**：流传甚广的"SY 索引下降时 PT 索引冻结、由 YT 吃损失"是简化模型，实际更精确的描述是：Pendle V2 中 **PT 在 maturity 收敛到 1 SY 的速率与 SY 实际利率脱钩**——PT 价格由 AMM 上的 implied APY 决定，而非由 SY 实际累积利率直接驱动。SY 实际利率下行/为负时，PT 不会简单"冻结"，而是 implied APY 与 underlying APY 的偏离扩大。
+
+**LP 真正的 IL 来源**正是 **implied APY vs underlying APY 的偏离**：当市场预期与实际利率背离，LP 在 PT/SY AMM 上的两边敞口被重新定价——类似 Uni V3 在区间外只剩单边资产，但驱动量是利率而非现货价。YT 持有者吃利率下行的损失是结果，不是机制本身。详见 [Pendle AMM A Closer Look](https://medium.com/pendle/pendle-amm-a-closer-look-1364aee5105d) 与 [Pendle Mixbytes 分析](https://mixbytes.io/blog/yield-tokenization-protocols-how-they-re-made-pendle)。
 
 ### 25.3 Pendle 实战：固收 vs 投机
 

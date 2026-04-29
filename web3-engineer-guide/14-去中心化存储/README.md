@@ -108,6 +108,8 @@ flowchart TD
 
 > ⚠️ 注意：去中心化存储**不**自动等于永久存储。IPFS 默认是 best-effort 缓存，不 pin 就会被 gc。Filecoin 是定期合约（默认 180 天起），合约到期不续就消失。只有 Arweave 是显式宣称"永久"，且有 200 年捐赠基金模型支撑。
 
+> ⚠️ **持久性 vs 可达性的混淆**：IPFS 的 CID 只是"内容指纹"——它不保证"任何节点持有这份字节"。一个广为流传的误解是"我 ipfs add 之后内容就在 IPFS 网络里"——错。`ipfs add` 只是把内容加到你本地节点的 blockstore；如果没有 pin（自己 pin 或第三方 pin 服务），节点 GC 后内容就只在曾 fetch 过它的网关缓存里继续存在几小时到几天。Pinata 2024 缩水免费层、NFT.Storage Classic 2024-06-30 关停的事故都是这个失败模式：项目方以为"上 IPFS 就稳了"，实际上 pinning 服务才是数据存活的"持有者"，**pinning 服务的 SLA 不等于 IPFS 协议的承诺**。生产实践：3 家以上 pinning 冗余 + Filecoin/Arweave 长期备份 + 链上 hash registry 自证。
+
 ### 1.4 历史脉络（一张图看懂）
 
 ```mermaid
@@ -444,7 +446,7 @@ flowchart LR
 | 服务 | 免费额度 | 付费起价 | 特点 | 状态 |
 |---|---|---|---|---|
 | **Pinata** | 1 GB / 1000 文件 | $20/月 起 50 GB | 行业标杆，NFT 主流；2026 起免费额度缩水 | 活跃 |
-| **Web3.Storage (Storacha)** | 5 GB | 按用量；企业版定制 | Protocol Labs 系，已转向 Storacha 品牌 | 活跃但模式变了 |
+| **Web3.Storage (Storacha)** | "Starter" 免费层 5 GB / 月，包含上传 + 网关读 + 1 个 Space；超出按 Lite ($10/月 100 GB) / Business ($100/月 2 TB) 阶梯计费，详见 [storacha.network/pricing](https://storacha.network/pricing)（检索 2026-04） | Lite $10/月、Business $100/月 | Protocol Labs 系，2024 旧 web3.storage API 已迁移到 Storacha 平台；旧 SDK (`@web3-storage/w3up-client`) 仍兼容但 endpoint 已切换 | 活跃但模式变了：免费层从早期"无限"收紧到 5 GB |
 | **Filebase** | 5 GB | $20/月 起含 1 TB 存储（约 $0.02/GB/月，超量按 $0.005/GB 计） | S3 兼容 API，最低存储单价 | 活跃 |
 | **Lighthouse** | 5 GB | 一次付费永久存（$2.4/GB 估算）或月付 | 内置加密、Filecoin Deal 自动化 | 活跃 |
 | **NFT.Storage** | Classic 已 2024-06-30 关停；Long-Term 仍可用 | 企业付费 | PL Filecoin Impact Fund 接管 | 限制使用 |
@@ -1175,7 +1177,16 @@ console.log(result);
 - DePIN 项目数据层
 - 区块链历史归档
 
-> ⚠️ 工程师注脚：Walrus 与 Sui 紧耦合（用 Sui 链做协调层），不是 EVM 原生。EVM 项目要用得跨链桥或集成 Sui 链。
+> 🚨 **EVM 项目接入警告（请放在选型决策最前面）**
+>
+> **Walrus 与 Sui 紧耦合**：blob registration、epoch 续费、metadata、支付（$WAL）全部走 Sui 链。EVM 项目要用 Walrus，**只有两条路**：
+>
+> 1. **跨链桥接 $WAL 到 Sui，再用 Sui wallet 调用 Walrus**——意味着你的 EVM dApp 后端要维护 Sui 私钥 + Sui RPC + 跨链桥逻辑；
+> 2. **走中心化 SaaS 包装**（如某些 Walrus 网关代付服务）——回到信任单点，丧失"去中心化存储"的初衷。
+>
+> ⚠️ **跨链桥本身风险极大**：Wormhole（2022-02 被盗 $325M）、Ronin（2022-03 $625M）、Nomad（2022-08 $190M）、Multichain（2023-07 $130M 团队跑路且至今未恢复）——**桥是 Web3 历史上被盗最多的基础设施类别**。把"长期存储 + 经常续费"的工作流挂在跨链桥上，相当于给资产持续暴露在桥的攻击面下。
+>
+> **务实建议**：EVM 原生项目存大文件，**优先 Filecoin（FVM 同 EVM 兼容）/ Arweave / IPFS+Pinata**；只在确实需要"4K 视频 + 极低单价 + 可接受 Sui 依赖"且团队有 Sui 工程能力时才选 Walrus。
 
 ---
 

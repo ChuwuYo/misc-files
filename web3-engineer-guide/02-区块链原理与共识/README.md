@@ -774,7 +774,9 @@ sequenceDiagram
 > ⚠️ **No Double Vote**：同一个 epoch 不能签两个不同的 target。
 > ⚠️ **No Surround Vote**：不能让旧投票 (s₁,t₁) 包围新投票 (s₂,t₂)，即不能有 h(s₁) < h(s₂) < h(t₂) < h(t₁)。
 
-任一违反 → 立即 slash。**这就是 Ethereum 把"经济最终性"量化的方式**：要 revert 一个 finalized block，至少要让 1/3 stake 接受 slash。当前总质押 ~3000 万 ETH，1/3 ≈ 1000 万 ETH（数百亿美元）。
+任一违反 → 立即 slash。**这就是 Ethereum 把"经济最终性"量化的方式**：要 revert 一个 finalized block，至少要让 1/3 stake 接受 slash。当前总质押 ~3500-3700 万 ETH（2026-04），1/3 ≈ 1200 万 ETH（数百亿美元）。
+
+> 📝 **注意区分**：上述 slash 针对的是 Casper FFG 的 double/surround vote。**LMD-GHOST attestation 重投不直接被 slash**，而是被 fork-choice 经济性惩罚——投错链的 attestation 拿不到正确链上的 reward，长期下来余额相对受损。
 
 ### 9.6 Inactivity Leak
 
@@ -1046,7 +1048,7 @@ BABE 持续出块；GRANDPA 隔一段时间投票，一次 finalize 多个块（
 
 ### 12.4 验证者集合
 
-- **active validators**：当前 era 选出的 297 个验证者（来源：Polkadot wiki，访问 2026-04-27）
+- **active validators**：当前 era 选出的 600 个验证者（2024 年起 Active Set 由 297 提升至 600，来源：Polkadot DOT staking dashboard，访问 2026-04）
 - **nominators**：质押 DOT 委托给验证者；最少 250 DOT 直接 nominate，1 DOT 可加入 pool
 
 ### 12.5 与 Ethereum Gasper 的对比
@@ -1083,7 +1085,7 @@ graph TD
 | 维度 | 评分 | 说明 |
 | --- | --- | --- |
 | 安全性 | ★★★★☆ | 共享安全；GRANDPA 绝对终结 |
-| 去中心化 | ★★★☆☆ | 297 个 validator，比 Ethereum 少 |
+| 去中心化 | ★★★☆☆ | 600 个 validator（2024 起，原 297），比 Ethereum 少 |
 | 性能 | ★★★★☆ | 6s 出块；多 parachain 并行 |
 | 工程门槛 | ★★☆☆☆ | Substrate 框架学习曲线陡 |
 | 跨链 | ★★★★★ | 平行链原生跨链 |
@@ -1102,7 +1104,7 @@ graph TD
 ### 13.1 直觉
 
 Algorand（Micali 等人，2017）与其他 PoS 的关键差异：
-- **没有 stake/unstake**：ALGO 自动在线
+- **2024-09 起需主动 stake ALGO 参与共识**（Staking Rewards 上线前 ALGO 自动在线，现已改为类似其他 PoS 的主动质押模型）
 - **没有 slashing**：丢私钥也不赔钱
 - **每块换 committee**：成员在公布前连自己都不知道
 
@@ -1184,7 +1186,7 @@ Algorand 偏向"机构链"路线：CBDC（El Salvador、Marshall Islands）、ca
 - **2020-04 Algorand 2.0**：智能合约 + ASA（Algorand Standard Asset）
 - **2022 PyTeal v0.20**：合约开发体验改进
 - **2023 EVM 兼容性研究**（Layer-2 形式）
-- **从未发生 reorg 或 finality stall**——这是 Algorand 最骄傲的纪录之一
+- **2024-06 ~ 2 小时区块停滞事件**：因部分 relay 节点配置问题导致出块短暂中断，最终性协议本身未受影响（绝对终结性保留）。这是 Algorand 主网首次大规模可观测的 liveness 事件——validate 了"Algorand 选 safety 牺牲 liveness"的设计取舍。
 
 ---
 

@@ -841,6 +841,8 @@ flowchart LR
 
 Alice 卖掉 BAYC #4321 给 Bob，整个 TBA 里的资产**自动跟着转移**——因为控制权只跟 owner 走。
 
+> ⚠️ **trust model 注脚**：TBA 的 owner **不是 TBA 本身**——它是 NFT 的当前 ownerOf 返回值。这意味着：(1) 卖家在 transfer NFT 之前可以把 TBA 里的资产抽空（"rug 风险"），所以买入带 TBA 的 NFT 必须先链上检查 TBA 余额且原子化执行；(2) NFT 借给朋友（设了 ERC-4907 user）不会授予朋友 TBA 控制权——user ≠ owner；(3) TBA 不能"自治"——所有 execute 必须由 NFT 当前 owner 触发。这是 ERC-6551 与"agent 持有钱包"叙事最容易被混淆的点。
+
 ### 7.2 为什么需要它
 
 之前 NFT 是"叶子节点"：一个 NFT 就一个 NFT，不能持有别的资产。游戏 NFT 想让一个角色「带装备」很别扭。ERC-6551 把 NFT 升级成"内部账户"，可以持币、持其他 NFT、调合约。
@@ -965,7 +967,8 @@ const tba = await client.readContract({
 - **完全向后兼容**：任何已存在的 ERC-721（甚至 CryptoPunks 这种非标准合约也行，只要有 ownerOf）都能创建 TBA。
 - **Sapienz / Mocaverse / Pudgy Penguins**：游戏与 PFP 项目主要采用者。
 - **真实痛点**：UX 还不成熟。普通用户搞不清"我钱包" vs "我 NFT 的钱包"。
-- **安全坑**：TBA 的 owner 是 dynamic 的，跨链场景下可能存在 owner 不一致（NFT 在 L1，TBA 在 L2，跨链时 ownerOf 失同步）。
+- **安全坑 1（trust model）**：TBA owner = NFT.ownerOf()。NFT transfer 前的"清空攻击"是结构性风险——卖家在挂单后、成交前 execute 一笔从 TBA 转走资产的交易，买家成交时拿到的是空 TBA。Seaport 风格订单不解决这个问题，需要市场层叠加 "TBA snapshot" 机制（目前主流市场都没做）。
+- **安全坑 2（跨链）**：TBA 的 owner 是 dynamic 的，跨链场景下可能存在 owner 不一致（NFT 在 L1，TBA 在 L2，跨链时 ownerOf 失同步）。
 
 > ⚠️ **生产警示**：把高价值资产存进 TBA 前，确认这条链上**真有** Registry 部署。Registry 是 cross-chain 同地址，但每条链都需要单独部署一次（用相同的 salt + bytecode 即得到相同地址）。
 
@@ -1050,6 +1053,8 @@ contract Soulbound is ERC721, IERC5192 {
 - **Optimism Citizen House Badge**：链上治理身份。
 - **GitCoin Passport**：早期版本用 SBT 累积"反女巫"分数，后来转 EAS attestation。
 - **学历证书 / 大学毕业证**：Stanford / MIT 都试过。
+
+> 📌 **2025-2026 趋势：EAS attestation 已基本取代 SBT 用于"链上证书"**。新项目（Optimism RetroPGF、Coinbase Verifications、Gitcoin Passport v2、Base 上的几乎所有声誉系统）默认用 EAS schema，而不是发新的 ERC-5192。原因：EAS 不占用 token slot、可由任何 issuer 在不发合约的情况下盖章、可批量、可撤销、有现成 indexer。Soulbound（ERC-5192）仍存在于"必须以 NFT 形态出现在钱包里"的场景（如 POAP-style 纪念、KYC badge），但**作为通用"链上证书"基础设施，EAS 是 2026 的现代默认**。第 16 章会展开。
 
 ### 8.6 SBT 的设计陷阱
 
@@ -1781,6 +1786,17 @@ contract OffchainResolver {
 ```
 
 > 💡 **CCIP-Read 不只为 ENS**。任何「链下数据 + 链上信任」的场景都可以用——比如订单簿、链下声誉系统。
+
+### 15.7 ENS 治理边界（caveat：不要把 .eth 当绝对去中心化资产）
+
+很多人以为 `vitalik.eth` 是纯粹去中心化、永不可被剥夺的资产。**这是错的，存在治理边界**：
+
+- **`.eth` controller 在 DAO 名义上仍可被收回**：`.eth` 顶级 namehash 的 controller 由 ENS DAO 治理，DAO 持有 root multisig，理论上可通过提案修改 controller、回收 namehash、调整 fee 模型。
+- **法律实体存在**：ENS Labs（前 True Names Ltd，开曼实体）作为运营方，拥有发起治理提案、签 root multisig 的实际能力。USDC-style 政府压力下的强制下架场景在法律上不是不可能。
+- **历史先例**：2022 年 Coinbase Cloud 的 ENS 委托代表事件、Brantly Millegan 域名争议事件都展示了"社区/法律压力可触及 ENS root"。
+- **真正不可剥夺的只有**：一个被你自己钱包持有的 ERC-721 ENS NFT 在到期前的"使用权"。Root 层的规则改变（例如重命名 namehash、强制续费、registry 迁移）在 DAO 多签 + ENS Labs 配合下技术上可达。
+
+> 工程含义：身份系统设计不要假设 ENS 是 censorship-proof 终态。把 ENS 当作"非常去中心化但不是完全无主"的命名层即可，关键身份证明仍要走 DID + EAS + 用户自持私钥多管齐下。
 
 ---
 

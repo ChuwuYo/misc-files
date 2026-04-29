@@ -430,6 +430,20 @@ await client.vote(signer, voterAddress, {
 
 不需要 ETH——只签 typed data，Snapshot 打包到 IPFS。
 
+> 🚨 **Caveat：snapshot block 之前的"委托瞬移"是合规但反感的攻击向量**
+>
+> Snapshot 用 voting 策略在某个 block height 拍快照决定权重；Governor 用 ERC-20Votes 的 `getPastVotes(block)` 决定权重。两者都基于"过去某 block 的余额/委托状态"。
+>
+> **结构性漏洞**：在 snapshot block 被锁定**之前**的最后一个 block，攻击者把大量代币转入新地址 + 立刻自我 delegate，下一 block 就以全部代币的投票权出现在快照里——**完全合规**（没有违反任何合约规则）但**社区强烈反感**。
+>
+> **真实案例**：Compound CMP-289（2024-07，见第 5.4 节）正是 Humpy 利用 1T1V + delegation 模型这个结构性问题，提案前夕集中委托 13% COMP 投票权险胜通过——OZ Governor 设了 `votingDelay`，但**delegation 操作本身不在 votingDelay 窗口内被冻结**，攻击者在 propose 之前就完成了委托集结。
+>
+> **防御**（设计层）：
+> - 用 quadratic voting / 1P1V 削弱 stake-buying 收益；
+> - 引入 lockup（vote-escrow / Curve veToken 模型），让"瞬间获得权重"在经济上不可能；
+> - Snapshot 策略加 `min-holding-period`（要求代币持有 N 天才计权重，链下策略已支持类似 `erc20-with-min-balance` 的过滤）；
+> - 论坛 + 多日 Snapshot 温度测试 + 链上 Governor 双层，给社区时间发现异常委托模式。
+
 ### 6.5 思考题
 
 1. Snapshot 是链下的，那"投票通过后怎么把决定执行到链上"？写出三种可行方案。
@@ -654,6 +668,70 @@ DAO（核心合约：拥有资金 + 权限注册表）
 ```
 
 Plugin 通过 `PluginSetupProcessor` 安装/卸载，DAO ACL 管理权限。2026 年状态：10,000+ 项目，治理 350 亿美元资产。来源：[Aragon OSx 文档](https://docs.aragon.org/osx-contracts/1.x/index.html)、[CTO 访谈](https://www.aragon.org/how-to/building-a-dao-framework-interview-with-aragons-cto)（检索 2026-04）。
+
+#### Aragon OSx Plugin 系统简介
+
+OSx 把 DAO 拆成两层：**核心 DAO 合约**（持有资金 + Permission Manager + execute 入口）和**任意多个 Plugin**（提供具体的提案/投票/执行能力）。Plugin 之间可以共存，分别管不同金额阈值或不同提案类型。
+
+**核心三件套**（合约层）：
+
+| 合约 | 角色 | 关键方法 |
+|------|------|---------|
+| `DAO.sol` | 资金持有 + 权限根 | `execute(callId, actions[], allowFailureMap)` 唯一执行入口；所有 Plugin 想动钱必须通过 DAO |
+| `PluginSetupProcessor` (PSP) | Plugin 安装/卸载/升级 | `prepareInstallation` → DAO 投票批准 → `applyInstallation` 真正授权 |
+| Permission Manager | DAO 内部 ACL | `grant(where, who, permissionId)` / `revoke` / `grantWithCondition`（可挂条件合约） |
+
+**最小 Plugin 骨架**（Solidity）：
+
+```solidity
+// SPDX-License-Identifier: AGPL-3.0-or-later
+pragma solidity ^0.8.17;
+
+import {PluginUUPSUpgradeable, IDAO} from "@aragon/osx/core/plugin/PluginUUPSUpgradeable.sol";
+
+contract MyVotingPlugin is PluginUUPSUpgradeable {
+    bytes32 public constant EXECUTE_PERMISSION_ID = keccak256("EXECUTE_PERMISSION");
+
+    struct Proposal { uint256 yes; uint256 no; bool executed; IDAO.Action[] actions; }
+    mapping(uint256 => Proposal) public proposals;
+
+    function initialize(IDAO _dao) external initializer {
+        __PluginUUPSUpgradeable_init(_dao);
+    }
+
+    function propose(IDAO.Action[] calldata _actions) external returns (uint256 id) {
+        // why: 任何人可发，权重在 vote() 里检查；OSx 推荐 Plugin 自己定门槛
+        id = ++_lastId;
+        for (uint i; i < _actions.length; ++i) proposals[id].actions.push(_actions[i]);
+    }
+
+    function execute(uint256 id) external {
+        Proposal storage p = proposals[id];
+        require(p.yes > p.no && !p.executed, "fail");
+        p.executed = true;
+        // why: Plugin 不直接动钱，而是回调 DAO.execute；DAO 验证 Plugin 持有 EXECUTE_PERMISSION
+        dao().execute(bytes32(id), p.actions, 0);
+    }
+}
+```
+
+**安装流程**（链上 + Aragon SDK）：
+
+1. `PluginRepo` 发布 Plugin 版本（构建号 + setup 合约）；
+2. DAO 治理通过提案调用 `PSP.prepareInstallation(dao, repo, params)` → 返回 `permissions[]` 列表；
+3. DAO 第二次提案 `PSP.applyInstallation(dao, plugin, permissions)` 真正写入 ACL；
+4. 卸载/升级走对称的 `prepare/applyUninstallation`、`prepareUpdate`，保证可回滚。
+
+**与 OZ Governor 的本质差异**：
+
+- OZ Governor = "一份合约管全部"，要换投票算法等于换 DAO；
+- Aragon OSx = "DAO 是空壳 + Plugin 任意叠加"，可以同时跑 TokenVoting（大额）+ Multisig（小额）+ Optimistic（默认通过、N 天反对窗口），互不冲突。
+
+**示例代码 / 学习路径**：
+- 官方模板：[`aragon/osx-plugin-template-hardhat`](https://github.com/aragon/osx-plugin-template-hardhat)（含 Plugin、PluginSetup、单测、部署脚本）；
+- TokenVoting 参考实现：[`aragon/osx/packages/contracts/src/plugins/governance/majority-voting/token`](https://github.com/aragon/osx/tree/main/packages/contracts/src/plugins/governance/majority-voting/token)；
+- TypeScript SDK 示例：[`@aragon/sdk-client` 的 `TokenVotingClient`](https://devs.aragon.org/docs/sdk) 用 ~30 行代码创建带 TokenVoting 的 DAO；
+- Plugin 教程：[Aragon OSx Build a Plugin](https://devs.aragon.org/docs/osx/how-to-guides/plugin-development/upgradeable-plugin/initialization)。
 
 ### 9.2 Llama
 
@@ -1924,9 +2002,27 @@ function test_FlashLoanAttackFails() public {
 
 > OZ Governor + Timelock 安全性来自三层时间锁叠加：votingDelay (1 day) + votingPeriod (3-7 days) + timelock minDelay (2 days)——闪电贷必须同区块还清，无法跨越这 9+ 天。这正是 Beanstalk `emergencyCommit`（投票/执行同区块）是致命错误的原因。
 
+> ⚠️ **Timelock 不是万能保险**：时间锁防的是"闪电贷 + 同区块投票/执行"型攻击；它**不防**：(1) **委托代币瞬移**——委托是即时操作，攻击者可在 propose 前把代币从 N 个钱包瞬间委托给一个地址（CMP-289 Humpy 攻击）；(2) **social engineering / front-end 钓鱼**——攻击者诱骗大户委托给恶意地址，timelock 形同虚设（详见 §5.4 Mango Markets）；(3) **合规买票 + 鲸鱼合谋**——纯链上看是"合法治理"，timelock 不会撤销；(4) **timelock 期间的提案"埋雷"**——calldata decode 后看似无害但 delegate call 到 malicious 合约。所以"OZ Governor 是安全的"这个判断必须配合：emergency multisig pause、敏感操作 supermajority、calldata decoder UI 强制人审、以及对委托权移动的实时监控。把"OZ Governor + Timelock 部署完就 ship" 当成安全终点，是 senior 工程师常见的错觉。
+
 ### 27.6 思考题
 
 1. 我把 votingDelay 设成 0 但 timelock minDelay 设成 7 days。这对闪电贷攻击仍然安全吗？为什么？
+
+> 🚨 **答（题 1）：不安全。`votingDelay = 0` 是危险配置，timelock 救不了你。**
+>
+> 关键机制：OZ Governor 的 `propose()` 把 `proposalSnapshot = block.number + votingDelay` 作为权重快照基准。当 `votingDelay = 0` 时，**snapshot 就是 propose 当前区块**——攻击者可以：
+>
+> 1. 在 block N 同一笔交易里：闪电贷借出大量代币 → `delegate(self)`（ERC20Votes 的 `_delegate` 写入 checkpoint，**当前 block 立即生效**）→ `propose(...)`；
+> 2. snapshot 锁在 block N，攻击者全部借来的票数被记入；
+> 3. 闪电贷必须同区块还清——但攻击者**只需要在 snapshot 那一刻持票**，归还后投票权重已经定格；
+> 4. 等 `votingPeriod` 投自己的票（用同样手法在投票期再借再还，或直接其他地址早已配合），通过；
+> 5. timelock 7 天虽然延后了执行，但提案**已合法通过**，7 天后照常 execute。timelock 只防"同区块发现-投票-执行"，不防"snapshot 被闪电贷污染"。
+>
+> **OZ 默认 `votingDelay = 7200 blocks (≈1 day)` 正是为了防御此类攻击**：让 snapshot 落在未来一个区块上，攻击者无法在一笔 atomic tx 里完成"借票 + 让 snapshot 拍到自己"——必须跨块持有，闪电贷模型彻底破产。
+>
+> **结论**：`votingDelay = 0` + 任何 timelock = 闪电贷 governance attack 大门敞开。Beanstalk 2022-04 损失 $182M 的根因就是 `emergencyCommit` 允许投票快照与执行在同区块完成（等价于 `votingDelay = 0` + `timelock = 0`）。生产配置请坚持 `votingDelay ≥ 1 day`。
+
+
 2. 我的 DAO 国库放在 Safe 5/9 而不是 Timelock。governance 投票通过的提案如何执行到 Safe 上？给至少两种集成方案。
 
 ---

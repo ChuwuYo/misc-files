@@ -1496,18 +1496,20 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Searchers[Searchers<br/>套利/清算/三明治] -->|bundle| Builders[Builders]
-    Builders -->|sealed block| Relays[Relays]
-    Relays -->|getHeader| Validator[Validator + mev-boost]
-    Validator -->|signed header| Relays
-    Relays -->|reveal block| Validator
-    Validator -->|propose| Beacon[Beacon Chain]
+    Searchers[Searchers<br/>套利/清算/三明治] -->|1 bundle| Builders[Builders]
+    Builders -->|2 sealed block + bid<br/>blinded header| Relays[Relays]
+    Relays -->|3 getHeader<br/>仅 header 不含 body| Validator[Validator + mev-boost]
+    Validator -->|4 signed header<br/>commit-阶段| Relays
+    Relays -->|5 reveal: 返回 full block body<br/>给已签名 header 的 validator| Validator
+    Validator -->|6 propose 完整 block| Beacon[Beacon Chain]
 ```
 
 - **Searcher**: mempool tx + 套利 tx -> bundle
 - **Builder**: 接 bundle, 优化区块, 出 tip 给 validator
 - **Relay**: 中间人, 防 builder 偷信息
 - **mev-boost**: validator 侧 sidecar, 替代默认 builder
+
+> **commit-reveal 两阶段**：第 3-4 步 validator 看到的是 **blinded header**（只有 state root、tx root、tip 数额，没有具体 tx 列表），先用 BLS 签 header（commit）；第 5 步 relay 在确认 validator 已签名后，才**揭示**完整 block body（reveal）。这套 commit-reveal 设计防止 validator "看到内容后挑选有利 block 而拒签其他"——一旦签了 header 就必须 propose，否则会被 slashing。这也是 ePBS 想原生化的核心机制（参见 §11.5）。
 
 ### 11.2 Relay 列表 (2026-04)
 
@@ -1517,9 +1519,11 @@ flowchart LR
 | titanrelay.xyz | 24.19% | non-censoring | 第二, BuilderNet 体系 |
 | bloxroute.max-profit.blxrbdn.com | 14.67% | non-censoring | bloxroute 老牌 |
 | aestus.live | 10.03% | non-censoring | 社区运营 |
-| bloxroute.regulated.blxrbdn.com | 9.07% | OFAC 合规 | 合规需求选这个 |
+| bloxroute.regulated.blxrbdn.com | 9.07% (波动大，见下注) | OFAC 合规 | 合规需求选这个 |
 | boost-relay.flashbots.net | 4.22% | non-censoring | Flashbots 老牌, 市占下降 |
 
+> ⚠️ **bloXroute regulated 9.07% 仅为 2026-04-02 单日截图**：该 relay 月度市占波动较大（历史区间约 5-15%，受合规客户集中度与单月制裁名单变动影响）。选型、合规审计、SLA 评估前请用 [relayscan.io](https://www.relayscan.io/) 复核**当前 28 天滚动数据**，不要直接引用本表数字做决策。
+>
 > 来源: [relayscan.io 2026-04-02 数据](https://www.relayscan.io/), [Flashbots Updated MEV-Boost relay settings](https://collective.flashbots.net/t/updated-mev-boost-relay-settings/4881)
 
 ### 11.3 Builder 列表
@@ -2025,7 +2029,7 @@ flowchart TD
 - `env: FOUNDRY_PROFILE: ci`: 切 `[profile.ci]`, fuzz/invariant 跑更多 runs.
 - `submodules: recursive`: forge install 用 git submodule, 缺此行依赖会丢.
 - `version: stable`: 不用 `nightly`, CI 重现性优先.
-- `forge build --sizes`: 输出字节码大小, 24KB 限制 (EIP-170) 临近提前预警.
+- `forge build --sizes`: 输出字节码大小, 24KB 限制 (EIP-170, runtime code) 临近提前预警；同时注意 **EIP-3860 (Shanghai) initcode 上限 49152 B (`MAX_INITCODE_SIZE = 2 × MAX_CODE_SIZE`)** 与每 32 B initcode 收 2 gas 的额外费用——大型 constructor / 大量 immutable / `CREATE2` factory 容易超 initcode 上限即便 runtime 还在 24KB 内，建议 CI 同时检查 deploy bytecode 长度.
 - `forge test -vvv`: 失败时直接看 EVM opcode 调用栈.
 - `FOUNDRY_INVARIANT_RUNS: 5000`: 仅 PR 触发, 跑 30-45 min.
 - `on.push.tags: ['v*']`: deploy job 仅 release tag 触发.

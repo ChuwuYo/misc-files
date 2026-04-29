@@ -61,9 +61,9 @@
 
 | 生态家族 | 主语 | 共识 | 执行模型 | 主语言 | 代表网络 / 代币 |
 |----------|------|------|----------|--------|-----------------|
-| **Solana 系** | "高性能单链" | PoH + Tower BFT (PBFT 派生) | 账户模型 + Sealevel 并行 | Rust (Anchor / Native) | Solana, Eclipse(SVM-on-ETH), MagicBlock |
+| **Solana 系** | "高性能单链" | PoH + Tower BFT (PBFT-inspired) | 账户模型 + Sealevel 并行 | Rust (Anchor / Native) | Solana, Eclipse(SVM-on-ETH), MagicBlock |
 | **Cosmos 系** | "应用即链" | CometBFT (Tendermint) | 应用链 + IBC | Go (SDK) / Rust (CosmWasm) | Cosmos Hub, Osmosis, dYdX, Celestia, Berachain, Babylon, Neutron |
-| **Move 系** | "资源型语言 + 类型安全" | Mysticeti (Sui) / AptosBFT v4 / Block-STM 执行 | 对象 (Sui) / 全局存储 (Aptos) | Move | Sui, Aptos, Movement, Initia |
+| **Move 系** | "资源型语言 + 类型安全" | Mysticeti (Sui) / Jolteon (DiemBFT v4, HotStuff 派生) + Block-STM 执行 | 对象 (Sui) / 全局存储 (Aptos) | Move | Sui, Aptos, Movement, Initia |
 | **Bitcoin 系** | "极简内核 + L2 套娃" | Nakamoto PoW | UTXO + Script + Taproot | Script / Clarity / Rust (LDK) | Bitcoin, Lightning, Stacks, Citrea, Babylon, Rootstock, RGB |
 | **其他主流** | （混合 / 实验形态） | 各种 | 各种 | 各种 | TON, NEAR, Polkadot/JAM, Cardano, Algorand, Tezos, ICP, Filecoin, Tron, Hedera, Sei v2, Monad, Hyperliquid, MegaETH |
 
@@ -88,7 +88,7 @@ flowchart LR
 >
 > **锚 2**：Cosmos 的"链" ≈ 一个独立 OS。app chain 上线 = 部署应用 + 启验证人；不像 EVM 部署合约。
 >
-> **锚 3**：Move 的"资源" ≠ 余额。它是**有线性类型的对象**，编译期保证不可复制不可凭空销毁。
+> **锚 3**：Move 的"资源" ≠ 余额。它是**带 ability 系统的对象**（社区习惯叫"线性类型"，严格说更接近**仿射类型 affine**——不带 `copy` 不能复制、不带 `drop` 必须显式消耗、必须有 `key`/`store` 才能落 storage），编译期保证不可复制不可凭空销毁。
 >
 > **锚 4**：Bitcoin 的"账户余额"是个谎言——链上只有 UTXO（未花输出）；钱包只是把它们加起来给你看。
 >
@@ -218,6 +218,8 @@ Transaction {
 - 复杂操作要拆事务或用 lookup table（v0 transaction，最多映射 256 个账户）
 - 钱包要替用户算 ATA、找 PDA，不像 EVM "直接 call 合约就行"
 
+> **PDA 一句话**：PDA（Program Derived Address）是**故意构造在 ed25519 曲线之外的地址**（off-curve），因此没有对应的私钥能签名——只有派生它的 program 可以用 `invoke_signed` 代为签名。`bump` 是从 255 开始**递减搜索**的 nonce：把 `(seeds, bump)` 喂给 SHA256 直到结果落在曲线外，找到的第一个有效值即为 canonical bump。生产代码里始终用 canonical bump 并把它存进账户，避免每次重算 `find_program_address`（开销 ~10k CU）。
+
 ### 1.3 思考题（章 1）
 
 > Q1：Solana 事务为什么必须显式列出账户？这与并行执行是什么关系？
@@ -281,7 +283,7 @@ $$
 
 ### 3.1 算法骨架
 
-- 派生自 PBFT，把 PoH 当虚拟时钟
+- PBFT-inspired（受 PBFT 思想启发，但并非严格的 PBFT 变体），把 PoH 当虚拟时钟
 - 每个验证人维护一个"投票塔"（vote tower），每次投票后 lockout 时间按 $2^n$ 增长
 - 当某条 fork 上的票塔深度达到 32（lockout = $2^{32}$ slots ≈ 数十年），视为 **finality**
 - 实际生产中 32 票深度 ≈ 12.8 秒
@@ -304,6 +306,8 @@ $$
 - **TipRouter NCN（首个 NCN）**：负责 Jito MEV tip 的去中心化分配，证明 Solana 验证人可以被复用做"链下共识 service"
 
 > 这是 Solana 版的 EigenLayer，但底层执行环境是 SVM，不是 EVM。
+>
+> **NCN vs EigenLayer AVS 关键差异**：EigenLayer 是 **stake-restake** 模型——把 ETH 质押**本身**重新抵押给多个 AVS，slash 时同一份 stake 被多个服务约束（"stake 重用"）。Jito NCN 更接近 **operator-reuse** 模型——主要复用 Solana 验证人节点（operator）来跑 NCN 的额外共识轮次，NCN 的安全押金以独立的 vault token（如 JitoSOL/JTO）为主，与 Solana 主网共识 stake 并不天然共享 slash 域。换句话说：EigenLayer 重用的是 **stake**，Jito NCN 重用的是 **operator（节点 + 算力）**——两者并不完全等价。
 
 ### 3.4 思考题（章 3）
 
@@ -790,7 +794,30 @@ flowchart LR
 
 一次 Anchor 编写可跑在 4-5 条链上——非 EVM 里**最成功的 VM 标准化**。
 
-### 11.5 思考题（章 11）
+### 11.5 Solana 历史 outage 与稳定性恢复
+
+Solana 早年因为单一客户端 + 高吞吐压力，多次出现整链停机。生产部署前必须知道这段历史：
+
+| 时间 | 持续 | 触发原因 | 修复 |
+|------|------|---------|------|
+| 2021-09-14 | ~17 h | NFT mint bot 制造 400k tx/s，验证人 OOM 崩溃 | 加 fee market、tx 包大小限制 |
+| 2022-01 | 数小时 | 同样 bot 引发 duplicate-tx 风暴 | QUIC 替换 UDP（2022-Q2 上线） |
+| 2022-04-30 / 2022-05-01 | ~7 h | 6M NFT mint bot tx 灌爆 leader pipeline | stake-weighted QoS（2022-09 上线） |
+| 2022-06-01 | ~4.5 h | 持久 nonce 实现的共识 bug | 紧急 patch + 协议修复 |
+| 2022-09-30 | ~6 h | 错配的 fork choice rule（misconfigured validator）| Gossip 协议加固 |
+| 2023-02-25 | ~20 h | block propagation bug（forwarder 服务循环）| 客户端补丁 |
+| 2024-02-06 | ~5 h | BPF loader cache 实现 bug 触发未定义行为 | Hotfix + Firedancer 路线加速 |
+
+**2024 Q1 之后的恢复**：
+
+- 2024-02-06 是**最后一次主网整链宕机**，至 2026-04 已连续运行约 26 个月（>99.95% 可用性）；
+- 关键改动：stake-weighted QoS 全量启用、QUIC 取代 UDP、本地 fee market（priority fee per writable account）、**Firedancer / Frankendancer 客户端**逐步分流（占 ~12% stake，2026-Q1）；
+- 客户端多元化是 Ethereum 风格的"软终结"——Agave + Jito-Solana + Frankendancer + Sig（Rust）四客户端并存大幅降低单点 bug 拖垮全网的风险；
+- 工程影响：2024 年起 Solana 上的高频做市商、稳定币发行方（USDC、PYUSD）、DePIN 项目恢复入场，TVL 与 DEX 量在 2025 年回到历史高位。
+
+> 教训：选 Solana 上线生产前，把客户端多元化进度、Firedancer share、最近 6 个月有无 leader skip 飙升 都列进上线 checklist。
+
+### 11.6 思考题（章 11）
 
 > Q1：Solana Mobile 的 dApp Store 跳过 Apple/Google 抽成——这种独立分发渠道在 iOS 主导市场可行吗？
 >
