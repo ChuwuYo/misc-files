@@ -57,12 +57,12 @@ def extract_and_render_mermaid(md_text: str, work_dir: Path) -> str:
                 subprocess.run(cmd, check=True, capture_output=True, timeout=120)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 stderr = (e.stderr or b"").decode("utf-8", errors="replace") if hasattr(e, "stderr") else ""
-                # If render fails, fall back to a code block so build still completes
                 escaped = code.replace("&", "&amp;").replace("<", "&lt;")
                 return (
                     f'<figure><pre><code class="language-mermaid">{escaped}</code></pre>'
                     f'<figcaption>diagram render failed: {stderr[:200]}</figcaption></figure>'
                 )
+
         return f'<figure><img src="{png_file.name}" alt="mermaid diagram"></figure>'
 
     return pattern.sub(repl, md_text)
