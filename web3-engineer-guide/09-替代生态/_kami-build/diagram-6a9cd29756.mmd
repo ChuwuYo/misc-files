@@ -1,0 +1,5 @@
+flowchart LR
+    Hub[Cosmos Hub<br>ATOM 质押者] -- 出借验证 --> Osmo[Osmosis]
+    Osmo -- 反向出借 OSMO 质押 --> Hub
+    Hub -- 出借 --> Stride[Stride]
+    Stride -- 反向出借 --> Hub

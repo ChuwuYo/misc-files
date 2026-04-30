@@ -1,0 +1,10 @@
+flowchart LR
+    U1[User 1 tx] --> P[公共 Mempool]
+    U2[User 2 tx] --> P
+    U3[User 3 tx] --> P
+    SR[Searcher<br/>套利/清算/sandwich] -->|监听| P
+    SR -->|构造 bundle| R[Relay<br/>Flashbots Relay]
+    R -->|forward bundle| B[Builder<br/>Beaverbuild / Titan / rsync / BuilderNet]
+    B -->|出价竞标| MP[mev-boost middleware<br/>跑在 validator 上]
+    MP -->|选最高出价 block| V[Validator<br/>提议区块]
+    V --> EL[Execution Layer]

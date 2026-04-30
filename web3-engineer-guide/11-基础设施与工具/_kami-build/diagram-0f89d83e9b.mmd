@@ -1,0 +1,7 @@
+flowchart TD
+    L1[L1: 自机器进程<br/>EL/CL/VC 是否存活] --> Prom[Prometheus]
+    L2[L2: validator 行为<br/>attestation 投了吗 propose 中签吗] --> Beacon[beaconcha.in / rated.network]
+    L3[L3: 资金状态<br/>余额 / fee recipient] --> Etherscan[Etherscan watch / Tenderly Alert]
+    Prom --> AM[Alertmanager]
+    Beacon --> Tg[Telegram bot]
+    Etherscan --> Email[Email]

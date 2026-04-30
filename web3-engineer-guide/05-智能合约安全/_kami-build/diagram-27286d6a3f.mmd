@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant A as Attacker
+    participant P as Curve Pool (Vyper 0.2.16)
+    participant LA as @nonreentrant lock A (slot 0x00)
+    participant LB as @nonreentrant lock B (slot 0x02)
+    A->>P: add_liquidity(eth + crv)
+    P->>LA: lock(slot 0x00) = 1
+    P->>P: 计算 LP，更新 reserves（部分）
+    P->>A: 退还多余 ETH，触发 receive()
+    Note over A: 此刻 LP 字段已写，reserves 半新半旧
+    A->>P: remove_liquidity_one_coin(LP, eth)
+    P->>LB: lock(slot 0x02) = 1
+    Note over LB: 与 lock A 不同 slot，不阻断重入
+    P->>A: 按脏 reserves 计算 ETH 退还
+    P->>LB: lock(slot 0x02) = 0
+    A-->>P: receive 返回
+    P->>LA: lock(slot 0x00) = 0
+    Note over A: 攻击者比正常多得 ETH

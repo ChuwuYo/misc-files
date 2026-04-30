@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Indexer
+    participant RPC
+    participant DB
+    Indexer->>RPC: 拉 block N (head)
+    Indexer->>DB: 写入 N 的 events
+    Note over RPC: chain reorg!<br/>N 被替换
+    Indexer->>RPC: 发现 block N 父哈希变了
+    Indexer->>DB: 删除原 N 的 events
+    Indexer->>RPC: 拉新的 block N
+    Indexer->>DB: 写入新 N 的 events

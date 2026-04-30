@@ -1,0 +1,12 @@
+flowchart TD
+    A[源链 lock event] --> P{证明类型}
+    P -->|Multisig| M[N-of-M 签名]
+    P -->|MPC| MP[阈值签名]
+    P -->|Light Client| LC[源链区块头同步]
+    P -->|Optimistic| OP[发布 + 挑战窗]
+    P -->|ZK| ZK[zk-SNARK proof]
+    M -->|失效模式| M_FAIL[私钥被钓<br/>Ronin / WazirX / Bybit]
+    MP -->|失效模式| MP_FAIL[CEO 被捕<br/>Multichain]
+    LC -->|失效模式| LC_FAIL[源链 reorg / 51%]
+    OP -->|失效模式| OP_FAIL[fraud proof 错误<br/>Nomad bytes32(0)]
+    ZK -->|失效模式| ZK_FAIL[circuit bug<br/>verifier bug]

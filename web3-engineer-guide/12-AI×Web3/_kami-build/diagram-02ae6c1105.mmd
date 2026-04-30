@@ -1,0 +1,10 @@
+flowchart TD
+    A[L0 纯 LLM<br/>Vibe Audit] --> AA[扔合约+回 PDF<br/>不读 AST 不跑分析]
+    B[L1 LLM + 静态分析<br/>Slither-MCP / Aderyn-MCP] --> BB[LLM 在静态分析锚点上<br/>解释、串联、写 PoC]
+    C[L2 RL/微调专用模型<br/>QuillShield / AuditAgent] --> CC[在审计语料上微调<br/>+ 工具集成]
+    D[L3 AI-augmented 工作流<br/>Trail of Bits skills] --> DD[人类审计师 + 数十个<br/>专项 skill 协作]
+
+    style A fill:#f8d7da,stroke:#721c24
+    style B fill:#fff3cd,stroke:#856404
+    style C fill:#d4edda,stroke:#155724
+    style D fill:#cce5ff,stroke:#004085

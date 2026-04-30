@@ -1,0 +1,6 @@
+graph LR
+    A[语句: 我知道 x 使 R x,pub 成立] --> B[Arithmetization 编成 R1CS / Plonkish]
+    B --> C[KZG / IPA 多项式承诺]
+    C --> D[Fiat-Shamir 用哈希派生挑战]
+    D --> E[Pairing 验证等式 e A,B = e C,D]
+    E --> F[链上 1 次预编译验证]

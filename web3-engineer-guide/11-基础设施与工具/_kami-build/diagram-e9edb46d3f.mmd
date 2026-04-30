@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph Geth_Style["geth 风格"]
+        TrieLive["trie 节点<br/>持续保存所有 hash"]
+        TrieLive --> ArchiveBig[18 TB]
+    end
+    subgraph Erigon_Style["erigon 风格"]
+        Plain["plain state<br/>(addr -> RLP)"]
+        Hist["history index<br/>(addr -> blocks list)"]
+        OnDemand["按需重建 trie<br/>只在 eth_getProof 等需求时"]
+        Plain --> ArchiveSmall[2 TB]
+        Hist --> ArchiveSmall
+    end

@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant A as Attacker
+    participant L as Aave/Sushi/Uni
+    participant B as Beanstalk
+    participant V as Vault
+    Note over A: 两天前：提交恶意 BIP（无人注意）
+    A->>L: flashLoan(1B+)
+    L-->>A: 资金
+    A->>B: deposit → 获得 67% 投票权
+    A->>B: emergencyCommit(BIP)
+    B->>V: 执行 BIP：transfer all to A
+    V-->>A: 1.81 亿美元
+    A->>L: repay flashLoan
+    Note over A: 净落袋 7700 万

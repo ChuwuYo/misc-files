@@ -1,0 +1,9 @@
+flowchart TB
+    App[应用 Helia / Kubo / 你自己的代码]
+    App --> Bitswap[Bitswap<br/>块交换协议]
+    App --> IPLD[IPLD<br/>数据建模]
+    Bitswap --> Libp2p[libp2p<br/>P2P 通信]
+    IPLD --> Bitswap
+    Libp2p --> DHT[Kad-DHT<br/>分布式哈希表]
+    Libp2p --> Pubsub[Gossipsub<br/>发布订阅]
+    Libp2p --> Transport[传输层<br/>TCP / QUIC / WebTransport / WebRTC]

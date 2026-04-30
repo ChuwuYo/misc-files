@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph MPT["传统 MPT"]
+        TrieAll["每次 state 变化<br/>新写 trie 节点<br/>archive 累积无限"]
+    end
+    subgraph Bonsai["Bonsai trie"]
+        Flat["plain state<br/>(addr -> account)"]
+        Forward["forward diff<br/>(已 finalized 块的变更)"]
+        Reverse["reverse diff<br/>(reorg 回滚用)"]
+        Flat --> Save[archive 减小 2-3x]
+        Forward --> Save
+        Reverse --> Save
+    end

@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant L as Leader
+    participant R as Replicas
+
+    R->>L: NEW-VIEW（带上一 view 的 lock）
+    Note over L: 收齐 n-f → 选最高 lock 作为 proposal
+
+    L->>R: PREPARE(proposal)
+    R->>L: PREPARE-vote(签名)
+    Note over L: 收齐 n-f → 聚合成 prepareQC
+
+    L->>R: PRE-COMMIT(prepareQC)
+    R->>L: PRE-COMMIT-vote
+    Note over L: 聚合成 precommitQC
+
+    L->>R: COMMIT(precommitQC)
+    R->>L: COMMIT-vote
+    Note over L: 聚合成 commitQC
+    L->>R: DECIDE(commitQC)
+    Note over R: apply state

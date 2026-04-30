@@ -1,0 +1,12 @@
+flowchart TD
+    A[用户 stake aUSDC] --> B[stkUSDC]
+    A2[用户 stake GHO] --> B2[stkGHO]
+    A3[用户 stake aWETH] --> B3[stkWETH]
+    A4[用户 stake aUSDT] --> B4[stkUSDT]
+
+    C[Aave Pool] -->|monitor deficit per reserve| D{deficit > threshold?}
+    D -->|否| E[继续累积奖励]
+    D -->|是| F[automatic slash<br/>无需治理投票]
+    F --> G[补偿对应 reserve 坏账]
+
+    H[Aave DAO Treasury<br/>deficit offset] -.前 X 万先吃.-> G

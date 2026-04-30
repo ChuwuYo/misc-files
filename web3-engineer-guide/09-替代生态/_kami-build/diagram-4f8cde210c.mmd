@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant dApp as 浏览器/RN dApp
+    participant MWA as MWA SDK
+    participant Vault as Seed Vault
+    dApp->>MWA: requestSignTransaction(tx)
+    MWA->>Vault: forwardForSigning
+    Vault-->>MWA: signed (硬件签名)
+    MWA-->>dApp: signature

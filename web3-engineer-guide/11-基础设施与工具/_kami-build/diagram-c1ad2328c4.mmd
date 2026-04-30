@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph Obol[Obol Charon]
+        ObolKey[key 拆 6 份<br/>BLS threshold sig]
+        ObolDuty[6 个 operator<br/>同时收 duty]
+        ObolConsensus[QBFT 共识<br/>谁签什么]
+        ObolSig[t-of-N 聚合 -> BLS sig]
+    end
+    subgraph SSV[SSV Network]
+        SSVKey[key 拆 7 份<br/>BLS threshold sig]
+        SSVOp[7 个独立 operator<br/>无需互相协调]
+        SSVConsensus[Istanbul BFT 共识]
+        SSVMarket[operator 市场<br/>按 SSV token 付费]
+    end

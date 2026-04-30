@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant U as 用户
+    participant L1 as L1 inbox 合约
+    participant S as L2 Sequencer
+    participant L2 as L2 状态
+
+    U->>L1: 把交易发到 L1 inbox
+    L1->>S: sequencer 必须在 N 区块内打包
+    alt sequencer 不打包
+        L1->>L2: 强制执行（force-included）
+        Note over L2: 抗审查兜底
+    else sequencer 正常打包
+        S->>L2: 正常处理
+    end

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant C as Client
+    participant SP as Storage Provider
+    participant Chain as Filecoin Chain
+    participant FVM as FVM Contract
+
+    C->>C: 1. 准备数据 → 计算 Piece CID
+    C->>SP: 2. 链下/链上协商价格
+    C->>FVM: 3. 通过 deal-making contract 发起
+    FVM->>Chain: 4. PublishStorageDeals
+    SP->>SP: 5. AddPiece（接收数据）
+    SP->>SP: 6. PreCommit（sealing 阶段 1）
+    SP->>Chain: 7. PreCommit msg
+    SP->>SP: 8. ProveCommit（sealing 阶段 2 + zk-SNARK）
+    SP->>Chain: 9. ProveCommit msg → deal active
+    loop 每 24 小时
+        SP->>Chain: WindowPoSt（每个 sector）
+    end
+    Note over SP,Chain: deal 到期或 client 取消 → 释放抵押

@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant FE as 前端
+  participant BE as 后端
+  participant W as 钱包
+  FE->>BE: GET /api/siwe/nonce
+  BE-->>FE: { nonce: "32891756" }
+  FE->>FE: 构造 SiweMessage
+  FE->>W: personal_sign(message)
+  W-->>FE: signature
+  FE->>BE: POST /api/auth/callback/credentials { message, signature }
+  BE->>BE: SiweMessage.verify({ signature, nonce })
+  BE-->>FE: Set-Cookie: session=...

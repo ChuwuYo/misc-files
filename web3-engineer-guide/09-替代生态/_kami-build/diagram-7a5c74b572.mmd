@@ -1,0 +1,6 @@
+flowchart LR
+    Service1[service A] --> JAM_Core[JAM 核心<br>RISC-V PVM 执行]
+    Service2[service B] --> JAM_Core
+    Service3[service C] --> JAM_Core
+    JAM_Core --> Validators[验证人随机分配 core]
+    Validators --> Final[finality]

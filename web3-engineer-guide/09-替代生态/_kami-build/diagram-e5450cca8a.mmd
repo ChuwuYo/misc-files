@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Builder as Market Builder
+    participant Stake as 质押 500k HYPE
+    participant Core as HyperCore
+    participant Trader as 交易者
+    Builder->>Stake: 锁定 HYPE
+    Builder->>Core: 部署 perp 市场（设杠杆 / fee / oracle）
+    Core->>Core: 启动撮合
+    Trader->>Core: 开仓
+    Core->>Builder: 抽 builder fee 给 builder
+    Note over Builder, Core: 若违规（操纵 oracle 等）<br>→ HYPE 罚没

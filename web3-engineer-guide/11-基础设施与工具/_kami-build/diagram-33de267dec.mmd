@@ -1,0 +1,12 @@
+flowchart TD
+    Start[准备] --> A1[硬件: 16-64GB RAM<br/>2-4TB NVMe<br/>稳定网络 25Mbps+]
+    A1 --> A2[选 EL+CL 客户端组合<br/>例 nethermind + lighthouse]
+    A2 --> A3[同步 mainnet]
+    A3 --> A4[生成 validator 密钥<br/>staking-deposit-cli]
+    A4 --> A5[准备 0x02 withdrawal 地址<br/>建议 Safe multisig]
+    A5 --> A6[deposit 32 ETH<br/>launchpad.ethereum.org]
+    A6 --> A7[把 keystore 导入 VC<br/>启动 validator client]
+    A7 --> A8[配 mev-boost<br/>5 个 relay]
+    A8 --> A9[等 ~24h 激活队列]
+    A9 --> Run[validator 运行<br/>attest + propose]
+    Run --> Watch[24/7 监控<br/>uptime / earnings]

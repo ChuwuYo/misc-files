@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant S as Sequencer
+    participant P as Prover
+    participant L1 as L1 verifier 合约
+
+    S->>P: 把 batch 数据交给 prover
+    P->>P: 生成两个承诺：<br>1) blob 的 KZG commitment<br>2) 内部 ZK 证明系统的承诺
+    P->>L1: 提交 type-3 tx + blob<br>+ ZK proof + equivalence proof
+    L1->>L1: 用 0x0a 验证 KZG point evaluation
+    L1->>L1: 验证 ZK proof
+    L1->>L1: 验证「两个承诺指向同一数据」<br>(proof of equivalence)
+    L1-->>S: 通过 → 状态根生效

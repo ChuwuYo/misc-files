@@ -1,0 +1,13 @@
+flowchart TD
+    U[用户存 USDC] --> Pool[Pool 主合约]
+    Pool --> aUSDC[mint aUSDC<br/>计息 ERC-20]
+    Pool --> Strategy[利率策略合约<br/>per asset]
+    Pool --> Oracle[Aave Oracle<br/>Chainlink + 后备 fallback]
+
+    B[借款人] -->|抵押 ETH| Pool
+    Pool -->|借出 USDC| B
+
+    Liq[清算人] -->|调用 liquidationCall| Pool
+    Pool -->|价格 tx 后立刻清算| LiqMechanism[清算逻辑]
+
+    SafetyNet[Umbrella<br/>2025-06 上线] -->|实时 slash 覆盖坏账| Pool

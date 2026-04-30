@@ -1,0 +1,8 @@
+graph TB
+    A[zkSync Boojum] --> A1[STARK 内层<br>RedShift/Plonky 风格]
+    A --> A2[SNARK 外层<br>压缩到 L1 友好]
+    B[Polygon Plonky2/3] --> B1[递归 PLONK + FRI]
+    C[Succinct SP1] --> C1[zkVM<br>RISC-V 指令]
+    C --> C2[Plonky3 内核]
+    D[Risc Zero] --> D1[zkVM<br>RISC-V]
+    E[Scroll OpenVM] --> E1[Axiom RISC-V zkVM<br>2025-04 上线]

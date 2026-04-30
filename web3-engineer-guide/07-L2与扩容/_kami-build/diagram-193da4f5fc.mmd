@@ -1,0 +1,8 @@
+graph LR
+    A[Sender App] --> B[LayerZero Endpoint<br>源链]
+    B --> C[Application 配置<br>选择 DVN 集]
+    C --> D[DVN1 验证]
+    C --> E[DVN2 验证]
+    C --> F[...DVN N]
+    D & E & F --> G[Endpoint<br>目标链]
+    G --> H[Executor 执行<br>调用目标合约]

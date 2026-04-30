@@ -1,0 +1,9 @@
+flowchart TB
+    subgraph Sui_API[Sui]
+        S1[transfer::transfer coin alice]
+        S2[alice 钱包里多了 Coin 对象]
+    end
+    subgraph Aptos_API[Aptos]
+        A1[coin::transfer&lt;AptosCoin&gt; from alice 100]
+        A2[alice 的全局 CoinStore&lt;AptosCoin&gt; 余额 +100]
+    end

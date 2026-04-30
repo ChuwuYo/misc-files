@@ -1,0 +1,6 @@
+flowchart LR
+    Wallet[用户钱包] -- Gulf Stream<br>直发下个 leader --> L0[当前 slot leader]
+    L0 --> TPU[TPU 流水线<br>Fetch → SigVerify → Banking → Broadcast]
+    TPU -- Turbine 多播树 --> V1[validator 1]
+    TPU -- Turbine --> V2[validator 2]
+    TPU -- Turbine --> V3[...]

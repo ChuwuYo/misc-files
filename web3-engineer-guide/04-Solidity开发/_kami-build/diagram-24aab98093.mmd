@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant U as User EOA
+    participant T as ERC20 Token
+    participant P as Permit2 Singleton
+    participant App as DApp Router
+
+    Note over U,T: 一次性永久授权（仅 1 次 tx）
+    U->>T: approve(Permit2, MAX_UINT)
+
+    Note over U,App: 之后每次使用都是签名（0 tx）
+    U->>App: signed permit (off-chain)
+    App->>P: permitTransferFrom(sig, ...)
+    P->>T: transferFrom(user, app, amount)

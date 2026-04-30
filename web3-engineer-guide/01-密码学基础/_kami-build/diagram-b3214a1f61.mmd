@@ -1,0 +1,8 @@
+graph TD
+    A[用户在 MetaMask 看到结构化数据] --> B[钱包计算 hashStruct]
+    B --> C[拼 0x1901 + domainSep + hashStruct]
+    C --> D[keccak256 得 digest]
+    D --> E[私钥签 digest]
+    E --> F[把 r,s,v 提交合约]
+    F --> G[合约用相同步骤算 digest]
+    G --> H[ecrecover digest, sig 还原签名者]

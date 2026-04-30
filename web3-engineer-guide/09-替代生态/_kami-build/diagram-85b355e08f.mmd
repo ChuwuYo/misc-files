@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Alice
+    participant ChainA
+    participant Relayer as Hermes
+    participant ChainB
+    Alice->>ChainA: MsgTransfer(channel-0, 1000ATOM)
+    ChainA->>ChainA: lock 1000ATOM in escrow
+    ChainA->>ChainA: emit SendPacket event
+    Relayer-->>ChainA: 监听 event, 拉 packet + proof
+    Relayer->>ChainB: MsgRecvPacket(packet, proof)
+    ChainB->>ChainB: 验 light client + proof
+    ChainB->>ChainB: mint 1000 ibc/HASH (voucher)
+    ChainB->>ChainB: 发给 Alice
+    ChainB-->>Relayer: 写 ACK
+    Relayer->>ChainA: MsgAcknowledgement(ack, proof)
+    ChainA->>ChainA: 清 escrow 状态机

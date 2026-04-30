@@ -1,0 +1,15 @@
+graph LR
+    subgraph "Storage（持久）"
+        S0["slot 0: keccak/value"]
+        S1["slot 1: keccak/value"]
+        S2["slot 2: ..."]
+    end
+    subgraph "Memory（临时，按字节寻址）"
+        M["0x00 ─ 0x3F: scratch space<br/>0x40: free memory pointer<br/>0x60: zero slot<br/>0x80+: 用户数据"]
+    end
+    subgraph "Calldata（只读）"
+        C["调用入参的原始字节<br/>不可写、不可变长"]
+    end
+    subgraph "Stack"
+        ST["最多 1024 个 32 字节字<br/>访问超过 16 深度报<br/>StackTooDeep"]
+    end

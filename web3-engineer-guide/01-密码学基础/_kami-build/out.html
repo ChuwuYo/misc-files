@@ -1,0 +1,2988 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>密码学基础</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  密码学基础";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">密码学基础</div>
+    <div class="cover-sub">哈希、签名、Merkle、KZG、PQC、FHE</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">目录</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">第 1 章 · 哈希函数</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">第 2 章 · 对称加密</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">第 3 章 · RSA 与公钥密码学</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">第 4 章 · 椭圆曲线</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">第 5 章 · 数字签名</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">第 6 章 · Merkle 树与以太坊状态树</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">第 7 章 · 承诺方案：Pedersen / KZG / IPA / FRI</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">第 8 章 · VRF：可验证的随机性</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">第 9 章 · 门限签名 / MPC</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">第 10 章 · HD 钱包与 keystore</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">第 11 章 · 后量子密码学（PQC）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">第 12 章 · 全同态加密（FHE）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">第 13 章 · 通往零知识证明</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">第 14 章 · AI 在密码学审查中的位置</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">第 15 章 · 工程实战代码</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">17</span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">第 16 章 · 习题与参考解答</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">第 17 章 · 延伸阅读与权威源</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<p>本模块覆盖 Web3 工程师必须掌握的密码学核心：哈希、对称/非对称加密、椭圆曲线、数字签名（ECDSA/Schnorr/BLS）、Merkle 树、承诺方案（KZG/IPA/FRI）、VRF、门限签名/MPC、HD 钱包（BIP-32/39/44）、后量子密码学（PQC）及全同态加密（FHE）。前置：本科 CS 基础，能读 Python。前置环境见模块 00。</p>
+<p>工程师的视角：每个原语<strong>保证什么 / 不保证什么 / 用错出什么事</strong>——而不是从零证明它的安全性。Bitcoin 白皮书发布时（2008），SHA-256 (2001)、ECDSA (1992)、Merkle 树 (1979) 早已成熟，中本聪的贡献是把已有原语搭成无需可信第三方的记账机。</p>
+<hr />
+<section class="chapter">
+<h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
+
+<ul>
+<li>第 1 章 · 哈希函数</li>
+<li>第 2 章 · 对称加密</li>
+<li>第 3 章 · RSA 与公钥密码学</li>
+<li>第 4 章 · 椭圆曲线</li>
+<li>第 5 章 · 数字签名：ECDSA / EdDSA / Schnorr / BLS</li>
+<li>第 6 章 · Merkle 树与以太坊状态树</li>
+<li>第 7 章 · 承诺方案：Pedersen / KZG / IPA / FRI</li>
+<li>第 8 章 · VRF：可验证的随机性</li>
+<li>第 9 章 · 门限签名 / MPC / MuSig2 / FROST</li>
+<li>第 10 章 · HD 钱包与 keystore（BIP-32/39/44/SLIP-0010/EIP-2335）</li>
+<li>第 11 章 · 后量子密码学（PQC）</li>
+<li>第 12 章 · 全同态加密（FHE）</li>
+<li>第 13 章 · 通往零知识证明（含 Brakedown / Binius）</li>
+<li>第 14 章 · AI 在密码学审查中的位置</li>
+<li>第 15 章 · 工程实战代码</li>
+<li>第 16 章 · 习题与参考解答</li>
+<li>第 17 章 · 延伸阅读与权威源</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 · 哈希函数</h2>
+
+<h3 id="11">1.1 定义与直觉</h3>
+<p><strong>定义</strong>。哈希函数 <code>H: {0,1}* → {0,1}^n</code> 把任意长度输入压成固定 n 比特输出（Web3 多用 n=256），算易反推难。</p>
+<p><strong>直觉</strong>：数字指纹。一字节差异导致输出完全无关；输入再大输出也是 32 字节。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>&quot;Hello&quot;   →  185f8db32271fe25...
+&quot;Hello!&quot;  →  334d016f755cd6dc...
+1GB 电影  →  3a7bd3e2360a3d29...
+</code></pre></div>
+<h3 id="12">1.2 三个安全性质</h3>
+<table>
+<thead>
+<tr>
+<th>性质</th>
+<th>形式化</th>
+<th>类比</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>抗原像</td>
+<td>给 <code>h</code> 找 <code>x</code> 使 <code>H(x)=h</code> 困难</td>
+<td>警察有指纹找不到人</td>
+</tr>
+<tr>
+<td>抗第二原像</td>
+<td>给 <code>x</code> 找 <code>x'≠x</code> 同哈希困难</td>
+<td>做不出和小明指纹相同的假人</td>
+</tr>
+<tr>
+<td>抗碰撞</td>
+<td>找任意 <code>x≠x'</code> 同哈希困难</td>
+<td>做不出两个指纹相同的假人（最强）</td>
+</tr>
+</tbody>
+</table>
+<p>抗碰撞 ⇒ 抗第二原像，反之不成立。MD5 抗碰撞已死、抗原像仍撑：可作 ETag，不能做签名。</p>
+<h3 id="13">1.3 哈希家族族谱</h3>
+<figure><img src="diagram-8e9fd1666d.png" alt="mermaid diagram"></figure>
+
+<h4 id="131-md5-sha-1">1.3.1 MD5 与 SHA-1（已废）</h4>
+<p>MD5（Rivest 1991）2004 年由王小云给出实际碰撞构造；SHA-1（NSA, 160 bit）2017 年被 Google + CWI 用 SHAttered 攻击约 6500 CPU 年内破。两者只剩防意外损坏的价值（<code>MD5SUMS</code>、Content-MD5、git commit id）。Web3 任何"防篡改 / 签名"位置遇到 MD5/SHA-1 应直接拒绝。</p>
+<h4 id="132-sha-256">1.3.2 SHA-256</h4>
+<p>NSA 2001 发布，SHA-2 家族成员。Bitcoin PoW 把它推成全人类算力最密集函数：全网约 6×10²⁰ H/s（<a href="https://www.blockchain.com/explorer/charts/hash-rate">https://www.blockchain.com/explorer/charts/hash-rate</a>）。</p>
+<h5 id="1321-merkle-damgard">1.3.2.1 Merkle-Damgård 结构</h5>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>H_0 (固定 IV)
+for each 512-bit block M_i:
+    H_i = compress(H_{i-1}, M_i)
+</code></pre></div>
+<p><strong>长度扩展攻击</strong>：已知 <code>H(secret ‖ data)</code> 和 <code>len(data)</code> 可算出 <code>H(secret ‖ data ‖ pad ‖ extra)</code>。SHA-256 当 MAC 必须套 HMAC；SHA-3 海绵结构天然免疫。</p>
+<h5 id="1322">1.3.2.2 实测性能</h5>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>速度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M3 Pro 1 thread</td>
+<td>~600 MB/s</td>
+</tr>
+<tr>
+<td>Intel SHA-NI 指令集</td>
+<td>~2,000 MB/s</td>
+</tr>
+<tr>
+<td>Antminer S21 (ASIC)</td>
+<td>~10^14 H/s</td>
+</tr>
+</tbody>
+</table>
+<h5 id="1323-web3">1.3.2.3 Web3 用途</h5>
+<ul>
+<li>Bitcoin 全栈：区块哈希、txid、Merkle 根均为双 SHA-256（<code>SHA-256²(x)</code>）。</li>
+<li>Bitcoin 地址：<code>Base58Check(0x00 ‖ RIPEMD-160(SHA-256(pk)) ‖ checksum)</code>。</li>
+<li>HMAC-SHA256：HKDF / RFC 6979 确定性 nonce / TLS。</li>
+<li>EIP-4844 versioned hash：<code>0x01 ‖ SHA-256(KZG_commit)[1:]</code>，把 48 字节 G1 点压成 32 字节。</li>
+</ul>
+<h5 id="1324">1.3.2.4 已知攻击</h5>
+<p>无实际碰撞。最强理论：31/64 轮拟碰撞（Mendel 2013）。量子下 Grover 把抗原像从 2^256 削到 2^128；BHT 算法理论上把抗碰撞降到 2^85，但需 2^85 量子内存，远未可行。NIST SP 800-208 认为 SHA-256 后量子时代仍适合哈希承诺与 HMAC；长期场景建议升级到 SHA-384/SHA-512。</p>
+<h4 id="133-sha-3-keccak-256">1.3.3 SHA-3 / Keccak-256</h4>
+<p>NIST 2007 启动 SHA-3 竞赛，三轮筛 64→14→5→1，2012-10 Keccak（Bertoni/Daemen/Peeters/Van Assche）胜出，2015-08 FIPS 202 标准化。</p>
+<h5 id="1331">1.3.3.1 海绵函数</h5>
+<p>状态 1600 bit = <code>r + c</code>（Keccak-256: r=1088, c=512）：</p>
+<figure><img src="diagram-4f193485a3.png" alt="mermaid diagram"></figure>
+
+<p><code>f</code> 是 24 轮置换（θ、ρ、π、χ、ι）。海绵两大优势：c 比特永不外泄（抗长度扩展）+ 任意长输出（继续 squeeze）→ SHAKE128/256。</p>
+<h5 id="1332-keccak-vs-sha3">1.3.3.2 Keccak vs SHA3 的分隔字节</h5>
+<p>NIST 标准化时把分隔字节从 <code>0x01</code> 改成 <code>0x06</code>（给 SHAKE/cSHAKE 留位），同输入输出完全不同：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 输入 &#39;abc&#39;</span>
+<span style="color: #000">Keccak</span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #0000CF; font-weight: bold">256</span><span style="color: #000; font-weight: bold">:</span>  <span style="color: #0000CF; font-weight: bold">4e03657</span><span style="color: #000">aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45</span>
+<span style="color: #000">SHA3</span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #0000CF; font-weight: bold">256</span>  <span style="color: #000; font-weight: bold">:</span>  <span style="color: #0000CF; font-weight: bold">3</span><span style="color: #000">a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532</span>
+</code></pre></div>
+<h5 id="1333">1.3.3.3 以太坊的历史包袱</h5>
+<p>以太坊 2015 主网上线早于 FIPS 202，用的是原始 Keccak，无法硬分叉回头（要改写所有地址 / 合约 / tx 格式）。</p>
+<p>库对齐：Solidity <code>keccak256()</code> = Keccak（<code>0x01</code>），Python <code>hashlib.sha3_256()</code> = FIPS 202（<code>0x06</code>），永不相等。链下要与合约对齐：</p>
+<ul>
+<li>Python: <code>Crypto.Hash.keccak</code>（pycryptodome）或 <code>eth_utils.keccak</code></li>
+<li>Node: <code>@noble/hashes/sha3</code> 的 <code>keccak_256</code>（不是 <code>sha3_256</code>）</li>
+<li>Rust: <code>sha3</code> crate 的 <code>Keccak256</code>（不是 <code>Sha3_256</code>）</li>
+</ul>
+<h5 id="1334-evm-keccak">1.3.3.4 EVM 中的 keccak</h5>
+<ul>
+<li>无预编译，是 <code>SHA3</code> opcode，直接读 memory。</li>
+<li>Gas：30 + 6·⌈len/32⌉，32B = 36 gas（ECDSA 3000 gas 对比）。</li>
+<li>高频用途：<code>mapping</code> slot、event topic、<code>abi.encode</code> typeHash。</li>
+</ul>
+<h4 id="134-blake">1.3.4 BLAKE 家族</h4>
+<p>Aumasson 等 2008 提出 BLAKE，SHA-3 决赛败于 Keccak，基于 ChaCha 置换。BLAKE2（2012）精简版，比 SHA-256 快、安全等价。BLAKE3（2020）切消息为 1024 字节叶子独立哈希再两两合并：多核并行、SIMD 友好、流式可分块。实测单核 ~1 GB/s，多核 6+ GB/s，比 BLAKE2 快 5-10×。</p>
+<p>小输入（&lt;64B）BLAKE3 反而慢于 SHA-256（树 setup 成本），所以 Solana tx signing 仍用 SHA-256。</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Polkadot/Kusama</td>
+<td>BLAKE2b-256 账户哈希</td>
+</tr>
+<tr>
+<td>Filecoin</td>
+<td>BLAKE2b randomness oracle</td>
+</tr>
+<tr>
+<td>Solana</td>
+<td><code>solana_program::blake3</code> 可选</td>
+</tr>
+<tr>
+<td>IPFS/libp2p</td>
+<td>BLAKE2/3 multihash</td>
+</tr>
+<tr>
+<td>Zcash</td>
+<td>BLAKE2b 派生 Sapling key</td>
+</tr>
+</tbody>
+</table>
+<h4 id="135-zk-poseidon">1.3.5 ZK 友好哈希：Poseidon</h4>
+<p>Keccak/SHA 按比特设计（XOR/AND），每比特展开为一个 R1CS 约束：Keccak ~150k、SHA-256 ~27k 约束/哈希。状态树深 32 读一次状态 = 480 万约束。代数哈希直接在有限域上做 add/mul/x⁵——每操作 1 约束。</p>
+<p>Poseidon（Grassi 等 USENIX'21）的 HADES 结构混合两种 S-box：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>前  R_F/2 轮 Full   S-box: 每个 state 元素 x⁵     (抗差分)
+中    R_P 轮 Partial S-box: 仅首元素 x⁵           (压约束)
+后  R_F/2 轮 Full   S-box: 每个 state 元素 x⁵
+</code></pre></div>
+<p>最终 ~250 约束/哈希。约束数对比：</p>
+<table>
+<thead>
+<tr>
+<th>哈希</th>
+<th>年</th>
+<th>域</th>
+<th>约束 (R1CS)</th>
+<th>倍率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keccak-256</td>
+<td>2008</td>
+<td>比特</td>
+<td>~150,000</td>
+<td>1×</td>
+</tr>
+<tr>
+<td>SHA-256</td>
+<td>2001</td>
+<td>比特</td>
+<td>~27,000</td>
+<td>5.5×</td>
+</tr>
+<tr>
+<td>MiMC</td>
+<td>2016</td>
+<td>BN254</td>
+<td>~600</td>
+<td>250×</td>
+</tr>
+<tr>
+<td>Rescue/Anemoi</td>
+<td>2020/22</td>
+<td>BN254/BLS12-381</td>
+<td>~250</td>
+<td>600×</td>
+</tr>
+<tr>
+<td><strong>Poseidon/Poseidon2</strong></td>
+<td>2020/23</td>
+<td>BN254/BLS12-381</td>
+<td><strong>~150-250</strong></td>
+<td><strong>600-1000×</strong></td>
+</tr>
+</tbody>
+</table>
+<p>论文：<a href="https://eprint.iacr.org/2019/458.pdf">https://eprint.iacr.org/2019/458.pdf</a>。Web3 用例：zkSync Era（状态/账户树）、Polygon zkEVM（SMT）、StarkNet（配 Pedersen 承诺）、Aztec（note commitment/nullifier）、Tornado Cash（deposit 树）、Semaphore（群成员证明）。</p>
+<p>主网为何不能换 Poseidon：MPT 历史上就是 Keccak，硬分叉换会破坏所有合约 storage layout。zkEVM 被迫在电路里模拟 Keccak，每次状态访问付 ~15 万约束"Keccak 税"。EIP-5988（Poseidon 预编译）短期不会落地。</p>
+<h3 id="14-web3">1.4 Web3 中的角色</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>唯一标识</td>
+<td>tx hash / block hash / event topic</td>
+</tr>
+<tr>
+<td>状态承诺</td>
+<td>Merkle Root / Patricia Root</td>
+</tr>
+<tr>
+<td>派生地址</td>
+<td><code>keccak256(uncompressed_pubkey[1:])[-20:]</code></td>
+</tr>
+<tr>
+<td>CREATE2</td>
+<td><code>keccak256(0xff ‖ deployer ‖ salt ‖ keccak256(initCode))[12:]</code></td>
+</tr>
+<tr>
+<td>随机种子</td>
+<td><code>block.prevrandao</code>（即 RANDAO）</td>
+</tr>
+<tr>
+<td>消息绑定</td>
+<td>EIP-191 / EIP-712 digest</td>
+</tr>
+<tr>
+<td>PoW</td>
+<td>Bitcoin 双 SHA-256</td>
+</tr>
+</tbody>
+</table>
+<p>地址取 keccak 输出后 20 字节，前 12 字节丢弃。不同公钥理论上可能撞同地址（生日攻击 ~2^80，现实不可行）。EIP-55 校验和只防手抖，不防攻击。</p>
+<h3 id="15-abiencodepacked">1.5 <code>abi.encodePacked</code> 陷阱</h3>
+<p>Solidity 两种编码：</p>
+<ul>
+<li><code>abi.encode(...)</code>：每参数填 32 字节，安全费 gas。</li>
+<li><code>abi.encodePacked(...)</code>：紧凑省 gas，对动态类型不安全。</li>
+</ul>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;a&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;bc&quot;</span><span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;ab&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;c&quot;</span><span style="color: #000; font-weight: bold">))</span>
+<span style="color: #8F5902; font-style: italic">// 两边都拼成 0x616263；encodePacked 不写 string 长度前缀</span>
+</code></pre></div>
+<p>审计要点：<code>abi.encodePacked(...)</code> 后跟 ≥2 个 <code>string</code>/<code>bytes</code> 必须改用 <code>abi.encode</code>，或先单独哈希再拼接。</p>
+<h3 id="16-prf-prg">1.6 PRF / PRG / 随机预言机</h3>
+<table>
+<thead>
+<tr>
+<th>构件</th>
+<th>全称</th>
+<th>输入</th>
+<th>输出</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PRG</td>
+<td>Pseudorandom Generator</td>
+<td>短种子</td>
+<td>任意长伪随机串</td>
+<td><code>os.urandom</code> 内核、ChaCha20 stream</td>
+</tr>
+<tr>
+<td>PRF</td>
+<td>Pseudorandom Function</td>
+<td><code>(k, x)</code></td>
+<td>伪随机 <code>f(x)</code></td>
+<td>HMAC-SHA256、AES-CMAC</td>
+</tr>
+<tr>
+<td>RO</td>
+<td>Random Oracle（理想模型）</td>
+<td><code>x</code></td>
+<td>真随机 <code>H(x)</code></td>
+<td>协议证明中以 Keccak/SHA-256 近似</td>
+</tr>
+</tbody>
+</table>
+<p>工程映射：BIP-39 PBKDF2、TLS/Noise nonce 派生 = PRG；RFC 6979 确定性 nonce、HMAC = PRF。</p>
+<p>ROM 注记：很多协议写"在随机预言机模型下安全"，但 ROM 不是标准模型。常见误解是 EdDSA 比 ECDSA "可证明安全"——两者主流归约都依赖 ROM，EdDSA 归约更干净但前提相同。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章 · 对称加密</h2>
+
+<p><strong>定义</strong>。同一把密钥 K 加密与解密（AES、ChaCha20）。链上是公开账本，无法安全分享 K，Web3 因此以非对称密码 + 数字签名为主。但对称加密仍承担几个关键的"幕后"角色。</p>
+<h3 id="21-keystore-v3">2.1 钱包加密 / Keystore V3</h3>
+<p>MetaMask 用 PBKDF2 从密码派生加密密钥，再用 AES-GCM 加密助记词存 IndexedDB。Geth keystore 用 scrypt 派生 + AES-128-CTR 加密私钥。密码不直接当 AES key——先 PBKDF2/scrypt/argon2 跑几十万轮，让每次暴力尝试付几百毫秒代价。</p>
+<h3 id="22-p2prlpx-ecies">2.2 节点 P2P：RLPx / ECIES</h3>
+<p>以太坊节点用 RLPx：ECDH（secp256k1）协商共享秘密 → HKDF 派生 → AES-CTR + HMAC-SHA256 加密+认证。这套组合即 ECIES（Elliptic Curve Integrated Encryption Scheme）。</p>
+<h3 id="23">2.3 三条工程红线</h3>
+<ol>
+<li><strong>不用 ECB 模式</strong>：相同明文块 → 相同密文块，宏观结构泄露（"ECB 企鹅"）。</li>
+<li><strong>默认 AEAD</strong>：AES-GCM 或 ChaCha20-Poly1305 同时加密 + 认证。只加密不认证攻击者能定向翻转明文位。</li>
+<li><strong>nonce 永不重用</strong>：AES-GCM nonce 重用暴露 GHASH 认证密钥；ChaCha20-Poly1305 nonce 重用让两条明文 XOR 直接泄露。实务：96 位随机 nonce + counter，或每会话独立 key。</li>
+</ol>
+<h3 id="24-hkdf-web3">2.4 HKDF：与 Web3 的真正交点</h3>
+<p>HKDF（RFC 5869）两步：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>PRK = HMAC-SHA256(salt, IKM)               # extract: 把任意熵源压成统一长度
+OKM = HMAC-SHA256(PRK, info ‖ counter)     # expand:  从 PRK 拉出任意长 OKM
+</code></pre></div>
+<p><code>IKM</code> 是 ECDH 共享秘密，<code>info</code> 是上下文标签（如 <code>"ETH/secp256k1/v1"</code>）：从一个 ECDH 输出派生多把不同用途密钥。libp2p、Noise、Waku、ECIES 全部用 HKDF。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="3-rsa" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 · RSA 与公钥密码学</h2>
+
+<p>公钥密码学始于 1976 年 Diffie-Hellman 的《New Directions in Cryptography》：把加密与解密钥匙拆成两把，前者公开后者私藏。RSA（Rivest-Shamir-Adleman, 1977）是第一个实用方案。</p>
+<h3 id="31-rsa">3.1 RSA 算法</h3>
+<p>基于大整数分解难。公钥 <code>(n, e)</code>，私钥 <code>(n, d)</code>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>c = m^e mod n      (加密 / 验签)
+m = c^d mod n      (解密 / 签名)
+</code></pre></div>
+<p><code>d</code> 由 <code>(p, q, e)</code> 经费马小定理与中国剩余定理唯一确定。</p>
+<h3 id="32-web3-rsa">3.2 Web3 中的 RSA 出场点</h3>
+<ul>
+<li>HTTPS 证书：dApp 前端的根证书很多 RSA-2048。</li>
+<li>JWT 签名：OpenSea / Infura / Alchemy 等链下 API 多用 RS256（RSA-SHA256）。</li>
+<li>预编译 <code>0x05</code> (modexp)：通用模幂，可拼出 RSA 验签（罕见）。</li>
+<li>早期 KZG ceremony 的部分 setup 用过 RSA-based VDF。</li>
+</ul>
+<h3 id="33-web3-ecc-rsa">3.3 为何 Web3 选 ECC 不选 RSA</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>RSA-2048</th>
+<th>secp256k1 (ECC-256)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>私钥大小</td>
+<td>256 字节</td>
+<td>32 字节</td>
+</tr>
+<tr>
+<td>公钥大小</td>
+<td>256 字节</td>
+<td>33 字节（压缩）</td>
+</tr>
+<tr>
+<td>签名大小</td>
+<td>256 字节</td>
+<td>64-65 字节</td>
+</tr>
+<tr>
+<td>安全等级</td>
+<td>~112 比特</td>
+<td>~128 比特</td>
+</tr>
+<tr>
+<td>速度（签）</td>
+<td>慢</td>
+<td>快</td>
+</tr>
+<tr>
+<td>是否可聚合</td>
+<td>✗</td>
+<td>✓（Schnorr/BLS）</td>
+</tr>
+<tr>
+<td>链上验证 gas</td>
+<td>极贵</td>
+<td><code>ecrecover</code> 仅 3000 gas</td>
+</tr>
+</tbody>
+</table>
+<p>RSA 不是不安全，是不经济：链上字节 8 倍、验证 gas 不友好、签名不可聚合。量子下 Shor 同时破解 RSA 与 ECC，两者都需迁移到 PQC（第 11 章）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="4" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 · 椭圆曲线</h2>
+
+<h3 id="41">4.1 定义与几何直觉</h3>
+<p><strong>定义</strong>。有限域 <code>F_p</code> 上的椭圆曲线（短 Weierstrass 形式）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>E: y² = x³ + a·x + b   (mod p),  且 4a³ + 27b² ≢ 0
+</code></pre></div>
+<p><code>mod p</code> 后曲线是离散点集，加上无穷远点 O 构成阿贝尔群。"椭圆"之名与几何椭圆无关——源于椭圆积分。</p>
+<p><strong>点加法</strong>（直觉）：连接 P、Q 的直线必交曲线第三点 −R，对 x 轴反射得 <code>R = P + Q</code>。</p>
+<figure><img src="diagram-41111d6c35.png" alt="mermaid diagram"></figure>
+
+<h3 id="42-ecdlp">4.2 ECDLP：单向陷门的来源</h3>
+<p><strong>点乘</strong>：<code>n·P = P + P + ... + P</code>（n 次）。</p>
+<ul>
+<li>正向：<code>Q = n·P</code>，double-and-add，时间 <code>O(log n)</code>。</li>
+<li>反向：给定 <code>P, Q</code> 求 <code>n</code>，即 <strong>ECDLP</strong>（椭圆曲线离散对数问题），最优通用算法 Pollard rho <code>O(√n)</code>。</li>
+</ul>
+<p>私钥 <code>d ∈ [1, n-1]</code> 随机，公钥 <code>Q = d·G</code>（G 固定基点）。算 Q 易，反推 d 难——这是 ECDSA、Schnorr、ECDH 全部的安全基石。</p>
+<h3 id="43">4.3 主流曲线族谱</h3>
+<figure><img src="diagram-76268d9a68.png" alt="mermaid diagram"></figure>
+
+<h4 id="431-secp256k1bitcoin-evm">4.3.1 secp256k1：Bitcoin 与 EVM 的基础曲线</h4>
+<h5 id="4311">4.3.1.1 参数</h5>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>p  = 2^256 − 2^32 − 977            ≈ 2^256（基域）
+y² = x³ + 7      (mod p)            （注意 a=0）
+n  = FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE BAAEDCE6AF48A03BBFD25E8CD0364141
+                                     （子群阶，约 2^256）
+G  = 04 79BE667E... 483ADA77...      （未压缩基点，65 字节）
+h  = 1                               （余因子）
+</code></pre></div>
+<p>来源：SECG SEC 2 v2（<a href="https://www.secg.org/sec2-v2.pdf">https://www.secg.org/sec2-v2.pdf</a>）。安全等级 ~128 bit（Pollard rho ≈ 2^128），无已知子指数攻击；量子下 Shor 多项式时间破解。</p>
+<h5 id="4312-web3">4.3.1.2 Web3 用途</h5>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bitcoin 钱包</td>
+<td>P2PKH/P2WPKH/P2TR 全栈</td>
+</tr>
+<tr>
+<td>所有 EVM 链 EOA</td>
+<td>Ethereum、Arbitrum、Optimism、BSC、Polygon...</td>
+</tr>
+<tr>
+<td>Cosmos <code>ethsecp256k1</code></td>
+<td>Evmos / Injective 等 EVM-on-Cosmos</td>
+</tr>
+<tr>
+<td>Stellar (额外支持)</td>
+<td>部分桥接路径用</td>
+</tr>
+</tbody>
+</table>
+<h5 id="4313">4.3.1.3 库</h5>
+<table>
+<thead>
+<tr>
+<th>语言</th>
+<th>推荐库</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C</td>
+<td><code>libsecp256k1</code> v0.7.1（Bitcoin Core）</td>
+<td>工业标准，最严格审计</td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><code>k256</code>（RustCrypto）/ <code>secp256k1</code> crate</td>
+<td>wagmi 底层</td>
+</tr>
+<tr>
+<td>Go</td>
+<td><code>decred/dcrd/dcrec/secp256k1</code></td>
+<td>go-ethereum</td>
+</tr>
+<tr>
+<td>Python</td>
+<td><code>coincurve</code> 21.0.0（libsecp256k1 绑定）</td>
+<td>本指南选用</td>
+</tr>
+<tr>
+<td>JS</td>
+<td><code>@noble/curves/secp256k1</code> v2.2.0</td>
+<td>浏览器、ESM-only</td>
+</tr>
+</tbody>
+</table>
+<p>secp256k1 与 secp256r1 名称仅差一字母但生态完全隔绝。Apple Secure Enclave、WebAuthn/Passkey 用 r1。"Passkey 登录以太坊"难就在于硬件给的是 r1 签名，需 EIP-7212 预编译才能链上验。</p>
+<h4 id="432-secp256r1p-256tls-passkey">4.3.2 secp256r1（P-256）：TLS 与 Passkey</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>p  = 2^256 - 2^224 + 2^192 + 2^96 - 1
+y² = x³ - 3x + b      (a = -3，与 k1 的 a=0 是关键区别)
+n  ≈ 2^256,   h = 1
+</code></pre></div>
+<p>~128 bit 安全，与 k1 同等。曲线参数中常数 <code>b</code> 由 NSA 2000 年提供且来源不透明——DJB 因此推动 Curve25519 路线。Web3 用途：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>硬件钱包 (Apple Secure Enclave)</td>
+<td>iCloud Keychain 钱包私钥</td>
+</tr>
+<tr>
+<td>WebAuthn / Passkey</td>
+<td>用浏览器 / TouchID 登录 dApp</td>
+</tr>
+<tr>
+<td>ERC-4337 账户抽象</td>
+<td>把 Passkey 签名转成合约可验的形式</td>
+</tr>
+<tr>
+<td>部分跨链桥</td>
+<td>TLS 链路认证</td>
+</tr>
+</tbody>
+</table>
+<p>库：C <code>OpenSSL/BoringSSL</code>、Rust <code>p256</code>、JS <code>@noble/curves/p256</code>；链上 RIP-7212 <code>P256_VERIFY</code> 预编译已在 Polygon zkEVM / Optimism / Arbitrum / zkSync 上线，主网通过 EIP-7951 推进。</p>
+<h4 id="433-curve25519-x25519-ecdh">4.3.3 Curve25519 / X25519：高性能 ECDH</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Montgomery 形式: y² = x³ + 486662·x² + x   (mod 2^255 − 19)
+基点 x = 9,   余因子 h = 8     ← 关键
+</code></pre></div>
+<p>DJB（Bernstein, 2005）设计。基域素数 <code>2^255 − 19</code> 让模约简可用一条特殊 reduction 指令——"25519" 名字的由来。~128 bit 安全，参数推导完全公开（无 NIST 魔数阴影）；但余因子 h=8 让朴素实现可能落入小子群攻击，这是 Ristretto255 出场的原因（4.3.4）。Web3 用途：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>X25519 密钥协商</strong></td>
+<td>TLS 1.3、Noise 协议、libp2p、ECIES 派生层</td>
+</tr>
+<tr>
+<td>Solana 子产品 (libra-crypto)</td>
+<td>早期 Solana Libra 模块用 X25519</td>
+</tr>
+<tr>
+<td>Cosmos IBC 通道加密层</td>
+<td>通讯密钥派生</td>
+</tr>
+<tr>
+<td>Tor / Signal / WhatsApp</td>
+<td>端到端加密握手</td>
+</tr>
+</tbody>
+</table>
+<p>库：C <code>libsodium</code>、Rust <code>x25519-dalek</code>、JS <code>@noble/curves/ed25519</code> 含 <code>x25519</code>、Python <code>pynacl</code>。</p>
+<h4 id="434-ristretto255-curve25519">4.3.4 Ristretto255：把 Curve25519 压成素数阶群</h4>
+<p>Curve25519/Ed25519 余因子 h=8，把"曲线点"和"群元素"混用会触发小子群攻击。Ristretto（Hamburg 2015）是一层<strong>编码</strong>：把余因子 8 的曲线点重新编码到一个素数阶群，多个不同曲线点可映射到同一 Ristretto 元素，彻底消除小子群陷阱。安全继承 Curve25519。</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Polkadot/Kusama (sr25519)</td>
+<td>Schnorrkel = Schnorr + Ristretto over Curve25519</td>
+</tr>
+<tr>
+<td>Zcash Sapling / Orchard</td>
+<td>内部承诺方案的群</td>
+</tr>
+<tr>
+<td>Monero（Ristretto-style 编码）</td>
+<td>隐私交易底层</td>
+</tr>
+<tr>
+<td>Filecoin / IPFS</td>
+<td>部分 zk 协议素数阶群</td>
+</tr>
+</tbody>
+</table>
+<p>库：Rust <code>curve25519-dalek</code> 事实标准；JS <code>@noble/curves/ed25519</code> 的 ristretto255 子模块。</p>
+<h4 id="435-ed25519eddsa">4.3.5 ed25519：EdDSA 的承载曲线</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Twisted Edwards: -x² + y² = 1 + d·x²·y²     (d = -121665/121666)
+基点 B: 4·(2/√(d-1)·...) 唯一构造，无魔数
+余因子 h = 8
+</code></pre></div>
+<p>与 Curve25519 同构，~128 bit 安全，EdDSA 签名跑在它上面。Web3 用途：</p>
+<table>
+<thead>
+<tr>
+<th>链</th>
+<th>使用方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Solana</strong></td>
+<td>全局账户密钥（pubkey 即地址，32 字节 base58）</td>
+</tr>
+<tr>
+<td><strong>Aptos / Sui</strong></td>
+<td>Move 生态钱包默认</td>
+</tr>
+<tr>
+<td><strong>Cosmos SDK</strong></td>
+<td>验证者共识签名（Tendermint Core 选 ed25519）</td>
+</tr>
+<tr>
+<td><strong>NEAR</strong></td>
+<td>Account 密钥派生</td>
+</tr>
+<tr>
+<td><strong>Polkadot</strong></td>
+<td>sr25519（Ristretto + Schnorr）+ ed25519（备选）</td>
+</tr>
+<tr>
+<td><strong>Cardano</strong></td>
+<td>extended ed25519 (BIP-32-Ed25519)</td>
+</tr>
+<tr>
+<td><strong>Stellar</strong></td>
+<td>全栈</td>
+</tr>
+<tr>
+<td><strong>Algorand</strong></td>
+<td>账户密钥</td>
+</tr>
+</tbody>
+</table>
+<p>库：C <code>libsodium</code>/<code>ed25519-donna</code>，Rust <code>ed25519-dalek</code>，JS <code>@noble/curves/ed25519</code>，Python <code>pynacl</code>/<code>cryptography.hazmat</code>，Solana 链上 <code>solana_program::ed25519_program</code>。Solana pubkey 即地址（32 字节 base58，44 字符），省去 keccak 提取 20 字节但地址更长。</p>
+<h5 id="4351-solana">4.3.5.1 Solana 实测要点</h5>
+<ul>
+<li><strong>Tx 签名 batch verify</strong>：每笔 tx 最多 64B × 签名者数；banking stage 一次 GPU/CPU 调度并行验数百签名，是 65k+ TPS 的关键。</li>
+<li><strong>PDA</strong>：用 SHA-256 派生，<strong>不在 curve25519 上</strong>——故意无对应私钥，只能由程序 CPI 签。这是 Solana account model 与 EVM EOA/合约二分法的本质差异。</li>
+<li><strong>轻客户端</strong>：检测 PDA（"是不是合约"）只需做 curve25519 on-curve 检验，比 EVM <code>extcodesize</code> 直接。</li>
+</ul>
+<h5 id="4352-cosmos-polkadot">4.3.5.2 Cosmos / Polkadot</h5>
+<p>Cosmos/Tendermint 共识用 ed25519，用户默认 secp256k1（Bitcoin 兼容）；SDK v0.50 支持多算法插件，EVM 链（Evmos/Injective）用 ethsecp256k1 + keccak[12:] 地址。Polkadot 默认 sr25519（Schnorr + Ristretto over Curve25519），备选 ed25519 / ecdsa；助记词导入 MetaMask 看不到资产，因为派生密钥完全不同。</p>
+<h4 id="436-bn254alt_bn128-zk">4.3.6 BN254（alt_bn128）：以太坊 zk 的过渡曲线</h4>
+<p>Barreto-Naehrig 曲线（2005），基域 p ≈ 254 bit，嵌入度 k = 12，pairing 落在 F_{p^12}。2017 年 Kim-Barbulescu exTNFS（IACR 2016/758）把安全性从 128 bit 削到 ~100 bit，新协议必须迁移。</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tornado Cash</td>
+<td>Groth16 证明</td>
+</tr>
+<tr>
+<td>Aztec V1</td>
+<td>zk-zk-Rollup 早期</td>
+</tr>
+<tr>
+<td>Loopring 3.x</td>
+<td>zk-DEX 状态证明</td>
+</tr>
+<tr>
+<td>drand evmnet</td>
+<td>上链 BLS 签名（兼容预编译）</td>
+</tr>
+<tr>
+<td>EVM 预编译 <code>0x06/0x07/0x08</code></td>
+<td>EIP-196 / EIP-197（兼容性永保留）</td>
+</tr>
+</tbody>
+</table>
+<p>库：C++ <code>libff</code>、Rust <code>ark-bn254</code>、Go <code>gnark-crypto</code>、Python <code>py_ecc.bn128</code>、Solidity 直接调预编译。</p>
+<h4 id="437-bls12-381-zk">4.3.7 BLS12-381：以太坊共识与新一代 zk</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>基域 p ≈ 381 bit  (q1)
+子群阶 r ≈ 255 bit
+嵌入度 k = 12
+G1 ⊂ E(F_p),   G2 ⊂ E(F_{p²}) 的扭子群
+</code></pre></div>
+<p>Sean Bowe 2017 为 Zcash Sapling 设计。抗 exTNFS 后真实安全 ~128 bit，比 BN254 多 ~30 bit 裕度。后量子下仍死（pairing 基于 ECDLP），需换 STARK。</p>
+<p>以太坊共识层（Beacon Chain）核心：</p>
+<ul>
+<li>验证者私钥 32B、公钥 48B（G1 压缩）、签名 96B（G2 压缩）。</li>
+<li>一个 epoch 数十万签名聚合成一个 96B 签名——这是 BLS 的核心价值。</li>
+</ul>
+<p>EIP-2537 把 BLS12-381 预编译加入 EVM，Pectra（2025-05-07，epoch 364032，<a href="https://blog.ethereum.org/2025/04/23/pectra-mainnet">https://blog.ethereum.org/2025/04/23/pectra-mainnet</a>）激活。其它用途：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Filecoin</td>
+<td>全栈共识签名</td>
+</tr>
+<tr>
+<td>Chia</td>
+<td>Plot/Pool BLS 签名</td>
+</tr>
+<tr>
+<td>Chainlink CCIP</td>
+<td>DON 委员会聚合签名</td>
+</tr>
+<tr>
+<td>EigenLayer</td>
+<td>AVS operator 投票</td>
+</tr>
+<tr>
+<td>Zcash Sapling</td>
+<td>内部承诺曲线</td>
+</tr>
+</tbody>
+</table>
+<p>库：C <code>blst</code>（supranational，经审计，工业标准）、Rust <code>blst</code> binding 或 <code>arkworks-rs</code>（Lighthouse 等共识客户端）、Go <code>gnark-crypto/ecc/bls12-381</code> 或 <code>go-eth2-client</code>（Prysm）、Python <code>py_ecc.bls12_381</code> 或 <code>milagro-bls</code>、Solidity 走 EIP-2537 预编译。</p>
+<h4 id="438-pastapallasvestahalo2">4.3.8 Pasta（Pallas/Vesta）：Halo2 的循环曲线对</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Pallas: y² = x³ + 5  over F_p   (p ≈ 255 bit)
+Vesta : y² = x³ + 5  over F_q   (q ≈ 255 bit)
+
+|E_Pallas(F_p)| = q,  |E_Vesta(F_q)| = p
+即一条曲线的标量域 = 另一条的基域
+</code></pre></div>
+<p>Zcash 团队为 Halo2 设计。循环对使"曲线 A 上的证明能验证曲线 B 上的证明"——递归 SNARK 成为可能。~125 bit 安全，无 pairing，搭配 IPA 承诺。用途：Mina（22KB 区块链）、Aleo、Zcash NU5 Orchard、部分 zkVM。库：Rust <code>pasta_curves</code>、<code>halo2</code> 内置；JS 端实现少。</p>
+<h3 id="44">4.4 曲线汇总</h3>
+<table>
+<thead>
+<tr>
+<th>曲线</th>
+<th>形式</th>
+<th>用途</th>
+<th>私/公/签 字节</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>secp256k1</td>
+<td>Weierstrass</td>
+<td>EVM EOA / Bitcoin</td>
+<td>32 / 33 / 65</td>
+</tr>
+<tr>
+<td>secp256r1 (P-256)</td>
+<td>Weierstrass</td>
+<td>TLS / Passkey / RIP-7212</td>
+<td>32 / 33 / 64</td>
+</tr>
+<tr>
+<td>Curve25519</td>
+<td>Montgomery</td>
+<td>X25519 ECDH</td>
+<td>32 / 32 / -</td>
+</tr>
+<tr>
+<td>Ristretto255</td>
+<td>(编码层)</td>
+<td>sr25519 / Zcash Sapling</td>
+<td>32 / 32 / 64</td>
+</tr>
+<tr>
+<td>ed25519</td>
+<td>Edwards</td>
+<td>Solana / Cosmos / Aptos / Sui</td>
+<td>32 / 32 / 64</td>
+</tr>
+<tr>
+<td>BN254 (alt_bn128)</td>
+<td>Pairing</td>
+<td>EVM zk-SNARK 旧</td>
+<td>32 / 64 / -</td>
+</tr>
+<tr>
+<td>BLS12-381</td>
+<td>Pairing</td>
+<td>Beacon Chain / 新 zk / 跨链</td>
+<td>32 / 48 / 96</td>
+</tr>
+<tr>
+<td>Pallas / Vesta</td>
+<td>循环对</td>
+<td>Mina / Aleo / Halo2 递归</td>
+<td>32 / 32 / -</td>
+</tr>
+</tbody>
+</table>
+<p>简记：用户账户 secp256k1，共识层 BLS12-381，高性能链 ed25519，BN254 是历史包袱。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 · 数字签名</h2>
+
+<p>数字签名提供三个保证：身份认证、完整性、不可否认性。私钥签，公钥验。</p>
+<h3 id="51-ecdsa">5.1 ECDSA</h3>
+<p>Bitcoin 与所有 EVM 链 EOA 都用 secp256k1 上的 ECDSA。</p>
+<h4 id="511">5.1.1 签名 / 验签</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Sign(d, m):
+  z = keccak256(m)
+  k ← random in [1, n-1]
+  (x1, y1) = k·G
+  r = x1 mod n,        若 r=0 重选 k
+  s = k^(-1)·(z + r·d) mod n
+  return (r, s)
+
+Verify(Q=d·G, m, (r, s)):
+  z  = keccak256(m)
+  u1 = z·s^(-1) mod n
+  u2 = r·s^(-1) mod n
+  (x&#39;, _) = u1·G + u2·Q
+  accept iff r ≡ x&#39; (mod n)
+</code></pre></div>
+<h4 id="512-nonce-ps3">5.1.2 nonce 重用 ⇒ 私钥泄露（PS3）</h4>
+<p>Sony PS3 用静态 k（fail0verflow，27C3，2010）。同一 k 两次签名 <code>(r, s1)</code>, <code>(r, s2)</code> 对 <code>z1, z2</code>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>s1 - s2 = k^(-1)·(z1 - z2)        ⇒ k = (z1 - z2) / (s1 - s2)
+s1 = k^(-1)·(z1 + r·d)            ⇒ d = (s1·k - z1) / r
+</code></pre></div>
+<p>两条消息 + 静态 k = 私钥泄露。现代实现一律用 RFC 6979 确定性 nonce：<code>k = HMAC(d, m)</code>，根除 RNG 缺陷风险。</p>
+<h4 id="513-eip-2">5.1.3 签名延展性与 EIP-2</h4>
+<p>数学事实：<code>(r, s)</code> 合法 ⇒ <code>(r, n-s)</code> 也合法。2014 年 Mt.Gox 攻击者翻转 mempool 中提款 tx 的 s，txid 改变但 tx 仍合法，触发交易所"失败重发"双花。EIP-2 强制 low-s（<code>s ≤ n/2</code>）；OZ <code>ECDSA.sol</code> v4.7.3+ 拒绝 high-s。</p>
+<h4 id="514-ecrecover-v">5.1.4 ecrecover 与 v</h4>
+<p><code>ecrecover(hash, v, r, s)</code> 做公钥恢复。R 在曲线上对应两个候选 y，v 本质是 yParity（1 bit 消歧）：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>v 的取值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原始 Bitcoin</td>
+<td>0/1（裸 yParity）</td>
+</tr>
+<tr>
+<td>以太坊主网早期</td>
+<td>27/28（= yParity + 27）</td>
+</tr>
+<tr>
+<td>EIP-155 Legacy tx</td>
+<td><code>chainId·2 + 35 + yParity</code></td>
+</tr>
+<tr>
+<td>EIP-1559 Type 2 tx</td>
+<td>yParity (0/1)</td>
+</tr>
+<tr>
+<td>EIP-2098 紧凑签名</td>
+<td>yParity 编进 s 的最高位</td>
+</tr>
+</tbody>
+</table>
+<p><code>ecrecover</code> 任一条件不满足返回 <code>address(0)</code>：(1) v 不在 {27, 28}；(2) r = 0 或 r ≥ n；(3) s = 0 或 s ≥ n；(4) EIP-2 后 s &gt; n/2。</p>
+<p>审计要点：<code>ecrecover(...) == storedSigner</code> 而无 <code>require(storedSigner != address(0))</code> 时，攻击者可构造返回 <code>0</code> 的签名，在 storedSigner 未初始化（默认 <code>0</code>）的代码路径伪造通过。OZ <code>ECDSA.recover</code> 已默认处理此边界。</p>
+<h4 id="515-eip-20986564">5.1.5 EIP-2098：65→64 字节紧凑签名</h4>
+<p>low-s 后 s 最高位恒 0（<code>s ≤ n/2 &lt; 2^255</code>），EIP-2098 把 yParity 塞进该位：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>compact = r ‖ ((yParity &lt;&lt; 255) | s)           # 64 字节
+s_back  = compact[32:] &amp; ((1 &lt;&lt; 255) - 1)
+v_back  = (compact[32] &gt;&gt; 7) ? 28 : 27
+</code></pre></div>
+<p>calldata gas 省 ~8%，ERC-4337、Permit2、Seaport 广泛使用。</p>
+<h4 id="516-eip-712">5.1.6 EIP-712：结构化签名</h4>
+<p>让钱包展示"你在签什么"。标准 digest：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>digest = keccak256( &quot;\x19\x01&quot; ‖ domainSeparator ‖ hashStruct(message) )
+</code></pre></div>
+<ul>
+<li><code>domainSeparator = keccak256(EIP712Domain typeHash ‖ encoded fields)</code>（含合约名、版本、chainId、合约地址）。</li>
+<li><code>hashStruct(s) = keccak256(typeHash ‖ encodeData(s))</code>。</li>
+<li><code>encodeData</code>：原子类型 32 字节填充；<code>string</code>/<code>bytes</code>/数组先哈希；嵌套 struct 递归 <code>hashStruct</code>。</li>
+</ul>
+<h3 id="52-eddsa-ed25519">5.2 EdDSA / Ed25519</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>KeyGen: sk ← 32B random
+        h = SHA-512(sk),  a = clamp(h[0:32]),  prefix = h[32:64]
+        pk = a·B          (B = ed25519 基点)
+
+Sign(m): r = SHA-512(prefix ‖ m) mod L          ← 确定性 nonce
+         R = r·B
+         c = SHA-512(R ‖ pk ‖ m) mod L
+         s = (r + c·a) mod L
+         σ = (R, s)        # 64 字节
+
+Verify: c = SHA-512(R ‖ pk ‖ m) mod L
+        accept iff s·B = R + c·pk
+</code></pre></div>
+<p>与 ECDSA 的关键差别：</p>
+<ol>
+<li><strong>确定性 nonce</strong>：r 由私钥与消息哈希派生，不依赖 RNG。</li>
+<li><strong>无 k^(-1)</strong>：实现简单，少一个侧信道入口。</li>
+<li><strong>ROM 下严格归约到 ECDLP</strong>——而 ECDSA 归约前提更微妙。</li>
+</ol>
+<h3 id="53-schnorr-bip-340">5.3 Schnorr 签名（BIP-340）</h3>
+<p>Schnorr（1989）比 ECDSA 还早，因专利（US 4995082）被 NIST 排除。专利 2008 年到期，Bitcoin 2021 年通过 Taproot 上线。BIP-340 的关键约束：</p>
+<ol>
+<li><strong>公钥 32 字节 x-only</strong>：Y 隐含为偶，公钥 33B → 32B。</li>
+<li><strong>强制偶 Y</strong>：签名时若 <code>R.y</code> 或 <code>P.y</code> 为奇取负。</li>
+<li><strong>Tagged hash</strong> <code>t(tag, x) = SHA-256(SHA-256(tag) ‖ SHA-256(tag) ‖ x)</code> 防跨协议重放。</li>
+<li><strong>辅助随机性 auxRand</strong>：可选侧信道防护，全 0 也安全（不像 ECDSA k 必须真随机）。</li>
+</ol>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Sign(sk, m, auxRand):
+  若 P.y 奇: d = n - sk, P = -P
+  t = d XOR t(&quot;BIP0340/aux&quot;, auxRand)
+  k = t(&quot;BIP0340/nonce&quot;, t ‖ P.x ‖ m) mod n
+  R = k·G;  若 R.y 奇: k = n - k
+  e = t(&quot;BIP0340/challenge&quot;, R.x ‖ P.x ‖ m) mod n
+  s = (k + e·d) mod n
+  σ = R.x ‖ s        # 32 + 32 = 64 字节
+
+Verify(P.x, m, σ):
+  P = lift_x(P.x)
+  e = t(&quot;BIP0340/challenge&quot;, R.x ‖ P.x ‖ m) mod n
+  R&#39; = s·G - e·P
+  accept iff R&#39;≠O ∧ R&#39;.y 偶 ∧ R&#39;.x = R.x
+</code></pre></div>
+<p>ECDSA 与 Schnorr 对比：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>ECDSA</th>
+<th>Schnorr</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可证明安全</td>
+<td>启发式</td>
+<td>ROM 下严格归约到 ECDLP</td>
+</tr>
+<tr>
+<td>线性性</td>
+<td>✗（有 k^(-1)）</td>
+<td>✓，<code>(d1+d2)·G = P1+P2</code></td>
+</tr>
+<tr>
+<td>签名长度</td>
+<td>71-72B (DER) / 64-65B</td>
+<td>固定 64B</td>
+</tr>
+<tr>
+<td>实现复杂度</td>
+<td>高（DER + low-s + ecrecover）</td>
+<td>低</td>
+</tr>
+<tr>
+<td>批验证 / 多签聚合</td>
+<td>✗ / 极难</td>
+<td>✓ / 天然（MuSig2）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="531-taproot-p2tr-tweaked-key">5.3.1 Taproot P2TR 与 Tweaked Key</h4>
+<p>BIP-341/342（Taproot/Tapscript）2021-11-14 区块 709,632 激活。P2TR 输出 <code>OP_1 &lt;32B x-only pubkey&gt;</code>，公钥不是裸 <code>sk·G</code> 而是带内部 commit 的 tweaked key：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P_internal = sk·G
+t = tagged_hash(&quot;TapTweak&quot;, P_internal.x ‖ merkle_root)
+P_output   = P_internal + t·G                # 链上看到的公钥
+</code></pre></div>
+<p><code>merkle_root</code> 是脚本路径的 Merkle 根（无脚本则为空）。Tweak 让 key path 与 script path 在链上不可区分。Bitcoin P2TR 输出占比已超 35%。</p>
+<p>以太坊目前无 Schnorr 预编译（EIP-665/7503 讨论中），合约模拟 ~200k gas，实务做法是链下 Schnorr/MuSig 聚合 → 链上 ECDSA 提交。</p>
+<h3 id="54-bls">5.4 BLS 签名</h3>
+<p>BLS（Boneh-Lynn-Shacham 2001）基于双线性配对 <code>e: G1 × G2 → GT</code>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>KeyGen: sk ∈ Z_r,  pk = sk·G1                 (以太坊共识用 G1 公钥)
+Sign(m): σ = sk·H(m)                          (H: hash-to-G2)
+Verify: e(G1, σ) == e(pk, H(m))
+
+聚合 (n 个签名同消息):
+  σ_agg  = σ1 + ... + σn                       ∈ G2
+  pk_agg = pk1 + ... + pkn                     ∈ G1
+  e(G1, σ_agg) == e(pk_agg, H(m))             # 一次 pairing 验 n 个
+</code></pre></div>
+<p>以太坊共识层活跃验证者超 100 万，每 epoch 全部投票被 BLS 聚合压成少量聚合签名（<a href="https://beaconcha.in/charts/validators">https://beaconcha.in/charts/validators</a>）。</p>
+<h4 id="541-rogue-key-attack-pop">5.4.1 Rogue Key Attack 与 PoP</h4>
+<p>Mallory 设 <code>pk_M = X·G1 - pk_B</code>（X 任选，Mallory 不需要知道 <code>sk_M</code> 对应私钥），则 <code>pk_agg = pk_B + pk_M = X·G1</code>。她用 X 对消息 m 签出 σ，对外宣称这是 Alice + Bob + Mallory 的聚合签名（伪造的是针对该 m 的聚合签名，不是任意签名）。</p>
+<p>防御（PoP）：注册公钥时附带 <code>σ_pop = sk·H_pop(pk)</code>。Mallory 无法为构造的 pk_M 给出合法 PoP。以太坊共识层采用此方案。</p>
+<h4 id="542-eip-2537">5.4.2 EIP-2537</h4>
+<p>Pectra（2025-05-07，epoch 364032）通过 EIP-2537 把 BLS12-381 预编译加入 EVM，使跨链桥轻客户端、ERC-4337 BLS 多签、drand 链上验证成为可能。同一升级的 EIP-7702 让 EOA 临时拥有合约能力（<a href="https://eips.ethereum.org/EIPS/eip-7702">https://eips.ethereum.org/EIPS/eip-7702</a>）。</p>
+<h3 id="55">5.5 签名方案对比</h3>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>曲线</th>
+<th>单签 B</th>
+<th>公钥 B</th>
+<th>聚合</th>
+<th>速度</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RSA-2048</td>
+<td>-</td>
+<td>256</td>
+<td>256</td>
+<td>✗</td>
+<td>中</td>
+<td>TLS / JWT</td>
+</tr>
+<tr>
+<td>ECDSA k1</td>
+<td>secp256k1</td>
+<td>64-65</td>
+<td>33</td>
+<td>✗</td>
+<td>快</td>
+<td>Bitcoin / EVM EOA</td>
+</tr>
+<tr>
+<td>ECDSA r1</td>
+<td>secp256r1</td>
+<td>64</td>
+<td>33</td>
+<td>✗</td>
+<td>快</td>
+<td>TLS / Passkey</td>
+</tr>
+<tr>
+<td>EdDSA</td>
+<td>ed25519</td>
+<td>64</td>
+<td>32</td>
+<td>△ 有限</td>
+<td>极快</td>
+<td>Solana / Cosmos</td>
+</tr>
+<tr>
+<td>Schnorr</td>
+<td>secp256k1</td>
+<td>64</td>
+<td>32</td>
+<td>✓ MuSig</td>
+<td>快</td>
+<td>Bitcoin Taproot</td>
+</tr>
+<tr>
+<td>BLS</td>
+<td>BLS12-381</td>
+<td>96</td>
+<td>48</td>
+<td>✓ 天然</td>
+<td>慢（pairing）</td>
+<td>Eth 共识 / 跨链</td>
+</tr>
+</tbody>
+</table>
+<h3 id="56">5.6 常见调试</h3>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ecrecover</code> 返回 0x0</td>
+<td>s &gt; n/2 / v 不对 / r 或 s 越界</td>
+</tr>
+<tr>
+<td>链下验通过链上不通过</td>
+<td>EIP-712 domain 不一致；<code>abi.encode</code> vs <code>encodePacked</code> 混用</td>
+</tr>
+<tr>
+<td>testnet 通过 mainnet 不通过</td>
+<td>EIP-712 domain 的 chainId 没换</td>
+</tr>
+<tr>
+<td>紧凑签名旧合约不认</td>
+<td>旧合约只支持 65B；升级 OZ ECDSA v4.7.3+</td>
+</tr>
+<tr>
+<td>BLS 聚合验证失败</td>
+<td>没做 PoP / hash-to-curve domain tag 错</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="6-merkle" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 · Merkle 树与以太坊状态树</h2>
+
+<h3 id="61">6.1 定义</h3>
+<p><strong>Merkle 树</strong>（Merkle 1979）：内节点 <code>= H(左子 ‖ 右子)</code>，根承诺整棵树。任一叶子改变根改变；32 字节根承诺任意大集合，成员证明长度 <code>O(log n)</code>。</p>
+<p>证明"我是 A"提供兄弟路径 <code>[H(B), H_CD]</code>，验证者算 <code>H(H(H(A) ‖ H(B)) ‖ H_CD) == Root</code>。</p>
+<h3 id="62-openzeppelin-commutative">6.2 OpenZeppelin commutative 约定</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>parent(a, b) = keccak256(min(a, b) ‖ max(a, b))   // 按字节序
+</code></pre></div>
+<p>验证时不需要兄弟左右信息。代价：叶子不能让内部哈希参与，否则跨层取值可被伪造（参 2022 Solana NFT Merkle 漏洞）。</p>
+<h3 id="63-32">6.3 32 叶子结构示例</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Layer 5 (根):  ────────── Root ──────────
+                              │
+Layer 4 :        ┌─────── h0_15 ─── h16_31 ───────┐
+Layer 3 :   ┌─ h0_7 ── h8_15 ──┐ ┌── h16_23 ── h24_31 ──┐
+Layer 2 :  h0_3 h4_7 h8_11 h12_15 h16_19 h20_23 h24_27 h28_31
+Layer 1 :  ...
+Layer 0 :  L0 L1 L2 ... L31
+</code></pre></div>
+<p>32 叶 → 5 层 → 证明长度恰好 5 个哈希。OZ 兼容的 Python 实现见 <a href="./code/03_merkle_tree.py">code/03_merkle_tree.py</a>。</p>
+<h3 id="64-web3">6.4 Web3 用例</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Airdrop 白名单</td>
+<td>Uniswap UNI 空投、Optimism OP 空投</td>
+</tr>
+<tr>
+<td>L1 → L2 消息证明</td>
+<td>Optimism 的 OutputRoot</td>
+</tr>
+<tr>
+<td>Bitcoin SPV 钱包</td>
+<td>验证某 tx 在某块里</td>
+</tr>
+<tr>
+<td>ZK rollup 状态</td>
+<td>把状态根放到 L1</td>
+</tr>
+<tr>
+<td>Sparse Merkle (SMT)</td>
+<td>nullifier 树（Tornado Cash）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="65-merkle-patricia-trie">6.5 以太坊状态树：Merkle Patricia Trie</h3>
+<p>普通 Merkle 对插入/更新性能差。以太坊状态是键值库，用 <strong>MPT</strong> = Trie + Merkle 合并。三种节点：</p>
+<ol>
+<li><strong>Branch</strong>：16 子指针 + 1 value 槽，每层消耗 1 nibble。</li>
+<li><strong>Extension</strong>：共享前缀压缩，结构 <code>(shared_nibbles, child_hash)</code>。</li>
+<li><strong>Leaf</strong>：<code>(remaining_nibbles, value)</code>。</li>
+</ol>
+<h4 id="651-hex-prefix">6.5.1 Hex Prefix 编码</h4>
+<p>区分 Extension/Leaf 和奇偶 nibble 长度，节点 path 前附 1 字节：</p>
+<table>
+<thead>
+<tr>
+<th>nibbles 长度</th>
+<th>Extension</th>
+<th>Leaf</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>偶数</td>
+<td>0x00</td>
+<td>0x20</td>
+</tr>
+<tr>
+<td>奇数</td>
+<td>0x1_</td>
+<td>0x3_</td>
+</tr>
+</tbody>
+</table>
+<h4 id="652-root">6.5.2 区块头里的四个 root</h4>
+<figure><pre><code class="language-mermaid">graph TD
+    BH[区块头 BlockHeader] --> SR[stateRoot]
+    BH --> TR[transactionsRoot]
+    BH --> RR[receiptsRoot]
+    BH --> WR[withdrawalsRoot]
+    SR --> S1[每个账户的 (nonce, balance, codeHash, storageRoot)]
+    S1 --> ST[每个账户自己的 storageTrie]</code></pre><figcaption>diagram render failed: 
+Error: Parse error on line 6:
+...    SR --> S1[每个账户的 (nonce, balance, cod
+-----------------------^
+Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', 'PIPE', 'CYLINDEREND'</figcaption></figure>
+
+<p>每账户 storage 自有一棵树。访问一个 slot ~5 次 trie 查找——SLOAD 的 2100 gas 大头是读 trie，不是算。</p>
+<h4 id="653-verkle-treempt">6.5.3 Verkle Tree：MPT 的继任者</h4>
+<p>MPT 痛点是证明大小（每层带 15 个兄弟哈希）。Verkle 用多项式承诺（KZG/IPA）把证明从 <code>O(log_{16} N · 15·32B)</code> 压到 <code>O(log_{256} N · 200B)</code>，对无状态以太坊至关重要。</p>
+<h3 id="66-sparse-merkle-tree">6.6 Sparse Merkle Tree</h3>
+<p>深度 256 满树，叶子位置由 key 决定。inclusion / exclusion 证明结构一致（ZK 友好），但空树太大，需懒哈希缓存全空子树。</p>
+<table>
+<thead>
+<tr>
+<th>数据结构</th>
+<th>链上</th>
+<th>链下</th>
+<th>优点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>标准 Merkle</td>
+<td>airdrop, OP fault</td>
+<td>简单</td>
+<td>实现门槛最低</td>
+</tr>
+<tr>
+<td>MPT</td>
+<td>Eth stateRoot</td>
+<td>慢但通用</td>
+<td>支持插入删除</td>
+</tr>
+<tr>
+<td>Verkle</td>
+<td>未来 Eth</td>
+<td>证明小</td>
+<td>stateless 友好</td>
+</tr>
+<tr>
+<td>SMT</td>
+<td>zkSync, Polygon zkEVM</td>
+<td>inclusion=exclusion</td>
+<td>ZK 友好</td>
+</tr>
+<tr>
+<td>Indexed Merkle</td>
+<td>Aztec, Tornado</td>
+<td>支持遍历</td>
+<td>用于 nullifier</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7-pedersen-kzg-ipa-fri" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 · 承诺方案：Pedersen / KZG / IPA / FRI</h2>
+
+<h3 id="71">7.1 定义</h3>
+<p><strong>承诺方案</strong>满足两条性质：</p>
+<ul>
+<li><strong>Hiding</strong>：外部看不出消息 m。</li>
+<li><strong>Binding</strong>：承诺者不能事后偷换 m。</li>
+</ul>
+<p>最简哈希承诺 <code>C = H(m ‖ r)</code> 满足两性质，但密码学承诺通常还要求代数性质（如加法同态），以便在密文上做运算或证明断言。</p>
+<h3 id="72-pedersen">7.2 Pedersen 承诺</h3>
+<p>固定两个生成元 <code>g, h</code>（要求 <code>log_g(h)</code> 未知）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Commit(m, r) = g^m · h^r
+</code></pre></div>
+<ul>
+<li><strong>Perfectly hiding</strong>：信息论安全，算力无限也看不出 m。</li>
+<li><strong>Computationally binding</strong>：换 <code>(m', r')</code> 等价解 DLP。</li>
+<li><strong>加法同态</strong>：<code>C(m1,r1)·C(m2,r2) = C(m1+m2, r1+r2)</code>。</li>
+</ul>
+<p>Bitcoin 隐私交易 Confidential Transactions（Maxwell 2015）/ Mimblewimble：金额 <code>C_i = g^{v_i}·h^{r_i}</code>，同态检查 <code>ΣC_in / ΣC_out = h^{Σr_in − Σr_out}</code>，配 Bulletproofs range proof 保证 <code>v_i ≥ 0</code>。</p>
+<h3 id="73-kzg">7.3 KZG 承诺</h3>
+<p>KZG（Kate-Zaverucha-Goldberg, ASIACRYPT 2010）对多项式 <code>f(X)</code> 承诺，可高效证明任意点 <code>f(z) = y</code>。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Setup (trusted): SRS = { [τ^0]_1, ..., [τ^d]_1, [τ^0]_2, [τ^1]_2 },  烧毁 τ
+
+Commit: C = [f(τ)]_1 = Σ f_i · [τ^i]_1                  ∈ G1, 48 字节
+Open  : 证 f(z)=y, 构造 q(X) = (f(X) - y)/(X - z)
+        (因式定理保证 X-z 整除 f(X)-y)
+        π = [q(τ)]_1                                     ∈ G1, 48 字节
+Verify: e(π, [τ-z]_2) == e(C - [y]_1, [1]_2)
+</code></pre></div>
+<p>证明 48 字节常数，与多项式度无关。Ethereum KZG Ceremony：2023-01-13 至 2023-08-08，141,416 份贡献（<a href="https://blog.ethereum.org/en/2024/01/23/kzg-wrap">https://blog.ethereum.org/en/2024/01/23/kzg-wrap</a>）；只要任一参与者诚实销毁贡献，τ 就无人知晓（1-of-n trust）。产物随 Dencun（2024-03，EIP-4844）上链生效。</p>
+<p>EIP-4844 把 Rollup 数据放进 blob（~128KB），KZG 承诺压成 32B versioned hash，L2 数据成本降 ~10×。预编译 <code>0x0a</code>（<code>POINT_EVALUATION</code>）验证 blob 某点取值。</p>
+<h3 id="74-ipa-fri">7.4 IPA 与 FRI</h3>
+<p><strong>IPA</strong>（Inner Product Argument, 2019）：无 trusted setup，证明 <code>O(log n)</code>，验证 <code>O(n)</code>。用于 Halo2、Mina、Verkle Tree 备选。</p>
+<p><strong>FRI</strong>（Fast Reed-Solomon IOP, Ben-Sasson 2018）：基于哈希，透明 + 抗量子，证明 <code>O(log² n)</code>。用于 StarkNet / StarkEx / Polygon Miden。</p>
+<h3 id="75">7.5 四种承诺方案对比</h3>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>承诺 B</th>
+<th>证明 B</th>
+<th>Prover</th>
+<th>Verifier</th>
+<th>Trusted Setup</th>
+<th>抗量子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Merkle</td>
+<td>32</td>
+<td>O(log n)·32</td>
+<td>O(n) hash</td>
+<td>O(log n) hash</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Pedersen</td>
+<td>48</td>
+<td>O(n)</td>
+<td>O(n) EC</td>
+<td>O(n) EC</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>KZG</strong></td>
+<td>48</td>
+<td><strong>48 (常数)</strong></td>
+<td>O(n log n) FFT</td>
+<td>1 pairing</td>
+<td>✓</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>IPA</td>
+<td>48</td>
+<td>O(log n)·48</td>
+<td>O(n) EC</td>
+<td>O(n) EC</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>FRI</td>
+<td>32</td>
+<td>O(log²n)·32</td>
+<td>O(n log n)</td>
+<td>O(log²n) hash</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>KZG 常数证明但需 trusted setup；FRI 透明且抗量子但证明较大——STARK（FRI 系）与 SNARK（KZG/IPA 系）的路线分歧本质在此。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-vrf" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 · VRF：可验证的随机性</h2>
+
+<h3 id="81">8.1 定义</h3>
+<p><code>keccak256(blockhash, ...)</code> 能被出块者操纵：预先看结果再决定要不要出块。<strong>VRF</strong>（Verifiable Random Function, Micali-Rabin-Vadhan 1999）给出三条性质：</p>
+<ul>
+<li><strong>Uniqueness</strong>：同 <code>(sk, x)</code> 永远给同一个 y。</li>
+<li><strong>Pseudorandomness</strong>：不知 sk 者视 y 为均匀随机串。</li>
+<li><strong>Verifiability</strong>：任何人用 <code>(pk, x, y, π)</code> 可验 y 合法。</li>
+</ul>
+<h3 id="82-ecvrf-rfc-9381">8.2 ECVRF 构造（RFC 9381 简化版）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Prove(sk, x):
+  H = hash_to_curve(pk ‖ x)              # 把 x 哈希到曲线上一点
+  Γ = sk · H                              # VRF 的&quot;输出点&quot;
+  k = nonce_generation(sk, H)             # RFC 6979 风格确定性 nonce
+  c = hash_points(H, pk, Γ, k·B, k·H)
+  s = k + c·sk mod q
+  π = (Γ, c, s)
+  y = hash(0x03 ‖ Γ)                      # 真正的随机输出
+
+Verify(pk, x, y, π):
+  H = hash_to_curve(pk ‖ x)
+  U = s·B - c·pk
+  V = s·H - c·Γ
+  c&#39; = hash_points(H, pk, Γ, U, V)
+  接受 iff c&#39; == c 且 y == hash(0x03 ‖ Γ)
+</code></pre></div>
+<h3 id="83-algorandvrf">8.3 Algorand：VRF 选委员会</h3>
+<p>Algorand 共识用 VRF 做密码学抽签：每轮每账户用自己的 sk 算 VRF 输出 y，y 落入某区间即当选委员会成员，再广播 <code>(y, π)</code> 让所有人验证。</p>
+<figure><img src="diagram-d8e18a866d.png" alt="mermaid diagram"></figure>
+
+<p>委员会成员事先不可预测，攻击者无法针对性 DDoS。</p>
+<h3 id="84-chainlink-vrf">8.4 Chainlink VRF</h3>
+<p>Chainlink VRF v2.5 是 Web3 最广泛使用的 VRF 服务：</p>
+<ol>
+<li>合约调 <code>requestRandomWords(...)</code> 抛事件。</li>
+<li>Chainlink 节点监听事件，用 VRF 私钥算 <code>(y, π)</code>。</li>
+<li>节点回调 <code>fulfillRandomWords</code>，合约用预编译或 Solidity 库验 π。</li>
+<li>π 通过则用 y 作随机种子。</li>
+</ol>
+<p>NFT 抽奖、链上游戏掉落、Lido 验证者退出排序都在用。安全前提是"节点不能在不广播证明的情况下决定是否回调"（即避免 selective abort）。Chainlink 用订阅扣费 + 可配置 retry 缓解，但某些攻击模型下仍是公开问题。</p>
+<h3 id="85-drand-beacon">8.5 drand：公共随机性 beacon</h3>
+<p>League of Entropy 运营（Cloudflare、Protocol Labs、EPFL、Kudelski Security、Celo 等，<a href="https://www.cloudflare.com/leagueofentropy/">https://www.cloudflare.com/leagueofentropy/</a>）。每 ~3 秒，节点对 <code>H(round_number)</code> 做 BLS 签名，t 个部分签名拉格朗日插值合成最终签名，再 SHA-256 取 32 字节：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>randomness_round_N = SHA-256( BLS_aggregate(σ_1, ..., σ_t) )
+</code></pre></div>
+<p>当前阈值 12-of-22（<a href="https://docs.drand.love/about/">https://docs.drand.love/about/</a>），验证只需群公钥 <code>pk_agg</code>，无单点信任。</p>
+<p>为让 EVM 直接验 drand，2024 上线 evmnet：周期 3 秒、签名在 G1（48 字节）、<strong>故意用 BN254 而非 BLS12-381</strong>——因为 EVM 原生 alt_bn128 预编译只支持 BN254，合约 ~150k gas 即可验一轮。Pectra（2025-05）激活 EIP-2537 后，drand 可无损迁回 BLS12-381（<a href="https://docs.drand.love/blog/2025/08/26/verifying-bls12-on-ethereum/">https://docs.drand.love/blog/2025/08/26/verifying-bls12-on-ethereum/</a>）。</p>
+<p>典型用法：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>链上抽奖</td>
+<td><code>requestRound(N)</code> → 等到 round N 签名公开 → 取 hash 当种子</td>
+</tr>
+<tr>
+<td>Filecoin tickets</td>
+<td>每个 epoch 用 drand 输出选择 leader</td>
+</tr>
+<tr>
+<td>公平拍卖结束时间</td>
+<td>用 round N 的随机性决定"是否再延 1 分钟"</td>
+</tr>
+<tr>
+<td>zk 协议挑战</td>
+<td>Fiat-Shamir 之外的"确实不可预测"随机源</td>
+</tr>
+</tbody>
+</table>
+<h3 id="86">8.6 三家横向对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Algorand 内置 VRF</th>
+<th>Chainlink VRF v2.5</th>
+<th>drand</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>签名方案</td>
+<td>EdDSA 派生的 ECVRF</td>
+<td>自家 ECVRF (secp256k1)</td>
+<td>门限 BLS12-381 / BN254</td>
+</tr>
+<tr>
+<td>信任模型</td>
+<td>每个验证者持自己 sk</td>
+<td>单 oracle 节点 (有信任)</td>
+<td>t-of-n 门限 (无单点)</td>
+</tr>
+<tr>
+<td>输出周期</td>
+<td>每个 slot</td>
+<td>按需请求</td>
+<td>每 3 秒固定</td>
+</tr>
+<tr>
+<td>可被 "selective abort"？</td>
+<td>不能（不出块就罚）</td>
+<td>能（节点可不回调）</td>
+<td>不能（t 个诚实即可）</td>
+</tr>
+<tr>
+<td>链上验证 gas</td>
+<td>无（共识层用）</td>
+<td>~200k</td>
+<td>BN254 ~150k / BLS ~80k</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>共识委员会</td>
+<td>一次性抽奖</td>
+<td>持续公共随机源</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9-mpc" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 · 门限签名 / MPC</h2>
+
+<h3 id="91">9.1 定义</h3>
+<p>普通多签（Gnosis Safe）每人独立签一次，链上看到 n 个签名，gas 也是 n 倍。<strong>门限签名</strong>让 n 人协作产生<strong>一个</strong>普通签名，链上不可区分。t-of-n 即 n 人中任意 t 人即可还原签名。</p>
+<h3 id="92-shamir">9.2 Shamir 秘密分享</h3>
+<p>SSS（1979）把秘密 s 编码为 t−1 次多项式：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>f(x) = s + a_1·x + a_2·x² + ... + a_{t-1}·x^{t-1}
+</code></pre></div>
+<p>给 n 人各发 share <code>(i, f(i))</code>。任意 t 个可用拉格朗日插值还原 <code>f(0) = s</code>；t−1 个对 s 完全无信息（信息论安全）。</p>
+<h3 id="93-ecdsa">9.3 门限 ECDSA</h3>
+<p>ECDSA 签名 <code>s = k^(-1)·(z + r·d)</code> 非线性，门限化麻烦。主要方案：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>年</th>
+<th>签名轮数</th>
+<th>假设</th>
+<th>生产采用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lindell17</td>
+<td>2017</td>
+<td>多轮</td>
+<td>Paillier</td>
+<td>早期 ZenGo（2-of-2）</td>
+</tr>
+<tr>
+<td>GG18</td>
+<td>2018</td>
+<td>9</td>
+<td>Paillier</td>
+<td>已不推荐</td>
+</tr>
+<tr>
+<td>GG20</td>
+<td>2020</td>
+<td>1（在线）</td>
+<td>Paillier</td>
+<td>已不推荐</td>
+</tr>
+<tr>
+<td><strong>CGGMP21</strong>（CMP）</td>
+<td>2021</td>
+<td><strong>4</strong></td>
+<td>DDH + Schnorr ZK</td>
+<td><strong>Fireblocks、Coinbase Custody</strong></td>
+</tr>
+<tr>
+<td>DKLs19</td>
+<td>2019</td>
+<td>多轮</td>
+<td>Oblivious Transfer</td>
+<td>Coinbase MPC、Silence Laboratories</td>
+</tr>
+</tbody>
+</table>
+<p>2023 Makriyannis 等公开 GG18/GG20 key extraction 攻击（<a href="https://eprint.iacr.org/2023/1234.pdf">https://eprint.iacr.org/2023/1234.pdf</a>），主要钱包迁至 CGGMP21。CGGMP21 用 Schnorr-style ZK proof 替代 GG18 的 Feldman VSS，自带可证明安全归约。Fireblocks 开源 <code>mpc-cmp</code> 基于此。DKLs19 用 OT 替代 Paillier，计算轻但通信带宽大。</p>
+<p>选库要点：(1) 避开 GG18 漏洞家族；(2) 有 ZK proof 防恶意 party 换 share。CGGMP21 + 实盘审计是当前基线。</p>
+<h3 id="94-bls">9.4 BLS 门限：线性，几乎白送</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>DKG:    每方持 sk_i,  pk_agg = Σ sk_i · G1
+Sign:   每方 σ_i = sk_i · H(m),  收 t 个拉格朗日插值合成 σ
+Verify: e(G1, σ) == e(pk_agg, H(m))
+</code></pre></div>
+<p>用于 drand、Filecoin、Chainlink CCIP、Ethereum DVT。</p>
+<h3 id="95-musig2bip-327">9.5 MuSig2（BIP-327）</h3>
+<p>n 人 2 轮通信产生一个合法 BIP-340 Schnorr 签名，第一轮可在不知道消息时预做完：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>KeyAgg(pk_1, ..., pk_n):
+  L = sorted(pk_1, ..., pk_n)
+  a_i    = H(L, pk_i)
+  pk_agg = Σ a_i · pk_i
+
+Sign(m):
+  R1: 每方选 nonce 对 (k_i_1, k_i_2),
+      广播 R_i_1 = k_i_1·G,  R_i_2 = k_i_2·G
+  R2: b = H(R_1, R_2, pk_agg, m)
+      R = R_1 + b·R_2,   c = H(R, pk_agg, m)
+      s_i = (k_i_1 + b·k_i_2 + c·a_i·sk_i) mod n
+  Agg: σ = (R, Σ s_i)
+</code></pre></div>
+<p>工程优势：(1) 输出是合法 BIP-340 签名，Bitcoin 节点无需升级；(2) 链上多签与单签不可区分；(3) n-of-n 压成 64B 签名 + 32B 公钥。</p>
+<p>FROST（Komlo-Goldberg 2020）是 Schnorr 的 t-of-n 版本（MuSig2 是 n-of-n），IETF CFRG RFC 草案最终阶段，Coinbase EdDSA 门限与 Dfinity chain-key signing 都用 FROST 思路。</p>
+<h3 id="96-mpc">9.6 MPC：广义多方协作计算</h3>
+<p>门限签名是 MPC 的特例。MPC：n 方各持私有输入 <code>x_i</code>，共同计算 <code>f(x_1,...,x_n)</code> 而不暴露自己的 <code>x_i</code>。经典构造：Yao Garbled Circuits（两方）、GMW + BMR（n 方布尔/算术电路）、SPDZ（预处理模型）。</p>
+<p>Web3 用途：MPC 钱包（ZenGo / Fordefi / Web3Auth），跨链桥（ChainSafe / Web3Auth TSS），隐私 DEX（Penumbra / Ren Protocol，已退役）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10-hd-keystore" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 · HD 钱包与 keystore</h2>
+
+<h3 id="101">10.1 定义</h3>
+<p><strong>HD 钱包</strong>（Hierarchical Deterministic Wallet）让一串助记词恢复所有链所有账户：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>12 词助记词 → 64 字节 seed → 主私钥 m → 派生子密钥 m/44&#39;/60&#39;/0&#39;/0/0
+</code></pre></div>
+<p>完全确定性：助记词不变则私钥不变。涉及三个标准：BIP-39（助记词）、BIP-32（派生）、BIP-44（路径约定）。</p>
+<h3 id="102-bip-39">10.2 BIP-39：助记词</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>熵 (128 bit) ‖ checksum (4 bit) → 132 bit → 切 11 bit/段 → 12 段 → 查 2048 词表 → 12 个词
+</code></pre></div>
+<p>24 词对应 256 bit 熵。词表 9 种语言各 2048 词，前 4 字母不重复（便于硬件钱包匹配）。</p>
+<h4 id="1021-mnemonic-seed">10.2.1 mnemonic → seed</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>seed = PBKDF2(
+    password   = NFKD(mnemonic),
+    salt       = &quot;mnemonic&quot; || optional_passphrase,
+    iterations = 2048,
+    hLen       = 64                   # 64 字节, 512 bit
+)
+</code></pre></div>
+<p><code>optional_passphrase</code> 即"第 25 个词"——同一助记词派生多个独立钱包，常用作诱饵账户防胁迫。</p>
+<h4 id="1022">10.2.2 常见坑</h4>
+<p>(1) 熵质量决定一切：<strong>绝不用 <code>random.random()</code> 或不可信 PRNG</strong>，务必 <code>os.urandom</code> / <code>secrets</code> / 硬件 TRNG。(2) 词序敏感、空格敏感（NFKD 之前）、大小写不敏感。(3) 12 词等价 128 bit 熵 + 4 bit 校验，不是 132 bit。</p>
+<h3 id="103-bip-32">10.3 BIP-32：分层确定性派生</h3>
+<p>扩展密钥 <code>(k, c)</code>：k 是 32 字节私钥，c 是 32 字节 chain code（防碰撞盐）。派生函数 CKD：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>CKDpriv((k_par, c_par), i):
+    if i &gt;= 2^31:                                 # hardened
+        I = HMAC-SHA512(c_par, 0x00 || k_par || ser32(i))
+    else:                                         # non-hardened
+        I = HMAC-SHA512(c_par, serP(K_par) || ser32(i))
+    I_L, I_R = I[:32], I[32:]
+    k_child = (I_L + k_par) mod n
+    c_child = I_R
+</code></pre></div>
+<p><strong>hardened vs non-hardened</strong>：</p>
+<ul>
+<li>non-hardened（<code>i &lt; 2^31</code>）用父公钥派生 → 父 xpub 可推子公钥（watch-only 钱包查 receive 地址）。</li>
+<li>hardened（<code>i &gt;= 2^31</code>，写作 <code>i'</code>）用父私钥派生 → 子公钥无法从父 xpub 推出。</li>
+</ul>
+<p>安全警告：xpub + 任一非硬化路径的子私钥可反推父私钥。所以真正用于交易的路径必须 hardened。</p>
+<h3 id="104-bip-44">10.4 BIP-44：跨币种统一路径</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>m / purpose&#39; / coin_type&#39; / account&#39; / change / index
+</code></pre></div>
+<p>各字段含义：</p>
+<table>
+<thead>
+<tr>
+<th>段</th>
+<th>含义</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>purpose'</code></td>
+<td>协议版本（44 = BIP-44）</td>
+<td><code>44'</code></td>
+</tr>
+<tr>
+<td><code>coin_type'</code></td>
+<td>币种（SLIP-44 注册）</td>
+<td>Bitcoin=<code>0'</code>, Ethereum=<code>60'</code>, Solana=<code>501'</code></td>
+</tr>
+<tr>
+<td><code>account'</code></td>
+<td>账户编号（多账号隔离）</td>
+<td><code>0'</code>, <code>1'</code>, ...</td>
+</tr>
+<tr>
+<td><code>change</code></td>
+<td>0=外部地址, 1=找零地址</td>
+<td><code>0</code> (Ethereum 一律 0)</td>
+</tr>
+<tr>
+<td><code>index</code></td>
+<td>该账户下第几个地址</td>
+<td><code>0</code>, <code>1</code>, ...</td>
+</tr>
+</tbody>
+</table>
+<p>以太坊主路径：<code>m/44'/60'/0'/0/0</code>（MetaMask 第 1 个地址）。</p>
+<p>Ledger Live 默认用 <code>m/44'/60'/N'/0/0</code>，与 MetaMask 的 <code>m/44'/60'/0'/0/N</code> 结构不同，导入时必须选对，否则地址完全不一样。</p>
+<h3 id="105-slip-0010bip-32-ed25519">10.5 SLIP-0010：BIP-32 拓展到 ed25519</h3>
+<p>BIP-32 只针对 secp256k1。Ed25519 余因子 8 + scalar 长度不同，直接套用破坏安全性；SLIP-0010 给出正确规范。</p>
+<p>Ed25519 上<strong>只支持 hardened 派生</strong>——私钥不是直接 scalar，无"由公钥派生子公钥"的代数结构。Solana/Aptos/Sui 的 watch-only 不能从 xpub 推地址。</p>
+<h3 id="106-ethereum">10.6 Ethereum 路径与跨钱包兼容</h3>
+<table>
+<thead>
+<tr>
+<th>钱包</th>
+<th>默认路径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MetaMask</td>
+<td><code>m/44'/60'/0'/0/N</code></td>
+</tr>
+<tr>
+<td>Ledger Live</td>
+<td><code>m/44'/60'/N'/0/0</code> (注意结构不同！)</td>
+</tr>
+<tr>
+<td>Trezor</td>
+<td><code>m/44'/60'/0'/0/N</code></td>
+</tr>
+<tr>
+<td>Trust Wallet</td>
+<td><code>m/44'/60'/0'/0/N</code></td>
+</tr>
+<tr>
+<td>Phantom (Solana)</td>
+<td><code>m/44'/501'/N'/0'</code></td>
+</tr>
+<tr>
+<td>Solflare (Solana)</td>
+<td><code>m/44'/501'/0'/N'</code>(可选 <code>m/44'/501'/N'</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Ledger 助记词导入 MetaMask 看不到资产——路径不同地址不同，不是钱包丢了。</p>
+<h3 id="107-eip-2335bls-keystore">10.7 EIP-2335：BLS 验证者 keystore</h3>
+<p>Beacon Chain 验证者私钥的标准化加密存储格式，类似 Geth V3 keystore 但专为 BLS12-381 优化（<a href="https://eips.ethereum.org/EIPS/eip-2335">https://eips.ethereum.org/EIPS/eip-2335</a>）。</p>
+<h4 id="1071">10.7.1 文件结构</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;crypto&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;kdf&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;function&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;scrypt&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;params&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;dklen&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">32</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;n&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">262144</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;p&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;r&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">8</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;salt&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;...&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;message&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;&quot;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;checksum&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;function&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;sha256&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;params&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{},</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;message&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;&lt;32 字节 SHA256(decryption_key[16:32] || cipher_message)&gt;&quot;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;cipher&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;function&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;aes-128-ctr&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;params&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;iv&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;...&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;message&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;&lt;加密后的 BLS 私钥&gt;&quot;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;description&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;validator-1&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;pubkey&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;&lt;48 字节 BLS 公钥&gt;&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;path&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;m/12381/3600/0/0/0&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8">          </span><span style="color: #8F5902; font-style: italic">// EIP-2334 signing key 路径（withdrawal key 为 m/12381/3600/0/0）</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;uuid&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;...&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;version&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">4</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<h4 id="1072">10.7.2 解密流程</h4>
+<ol>
+<li>密码 NFKD 正则化、剥控制字符、UTF-8 编码。</li>
+<li>KDF（scrypt 或 PBKDF2）→ 32 字节 <code>decryption_key</code>。</li>
+<li>算 <code>SHA256(decryption_key[16:32] || cipher.message)</code>，需等于 <code>checksum.message</code>，否则密码错误直接拒绝。</li>
+<li>用 <code>decryption_key[:16]</code> 做 AES-128-CTR 解密得 BLS 私钥。</li>
+</ol>
+<p>精致点：checksum 用 <code>decryption_key</code> 后 16 字节，AES key 用前 16 字节——即使 checksum 被取仍得不到完整 AES key（envelope encryption）。</p>
+<h4 id="1073-eip-2334">10.7.3 EIP-2334 派生路径</h4>
+<ul>
+<li><strong>Withdrawal key</strong>：<code>m/12381/3600/i/0</code>（提款凭证，冷存）</li>
+<li><strong>Signing key</strong>：<code>m/12381/3600/i/0/0</code>（attestation/block 签名，热钱包）</li>
+</ul>
+<p>12381 = BLS12-381；3600 = ETH2 SLIP-44 编号。密钥派生是 EIP-2333（HKDF 方案），不是 BIP-32 的椭圆曲线加法。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11-pqc" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章 · 后量子密码学（PQC）</h2>
+
+<p>ECDSA、Schnorr、BLS、ECDH 的安全性都建在 ECDLP 上。量子计算机的 Shor 算法摧毁这个假设——PQC 是不可回避的下一步。</p>
+<h3 id="111">11.1 量子威胁分级</h3>
+<ul>
+<li><strong>Shor 算法</strong>：多项式时间解大整数分解与离散对数 → RSA/DH/ECDSA/Schnorr/BLS 全死。~4000 逻辑量子比特稳定运行即可反推今天的私钥。</li>
+<li><strong>Grover 算法</strong>：黑盒搜索 <code>O(N) → O(√N)</code>。</li>
+<li>SHA-256 抗原像 <code>2^256 → 2^128</code>（仍够）；抗碰撞经 BHT 理论 <code>2^85</code>，受量子内存限制远未可行。</li>
+<li>AES-128 抗暴力 <code>2^128 → 2^64</code>（NIST 仍列 Category 1，并行加速有上界）；AES-256 抗暴力 <code>2^128</code>（Category 5）。</li>
+</ul>
+<p>结论：哈希与对称只需加大 key size；所有基于 DLP/ECDLP/RSA 的公钥密码必须换路线。</p>
+<h3 id="112-nist">11.2 NIST 后量子标准化</h3>
+<p>NIST 2016 年启动，2024-08 发布三个最终标准（<a href="https://csrc.nist.gov/news/2024/postquantum-cryptography-fips-approved">https://csrc.nist.gov/news/2024/postquantum-cryptography-fips-approved</a>）：</p>
+<table>
+<thead>
+<tr>
+<th>标准</th>
+<th>别名</th>
+<th>类型</th>
+<th>数学基础</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FIPS 203</strong></td>
+<td>ML-KEM (CRYSTALS-Kyber)</td>
+<td>KEM/加密</td>
+<td>模格 LWE</td>
+</tr>
+<tr>
+<td><strong>FIPS 204</strong></td>
+<td>ML-DSA (CRYSTALS-Dilithium)</td>
+<td>签名</td>
+<td>模格 LWE</td>
+</tr>
+<tr>
+<td><strong>FIPS 205</strong></td>
+<td>SLH-DSA (SPHINCS+)</td>
+<td>签名</td>
+<td>哈希基</td>
+</tr>
+</tbody>
+</table>
+<p>后续还有 FIPS 206（Falcon）、HQC 等。</p>
+<h4 id="1121-ml-kemkyber">11.2.1 ML-KEM（Kyber）：密钥封装</h4>
+<p>替代 RSA/ECDH。</p>
+<table>
+<thead>
+<tr>
+<th>级别</th>
+<th>公钥</th>
+<th>密文</th>
+<th>等效安全</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ML-KEM-512</td>
+<td>800 B</td>
+<td>768 B</td>
+<td>AES-128</td>
+</tr>
+<tr>
+<td>ML-KEM-768</td>
+<td>1184 B</td>
+<td>1088 B</td>
+<td>AES-192</td>
+</tr>
+<tr>
+<td>ML-KEM-1024</td>
+<td>1568 B</td>
+<td>1568 B</td>
+<td>AES-256</td>
+</tr>
+</tbody>
+</table>
+<p>ML-KEM-768 公钥 1184B，是 secp256k1 33B 的 36 倍，链上存储 gas 显著。</p>
+<h4 id="1122-ml-dsadilithium">11.2.2 ML-DSA（Dilithium）：格签名</h4>
+<p>替代 ECDSA / Schnorr。</p>
+<table>
+<thead>
+<tr>
+<th>级别</th>
+<th>公钥</th>
+<th>签名</th>
+<th>等效安全</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ML-DSA-44</td>
+<td>1312 B</td>
+<td>2420 B</td>
+<td>AES-128</td>
+</tr>
+<tr>
+<td>ML-DSA-65</td>
+<td>1952 B</td>
+<td>3293 B</td>
+<td>AES-192</td>
+</tr>
+<tr>
+<td>ML-DSA-87</td>
+<td>2592 B</td>
+<td>4595 B</td>
+<td>AES-256</td>
+</tr>
+</tbody>
+</table>
+<p>签名 ~2.4 KB 是 ECDSA 的 38 倍——迁移阻力的大头。</p>
+<h4 id="1123-slh-dsasphincs">11.2.3 SLH-DSA（SPHINCS+）：纯哈希签名</h4>
+<p>完全基于哈希（Lamport + Merkle + WOTS+），不依赖任何困难数学假设。代价：签名 8-50 KB，适合国家根 CA 签固件、长期存档；Web3 短期不会用。</p>
+<h3 id="113-web3">11.3 对 Web3 的具体影响</h3>
+<p>Vitalik 的 <em>Post-quantum Ethereum Roadmap</em>（<a href="https://pq.ethereum.org/">https://pq.ethereum.org/</a>）指出 4 个组件需 PQC 升级：(1) 共识层 BLS（pairing 死）；(2) 数据可用性 KZG（pairing 死）；(3) EOA ECDSA（DLP 死）；(4) zk-SNARK（KZG/IPA 系全死，FRI 系幸存）。</p>
+<table>
+<thead>
+<tr>
+<th>当前</th>
+<th>后量子替代</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ECDSA (EOA)</td>
+<td>ML-DSA / SLH-DSA / Lamport</td>
+<td>通过 AA + EIP-7702 平滑迁移</td>
+</tr>
+<tr>
+<td>BLS (共识)</td>
+<td>leanSig（hash-based 多签）+ STARK 聚合</td>
+<td>见下</td>
+</tr>
+<tr>
+<td>KZG (DA)</td>
+<td>STARK / FRI</td>
+<td>研究路径已存在</td>
+</tr>
+<tr>
+<td>Groth16 / Plonk (zk)</td>
+<td>STARK / Binius</td>
+<td>透明且抗量子</td>
+</tr>
+</tbody>
+</table>
+<p>PQC 签名太大无法聚合，Ethereum Foundation 提出 <strong>leanSig</strong>（hash-based 多签）+ 最小 zkVM <strong>leanVM</strong>，把成千上万 PQC 签名通过 STARK 递归压成一个证明。</p>
+<figure><img src="diagram-8c3b76c638.png" alt="mermaid diagram"></figure>
+
+<h3 id="114-vitalik-2026-02-strawmap">11.4 时间表（Vitalik 2026-02 Strawmap）</h3>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>升级</th>
+<th>PQC 相关动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025 Q2</td>
+<td>Pectra</td>
+<td>EIP-7702 / EIP-2537 (为 PQC 留接口)</td>
+</tr>
+<tr>
+<td>2026 H1</td>
+<td>Glamsterdam</td>
+<td>数据可用性 STARK 化探索</td>
+</tr>
+<tr>
+<td>2026 H2</td>
+<td>Hegotá</td>
+<td>全栈 AA，为 EOA 迁移铺路</td>
+</tr>
+<tr>
+<td>2027-2028</td>
+<td>(代号未定)</td>
+<td>leanSig + leanVM 上线</td>
+</tr>
+<tr>
+<td>~2030</td>
+<td>"Lean Ethereum"</td>
+<td>完整 PQC，所有组件量子安全</td>
+</tr>
+</tbody>
+</table>
+<h3 id="115">11.5 工程师当下三件事</h3>
+<ol>
+<li><strong>新协议优先 STARK / FRI 系</strong>（Polygon Miden、Starknet、RISC Zero），PQC 迁移最轻。</li>
+<li><strong>跨链桥</strong>避免依赖 BLS pairing 做长期签名验证，至少留升级路径。</li>
+<li><strong>长期保密 message</strong> 考虑双重加密（ECC + ML-KEM），防"今天抓数据、未来解密"的 harvest-now-decrypt-later 攻击。</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12-fhe" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 · 全同态加密（FHE）</h2>
+
+<h3 id="121">12.1 定义</h3>
+<p><strong>FHE</strong>（Fully Homomorphic Encryption）允许在密文上直接做运算：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Dec(Enc(a) ⊕ Enc(b)) = a + b
+Dec(Enc(a) ⊗ Enc(b)) = a × b
+</code></pre></div>
+<p>加法 + 乘法 = 图灵完备 → 任意计算可在密文上完成。云端从头到尾不知道明文。</p>
+<h3 id="122">12.2 简史</h3>
+<ul>
+<li>2009 Gentry 博士论文：第一个 FHE 方案，慢 10⁹ 倍。</li>
+<li>2012-2014 BGV / BFV：慢 10⁴。</li>
+<li>2017 CKKS：浮点 FHE，ML 友好。</li>
+<li>2016 TFHE：Torus FHE，bootstrap 毫秒级，布尔电路友好。</li>
+<li>2023+：GPU/ASIC 把 TFHE 推入实际可部署区间。</li>
+</ul>
+<h3 id="123-fhe-vs-zk">12.3 FHE vs ZK</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>FHE</th>
+<th>ZK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>谁有秘密</td>
+<td>用户加密 → 云端算 → 用户解密</td>
+<td>证明者有秘密 → 验证者不知</td>
+</tr>
+<tr>
+<td>谁做计算</td>
+<td>计算方（不可信）</td>
+<td>证明者（可信于自己）</td>
+</tr>
+<tr>
+<td>输出</td>
+<td>密文 → 解密后是答案</td>
+<td>一个证明 + 公开值</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>隐私 ML 推理、加密数据库</td>
+<td>状态压缩、身份证明</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>单次操作慢 ~10^4 倍</td>
+<td>证明慢但验证快</td>
+</tr>
+</tbody>
+</table>
+<p>一句话：FHE 隐藏输入，ZK 隐藏中间步骤。</p>
+<h3 id="124-web3-fhe">12.4 Web3 FHE 玩家</h3>
+<h4 id="1241-zamafhevm">12.4.1 Zama：fhEVM</h4>
+<p>法国 FHE 公司，2025-06 估值 10 亿美元（<a href="https://blockeden.xyz/blog/2026/01/05/zama-protocol/">https://blockeden.xyz/blog/2026/01/05/zama-protocol/</a>）。<strong>fhEVM</strong> 让 EVM 链直接跑加密合约状态：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;fhevm/lib/TFHE.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">HiddenAuction</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span>euint64<span style="color: #F8F8F8"> </span>highestBid<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">          </span><span style="color: #8F5902; font-style: italic">// 加密 uint64</span>
+<span style="color: #F8F8F8">    </span>eaddress<span style="color: #F8F8F8"> </span>highestBidder<span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">bid</span><span style="color: #000; font-weight: bold">(</span>einput<span style="color: #F8F8F8"> </span>encryptedAmount<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>proof<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span>euint64<span style="color: #F8F8F8"> </span>amount<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>TFHE<span style="color: #000; font-weight: bold">.</span>asEuint64<span style="color: #000; font-weight: bold">(</span>encryptedAmount<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>proof<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">        </span>ebool<span style="color: #F8F8F8"> </span>isHigher<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>TFHE<span style="color: #000; font-weight: bold">.</span>gt<span style="color: #000; font-weight: bold">(</span>amount<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>highestBid<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">        </span>highestBid<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>TFHE<span style="color: #000; font-weight: bold">.</span>select<span style="color: #000; font-weight: bold">(</span>isHigher<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amount<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>highestBid<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">        </span>highestBidder<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>TFHE<span style="color: #000; font-weight: bold">.</span>select<span style="color: #000; font-weight: bold">(</span>isHigher<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>eaddress<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">),</span><span style="color: #F8F8F8"> </span>highestBidder<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>出价、比较、更新全程链上无人见明文，合约逻辑仍正确执行。</p>
+<p>API 变更：旧版 <code>TFHE.cmux</code> 自 v0.5 起改名 <code>TFHE.select</code>，旧文档里的 <code>cmux</code> 即此函数。</p>
+<h4 id="1242-fhenix-inco">12.4.2 Fhenix / Inco</h4>
+<p>Fhenix：基于 Zama TFHE-rs 的 optimistic rollup L2，结算到 Ethereum（<a href="https://www.fhenix.io/">https://www.fhenix.io/</a>）。Inco：FHE/TEE 混合后端，Confidential Randomness 服务被 50%+ 链上游戏采用。</p>
+<h3 id="125">12.5 性能与场景</h3>
+<ul>
+<li>TFHE 单 boolean gate：~10 ms（CPU）/ ~0.1 ms（GPU）。</li>
+<li>fhEVM 合约：单 tx ~5-50 秒（依操作复杂度）。</li>
+<li>Zama 路线图预测 2026 底 GPU 达 500-1000 TPS，2027-2028 ASIC 达 100k+ TPS。</li>
+</ul>
+<p>适合：隐私拍卖 / 投票、链上游戏隐藏信息（牌、装备）、加密 ML 推理（保护模型 + 输入）、DEX dark pool。
+不适合：高频交易（延迟过高）、需事后审计的合规场景（加密太彻底）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="13_1" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 · 通往零知识证明</h2>
+
+<p>详细 zk 协议在模块 08 展开，本章只搭桥。</p>
+<h3 id="131-zk-proof">13.1 zk-Proof 流程</h3>
+<p>证明"我知道某秘密 x 满足关系 R(x, public)"，不暴露 x，证明短，验证快。以 Groth16 为例：</p>
+<figure><img src="diagram-34162478bc.png" alt="mermaid diagram"></figure>
+
+<p>每步都用到前面的砖：哈希（Fiat-Shamir）、椭圆曲线（BLS12-381/BN254）、多项式承诺（KZG/IPA/FRI）、pairing。</p>
+<h3 id="132-zk">13.2 zk 友好哈希</h3>
+<p>Keccak 入电路 ~150,000 约束，Poseidon ~250。状态树深 32 读一次状态：Keccak 480 万 vs Poseidon 8000 约束——600× 便宜。</p>
+<h3 id="133-zk">13.3 主流 ZK 协议对照</h3>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>多项式承诺</th>
+<th>哈希</th>
+<th>Trusted Setup</th>
+<th>抗量子</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Groth16</td>
+<td>KZG-like</td>
+<td>-</td>
+<td>✓ per-circuit</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Plonk</td>
+<td>KZG</td>
+<td>Poseidon</td>
+<td>✓ universal</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>Halo2</td>
+<td>IPA</td>
+<td>Poseidon</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td>STARK</td>
+<td>FRI (Merkle)</td>
+<td>Pedersen / Rescue</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Nova / SuperNova</td>
+<td>Pedersen</td>
+<td>Poseidon</td>
+<td>✗</td>
+<td>✗</td>
+</tr>
+<tr>
+<td><strong>Brakedown-based</strong> (Spartan)</td>
+<td>Brakedown</td>
+<td>Keccak / Poseidon</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Binius</td>
+<td>FRI-Binius / Brakedown</td>
+<td>Grøstl / Vision-Mark32</td>
+<td>✗</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Brakedown</strong>（Golovnev-Lee-Setty-Thaler-Wahby 2021）：Reed-Solomon 编码 + Merkle 树。无 trusted setup、field-agnostic（不限于 pairing-friendly 域）、prover 几乎线性时间——比 FRI 还快。代价：proof 比 FRI 大、verifier 比 KZG 慢。a16z crypto 的 Lasso/Jolt zkVM 与 Plonky3 都集成。</p>
+<p><strong>Binius</strong>（Diamond-Posen 2023，<a href="https://eprint.iacr.org/2023/1784.pdf">https://eprint.iacr.org/2023/1784.pdf</a>）：直接在二元域 F₂ 及其塔域上做 SNARK。计算机数据天生是 F₂ bit，传统 256-bit 域 SNARK 对位级操作浪费 99%+ 位。Binius "1 bit = 1 域元素"，Keccak-in-circuit 比 Poseidon-based SNARK 快 10-100×。Irreducible（前 Ulvetanna）与 Polygon 在生产评估。zkEVM Keccak 税随 Binius 类方案有了解法。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="14-ai" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 · AI 在密码学审查中的位置</h2>
+
+<h3 id="141">14.1 能做</h3>
+<ul>
+<li><strong>文献检索</strong>：50 年论文交叉索引，30 秒列出相关攻击论文。</li>
+<li><strong>代码模式识别</strong>：<code>encodePacked</code> + 多动态参数、<code>ecrecover</code> 漏检 0 等——Slither / Aderyn / 4naly3er 已在做。</li>
+<li><strong>fuzzing 引导</strong>：根据合约语义生成边界用例。</li>
+<li><strong>论文摘要</strong>：100 页压成 5 分钟。</li>
+</ul>
+<h3 id="142">14.2 不能做</h3>
+<ul>
+<li><strong>替代形式化证明</strong>：安全归约必须经严格数学验证。</li>
+<li><strong>替代 Coq/Lean/EasyCrypt</strong>：TLS 1.3、Signal、HPKE 关键部分都经形式化工具机器验证。</li>
+<li><strong>保证合约真的安全</strong>：LLM 对"看似简单"的代码经常给出错误判断。</li>
+</ul>
+<h3 id="143">14.3 实务建议</h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>AI 可信度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>解释 EIP</td>
+<td>高（仍需对比原文）</td>
+</tr>
+<tr>
+<td>找 known patterns</td>
+<td>中高（与 Slither 配合）</td>
+</tr>
+<tr>
+<td>评估新协议安全性</td>
+<td>低（必须人审 + 形式化）</td>
+</tr>
+<tr>
+<td>写测试用例</td>
+<td>高（LLM 发散性强）</td>
+</tr>
+<tr>
+<td>写新密码学方案</td>
+<td><strong>不要让 AI 单独做</strong></td>
+</tr>
+</tbody>
+</table>
+<p>没有任何严肃密码学协议的安全性是被 LLM 证明过的。AI 在密码学领域更适合做探照灯，不是判官。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="15" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 · 工程实战代码</h2>
+
+<p>本目录所有代码都已实际跑过，依赖版本 pin 死，可复现。</p>
+<h3 id="151">15.1 安装</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Python 端</span>
+<span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code
+python3<span style="color: #F8F8F8"> </span>-m<span style="color: #F8F8F8"> </span>venv<span style="color: #F8F8F8"> </span>.venv<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">source</span><span style="color: #F8F8F8"> </span>.venv/bin/activate
+pip<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>-r<span style="color: #F8F8F8"> </span>requirements.txt
+
+<span style="color: #8F5902; font-style: italic"># Solidity 端</span>
+curl<span style="color: #F8F8F8"> </span>-L<span style="color: #F8F8F8"> </span>https://foundry.paradigm.xyz<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>foundryup
+forge<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>OpenZeppelin/openzeppelin-contracts@v5.6.1<span style="color: #F8F8F8"> </span>--no-commit
+forge<span style="color: #F8F8F8"> </span>build
+</code></pre></div>
+<h3 id="152">15.2 文件清单</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="./code/01_secp256k1_sign_verify.py"><code>code/01_secp256k1_sign_verify.py</code></a></td>
+<td>secp256k1 keypair → sign → verify → ecrecover；low-s + 紧凑签名</td>
+</tr>
+<tr>
+<td><a href="./code/02_keccak_vs_sha3.py"><code>code/02_keccak_vs_sha3.py</code></a></td>
+<td>Keccak vs SHA3 差异，跨语言一致性，<code>encodePacked</code> 冲突</td>
+</tr>
+<tr>
+<td><a href="./code/03_merkle_tree.py"><code>code/03_merkle_tree.py</code></a></td>
+<td>32 叶 Merkle 树，OZ 兼容</td>
+</tr>
+<tr>
+<td><a href="./code/04_AirdropMerkle.sol"><code>code/04_AirdropMerkle.sol</code></a></td>
+<td>Solidity 0.8.28：Merkle 白名单 + ECDSA 双门</td>
+</tr>
+<tr>
+<td><a href="./code/foundry.toml"><code>code/foundry.toml</code></a></td>
+<td>Foundry 配置</td>
+</tr>
+<tr>
+<td><a href="./code/requirements.txt"><code>code/requirements.txt</code></a></td>
+<td>Python 锁定依赖</td>
+</tr>
+<tr>
+<td><a href="./code/package.json"><code>code/package.json</code></a></td>
+<td>Node 端 noble-curves / viem 依赖</td>
+</tr>
+</tbody>
+</table>
+<h3 id="153">15.3 关键代码片段</h3>
+<h4 id="1531-secp256k1">15.3.1 secp256k1 签名核心</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 务必用操作系统 CSPRNG，绝不能 random.random()</span>
+<span style="color: #000">sk_bytes</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">os</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">urandom</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">32</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># 用 coincurve（封装 libsecp256k1）创建私钥对象</span>
+<span style="color: #000">sk</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">PrivateKey</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sk_bytes</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># 非压缩公钥：65 字节，结构 0x04 || X || Y</span>
+<span style="color: #8F5902; font-style: italic"># 压缩公钥 33 字节会用 0x02/0x03 标记 Y 奇偶</span>
+<span style="color: #000">pk</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">sk</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">public_key</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">format</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">compressed</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #204A87; font-weight: bold">False</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># 关键：以太坊地址是从去掉 0x04 标志位的 64 字节哈希出来的</span>
+<span style="color: #8F5902; font-style: italic"># keccak256(X||Y)[12:] 取后 20 字节，再做 EIP-55 校验和</span>
+<span style="color: #000">addr</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">to_checksum_address</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">keccak</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk</span><span style="color: #000; font-weight: bold">[</span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">:])[</span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #0000CF; font-weight: bold">20</span><span style="color: #000; font-weight: bold">:])</span>
+
+<span style="color: #8F5902; font-style: italic"># 不要直接对原文签名！永远先 keccak256(消息)</span>
+<span style="color: #000">msg_hash</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">keccak</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">b&quot;Hello Web3, signed at 2026-04&quot;</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># eth-keys 用 RFC 6979 派生确定性 k，杜绝 nonce 重用</span>
+<span style="color: #000">sig</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">keys</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">PrivateKey</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sk_bytes</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sign_msg_hash</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">msg_hash</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># recover 等价于 Solidity 的 ecrecover(hash, v+27, r, s)</span>
+<span style="color: #000">recovered</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">sig</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">recover_public_key_from_msg_hash</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">msg_hash</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #204A87; font-weight: bold">assert</span> <span style="color: #000">recovered</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">to_checksum_address</span><span style="color: #000; font-weight: bold">()</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #000">addr</span>
+</code></pre></div>
+<h4 id="1532-solidity">15.3.2 Solidity 合约的双门验证</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">claim</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">amount</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>calldata<span style="color: #F8F8F8"> </span>proof<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>sig<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 防重放：同一地址只能领一次</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>claimed<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">])</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>AlreadyClaimed<span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 关键：叶子结构必须和链下生成器完全一致</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// (msg.sender 是 20 字节，amount 是 32 字节大端)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">leaf</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amount<span style="color: #000; font-weight: bold">));</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// OZ MerkleProof.verifyCalldata 内部就是 commutativeKeccak256 折叠</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">!</span>MerkleProof<span style="color: #000; font-weight: bold">.</span>verifyCalldata<span style="color: #000; font-weight: bold">(</span>proof<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>merkleRoot<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>leaf<span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>InvalidProof<span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 第二道闸门：链下管理员签名背书</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 把 chainid 和 address(this) 也写进去防跨链/跨合约重放</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">digest</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amount<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">this</span><span style="color: #000; font-weight: bold">),</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">block.chainid</span><span style="color: #000; font-weight: bold">));</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">ethSigned</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>MessageHashUtils_toEthSignedMessageHash<span style="color: #000; font-weight: bold">(</span>digest<span style="color: #000; font-weight: bold">);</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// OZ ECDSA.recover 会拒绝 high-s、address(0) 等异常</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>ECDSA<span style="color: #000; font-weight: bold">.</span>recover<span style="color: #000; font-weight: bold">(</span>ethSigned<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>sig<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!=</span><span style="color: #F8F8F8"> </span>signer<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>InvalidSignature<span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #F8F8F8">    </span>claimed<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">]</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">    </span>token<span style="color: #000; font-weight: bold">.</span>safeTransfer<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amount<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">    </span>emit<span style="color: #F8F8F8"> </span>Claimed<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amount<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<hr />
+
+</section><section class="chapter">
+<h2 id="16" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 · 习题与参考解答</h2>
+
+<h3 id="1_1">习题 1：复现一笔以太坊交易</h3>
+<p><strong>题目</strong>：用 anvil 默认账户 #0（私钥 <code>0xac09...ff80</code>）构造一笔 EIP-1559
+转账 0.01 ETH，输出 raw hex；从 raw 反向恢复 from；验证 <code>keccak(raw) ==
+signed.hash</code>。</p>
+<p><strong>参考实现</strong>：<a href="./exercises/ex1_replay_eth_tx.py"><code>exercises/ex1_replay_eth_tx.py</code></a></p>
+<p><strong>关键解释</strong>：</p>
+<ul>
+<li>EIP-1559 type-2 raw bytes = <code>0x02 || RLP([chainId, nonce, maxPriority,
+  maxFee, gas, to, value, data, accessList, yParity, r, s])</code>。</li>
+<li><code>tx.hash</code> = <code>keccak256(raw)</code>，可以自己复算。</li>
+<li><code>Account.recover_transaction(raw)</code> 内部：解析 RLP → 找到 yParity, r, s
+  → 重构 signing payload（去签名三元组）→ keccak → ecrecover。</li>
+</ul>
+<h3 id="2-raw-tx-vrs">习题 2：从 raw tx 提取 v/r/s</h3>
+<p><strong>题目</strong>：写 <code>parse_vrs(raw) -&gt; (v, r, s, type)</code>，支持 Legacy / EIP-2930 /
+EIP-1559。</p>
+<p><strong>参考实现</strong>：<a href="./exercises/ex2_extract_vrs_from_raw.py"><code>exercises/ex2_extract_vrs_from_raw.py</code></a></p>
+<p><strong>核心难点</strong>：</p>
+<ul>
+<li>Legacy 的 v = <code>chainId·2 + 35 + yParity</code>（EIP-155 后），早期 27/28
+  （EIP-155 前）。</li>
+<li>Type-2 的 RLP 不在最外层，要先剥掉 0x02。</li>
+<li><code>rlp.decode</code> 返回 byte string，前导零会被去掉，<code>int.from_bytes(b'')</code>
+  要返回 0。</li>
+</ul>
+<h3 id="3merkle-airdrop">习题 3：Merkle airdrop 端到端</h3>
+<p><strong>题目</strong>：4 个白名单条目 <code>(address, amount)</code>：</p>
+<ol>
+<li>用 Python 算 root（叶子规则与 Solidity <code>keccak256(abi.encodePacked
+   (address, uint256))</code> 兼容）；</li>
+<li>为每条目生成 proof 输出 JSON；</li>
+<li>部署 <code>AirdropMerkle.sol</code>，写入 root + signer；</li>
+<li>调 <code>claim(amount, proof, sig)</code> 验证通过。</li>
+</ol>
+<p><strong>参考实现</strong>：链下 <a href="./exercises/ex3_airdrop_e2e.py"><code>exercises/ex3_airdrop_e2e.py</code></a>
++ 链上 <a href="./code/04_AirdropMerkle.sol"><code>code/04_AirdropMerkle.sol</code></a>。</p>
+<p><strong>关键陷阱</strong>：</p>
+<ul>
+<li>叶子里 <code>address</code> 必须是 20 字节裸地址（不是 32 字节填充），<code>uint256</code>
+  必须是 32 字节大端。</li>
+<li>排序按字节序（lexicographic），不是数值。Python <code>bytes</code> 比较默认就是
+  字节序，所以 <code>(a, b) if a &lt; b else (b, a)</code> 是对的。</li>
+<li>必须把 <code>address(this)</code> 和 <code>block.chainid</code> 带进 ECDSA digest，否则同
+  一份签名能在任意合约/任意链上重放。</li>
+</ul>
+<h3 id="4-ecrecover-address0">习题 4：手动构造让 <code>ecrecover</code> 返回 <code>address(0)</code> 的输入</h3>
+<p><strong>参考解答</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 让 r = 0：EIP-2 起 r=0 直接拒绝</span>
+ecrecover<span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">0x123</span><span style="color: #000; font-weight: bold">...,</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">27</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">),</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">)));</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// → 0x0</span>
+
+<span style="color: #8F5902; font-style: italic">// 让 s &gt; n/2</span>
+<span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">));</span>
+<span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">s</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">(</span>SECP256K1_N<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">));</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// &gt; n/2</span>
+ecrecover<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">hash</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">27</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>r<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>s<span style="color: #000; font-weight: bold">);</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// → 0x0</span>
+</code></pre></div>
+<p><strong>为什么这是考点</strong>：合约里 <code>require(ecrecover(...) == storedSigner)</code>
+而 storedSigner 在某代码路径下未初始化（默认 0），就能伪造任意签名通过。</p>
+<h3 id="5-abiencodepacked">习题 5：解释 <code>abi.encodePacked</code> 冲突</h3>
+<p><strong>参考解答</strong>：<code>abi.encodePacked</code> 不为 <code>string</code> 写长度前缀，<code>("a","bc")</code>
+和 <code>("ab","c")</code> 都拼成 <code>0x616263</code>。</p>
+<p><strong>修复</strong>：用 <code>abi.encode</code>（每参数填到 32B），或先单独哈希再拼接：
+<code>keccak256(abi.encodePacked(keccak256("a"), keccak256("bc")))</code>。</p>
+<h3 id="6bls-rogue-key">习题 6：BLS rogue key 攻击演示</h3>
+<p><strong>参考解答</strong>（伪代码）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">py_ecc.bls12_381</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">G1</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">multiply</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">add</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">neg</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">pairing</span>
+<span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">py_ecc.bls.hash_to_curve</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">hash_to_G2</span>
+
+<span style="color: #000">sk_B</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0xB0B</span>
+<span style="color: #000">pk_B</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">multiply</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">G1</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">sk_B</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #000">sk_M</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0x33D</span>
+<span style="color: #000">pk_M</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">add</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">multiply</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">G1</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">sk_M</span><span style="color: #000; font-weight: bold">),</span> <span style="color: #000">neg</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk_B</span><span style="color: #000; font-weight: bold">))</span>   <span style="color: #8F5902; font-style: italic"># 关键：减掉 pk_B</span>
+
+<span style="color: #000">pk_agg</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">add</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk_B</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">pk_M</span><span style="color: #000; font-weight: bold">)</span>                    <span style="color: #8F5902; font-style: italic"># 等于 sk_M·G1</span>
+<span style="color: #204A87; font-weight: bold">assert</span> <span style="color: #000">pk_agg</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #000">multiply</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">G1</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">sk_M</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #000">m</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #4E9A06">b&quot;transfer 1000 ETH to Mallory&quot;</span>
+<span style="color: #000">H</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">hash_to_G2</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">m</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">sig_M</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">multiply</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">H</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">sk_M</span><span style="color: #000; font-weight: bold">)</span>                   <span style="color: #8F5902; font-style: italic"># 只用 sk_M 签</span>
+
+<span style="color: #8F5902; font-style: italic"># 假装是 (Bob, Mallory) 聚合签名，验证通过</span>
+<span style="color: #204A87; font-weight: bold">assert</span> <span style="color: #000">pairing</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">G1</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">sig_M</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #000">pairing</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk_agg</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">H</span><span style="color: #000; font-weight: bold">)</span>
+</code></pre></div>
+<p><strong>PoP 防御</strong>：注册公钥时附带 <code>σ_pop = sk · H_pop(pk)</code>。Mallory 不知道 <code>sk_M - sk_B</code>，无法为 pk_M 提供合法 PoP。</p>
+<h3 id="7-eddsa-rng">习题 7（思考）：为什么 EdDSA 不需要 RNG</h3>
+<p><strong>参考解答</strong>：nonce r = <code>SHA-512(prefix ‖ m) mod L</code>，prefix 来自私钥派生哈希。同 (sk, m) r 确定，不同 m 则必然不同（哈希抗碰撞）。不依赖 RNG，从根上消除 nonce 重用风险。</p>
+<h3 id="8trusted-setup-ceremony-1">习题 8（思考）：trusted setup ceremony 的"1 个诚实就够"</h3>
+<p><strong>参考解答</strong>：接力式 Ceremony，最终 <code>τ = r_1·r_2·...·r_n</code>。只要任一 r_i 被诚实销毁，τ 就无人知晓——其他人合谋也算不出来，即 1-of-n trust。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="17" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 · 延伸阅读与权威源</h2>
+
+<p>带 (★) 的是必读。</p>
+<h3 id="171">17.1 教材级</h3>
+<ul>
+<li>(★) Boneh &amp; Shoup, <em>A Graduate Course in Applied Cryptography</em>, v0.6, 2023. <a href="https://crypto.stanford.edu/~dabo/cryptobook/">https://crypto.stanford.edu/~dabo/cryptobook/</a></li>
+<li>(★) Dan Boneh, <em>Cryptography I &amp; II</em>, Stanford / Coursera. <a href="https://www.coursera.org/learn/crypto">https://www.coursera.org/learn/crypto</a>，<a href="https://crypto.stanford.edu/~dabo/courses/OnlineCrypto/">https://crypto.stanford.edu/~dabo/courses/OnlineCrypto/</a></li>
+<li>Katz &amp; Lindell, <em>Introduction to Modern Cryptography</em>, 3rd ed. 2020.</li>
+</ul>
+<h3 id="172">17.2 标准文档</h3>
+<ul>
+<li>(★) Ethereum Yellow Paper. <a href="https://ethereum.github.io/yellowpaper/paper.pdf">https://ethereum.github.io/yellowpaper/paper.pdf</a>
+  ——附录 C 定义 KEC = Keccak-256；附录 D 定义 RLP。</li>
+<li>FIPS 202 (SHA-3 Standard).
+  <a href="https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf">https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf</a></li>
+<li>SECG SEC 2 v2 (secp256k1 参数). <a href="https://www.secg.org/sec2-v2.pdf">https://www.secg.org/sec2-v2.pdf</a></li>
+<li>BIP-340 (Schnorr for Bitcoin). <a href="https://en.bitcoin.it/wiki/BIP_0340">https://en.bitcoin.it/wiki/BIP_0340</a></li>
+<li>IETF RFC 9381 (VRF). <a href="https://datatracker.ietf.org/doc/rfc9381/">https://datatracker.ietf.org/doc/rfc9381/</a></li>
+<li>IETF RFC 6979 (Deterministic ECDSA).
+  <a href="https://datatracker.ietf.org/doc/rfc6979/">https://datatracker.ietf.org/doc/rfc6979/</a></li>
+<li>IETF RFC 5869 (HKDF). <a href="https://datatracker.ietf.org/doc/rfc5869/">https://datatracker.ietf.org/doc/rfc5869/</a></li>
+<li>draft-irtf-cfrg-bls-signature-06.
+  <a href="https://datatracker.ietf.org/doc/draft-irtf-cfrg-bls-signature/">https://datatracker.ietf.org/doc/draft-irtf-cfrg-bls-signature/</a></li>
+<li>(★) BIP-32 (HD Wallets). <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki</a></li>
+<li>BIP-39 (Mnemonic). <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki</a></li>
+<li>BIP-44 (Multi-Account HD). <a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki</a></li>
+<li>SLIP-0010 (HD Derivation for Ed25519/Curve25519).
+  <a href="https://github.com/satoshilabs/slips/blob/master/slip-0010.md">https://github.com/satoshilabs/slips/blob/master/slip-0010.md</a></li>
+<li>BIP-327 (MuSig2). <a href="https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki</a></li>
+<li>BIP-340 (Schnorr Sigs). <a href="https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki</a></li>
+<li>BIP-341 (Taproot). <a href="https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki</a></li>
+<li>BIP-342 (Tapscript). <a href="https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki">https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki</a></li>
+</ul>
+<h4 id="1721">17.2.1 后量子标准</h4>
+<ul>
+<li>(★) NIST FIPS 203 (ML-KEM). <a href="https://csrc.nist.gov/pubs/fips/203/final">https://csrc.nist.gov/pubs/fips/203/final</a></li>
+<li>(★) NIST FIPS 204 (ML-DSA). <a href="https://csrc.nist.gov/pubs/fips/204/final">https://csrc.nist.gov/pubs/fips/204/final</a></li>
+<li>(★) NIST FIPS 205 (SLH-DSA). <a href="https://csrc.nist.gov/pubs/fips/205/final">https://csrc.nist.gov/pubs/fips/205/final</a></li>
+<li><em>NIST Releases First 3 Finalized PQC Standards</em> (2024-08).
+  <a href="https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards">https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards</a></li>
+</ul>
+<h3 id="173-eips">17.3 EIPs</h3>
+<ul>
+<li>EIP-2 — Homestead: low-s. <a href="https://eips.ethereum.org/EIPS/eip-2">https://eips.ethereum.org/EIPS/eip-2</a></li>
+<li>EIP-155 — Replay protection. <a href="https://eips.ethereum.org/EIPS/eip-155">https://eips.ethereum.org/EIPS/eip-155</a></li>
+<li>EIP-191 — Signed data standard. <a href="https://eips.ethereum.org/EIPS/eip-191">https://eips.ethereum.org/EIPS/eip-191</a></li>
+<li>EIP-196 / 197 — BN254 precompiles. <a href="https://eips.ethereum.org/EIPS/eip-196">https://eips.ethereum.org/EIPS/eip-196</a></li>
+<li>(★) EIP-712 — Typed structured data. <a href="https://eips.ethereum.org/EIPS/eip-712">https://eips.ethereum.org/EIPS/eip-712</a></li>
+<li>EIP-1559 — Fee market &amp; type-2 tx. <a href="https://eips.ethereum.org/EIPS/eip-1559">https://eips.ethereum.org/EIPS/eip-1559</a></li>
+<li>EIP-2098 — Compact signature. <a href="https://eips.ethereum.org/EIPS/eip-2098">https://eips.ethereum.org/EIPS/eip-2098</a></li>
+<li>EIP-2537 — BLS12-381 precompiles. <a href="https://eips.ethereum.org/EIPS/eip-2537">https://eips.ethereum.org/EIPS/eip-2537</a></li>
+<li>EIP-4844 — Proto-danksharding. <a href="https://eips.ethereum.org/EIPS/eip-4844">https://eips.ethereum.org/EIPS/eip-4844</a></li>
+<li>EIP-7212 / RIP-7212 — secp256r1 precompile.
+  <a href="https://eips.ethereum.org/EIPS/eip-7212">https://eips.ethereum.org/EIPS/eip-7212</a></li>
+<li>(★) EIP-2335 — BLS12-381 Keystore. <a href="https://eips.ethereum.org/EIPS/eip-2335">https://eips.ethereum.org/EIPS/eip-2335</a></li>
+<li>EIP-2333 — BLS12-381 Key derivation. <a href="https://eips.ethereum.org/EIPS/eip-2333">https://eips.ethereum.org/EIPS/eip-2333</a></li>
+<li>EIP-2334 — BLS12-381 Deterministic key path. <a href="https://eips.ethereum.org/EIPS/eip-2334">https://eips.ethereum.org/EIPS/eip-2334</a></li>
+<li>(★) EIP-7702 — EOA delegated to contract code (Pectra).
+  <a href="https://eips.ethereum.org/EIPS/eip-7702">https://eips.ethereum.org/EIPS/eip-7702</a></li>
+<li>EIP-7251 — MAX_EFFECTIVE_BALANCE 提升 (Pectra).
+  <a href="https://eips.ethereum.org/EIPS/eip-7251">https://eips.ethereum.org/EIPS/eip-7251</a></li>
+</ul>
+<h3 id="174-blog">17.4 文章 / Blog</h3>
+<ul>
+<li>(★) Vitalik, <em>Verkle trees</em>.
+  <a href="https://vitalik.eth.limo/general/2021/06/18/verkle.html">https://vitalik.eth.limo/general/2021/06/18/verkle.html</a></li>
+<li>Vitalik, <em>STARKs Part 1</em>.
+  <a href="https://vitalik.eth.limo/general/2017/11/22/starks_part_1.html">https://vitalik.eth.limo/general/2017/11/22/starks_part_1.html</a></li>
+<li>Dankrad Feist, <em>KZG polynomial commitments</em>.
+  <a href="https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html">https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html</a></li>
+<li>Vitalik, <em>KZG ceremony announcement</em>.
+  <a href="https://blog.ethereum.org/2023/01/16/announcing-kzg-ceremony">https://blog.ethereum.org/2023/01/16/announcing-kzg-ceremony</a></li>
+<li>Vitalik, <em>Exploring elliptic curve pairings</em>.
+  <a href="https://vitalik.eth.limo/general/2017/01/14/exploring_ecp.html">https://vitalik.eth.limo/general/2017/01/14/exploring_ecp.html</a></li>
+<li>(★) Vitalik / EF, <em>Post-Quantum Ethereum Roadmap</em>.
+  <a href="https://pq.ethereum.org/">https://pq.ethereum.org/</a></li>
+<li>Cloudflare, <em>League of Entropy / drand</em>.
+  <a href="https://www.cloudflare.com/leagueofentropy/">https://www.cloudflare.com/leagueofentropy/</a></li>
+<li>Blockstream, <em>MuSig2: Simple Two-Round Schnorr Multisignatures</em>.
+  <a href="https://blog.blockstream.com/musig2-simple-two-round-schnorr-multisignatures/">https://blog.blockstream.com/musig2-simple-two-round-schnorr-multisignatures/</a></li>
+<li>a16z crypto, <em>Public Randomness and Randomness Beacons</em>.
+  <a href="https://a16zcrypto.com/posts/article/public-randomness-and-randomness-beacons/">https://a16zcrypto.com/posts/article/public-randomness-and-randomness-beacons/</a></li>
+<li>Aumasson (Taurus), <em>A Survey of ECDSA Threshold Signing</em>.
+  <a href="https://eprint.iacr.org/2020/1390.pdf">https://eprint.iacr.org/2020/1390.pdf</a></li>
+<li>Makriyannis et al., <em>Practical Key-Extraction Attacks in Leading MPC Wallets</em>.
+  <a href="https://eprint.iacr.org/2023/1234.pdf">https://eprint.iacr.org/2023/1234.pdf</a></li>
+<li>Diamond &amp; Posen, <em>Succinct Arguments over Towers of Binary Fields (Binius)</em>.
+  <a href="https://eprint.iacr.org/2023/1784.pdf">https://eprint.iacr.org/2023/1784.pdf</a></li>
+<li>Grassi et al., <em>POSEIDON: A New Hash Function for Zero-Knowledge Proof Systems</em>.
+  <a href="https://eprint.iacr.org/2019/458.pdf">https://eprint.iacr.org/2019/458.pdf</a></li>
+<li>Polkadot Wiki, <em>Cryptography on Polkadot (sr25519)</em>.
+  <a href="https://wiki.polkadot.com/learn/learn-cryptography/">https://wiki.polkadot.com/learn/learn-cryptography/</a></li>
+<li>Zama Protocol, <em>FHE Unicorn</em>.
+  <a href="https://blockeden.xyz/blog/2026/01/05/zama-protocol/">https://blockeden.xyz/blog/2026/01/05/zama-protocol/</a></li>
+<li>Fhenix, <em>FHE-Rollup L2</em>.
+  <a href="https://www.fhenix.io/">https://www.fhenix.io/</a></li>
+<li>Ethereum Foundation, <em>Wrapping up the KZG Ceremony</em>.
+  <a href="https://blog.ethereum.org/en/2024/01/23/kzg-wrap">https://blog.ethereum.org/en/2024/01/23/kzg-wrap</a></li>
+<li>Ethereum Foundation, <em>Pectra Mainnet Announcement</em>.
+  <a href="https://blog.ethereum.org/2025/04/23/pectra-mainnet">https://blog.ethereum.org/2025/04/23/pectra-mainnet</a></li>
+</ul>
+<h3 id="175">17.5 实现库</h3>
+<p>以下版本号截至本文写作时复核；本指南代码依赖见 <code>code/requirements.txt</code>。</p>
+<ul>
+<li>(★) bitcoin-core/secp256k1 v0.7.1（2026-01）.
+  <a href="https://github.com/bitcoin-core/secp256k1">https://github.com/bitcoin-core/secp256k1</a></li>
+<li>(★) paulmillr/noble-curves v2.2.0（2026-04）.
+  <a href="https://github.com/paulmillr/noble-curves">https://github.com/paulmillr/noble-curves</a></li>
+<li>(★) paulmillr/noble-hashes v2.2.0（2026-04）.
+  <a href="https://github.com/paulmillr/noble-hashes">https://github.com/paulmillr/noble-hashes</a></li>
+<li>ethereum/py_ecc v5.0.0（2024-10）.
+  <a href="https://github.com/ethereum/py_ecc/releases">https://github.com/ethereum/py_ecc/releases</a></li>
+<li>ofek/coincurve v21.0.0（2025-03）. <a href="https://pypi.org/project/coincurve/">https://pypi.org/project/coincurve/</a></li>
+<li>ethereum/eth-keys v0.7.0（2025-04）. <a href="https://pypi.org/project/eth-keys/">https://pypi.org/project/eth-keys/</a></li>
+<li>ethereum/eth-account v0.13.7. <a href="https://pypi.org/project/eth-account/">https://pypi.org/project/eth-account/</a></li>
+<li>Legrandin/pycryptodome v3.23.0（2025-05）.
+  <a href="https://pypi.org/project/pycryptodome/">https://pypi.org/project/pycryptodome/</a></li>
+<li>supranational/blst. <a href="https://github.com/supranational/blst">https://github.com/supranational/blst</a></li>
+<li>(★) OpenZeppelin Contracts v5.6.1（2026-03）.
+  <a href="https://github.com/OpenZeppelin/openzeppelin-contracts/releases">https://github.com/OpenZeppelin/openzeppelin-contracts/releases</a></li>
+<li>ethers-rs. <a href="https://github.com/gakonst/ethers-rs">https://github.com/gakonst/ethers-rs</a></li>
+<li>(★) drand/drand. <a href="https://github.com/drand/drand">https://github.com/drand/drand</a></li>
+<li>ChainSafe/bls-keystore (EIP-2335). <a href="https://github.com/ChainSafe/bls-keystore">https://github.com/ChainSafe/bls-keystore</a></li>
+<li>ZenGo-X/awesome-tss (门限签名实现汇总).
+  <a href="https://github.com/ZenGo-X/awesome-tss">https://github.com/ZenGo-X/awesome-tss</a></li>
+<li>Fireblocks/mpc-cmp (CGGMP21 Go 开源实现).
+  <a href="https://github.com/fireblocks/mpc-cmp">https://github.com/fireblocks/mpc-cmp</a></li>
+<li>(★) zama-ai/fhevm. <a href="https://github.com/zama-ai/fhevm">https://github.com/zama-ai/fhevm</a></li>
+<li>arkworks-rs (BN254 / BLS12-381 / Pasta / 后量子 lattice 等).
+  <a href="https://github.com/arkworks-rs">https://github.com/arkworks-rs</a></li>
+<li>dalek-cryptography (curve25519-dalek / ed25519-dalek / x25519-dalek).
+  <a href="https://github.com/dalek-cryptography">https://github.com/dalek-cryptography</a></li>
+<li>pq-crystals/dilithium (ML-DSA reference).
+  <a href="https://github.com/pq-crystals/dilithium">https://github.com/pq-crystals/dilithium</a></li>
+<li>pq-crystals/kyber (ML-KEM reference).
+  <a href="https://github.com/pq-crystals/kyber">https://github.com/pq-crystals/kyber</a></li>
+</ul>
+<h3 id="176">17.6 历史事故 / 案例</h3>
+<ul>
+<li>fail0verflow, <em>Console Hacking 2010 — PS3 Epic Fail</em>, 27C3 (静态 nonce)</li>
+<li>Mt.Gox transaction malleability incident, 2014</li>
+<li>Profanity vanity address brute-force, 2022.
+  <a href="https://www.certik.com/resources/blog/profanity-attack">https://www.certik.com/resources/blog/profanity-attack</a></li>
+<li>SHAttered: SHA-1 collision, 2017. <a href="https://shattered.io/">https://shattered.io/</a></li>
+</ul>
+<hr />
+<p>模块 02 将进入区块链与共识层，BFT、PoW、PoS 的安全性证明最终都依赖本模块铺下的密码学基础。</p>
+</section>
+</body>
+</html>

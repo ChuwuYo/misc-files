@@ -1,0 +1,5 @@
+flowchart TB
+    File[1 GB 文件] --> Slice[切成 N 个主片<br/>纵轴]
+    Slice --> Encode[每个主片再纠删编码<br/>横轴]
+    Encode --> Distribute[分发到 100 节点]
+    Distribute -.->|2/3 节点丢失也能恢复| Recover[恢复完整文件]

@@ -1,0 +1,7 @@
+graph LR
+    A[Rollup] --> B[EigenDA Disperser<br>把数据切成 chunks]
+    B --> C[EigenDA Operators<br>restaked ETH，存数据]
+    C --> D[KZG commitment<br>聚合签名]
+    D --> E[Rollup 上 L1 commit<br>Ethereum]
+    F[查询者] --> C
+    F --> D

@@ -1,0 +1,9 @@
+flowchart LR
+    Atk[Attacker deposits 1 wei] --> S1[Vault: shares=1, assets=1]
+    Atk --> Donate[直接 transfer 100k token 给 vault]
+    Donate --> S2[Vault: shares=1, assets=100,001]
+    Vic[Victim deposits 50e18] --> Calc[计算 mint = 50e18 * 1 / 100,001 = 0]
+    Calc --> S3[Vault: shares=1, assets=100,001+50e18]
+    Vic --> Loss[Victim 拿到 0 share, 资产被攻击者吞掉]
+    Atk --> Redeem[Attacker redeem 1 share]
+    Redeem --> Out[拿走全部 100,001 + 50e18]

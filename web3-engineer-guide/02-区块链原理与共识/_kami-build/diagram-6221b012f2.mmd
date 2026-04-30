@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant R1 as Replica 1
+    participant R2 as Replica 2
+    participant R3 as Replica 3
+    participant Old as 旧 Primary（疑似挂掉）
+    participant New as 新 Primary
+
+    Note over R1,R3: 超时未收到 PRE-PREPARE
+    R1->>R2: VIEW-CHANGE(v+1, prepared_set)
+    R1->>R3: VIEW-CHANGE
+    R1->>New: VIEW-CHANGE
+    R2->>R1: VIEW-CHANGE
+    R2->>New: VIEW-CHANGE
+    R3->>New: VIEW-CHANGE
+    Note over New: 收齐 2f+1 VIEW-CHANGE
+    New->>R1: NEW-VIEW(v+1, replay_set)
+    New->>R2: NEW-VIEW
+    New->>R3: NEW-VIEW
+    Note over New,R3: 重放 prepared 集合 + 新请求

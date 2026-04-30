@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant U as 用户
+    participant DA as dApp 前端
+    participant OIDC as Google OAuth
+    participant ZK as zkLogin Prover Service
+    participant Sui as Sui 链
+    U->>DA: 点 "Sign in with Google"
+    DA->>OIDC: redirect for ID token
+    OIDC-->>DA: signed JWT (header.payload.sig)
+    DA->>ZK: 提交 JWT + nonce + ephemeral pk
+    ZK-->>DA: zk proof（隐藏 email / 暴露 sub）
+    DA->>Sui: 提交 tx (附 zk proof + ephemeral signature)
+    Sui->>Sui: 验 zk proof + 验 OIDC 签名 + 检查 nonce
+    Sui-->>DA: tx confirmed

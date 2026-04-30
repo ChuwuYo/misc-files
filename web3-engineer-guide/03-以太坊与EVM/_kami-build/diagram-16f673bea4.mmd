@@ -1,0 +1,16 @@
+sequenceDiagram
+  participant Wallet as 钱包
+  participant Mempool as 公开 mempool
+  participant Searcher as MEV searcher
+  participant Builder as Block builder
+  participant Relay as MEV-Boost relay
+  participant Proposer as Validator (proposer)
+  Wallet->>Mempool: tx (signed RLP)
+  Searcher->>Mempool: 监听有套利机会的 tx
+  Searcher->>Builder: bundle (一组 tx)
+  Builder->>Builder: 排序 + 模拟，最大化 MEV
+  Builder->>Relay: signed block + bid
+  Relay->>Proposer: 推送 header + bid
+  Proposer->>Relay: signed header (盲签)
+  Relay->>Proposer: 解封：返回完整 block body
+  Proposer->>网络: 广播 block

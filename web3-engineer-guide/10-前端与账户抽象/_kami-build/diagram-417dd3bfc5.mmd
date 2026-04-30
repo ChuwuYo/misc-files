@@ -1,0 +1,9 @@
+flowchart LR
+  U[用户] -->|sign| S[Signer<br/>EOA / Passkey / MPC]
+  S --> UO[UserOperation]
+  UO --> B[Bundler<br/>Pimlico / Alchemy / Stackup]
+  B -->|eth_sendUserOperation| EP[EntryPoint v0.7<br/>0x0000000071727De2...0329]
+  EP --> A[Smart Account]
+  EP --> P[Paymaster]
+  A --> EXT[业务合约]
+  P --> EXT

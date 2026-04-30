@@ -1,0 +1,10 @@
+flowchart TD
+    A[Kelp 桥配置 1-of-1 DVN<br/>不是 X-of-Y-of-N] --> B[DVN 私钥被攻陷]
+    B --> C[攻击者签发<br/>Ethereum 侧 rsETH 铸造消息]
+    C --> D[Ethereum 侧合约<br/>验证 1-of-1 DVN 签名通过]
+    D --> E[$292M rsETH 凭空铸造]
+    E --> F[攻击者抵押到 Aave V3]
+    F --> G[借走 wETH]
+    G --> H[Aave 坏账 $196M]
+    H --> I[Aave TVL 跌 $6.6B<br/>恐慌传导]
+    I --> J[ezETH/pufETH 等所有 LRT<br/>被一并打折扣]

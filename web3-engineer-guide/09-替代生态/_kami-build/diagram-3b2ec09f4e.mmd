@@ -1,0 +1,4 @@
+flowchart LR
+    O[Object] --> Owned[Owned by address<br>普通用户钱包里]
+    O --> Shared[Shared by network<br>类似 EVM 合约状态]
+    O --> Immutable[Immutable<br>frozen 后只读]

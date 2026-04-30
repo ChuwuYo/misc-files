@@ -1,0 +1,8 @@
+flowchart TD
+    A[1. Proof of Storage 通用问题] --> B[只能证明某一时刻存在]
+    A --> C[2. Proof of Replication PoRep]
+    C -->|sealing 慢编码| D[证明该副本是矿工独有<br/>不能即时从他人复制]
+    A --> E[3. Proof of Spacetime PoSt]
+    E -->|定期挑战| F[证明跨时间持续保有]
+    E --> G[WinningPoSt 选举出块]
+    E --> H[WindowPoSt 24h 全网审计<br/>30 分钟响应窗口]

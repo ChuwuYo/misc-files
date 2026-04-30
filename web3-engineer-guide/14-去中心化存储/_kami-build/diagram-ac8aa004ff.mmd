@@ -1,0 +1,12 @@
+flowchart TB
+    subgraph Web2[位置寻址 Location Addressing]
+        URL1[https://api.com/nft/1.json] -->|DNS 解析| IP[1.2.3.4 服务器]
+        IP -->|读文件系统| File1[1.json 内容]
+        File1 -.->|可悄悄替换| File2[篡改后的 1.json]
+    end
+    subgraph Web3[内容寻址 Content Addressing]
+        CID[bafybeig...xyz<br/>内容哈希] -->|DHT 查询| Node[任意持有该内容的节点]
+        Node -->|拿到字节后必校验| Hash[hash 字节 == CID?]
+        Hash -->|不等就拒绝| Reject[抛错]
+        Hash -->|相等才返回| Accept[内容]
+    end

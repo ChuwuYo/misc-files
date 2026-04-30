@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant U as 用户 EOA
+  participant USDC as USDC Proxy<br/>(EIP-1967)
+  participant IMPL as USDC Implementation
+  U->>USDC: transfer(to, amount)<br/>(CALL, calldata=0xa9059cbb...)
+  USDC->>IMPL: DELEGATECALL(transfer)
+  Note over IMPL: SLOAD balance[from]<br/>SLOAD balance[to]<br/>检查余额<br/>SSTORE balance[from] -= amt<br/>SSTORE balance[to] += amt<br/>LOG3 Transfer(...)
+  IMPL-->>USDC: return true
+  USDC-->>U: return true (status=1)

@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    participant Client as 用户
+    participant Submitter as 提交者(GPU)
+    participant Chain as 链上合约
+    participant Validator as 验证者
+
+    Client->>Submitter: 任务(模型 ID, 输入 x)
+    Submitter->>Submitter: 链下推理
+    Submitter->>Chain: 提交 commitment(y, 状态根)
+    Chain->>Chain: 启动挑战期(~10 分钟)
+    par 任意验证者复算
+        Validator->>Validator: 同样输入跑一遍
+        alt 结果一致
+            Validator-->>Chain: 不挑战
+        else 结果不一致
+            Validator->>Chain: 发起 Interactive Dispute Game
+            Chain->>Chain: 二分查找发散点
+            Chain->>Chain: slash 错误方
+        end
+    and 挑战期满
+        Chain->>Client: 回调结果 y
+    end

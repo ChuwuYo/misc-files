@@ -1,0 +1,16 @@
+flowchart LR
+    Repo[GitHub Repo] -->|merge| CI[GitHub Actions]
+    CI -->|build| Bundle[JS Bundle]
+    CI -->|deploy| S3[AWS S3 / CloudFront]
+    S3 --> CDN[CDN 边缘]
+    CDN --> Browser[用户浏览器]
+    Browser --> RPC[RPC 节点]
+    Browser --> Wallet[Wallet 扩展 / Hardware]
+
+    style Bundle fill:#fdd
+    style S3 fill:#fdd
+    style Wallet fill:#fdd
+
+    Bundle -. 攻击点 .- A1[依赖被换]
+    S3 -. 攻击点 .- A2[bucket 凭证泄露]
+    Wallet -. 攻击点 .- A3[盲签 + UI 篡改]

@@ -1,0 +1,4 @@
+flowchart TD
+    Root[CID-A: 目录<br/>name=mynft] -->|link| Img[CID-B: image.png]
+    Root -->|link| Meta[CID-C: metadata.json]
+    Meta -->|内嵌 CID| Img

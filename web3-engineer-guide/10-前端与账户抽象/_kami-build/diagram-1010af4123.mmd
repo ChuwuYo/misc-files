@@ -1,0 +1,15 @@
+flowchart LR
+  subgraph DApp端
+    D1[Sign Client]
+  end
+  subgraph 移动钱包
+    W1[Sign Client]
+  end
+  subgraph 中继网络
+    R["Relay (Waku/libp2p)"]
+  end
+  D1 -- pairing URI (QR/deeplink) --> W1
+  D1 <--> R
+  W1 <--> R
+  D1 -- session_request --> W1
+  W1 -- session_response --> D1

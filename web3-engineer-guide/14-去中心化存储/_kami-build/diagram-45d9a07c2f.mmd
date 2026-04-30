@@ -1,0 +1,6 @@
+flowchart LR
+    User[用户] -->|买 stamp batch| Smart[Stamp 合约]
+    Smart --> Stamp[Stamp Batch<br/>覆盖 N 个 chunk]
+    User -->|附 stamp 上传 chunk| Bee[Bee 节点]
+    Bee --> Neighborhood[邻域复制]
+    Smart -->|过期未续 → 数据可被 gc| Bee

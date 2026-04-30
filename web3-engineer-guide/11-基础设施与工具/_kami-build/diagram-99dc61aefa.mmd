@@ -1,0 +1,12 @@
+flowchart TD
+    Start[需要 EL] --> A{用途}
+    A -->|RPC 应用后端| B{是否需要 archive}
+    A -->|protocol 层 / staking| C[选 nethermind / besu 帮助多样化]
+    A -->|indexer / DeFi 分析| D[reth archive 或 erigon]
+    B -->|否, 全节点| E[reth 优先, geth 次之]
+    B -->|是| D
+    C --> F[别选 geth]
+    D --> G[reth 性能最好, erigon 磁盘最省]
+    E --> H{追求最新性能}
+    H -->|是| I[reth 2.0]
+    H -->|否, 兼容性优先| J[geth]

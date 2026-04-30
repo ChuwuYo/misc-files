@@ -1,0 +1,5 @@
+flowchart LR
+  A[Lean Consensus<br/>= beam chain<br/>3-slot finality] --- B[Lean Data<br/>= blobs 2.0<br/>PQC + 粒度可调]
+  B --- C[Lean Execution<br/>= EVM 2.0<br/>RISC-V / SNARK 友好]
+  classDef lean fill:#fdf6e3,stroke:#268bd2;
+  class A,B,C lean;

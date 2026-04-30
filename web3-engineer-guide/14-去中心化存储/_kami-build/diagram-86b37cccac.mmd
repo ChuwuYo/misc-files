@@ -1,0 +1,7 @@
+flowchart TB
+    User[用户] -->|HTTP| GW[AR.IO Gateway 节点]
+    GW -->|读 Arweave| AR[Arweave 网络]
+    GW <-->|质押 + 索引服务| Protocol[AR.IO 协议]
+    Protocol -->|发奖励| Operator[网关运营者]
+    Operator -->|质押 ARIO 代币| Protocol
+    Note[ARIO 代币<br/>用于网关注册 / 域名 / 服务] -.-> Protocol

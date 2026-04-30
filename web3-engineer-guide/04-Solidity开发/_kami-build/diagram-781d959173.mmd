@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant U as User
+    participant P as ERC1967Proxy
+    participant L1 as LogicV1
+    participant L2 as LogicV2
+
+    U->>P: deposit(100)
+    P->>L1: delegatecall deposit(100)
+    Note over P,L1: storage 在 P，code 在 L1
+
+    Note over U,L2: 升级
+    U->>P: upgradeToAndCall(L2, "")
+    P->>L1: delegatecall upgradeToAndCall(L2)
+    L1->>P: sstore(IMPL_SLOT, L2)
+
+    U->>P: deposit(100)
+    P->>L2: delegatecall deposit(100)

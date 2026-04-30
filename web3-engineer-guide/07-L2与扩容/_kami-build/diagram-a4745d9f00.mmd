@@ -1,0 +1,7 @@
+graph TB
+    A[Rollup A] --> N[Avail Nexus<br>跨 rollup 协调]
+    B[Rollup B] --> N
+    C[Rollup C] --> N
+    N --> D[Avail DA<br>KZG + DAS]
+    D --> E[Light Client<br>Ethereum 上轻客户端]
+    E --> F[trust-minimized<br>访问 DA]

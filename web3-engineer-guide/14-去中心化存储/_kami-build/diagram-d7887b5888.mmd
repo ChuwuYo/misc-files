@@ -1,0 +1,6 @@
+flowchart LR
+    Q[查询 CID=X] --> N1[问 20 个最近的节点]
+    N1 -->|没有但知道更近的| N2[告诉你 20 个更近的]
+    N2 --> N3[继续问更近的<br/>O log N 跳]
+    N3 --> Found[找到 provider 列表]
+    Found --> Bitswap[Bitswap 直接拉块]

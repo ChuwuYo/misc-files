@@ -1,0 +1,16 @@
+flowchart TB
+    Move[Diem Move<br>共同祖先]
+    Move --> Sui
+    Move --> Aptos
+
+    subgraph Sui[Sui Move 2024]
+        S1[对象模型 Object<br>每个对象有 owner + UID]
+        S2[transfer::transfer 改 owner<br>transfer::share_object 公开]
+        S3[entry fun 直接接受 &mut Object<br>没有全局存储]
+    end
+
+    subgraph Aptos[Aptos Move]
+        A1[全局存储 Global Storage<br>资源挂在 address 下]
+        A2[move_to / move_from / borrow_global]
+        A3[resource_group 优化打包<br>类似 Diem 原生]
+    end

@@ -1,0 +1,9 @@
+flowchart TD
+    Q[需要 pinning?] --> Q1{文件大小?}
+    Q1 -->|< 5 GB| F[免费层就够]
+    F --> F1[Pinata 简单 / 4everland EVM 友好 / Filebase S3 兼容]
+    Q1 -->|TB 级| P[付费]
+    P --> P1{侧重?}
+    P1 -->|最低单价| FB[Filebase]
+    P1 -->|加密 + Filecoin| LH[Lighthouse]
+    P1 -->|生态完善| PN[Pinata]

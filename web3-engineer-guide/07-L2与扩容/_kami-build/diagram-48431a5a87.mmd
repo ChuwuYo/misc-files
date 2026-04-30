@@ -1,0 +1,10 @@
+graph TB
+    A[L2 batch 数据要存到哪?] --> B[L1 calldata]
+    A --> C[L1 blob 4844/7594]
+    A --> D[外部 DA 链]
+    A --> E[DAC 数据可用性委员会]
+
+    B --> B1[所有 L1 节点永久存<br>$$$ 贵]
+    C --> C1[信标节点 ~18 天<br>PeerDAS 后采样<br>$ 便宜]
+    D --> D1[Celestia / Avail / EigenDA / NearDA / 0G<br>额外信任假设<br>¢ 极便宜]
+    E --> E1[Arbitrum Nova AnyTrust<br>少数 KYC 委员<br>¢ 极便宜但中心化]

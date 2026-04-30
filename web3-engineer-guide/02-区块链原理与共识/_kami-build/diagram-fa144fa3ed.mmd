@@ -1,0 +1,7 @@
+graph LR
+    A1[Alice 事件1] --> A2[Alice 事件2<br/>引用 Bob1]
+    B1[Bob 事件1] --> B2[Bob 事件2<br/>引用 Alice1]
+    A2 --> A3[Alice 事件3<br/>引用 Bob2]
+    B2 --> B3[Bob 事件3<br/>引用 Alice2]
+    B1 -.gossip.-> A2
+    A1 -.gossip.-> B2

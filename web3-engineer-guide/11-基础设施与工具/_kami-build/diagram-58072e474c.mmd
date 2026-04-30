@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph A[底层基础设施]
+        A1[节点客户端]
+        A2[RPC 服务]
+        A3[索引器]
+    end
+    subgraph B[运维生态]
+        B1[监控告警]
+        B2[MEV 基础设施]
+        B3[区块浏览器]
+    end
+    subgraph C[开发生态]
+        C1[本地链 anvil]
+        C2[Foundry/Hardhat]
+        C3[CI/CD]
+    end
+    subgraph D[安全生态]
+        D1[密钥管理]
+        D2[多签]
+        D3[签名前钓鱼防护]
+    end
+    Project[一个 Web3 项目] --> A
+    Project --> B
+    Project --> C
+    Project --> D

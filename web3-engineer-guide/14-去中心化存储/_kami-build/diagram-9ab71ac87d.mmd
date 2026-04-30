@@ -1,0 +1,6 @@
+flowchart LR
+    Mint[Mint 阶段] -->|每个 image| Irys[Irys 永久 ~$30]
+    Mint -->|metadata 目录| Pinata[Pinata pin ~$20/mo]
+    Mint -->|metadata 目录| Lighthouse[Lighthouse 备份 ~$0.5]
+    Read[读取阶段] -->|client 多网关| GW[ipfs.io / dweb.link / Pinata gateway]
+    Read -.永久兜底.-> Irys

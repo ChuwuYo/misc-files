@@ -1,0 +1,6 @@
+graph TB
+    A{要不要跨链?} --> B{源/目标都是<br>同一个 rollup 的 L1↔L2?}
+    B -->|是| C[用 Native Bridge<br>OP CrossDomainMessenger<br>Arbitrum Inbox/Outbox<br>等价 rollup 安全]
+    B -->|否| D{是不是同栈<br>OP Superchain<br>Arbitrum Orbit?}
+    D -->|是| E[用栈原生 interop<br>OP interop / AnyTrust message]
+    D -->|否| F[第三方 bridge<br>额外信任假设]

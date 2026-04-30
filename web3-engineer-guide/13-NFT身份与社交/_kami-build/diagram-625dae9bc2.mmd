@@ -1,0 +1,7 @@
+sequenceDiagram
+    Client->>Mainnet Resolver: resolve("jesse.base.eth")
+    Mainnet Resolver-->>Client: revert OffchainLookup(gateway, callData, callback)
+    Client->>Gateway: HTTP GET callData
+    Gateway-->>Client: data (含 base 链数据 + signed proof)
+    Client->>Mainnet Resolver: callback(data)
+    Mainnet Resolver-->>Client: 0xabc... (jesse 在 base 上的地址)

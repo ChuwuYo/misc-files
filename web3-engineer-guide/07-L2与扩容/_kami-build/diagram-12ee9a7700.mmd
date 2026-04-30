@@ -1,0 +1,7 @@
+graph TB
+    A[Chain A<br>OP Stack] --> U[Unified Bridge<br>统一桥合约]
+    B[Chain B<br>Polygon CDK] --> U
+    C[Chain C<br>ZK Stack] --> U
+    U --> P[Pessimistic Proof<br>SP1 zkVM 证明]
+    P --> E[Ethereum L1]
+    P -.证明.-> X[每条 chain 提取金额<br>≤ 该 chain 入金累计]

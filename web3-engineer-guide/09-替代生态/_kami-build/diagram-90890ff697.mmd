@@ -1,0 +1,8 @@
+flowchart TB
+    A[Tx Pool 已 PoH 排序] --> B{调度器读<br>account_keys + writable flag}
+    B --> C[构造写依赖图]
+    C --> D[互不冲突的 Tx<br>分发到不同 CPU 核]
+    C --> E[共享写账户的 Tx<br>同一核串行]
+    D --> F[执行]
+    E --> F
+    F --> G[提交状态]

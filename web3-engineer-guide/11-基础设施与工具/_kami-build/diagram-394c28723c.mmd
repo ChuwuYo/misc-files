@@ -1,0 +1,4 @@
+flowchart LR
+    DApp[dApp / Foundry / forge] -->|JSON-RPC :1248| Frame[Frame.app]
+    Frame -->|USB / U2F| Ledger[Ledger / Trezor / GridPlus]
+    Frame -->|签名请求弹窗| User[人类按按钮]

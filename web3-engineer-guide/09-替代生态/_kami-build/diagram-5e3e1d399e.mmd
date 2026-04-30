@@ -1,0 +1,5 @@
+flowchart LR
+    Canister[ICP Canister] -- threshold ECDSA --> BTC[Bitcoin Wallet 私钥碎片<br>由 subnet 共同持有]
+    Canister -- threshold ECDSA --> ETH[Ethereum Wallet]
+    Canister -- threshold Schnorr --> SOL[Solana Wallet]
+    BTC -- 签名 --> BTC_TX[BTC 交易]

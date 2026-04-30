@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant A as Attacker
+    participant L as Aave (闪电贷)
+    participant D as DEX (低流动)
+    participant V as Victim Lending
+    A->>L: flashLoan(1B USDC)
+    L-->>A: 1B USDC
+    A->>D: swap 1B USDC for MNGO
+    Note over D: spot price 10x
+    A->>V: deposit MNGO as collateral
+    V->>D: getReserves() / spot price
+    D-->>V: inflated price
+    A->>V: borrow ALL vault assets
+    V-->>A: vault drained
+    A->>D: swap MNGO back to USDC
+    A->>L: repay flashLoan
+    Note over A: 利润 = vault - 滑点 - 闪电贷费

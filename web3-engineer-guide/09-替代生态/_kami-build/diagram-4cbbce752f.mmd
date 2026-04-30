@@ -1,0 +1,4 @@
+flowchart LR
+    Output[P2TR Output<br>output key Q] --> Choice{花费方式}
+    Choice -->|key-path| KP[只放一个 64B Schnorr 签名<br>witness 长度: 64 或 65 B]
+    Choice -->|script-path| SP[放 sig 们 + leaf script + control block<br>witness 长度: 33 + 32k 字节]

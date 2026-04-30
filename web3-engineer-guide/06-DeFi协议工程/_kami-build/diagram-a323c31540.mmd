@@ -1,0 +1,7 @@
+flowchart LR
+    H[历史价格<br/>+用户行为日志] --> S[10万条<br/>agent-based simulation]
+    M[market shock 注入<br/>BTC -50% / ETH -70% / depeg] --> S
+    S --> R[每组参数的 VaR / 坏账概率]
+    R -->|挑最优 Pareto front| Rec[参数推荐]
+    Rec --> Gov[治理提案]
+    Gov --> On[on-chain 参数更新]

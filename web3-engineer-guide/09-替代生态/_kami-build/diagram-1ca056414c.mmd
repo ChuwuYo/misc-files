@@ -1,0 +1,7 @@
+flowchart LR
+    BTC_Holder[BTC 持有者] -- 锁 BTC<br>BIP-340 staking script --> BTC_Mainnet
+    BTC_Mainnet -. 不能动 .- BTC_Holder
+    BTC_Holder -- 同时质押到 --> PoS_Chain[Babylon Chain / 其他 BSN]
+    PoS_Chain -- 给奖励 --> BTC_Holder
+    PoS_Chain -- 作恶时<br>slashing 通过 EOTS 信号 --> BTC_Mainnet
+    BTC_Mainnet -- 罚没相关 BTC --> Burn[销毁]

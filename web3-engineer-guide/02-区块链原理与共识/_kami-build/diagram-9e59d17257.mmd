@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Wallet as 钱包
+    participant Mempool as 内存池
+    participant Miner as 矿工
+    participant Chain as 全网
+
+    Wallet->>Mempool: 1. 广播签名交易
+    Miner->>Mempool: 2. 拉 fee 最高的 N 笔
+    Miner->>Miner: 3. 构造 header
+    loop 暴力试 nonce
+        Miner->>Miner: SHA256(SHA256(header))
+        alt hash < target
+            Note over Miner: 找到合法 nonce!
+        end
+    end
+    Miner->>Chain: 4. 广播新块
+    Chain->>Chain: 5. 验证后追加

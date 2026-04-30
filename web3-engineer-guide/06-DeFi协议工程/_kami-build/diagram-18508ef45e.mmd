@@ -1,0 +1,10 @@
+graph LR
+    A[判断 Real Yield] --> B{Yield 来自？}
+    B -->|交易费/借贷利息/清算费| C[Real Yield ✓]
+    B -->|协议代币 emission| D[Ponzi 倾向 ✗]
+    C --> E{支付方式？}
+    E -->|stablecoin / ETH 真金| F[最稳]
+    E -->|协议代币 buyback| G[次稳]
+    D --> H{APR 是否大于市场无风险利率 + 风险溢价？}
+    H -->|是| I[难以持续]
+    H -->|否| J[低概率 Ponzi]

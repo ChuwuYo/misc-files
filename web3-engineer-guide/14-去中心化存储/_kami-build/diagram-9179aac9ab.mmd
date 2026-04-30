@@ -1,0 +1,8 @@
+flowchart LR
+    Data[数据]
+    Data -->|发布 CID 和热路径| IPFS[IPFS<br/>内容寻址 + 快速分发]
+    IPFS -->|长期持久背书| Filecoin[Filecoin<br/>定期合约 + PoSt 证明]
+    IPFS -->|关键数据永久备份| Arweave[Arweave<br/>一次付费 + blockweave]
+    User[用户] -->|默认走 IPFS 网关| IPFS
+    User -.->|找不到时回退 Filecoin/Arweave| Filecoin
+    User -.->|找不到时回退| Arweave

@@ -1,0 +1,6 @@
+graph LR
+    A[完整 blob 数据] --> B[1D Reed-Solomon 编码<br>把 blob 切成 128 列]
+    B --> C[每列附 KZG 多重证明]
+    C --> D[validator 只下载若干列<br>通过 subnet 订阅]
+    D --> E[验证我那部分列正确]
+    E --> F[全网 ≥50% 列被采到<br>=> 整体可恢复]

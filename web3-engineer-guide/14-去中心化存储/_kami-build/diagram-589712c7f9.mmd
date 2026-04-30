@@ -1,0 +1,8 @@
+flowchart TB
+    Data[关键数据]
+    Data --> L1[Layer 1<br/>热: IPFS pin × 3 家]
+    Data --> L2[Layer 2<br/>温: Filecoin via FIL+]
+    Data --> L3[Layer 3<br/>冷: Arweave 永久]
+    L1 -.-> Note1[即时访问 / 3-5 ms 延迟]
+    L2 -.-> Note2[低成本批量 / 数秒延迟]
+    L3 -.-> Note3[最终保险 / 不可变]

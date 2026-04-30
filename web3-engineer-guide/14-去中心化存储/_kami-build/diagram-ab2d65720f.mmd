@@ -1,0 +1,9 @@
+flowchart TB
+    Client[客户/数据所有者] -->|FIL 付费 + 数据| SM[Storage Market<br/>存储市场]
+    SM -->|签 deal| SP[Storage Provider 矿工]
+    SP -->|定期 PoSt| Chain[Filecoin 区块链]
+    Chain -->|奖励 / 罚没| SP
+    Client2[读者] -->|FIL 付费| RM[Retrieval Market<br/>检索市场]
+    RM -->|提供数据| RP[Retrieval Provider]
+    Devs[开发者] -->|部署合约| FVM[FVM 智能合约]
+    FVM -->|程序化交易| SM

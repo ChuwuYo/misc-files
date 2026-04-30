@@ -1,0 +1,7 @@
+graph LR
+    A[Stage 1<br>Centralized<br>单实例] --> B[Stage 2<br>Shared sequencer<br>跨链共享]
+    B --> C[Stage 3<br>Decentralized<br>每条 L2 自己的 PoS sequencer]
+
+    A1[Arbitrum/OP/Base 现状<br>低延迟<br>但可被审查 + 单点故障] -.-> A
+    B1[Espresso/Astria/Radius/Rome<br>原子跨 rollup 交易<br>共享 finality] -.-> B
+    C1[OP Superchain 选举<br>Arbitrum BoLD-seq<br>Starknet 全 validator] -.-> C

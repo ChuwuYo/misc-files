@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant U as 验证者
+    participant N as 网络
+    U->>U: y, π = VRF.Prove(sk, seed_round)
+    U->>U: 检查 y < threshold?
+    alt y 中签
+        U->>N: 广播 (vote, y, π)
+        N->>N: VRF.Verify(pk, seed, y, π) 通过?
+        N->>N: 接受为本轮委员会
+    else 不中
+        Note over U: 静默, 节省带宽
+    end

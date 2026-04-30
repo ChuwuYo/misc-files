@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>导论与学习路径</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  导论与学习路径";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">导论与学习路径</div>
+    <div class="cover-sub">Web3 工程师从零到资深的全景图</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">0. 前置知识</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">1. 直觉与历史：Web3 究竟在解决什么问题？</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">2. 16 个模块的依赖图</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">3. 学习资源全景：课程、书、社区</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">4. 七条专业方向</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">5. 与权威路线图的交叉对照（reality check）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">6. 模块详细前置依赖与产出物（可验证）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">7. 学习方法论：如何边读边写边验</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">8. 必备开发环境（macOS / Linux，2026-04 验证）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">9. 真实事故案例研究</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">10. 跟踪行业动态的渠道</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">11. AI 工具的合理使用边界</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">12. 常见学习陷阱与反模式</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">13. 极简推荐：每个细分方向"只读 1 本书 / 只刷 1 个项目"</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">14. 习题（带完整解答）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">15. 延伸阅读（推荐顺序）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<p>面向已有 1+ 年软件工程经验、第一次系统进入 Web3 的工程师。</p>
+<hr />
+<section class="chapter">
+<h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 前置知识</h2>
+
+<p>后续章节默认你已掌握以下能力，任一项空白先回去补：</p>
+<ul>
+<li><strong>Git</strong>：能处理 merge conflict、懂 <code>rebase</code> 与 <code>merge</code> 差别。</li>
+<li><strong>Linux / macOS shell</strong>：会读 <code>man</code>、写 <code>bash</code> 脚本、理解 <code>PATH</code>。</li>
+<li><strong>JS / TS</strong>：写过生产应用，熟悉 npm/pnpm 与事件循环。</li>
+<li><strong>Python</strong>：会用 <code>venv</code> / <code>pyenv</code>。</li>
+<li><strong>HTTP</strong>：懂 JSON-RPC 与 REST 差别。</li>
+<li><strong>SQL</strong>：会写 <code>JOIN</code>、懂索引与事务。</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="1-web3" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. 直觉与历史：Web3 究竟在解决什么问题？</h2>
+
+<h3 id="11-web2">1.1 Web2 没有"结算层"</h3>
+<p>SaaS 收 99 美元走的链路：<code>用户卡 → 发卡行 → Visa/Mastercard → 收单行 → Stripe → 你的账户</code>。Stripe 收 2.9%+30¢ 是承担<strong>对手方风险</strong>，全链依赖 1970 年代银行报文协议（SWIFT、ACH、SEPA）——没有一段是互联网原生的。</p>
+<p>互联网解决"信息分发"，<strong>从未解决"价值确权与结算"</strong>。"在网上转钱"= 把信息发给银行让他们改数据库。</p>
+<p>1990 年代 cypherpunk（Hal Finney、Adam Back、Wei Dai、Nick Szabo）花二十年回答：</p>
+<blockquote>
+<p>能不能不依赖任何单一可信第三方，让陌生人互相支付？</p>
+</blockquote>
+<h3 id="12-double-spending-problem">1.2 双花问题（Double-Spending Problem）</h3>
+<p><strong>双花</strong>：同一笔钱花两次。物理现金不可能（递出去就少了），bit 可复制——复制钱包文件就有两份钱。传统答案是中心化记账，代价是可冻结、可拒跨境、可收费。</p>
+<p>2008-10-31 Satoshi Nakamoto 发表 9 页论文 <em>Bitcoin: A Peer-to-Peer Electronic Cash System</em>（<a href="https://bitcoin.org/bitcoin.pdf">bitcoin.org/bitcoin.pdf</a>）。解法：</p>
+<ol>
+<li><strong>分布式时间戳服务器</strong>：交易打包成块，每块含上一块的哈希，形成链。</li>
+<li><strong>工作量证明 PoW</strong>：谁先算出满足难度的哈希谁出块；把"谁能改账本"绑定到"谁能提供算力"。</li>
+<li><strong>最长链规则</strong>：诚实节点认累计难度最高的链，攻击者要回滚就得重做所有 PoW。</li>
+</ol>
+<p><strong>关键洞察</strong>：用"经济激励 + 物理算力"替代"中心化信任"——人类第一次让陌生人就<strong>单一全局状态</strong>达成共识而不依赖中央权威。</p>
+<h4 id="_1">直觉图：从中心化账本到分布式账本</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>[ 中心化账本 ]              [ 分布式账本 ]
+
+  +---------+                +-----+    +-----+    +-----+
+  |  银行   |                |节点A| -- |节点B| -- |节点C|
+  |  DB     |                +-----+    +-----+    +-----+
+  +---------+                   \\         |          //
+   /   |   \\                    \\        |         //
+  /    |    \\                    +-- 同步同一份链 --+
+用户  用户  用户                          |
+                                  +-- PoW/PoS 决定下一区块 --+
+
+可信度来自：              可信度来自：
+- 监管/牌照               - 密码学（哈希链不可逆）
+- 公司声誉                - 经济激励（攻击成本 &gt; 收益）
+- 法律追索                - 多方独立验证
+</code></pre></div>
+<h3 id="13">1.3 从比特币到以太坊：从"电子现金"到"全球计算机"</h3>
+<p>比特币脚本<strong>故意图灵不完备</strong>：无循环、不能调用合约。每笔 tx 成本可静态分析、消除 DoS，代价是只能写转账，写不出借贷、衍生品。</p>
+<p>2013-11-27 Vitalik（19 岁）发布《以太坊白皮书》（<a href="https://ethereum.org/whitepaper/">ethereum.org/whitepaper</a>），向 Bitcoin 提议加图灵完备脚本被否后另起炉灶。</p>
+<p>以太坊三大创新：</p>
+<ol>
+<li><strong>EVM 图灵完备虚拟机</strong>：链上跑任意计算，只要付 gas。</li>
+<li><strong>账户模型而非 UTXO</strong>：全局 <code>mapping(address =&gt; Account)</code>，每账户含 nonce、balance、storage、code，让"持有状态"成为一等公民。</li>
+<li><strong>Gas 机制</strong>：每 opcode 固定 gas 成本，gas 价格由市场决定，把"图灵完备 + 不被无限循环卡死"在经济激励层协调。</li>
+</ol>
+<p>主网 2015-07-30（Frontier）上线。十余年后市值、开发者数、TVL 均为除 Bitcoin 外第一。</p>
+<h4 id="1autxo-vs">工程师注脚 1.A：UTXO vs 账户模型</h4>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>UTXO（Bitcoin）</th>
+<th>账户（Ethereum）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>状态表达</td>
+<td>未花费输出列表</td>
+<td>全局 mapping</td>
+</tr>
+<tr>
+<td>交易并行</td>
+<td>天然并行</td>
+<td>顺序执行（storage 冲突约束）</td>
+</tr>
+<tr>
+<td>编程便利度</td>
+<td>低（追踪 input 集合）</td>
+<td>高（直接读写状态）</td>
+</tr>
+<tr>
+<td>隐私</td>
+<td>较好（每笔可换地址）</td>
+<td>较差（地址重用普遍）</td>
+</tr>
+<tr>
+<td>MEV 复杂度</td>
+<td>由排序权与可组合性共同决定，与状态模型只弱相关</td>
+<td>同上（块内可任意排序 + 高度可组合 → 实践中极高）</td>
+</tr>
+</tbody>
+</table>
+<p>Cardano、Sui、Aptos 等用变种 UTXO（eUTXO、Object-centric）追求并行执行优势，根源在此。</p>
+<h3 id="14-the-dao">1.4 The DAO 与硬分叉</h3>
+<p>2016-04-30 The DAO 上线，28 天募集 1150 万 ETH（约 1.5 亿美元，当时最大众筹）。06-17 攻击者用<strong>重入（reentrancy）</strong>抽走 360 万 ETH（<a href="https://www.gemini.com/cryptopedia/the-dao-hack-makerdao">gemini.com/cryptopedia/the-dao-hack</a>）——漏洞两周前已被 Peter Vessenes 警告，团队无视。</p>
+<p>社区两难：回滚违背"代码即法律"；不回滚等于让攻击者持有以太坊十分之一。2016-07-20（区块 1,920,000）硬分叉，保留原链的少数派成为 <strong>Ethereum Classic（ETC）</strong>。</p>
+<p>两条工程教训：重入会要命（催生 CEI 模式与 ReentrancyGuard，这是 05-安全作为 04-Solidity 硬下游的根因）；<strong>代码不是法律——社会共识才是</strong>，这是协议设计至今的根本张力。</p>
+<h3 id="15-pow-posthe-merge-endgame">1.5 从 PoW 到 PoS：The Merge 与 Endgame</h3>
+<p>2022-09-15 The Merge（2015 即规划）：质押资本替代消耗算力。验证者质押 32 ETH，按权重抽签出块，作恶被 slash。能耗 -99.95%，引入长程攻击、流动性质押集中化、验证者地理集中等新问题。</p>
+<p>Vitalik 2021-12 <em>Endgame</em>（<a href="https://vitalik.ca/general/2021/12/06/endgame.html">vitalik.ca/general/2021/12/06/endgame.html</a>）：</p>
+<blockquote>
+<p><em>"所有可扩展的链最终走向：区块生产中心化、区块验证去中心化、强反审查机制兜底。"</em></p>
+</blockquote>
+<p>MEV、PBS、DAS 都是这论点的工程化，02-共识 / 07-L2 / 11-基础设施反复回到这条主线。</p>
+<h3 id="16-2025-2026">1.6 2025-2026：账户抽象成为主流</h3>
+<p>2025-05-07 Pectra 上线（11 个 EIP），EIP-7702 让 EOA 通过 SetCode authorization 持久委托到合约代码（直到下一次 SetCode 覆盖或委托到 0x0 撤销）（<a href="https://blog.ethereum.org/2025/04/23/pectra-mainnet">blog.ethereum.org/2025/04/23/pectra-mainnet</a>）。配合 ERC-4337：用 USDC 付 gas、社交恢复、批量执行、dApp 代付。<strong>钱包 UX 追上 Web2</strong>。10-前端模块展开。</p>
+<h3 id="17">1.7 时间轴速览</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>2008-10-31  Satoshi 发布 Bitcoin 白皮书
+2009-01-03  Bitcoin 创世区块（Genesis Block）
+2013-11-27  Vitalik 发布 Ethereum 白皮书（19 岁）
+2015-07-30  Ethereum 主网（Frontier）上线
+2016-06-17  The DAO 被攻击（5000 万美元当时）
+2016-07-20  Ethereum 硬分叉，ETC 诞生
+2017-12     CryptoKitties 撑爆 Ethereum，激发 L2 研究
+2020-06     &quot;DeFi Summer&quot; 启动（Compound 治理代币空投）
+2020-12-01  Beacon Chain 上线（Ethereum PoS 共识层启动）
+2022-03-23  Ronin Bridge 被盗 5.4 亿美元（Lazarus Group）
+2022-08-01  Nomad Bridge 被盗 1.9 亿美元（群众参与的 hack）
+2022-09-15  The Merge：Ethereum 转 PoS
+2023-03     ERC-4337 v0.6 正式部署到主网（v0.7 于 2024-04 部署，v0.8 迁移中）
+2023-07-30  Curve Vyper 编译器漏洞，约 5200 万美元损失
+2024-03-13  Dencun 升级（EIP-4844 blob，L2 成本断崖下跌）
+2025-05-07  Pectra 升级（EIP-7702 账户抽象进 EOA）
+2025-11-11  Mastering Ethereum 2nd Edition 出版
+2026-Q1     Glamsterdam 升级筹备（block-level access list、ePBS）
+</code></pre></div>
+<h3 id="18">1.8 习题</h3>
+<p><strong>1.8.1</strong> 一句话解释为什么 Bitcoin 选"图灵不完备"、Ethereum 选"图灵完备"都是有意为之。</p>
+<blockquote>
+<p>答案：Bitcoin 目标是单一可信价值传输，图灵不完备让每笔 tx 成本可静态分析、消除 DoS 攻击面；Ethereum 目标是任意可信计算，图灵完备 + gas 把"程序终止性"从静态保证变成动态保证（gas 耗尽就 revert），换来表达能力。两者不是优劣，是目标不同。</p>
+</blockquote>
+<p><strong>1.8.2</strong> The DAO 后为什么社区不能选"不动"？用社会学而非技术回答。</p>
+<blockquote>
+<p>答案：5000 万美元占当时 ETH 总市值过大，不分叉等于"以太坊从此被一个匿名攻击者持有十分之一"。当时社区主体是技术 + 投资者重叠，财富与项目存亡绑定。"代码即法律"在抽象上吸引人，但现实成本足够大时社会共识必然推翻它。此事永久改变 Ethereum 文化——之后每次重大升级都隐含"社会共识能否推翻技术决定"。</p>
+</blockquote>
+<p><strong>1.8.3</strong> 给用过 Stripe、没碰过 Web3 的同事 90 秒讲清"为什么需要智能合约"，不用"去中心化"，举具体例子。</p>
+<blockquote>
+<p>答案样例：Stripe 解决信用卡到你银行账户的资金路径，但如果 Stripe 拒绝（俄罗斯客户、赌博、高风险跨境），你就完了。智能合约是公开账本上的程序，谁都能调用、谁都能验证执行结果，不需要 Stripe 批准。例子：全球众筹合约，规则"到期没达标自动退款"，没有平台能扣资金或改规则。它不替代 Stripe，是给 Stripe 不能做的场景一个可信选项。</p>
+</blockquote>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2-16" id="ch03"><span class="chapter-num">Chapter 03</span><br>2. 16 个模块的依赖图</h2>
+
+<h3 id="21">2.1 全图</h3>
+<figure><img src="diagram-49192c324d.png" alt="mermaid diagram"></figure>
+
+<h3 id="22">2.2 五种颜色对应五种学习节奏</h3>
+<p>蓝色（00/01/02）是所有方向都绕不开的基础；黄色（03/04/05）是 95% 工程师吃饭的以太坊核心栈，必须按 EVM → Solidity → 安全 的顺序串起来；粉色（06/07/08/09）是协议级专精，按你的方向只挑一条深耕；绿色（10/11/12）是横向能力，任意阶段都能并行接入；紫色（13/14/15）是应用层，至少熟一个才能做出真正落地的产品。</p>
+<h3 id="23">2.3 三条硬依赖链</h3>
+<p><strong>01 密码学 → 02 共识、08 ZK</strong>：椭圆曲线、哈希、Merkle 证明是后两者的语言。不懂 SHA-256 抗碰撞性就不懂 PoW 为何安全；不懂椭圆曲线就讲不清 ECDSA 与 BLS 差别；不懂 Merkle 树就读不懂 state proof。</p>
+<p><strong>03 EVM → 04 Solidity</strong> 是初学者最常跳、后续最痛的一条。Solidity 长得像 JS，让人误以为可以绕过 EVM。结果是把临时变量错写成 <code>storage</code>，gas 超限两个数量级；栈、memory、storage、calldata 四种数据位置分不清，gas 永远多花。</p>
+<p><strong>04 Solidity → 05 安全 → 06 DeFi</strong> 是顺序关系。不会写合约就看不懂漏洞，Ethernaut（<a href="https://ethernaut.openzeppelin.com">ethernaut.openzeppelin.com</a>，30+ 关，2025-09 新增 Bet House / Elliptic Token / Cashback / Impersonator Two 四关）默认你能读懂字节码级行为。而 DeFi 是漏洞收割机，没刷完 Ethernaut 1-15 就写资金路径等于裸奔上战场——<a href="https://rekt.news">rekt.news</a> 每年前 10 名累计损失常超 30 亿美元。</p>
+<h3 id="24">2.4 软依赖与并行选修</h3>
+<p>07 L2 在 03 之后理论上就能学，但 L2 跑的是 DeFi，先 06 后 07 才连贯；10 前端 04 后即可上手，对安全的要求是"知边界"而非"能审计"；09 替代生态里，Solana 需要 02 + Rust，Move 需要类型论与资源语义，都建议 04 之后再展开。</p>
+<p>横向三模块（10/11/12）决定的是项目能否上线、能否被使用。10 前端决定有没有人用——漂亮 Solidity 配丑前端没人点开；11 基础设施决定能否扛住主网，anvil 100% 通过不代表主网没有 RPC 限速、indexer 延迟、监控缺失这类事故；12 AI x Web3 决定生产力上限，单人 + Cursor + Claude 在 2026 年能做 2022 年五人团队的事，前提是懂 §11 的边界。</p>
+<p>紫色应用层（13/14/15）不是必修，而是三种产品形态：13 是身份与社交（ENS / Farcaster / Lens / ERC-6551 TBA，to-C 产品绕不开）；14 是去中心化存储（NFT metadata 与 DA 层都需要，IPFS / Filecoin / Arweave / Walrus 经济模型差异巨大）；15 是 DAO 治理与 Tokenomics（代码 + 经济学 + 法律三栖，难点在 token design 与机制设计）。这是垂直应用方向，对应招聘市场上的 NFT / DAO / storage engineer 岗位，但不是入行门槛。</p>
+<h3 id="25">2.5 倒过来读会怎样</h3>
+<p>先去 06 DeFi、再回补 04/05 这条路走不通。但你可以<strong>用半天时间预习</strong>：去 Uniswap swap 一次、去 Aave 存 USDC、打开 DevTools 看前端如何包装链交互。每个概念 10-30 分钟，加起来不超过 2 小时——目的是建立直觉，正式学习仍然按依赖图来。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="3" id="ch04"><span class="chapter-num">Chapter 04</span><br>3. 学习资源全景：课程、书、社区</h2>
+
+<p>Web3 资源量大但良莠不齐：视频会停更、课程会停留在旧版本库、付费课与免费课的差距并不与价格成正比。下面按"免费课 → 付费 Bootcamp → 书 → 信息渠道 → 推特列表"分层，每层只挑当前仍在持续更新、且产物可验证的渠道。</p>
+<h3 id="31">3.1 免费视频/课程平台总览</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>主理人/机构</th>
+<th>风格</th>
+<th>强项</th>
+<th>弱项</th>
+<th>检索日确认</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cyfrin Updraft</td>
+<td>Patrick Collins / Cyfrin</td>
+<td>Hands-on，Foundry 优先</td>
+<td>安全审计、DeFi 实战、ZK Solidity</td>
+<td>视频偏长，需自己加速</td>
+<td>2026-04 仍 100% 免费，可获 SSCD+ 证书</td>
+</tr>
+<tr>
+<td>Speedrun Ethereum</td>
+<td>Austin Griffith / scaffold-eth</td>
+<td>Challenge-based</td>
+<td>全栈 dApp 直觉、scaffold-eth 框架</td>
+<td>安全章节较弱</td>
+<td>2026-04 共 10 关含 ZK Voting</td>
+</tr>
+<tr>
+<td>Alchemy University</td>
+<td>Alchemy</td>
+<td>短视频 + quiz</td>
+<td>JS for Ethereum、7 周 Bootcamp</td>
+<td>内容停留较早，更新偏慢</td>
+<td>2026-04 仍可访问，免费</td>
+</tr>
+<tr>
+<td>LearnWeb3</td>
+<td>LearnWeb3 DAO</td>
+<td>Cohort-based</td>
+<td>配套 Discord 社区、有 hackathon</td>
+<td>内容质量参差</td>
+<td>2026-04 仍活跃</td>
+</tr>
+<tr>
+<td>Solana Developer Bootcamp 2024</td>
+<td>Solana Foundation + 三位 DA</td>
+<td>20 小时长视频</td>
+<td>Solana 全栈最权威免费</td>
+<td>仅 Solana</td>
+<td>2026-04 仍是最新官方版</td>
+</tr>
+<tr>
+<td>Aptos Learn / Move Book</td>
+<td>Aptos Labs / Mysten Labs</td>
+<td>交互式</td>
+<td>Move 入门最佳免费选项</td>
+<td>仅 Aptos / Sui</td>
+<td>2026-04 持续更新</td>
+</tr>
+</tbody>
+</table>
+<h3 id="32-bootcamp">3.2 付费 / 专业 Bootcamp 总览</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>价格（2026）</th>
+<th>时长</th>
+<th>适合谁</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RareSkills Solidity Bootcamp</td>
+<td>$5,850（3 个月分期）</td>
+<td>13 周</td>
+<td>已会基础 Solidity 想进阶</td>
+<td>下期 2026-06-04，每周 1-on-1 review</td>
+</tr>
+<tr>
+<td>RareSkills ZK Bootcamp</td>
+<td>类似定价</td>
+<td>16 周</td>
+<td>ZK 工程师</td>
+<td>主理人 Jeffrey Scholz</td>
+</tr>
+<tr>
+<td>RareSkills Uniswap V3 Bootcamp</td>
+<td>单独定价</td>
+<td>8 周</td>
+<td>想读懂 Uniswap V3/V4</td>
+<td>数学密集</td>
+</tr>
+<tr>
+<td>Encode x Solana Bootcamp</td>
+<td>免费（Solana Foundation 赞助）</td>
+<td>6-8 周</td>
+<td>Solana 入门</td>
+<td>周期性开课</td>
+</tr>
+<tr>
+<td>Atrium Academy Uniswap Hook Incubator</td>
+<td>免费（资助）+ 申请制</td>
+<td>9 周</td>
+<td>已是 Solidity 中级</td>
+<td>黑客松结尾</td>
+</tr>
+<tr>
+<td>Secureum Bootcamp</td>
+<td>免费</td>
+<td>不固定</td>
+<td>安全方向</td>
+<td>Epoch∞ 在 2025-08 暂停，但 RACE 题库与 YouTube 录像永久保留</td>
+</tr>
+</tbody>
+</table>
+<p><strong>工程师注脚 3.A：</strong> Secureum Epoch Infinity 已暂停（<a href="https://www.secureum.xyz/">secureum.xyz</a>），但 RACE 1-41 题库仍是行业事实标准学习材料。</p>
+<h3 id="33">3.3 必读书清单（按主题）</h3>
+<h4 id="331">3.3.1 比特币与基础</h4>
+<ul>
+<li><em>Mastering Bitcoin</em>（Antonopoulos，2nd/3rd Edition）：参考型，覆盖 SegWit、Lightning。</li>
+<li><em>Programming Bitcoin</em>（Jimmy Song，O'Reilly 2019，<a href="https://github.com/jimmysong/programmingbitcoin">github.com/jimmysong/programmingbitcoin</a>）：Python 从零实现 Bitcoin 库，14 章 + 练习，CC-BY-NC-ND。两本互补：前者 reference，后者 process。</li>
+</ul>
+<h4 id="332">3.3.2 以太坊核心</h4>
+<ul>
+<li><em>Mastering Ethereum</em>（Antonopoulos &amp; Wood，2nd Edition，O'Reilly <strong>2025-11-11</strong>，<a href="https://github.com/ethereumbook/ethereumbook">github.com/ethereumbook/ethereumbook</a>）：含 EIP-2930/1559/4844/7702，DeFi 与 ZK 章节全新。<strong>2026 年唯一权威以太坊参考书。</strong></li>
+<li><em>Upgrading Ethereum</em>（Ben Edgington，<a href="https://eth2book.info">eth2book.info</a>，免费）：PoS / Beacon Chain / Casper FFG 最权威解读。</li>
+</ul>
+<h4 id="333-zk">3.3.3 ZK 与密码学</h4>
+<ul>
+<li><em>Real-World Cryptography</em>（David Wong）：现代密码学入门首选，ECDSA、BLS、Noise 协议。</li>
+<li><em>Proofs, Arguments, and Zero-Knowledge</em>（Justin Thaler，Now Publishers）：ZK 数学最权威，免费 PDF。</li>
+</ul>
+<h4 id="334-rustsolana-reth-foundry">3.3.4 Rust（Solana / Reth / Foundry 源码必备）</h4>
+<ul>
+<li><em>The Rust Programming Language</em>（<a href="https://doc.rust-lang.org/book/">doc.rust-lang.org/book</a>）：官方教材。</li>
+<li>Rustlings（<a href="https://rustlings.rust-lang.org/">rustlings.rust-lang.org</a>）：配套练习。</li>
+<li><em>Comprehensive Rust</em>（Google Android 团队，<a href="https://google.github.io/comprehensive-rust/">google.github.io/comprehensive-rust</a>）：4 天速成。</li>
+</ul>
+<h4 id="335-moveaptos-sui">3.3.5 Move（Aptos / Sui）</h4>
+<ul>
+<li><em>The Move Book</em>（Mysten Labs，<a href="https://move-book.com/">move-book.com</a>）：Sui Move 免费教程，含 dynamic fields、对象模型。</li>
+<li><em>Aptos Move by Example</em>（Aptos）：Aptos 风味。</li>
+</ul>
+<h3 id="34-newsletter">3.4 信息渠道：Newsletter / 论坛 / 推特列表</h3>
+<h4 id="341-newsletter">3.4.1 Newsletter（按周固定阅读）</h4>
+<ul>
+<li><em>Bankless Newsletter</em>（freemium，<a href="https://www.bankless.com/newsletter">bankless.com/newsletter</a>）：日刊 3 分钟；另有 Ethereum Weekly、Mindshare（AI x Crypto）子刊。</li>
+<li><em>Week in Ethereum News</em>（Evan Van Ness，Substack，2026-04-27 仍每周更新）：Ethereum 圈最高信噪比。</li>
+<li><em>The Defiant</em>：DeFi 行业新闻；<em>Messari Daily Pulse</em>：研究型。</li>
+</ul>
+<h4 id="342">3.4.2 研究博客</h4>
+<ul>
+<li>a16z crypto：<a href="https://a16zcrypto.com">a16zcrypto.com</a>；Paradigm：<a href="https://paradigm.xyz/writing">paradigm.xyz/writing</a></li>
+<li>Variant Fund、1kx、Delphi Digital、Galaxy Research：机构投研视角</li>
+</ul>
+<h4 id="343">3.4.3 论坛与原始资料</h4>
+<ul>
+<li>ethresear.ch：协议研究核心；ethereum-magicians.org：EIP 讨论原始现场</li>
+<li>Optimism / Arbitrum / Base 治理论坛：L2 真实运营问题</li>
+<li><em>rekt.news</em>：事故复盘，残酷但必读</li>
+</ul>
+<h3 id="35-x-pin">3.5 推特 / X 推荐 pin 列表</h3>
+<p>按方向拉一个 list，<strong>不刷主页</strong>：</p>
+<ul>
+<li>协议研发：@VitalikButerin, @drakefjustin, @dankrad, @lightclients, @TimBeiko</li>
+<li>安全：@samczsun, @0xfoobar, @PatrickAlphaC, @transmissions11, @bytes032</li>
+<li>DeFi：@haydenzadams, @0xMaki, @StaniKulechov, @AndreCronjeTech</li>
+<li>L2/ZK：@bkiepuszewski, @dabit3, @anna_rrose</li>
+<li>基础设施 / MEV：@bertcmiller, @phildaian, @0xQuintus</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="4" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. 七条专业方向</h2>
+
+<p>无论选哪条方向，都先完成 Ethernaut 1-15 关 + 读完 SWC Registry——这是最低安全直觉。下面五条是传统方向（合约、安全、前端、协议、基础设施），两条是应用层方向（DAO、NFT 社交）。</p>
+<h3 id="41-smart-contract-engineer">4.1 智能合约工程师（Smart Contract Engineer）</h3>
+<p><strong>主路径：</strong> 04 → 05 → 06。重点深耕 Foundry、不变量测试、gas optimization。</p>
+<p><strong>关键产物：</strong> 3 个开源协议的有意义 PR、1 个自己设计的 ERC 提案 draft、1 份 1000 行级别的协议代码 + 测试套件。</p>
+<h3 id="42-security-researcher-auditor">4.2 安全审计员（Security Researcher / Auditor）</h3>
+<p><strong>主路径：</strong> 04 → 05 → 06 → CTF/竞赛。</p>
+<p><strong>进阶顺序：</strong> Cyfrin Updraft Security Course → Damn Vulnerable DeFi v4 → Ethernaut 全关 → Secureum RACE 题库自学 → Code4rena / Sherlock / Cantina 公开赛 → Immunefi bounty。</p>
+<p><strong>竞赛平台对比（2026 Q1 实际状况）：</strong></p>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>模式</th>
+<th>项目预算</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Code4rena</td>
+<td>warden 竞争</td>
+<td>$20K-$200K+</td>
+<td>2025 被 Zellic 收购，仍是参与人数最多的平台</td>
+</tr>
+<tr>
+<td>Sherlock</td>
+<td>提供事后保险</td>
+<td>$20K-$200K+</td>
+<td>项目愿意付保费换"被审还被黑"时的赔付</td>
+</tr>
+<tr>
+<td>Cantina</td>
+<td>审计员需自己 stake</td>
+<td>灵活</td>
+<td>信号更强但门槛高</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键产物：</strong> 每周读 3-5 份公开审计报告（OpenZeppelin、Trail of Bits、Spearbit）并写 1 段总结，半年内累计 50+ 份。</p>
+<h3 id="43-dapp-frontend">4.3 前端 / 全栈工程师（dApp Frontend）</h3>
+<p><strong>主路径：</strong> 04（够用即可）→ 10 → 11。</p>
+<p><strong>默认栈（2026 production-ready）：</strong> Next.js 15 + React 19 + wagmi v2 + viem v2 + RainbowKit + Tailwind + shadcn/ui + TanStack Query + Privy/Dynamic（embedded wallet）。</p>
+<p><strong>关键产物：</strong> 3 个公开 dApp，至少 1 个含 account abstraction 流程、至少 1 个有真实用户。</p>
+<h3 id="44-protocol-rd">4.4 协议研发员（Protocol R&amp;D）</h3>
+<p><strong>主路径：</strong> 01 → 02 → 03 → 07/08 选一。研究院线，门槛高薪资高。</p>
+<p><strong>推荐项目：</strong> Ethereum Protocol Fellowship（EPF，2025 年 Cohort 6，<a href="https://blog.ethereum.org/2025/04/10/epf-6">blog.ethereum.org/2025/04/10/epf-6</a>）或 Ethereum Protocol Studies 2026（2026-02 启动，含 cryptography、lean consensus、zkEVM 三 track）。</p>
+<p><strong>关键产物：</strong> 1 个 client 的非平凡 PR、1 份 EIP draft 或研究 note、ethresear.ch 上 1-3 个有讨论的帖子。</p>
+<h3 id="45-infra-devops-mev">4.5 基础设施工程师（Infra / DevOps / MEV）</h3>
+<p><strong>主路径：</strong> 02 → 03 → 11，可与 12 AI x Web3 联动。</p>
+<p><strong>方向：</strong> RPC 服务、indexer（Subgraph、Goldsky、Envio）、MEV searcher/builder、bridge、节点托管、数据管道。</p>
+<p><strong>2026 客户端选择参考：</strong>
+- 执行层（EL）：Geth（41% 市占率）、Reth（<strong>2026-04 发布 2.0</strong>，约 20-25% 市占且高速增长，Base 已弃 Geth 用 Reth，OP 主网 2026-05 弃 op-geth）、Erigon（archive 节点 3-3.5 TB，远小于 Geth 的 18-20 TB）、Nethermind、Besu。
+- 共识层（CL）：Lighthouse、Prysm、Teku、Nimbus、Lodestar——多客户端是 Ethereum 安全的根。</p>
+<p><strong>关键产物：</strong> 1 个公开运行的服务（自己维护的 indexer / 公共 RPC / MEV bot 数据看板）。</p>
+<h3 id="46-dao-dao-engineer-governance-architect">4.6 DAO 工程师（DAO Engineer / Governance Architect）</h3>
+<p><strong>主路径：</strong> 04 → 06 → 15。代码 + 经济学 + 法律三栖。</p>
+<p><strong>当前真实岗位（2026 Q1）：</strong> MakerDAO、Compound Core、Uniswap Foundation、Optimism Foundation、Aragon、Tally、Snapshot Labs 持续招聘（<a href="https://web3.career/web3-companies/makerdao">web3.career/web3-companies/makerdao</a>）。</p>
+<p><strong>技术栈：</strong>
+- <strong>Governor 系</strong>：OpenZeppelin Governor v5.5（含 timelock + votes extension）、Compound Governor Bravo、Aave Governance v3。
+- <strong>框架</strong>：Aragon OSx（modular，Mode L2 已用其 vote-escrow + gauge 治理模型）、Zodiac（Safe 上的治理模块）、Snapshot X（链上链下结合）。
+- <strong>前端 + 数据</strong>：Tally（Governor 标准 UI，Uniswap/Gitcoin 都在用）、Boardroom、Karma。
+- <strong>国库管理</strong>：Safe + Den（多签）、Llama、Karpatkey（DAO treasury 管理服务）。</p>
+<p><strong>关键产物：</strong> 1 个原创治理提案被真实 DAO 采纳；1 份 token launch 白皮书（含 vesting schedule、quorum、proposal threshold 推导）；1 个开源治理模块 PR。</p>
+<h3 id="47-nft-nft-social-engineer">4.7 NFT / 社交工程师（NFT &amp; Social Engineer）</h3>
+<p><strong>主路径：</strong> 04 → 10 → 13。to-C 产品 + 链上身份，最接近 Web2 全栈。</p>
+<p><strong>技术栈：</strong>
+- <strong>NFT 标准</strong>：ERC-721、ERC-721A（Azuki，gas-efficient batch mint）、ERC-1155（multi-token）、ERC-2981（royalties）、ERC-4906（metadata refresh）、ERC-6551（Token Bound Accounts，让 NFT 自身成为账户）。
+- <strong>身份层</strong>：ENS、Farcaster ID（FID，2026-01 由 Neynar 接管协议运营）、Lens v3（2025 已迁移到自己的 L2，含 65 万 profiles + 125GB social graph）、Sign-In With Ethereum（SIWE，EIP-4361）。
+- <strong>社交层</strong>：Farcaster Hubs + Frames v2（嵌入式 mini-apps）、Lens Open Action、XMTP（链上消息）。
+- <strong>存储</strong>：IPFS / Arweave（NFT metadata 必须永久化，OpenSea 不替你保存）。</p>
+<p><strong>关键产物：</strong> 1 个有真实用户的 NFT mint 项目（Sepolia / Base / Zora）；1 个 Farcaster Frame 或 Lens Open Action；1 篇关于身份层的技术博客。</p>
+<h4 id="4a-nft">工程师注脚 4.A：为什么 NFT 工程师不只是"玩头像的"</h4>
+<p>ENS 把名字 mapping 到 address；ERC-721 是身份单元；ERC-6551 让 NFT 成为账户持有 token、签 tx、参与治理。堆叠起来 = Web3 to-C 基础设施，2026 年覆盖社交、游戏、忠诚度、票务、艺术品、IP 授权。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5-reality-check" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. 与权威路线图的交叉对照（reality check）</h2>
+
+<h3 id="51">5.1 对比对象</h3>
+<table>
+<thead>
+<tr>
+<th>路线</th>
+<th>来源</th>
+<th>形态</th>
+<th>检索日</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>roadmap.sh / Blockchain</td>
+<td>Kamran Ahmed</td>
+<td>静态 SVG roadmap</td>
+<td>2026-04-27</td>
+</tr>
+<tr>
+<td>Cyfrin Updraft Career Tracks</td>
+<td>Patrick Collins / Cyfrin</td>
+<td>6 条 career tracks（Foundations / Solidity / Vyper / DeFi / Security / Wallets / ZK）</td>
+<td>2026-04-27</td>
+</tr>
+<tr>
+<td>LearnWeb3 DAO Degrees</td>
+<td>LearnWeb3 DAO</td>
+<td>4 条 tracks：Freshman / Sophomore / Junior / Senior</td>
+<td>2026-04-27</td>
+</tr>
+<tr>
+<td>Alchemy University EDB</td>
+<td>Alchemy</td>
+<td>7 周 Ethereum Developer Bootcamp（Week 1 ECDSA、Week 2 storage）</td>
+<td>2026-04-27</td>
+</tr>
+<tr>
+<td>100xDevs Cohort 3.0 Web3</td>
+<td>Harkirat Singh</td>
+<td>直播 + 录像，含 EVM + Solana + Rust</td>
+<td>2026-04-27</td>
+</tr>
+<tr>
+<td>ChainShot（已并入 Alchemy U）</td>
+<td>ChainShot / Alchemy</td>
+<td>10 周 instructor-led</td>
+<td>2026-04-27</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52">5.2 行业共识：所有路线共有核心</h3>
+<p>把六份路线图合在一起看，重叠的部分就是行业事实标准的入门核心——加密原语（hash / ECDSA / Merkle）、EVM 与 gas 模型、Solidity 与 ERC-20/721、一种测试框架（Foundry 或 Hardhat）、Uniswap V2 精读、一次完整 dApp 全栈、一套安全练习（Ethernaut 或 Damn Vulnerable DeFi）。00-12 模块覆盖了这些全部内容。</p>
+<h3 id="53">5.3 行业分歧：哪些主题不同路线侧重不同</h3>
+<table>
+<thead>
+<tr>
+<th>主题</th>
+<th>roadmap.sh</th>
+<th>Cyfrin</th>
+<th>LearnWeb3</th>
+<th>Alchemy U</th>
+<th>100xDevs</th>
+<th>本指南</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bitcoin 单独章节</td>
+<td>✓</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>△（在 01-02）</td>
+</tr>
+<tr>
+<td>Vyper</td>
+<td>×</td>
+<td>✓</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>△（在 04）</td>
+</tr>
+<tr>
+<td>Solana / Rust</td>
+<td>×</td>
+<td>✓</td>
+<td>×</td>
+<td>×</td>
+<td>✓</td>
+<td>✓（M09）</td>
+</tr>
+<tr>
+<td>Move（Aptos/Sui）</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M09）</td>
+</tr>
+<tr>
+<td>ZK / Noir</td>
+<td>×</td>
+<td>✓</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M08）</td>
+</tr>
+<tr>
+<td>L2 部署对比</td>
+<td>△</td>
+<td>△</td>
+<td>△</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M07）</td>
+</tr>
+<tr>
+<td>账户抽象 ERC-4337/7702</td>
+<td>×</td>
+<td>△</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M10）</td>
+</tr>
+<tr>
+<td>MEV / 基础设施</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M11）</td>
+</tr>
+<tr>
+<td>AI x Web3</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M12）</td>
+</tr>
+<tr>
+<td>NFT 身份与社交</td>
+<td>×</td>
+<td>×</td>
+<td>△</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M13）</td>
+</tr>
+<tr>
+<td>去中心化存储</td>
+<td>×</td>
+<td>×</td>
+<td>△</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M14）</td>
+</tr>
+<tr>
+<td>DAO 治理</td>
+<td>×</td>
+<td>×</td>
+<td>△</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M15）</td>
+</tr>
+<tr>
+<td>Tokenomics</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>×</td>
+<td>✓（M15）</td>
+</tr>
+</tbody>
+</table>
+<p><code>✓</code> = 完整覆盖，<code>△</code> = 简略提及，<code>×</code> = 缺失。</p>
+<h3 id="54">5.4 交叉检查补丁</h3>
+<ol>
+<li><strong>Bitcoin 学习路径</strong>（roadmap.sh 有，其他路线无）：§13.9 加入 <em>Programming Bitcoin</em>（Jimmy Song）独立路径，01 模块含 Bitcoin 部分。</li>
+<li><strong>LearnWeb3 进阶主题</strong>（DAO/ENS/The Graph/MEV/gas optimization）：分散到 M11/M13/M15，由 4.6/4.7 打包成职业方向。</li>
+<li><strong>Solana + Rust 双修</strong>（100xDevs 强调）：M09 + §3.4.4 覆盖。</li>
+<li><strong>ECDSA 实战</strong>（Alchemy U Week 1）：M01 产物表含 Python/TS ECDSA 签名验证。</li>
+<li><strong>Vyper / ZK Solidity</strong>（Cyfrin 独有）：M04 含 Vyper，M08 含 Noir。</li>
+<li><strong>不覆盖</strong>：Cosmos SDK/IBC（工程市场收缩）、Polkadot/Substrate（市占持续下降）、Hyperledger/联盟链（企业方向，栈差异大）。</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="6" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. 模块详细前置依赖与产出物（可验证）</h2>
+
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>前置</th>
+<th>核心产出物（可验证）</th>
+<th>推荐时长</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>00 导论</td>
+<td>无</td>
+<td>写下"为什么学 Web3"的 3 条具体动机 + 6 个月目标 + 选定一条路径</td>
+<td>0.5 周</td>
+</tr>
+<tr>
+<td>01 密码学</td>
+<td>00</td>
+<td>用 Python/TS 实现：SHA-256 与 Keccak-256 对比、ECDSA 签名验证、Merkle proof 验证</td>
+<td>1 周</td>
+</tr>
+<tr>
+<td>02 共识</td>
+<td>01</td>
+<td>本地起 PoS 双客户端（Geth+Lighthouse 或 Reth+Lodestar），观察 finality</td>
+<td>1 周</td>
+</tr>
+<tr>
+<td>03 EVM</td>
+<td>02</td>
+<td>用 evm.codes 跟踪 1 笔 ETH 转账 + 1 笔 ERC-20 transfer 的全部 opcode</td>
+<td>1 周</td>
+</tr>
+<tr>
+<td>04 Solidity</td>
+<td>03</td>
+<td>Foundry 项目模板，含 ERC-20、ERC-721、unit test、fuzz test，覆盖率 ≥ 90%</td>
+<td>3 周</td>
+</tr>
+<tr>
+<td>05 安全</td>
+<td>04</td>
+<td>Ethernaut 1-25、Damn Vulnerable DeFi v4 至少 5 关 writeup</td>
+<td>3 周</td>
+</tr>
+<tr>
+<td>06 DeFi</td>
+<td>04+05</td>
+<td>Uniswap V2 + V3 + V4 hook 逐行 reading note，自己写一个 minimal AMM</td>
+<td>3 周</td>
+</tr>
+<tr>
+<td>07 L2</td>
+<td>03</td>
+<td>同一份合约部署到 OP Stack、Arbitrum Nitro、zkSync Era 三条链，对比 gas 与延迟</td>
+<td>2 周</td>
+</tr>
+<tr>
+<td>08 ZK</td>
+<td>01+03</td>
+<td>用 Circom 写 Merkle membership proof、用 Noir 写 password check</td>
+<td>3 周</td>
+</tr>
+<tr>
+<td>09 替代生态</td>
+<td>02</td>
+<td>Solana：跑通 Anchor 的 token + NFT；可选 Move（Aptos/Sui）或 Cosmos SDK</td>
+<td>2-4 周</td>
+</tr>
+<tr>
+<td>10 前端</td>
+<td>04</td>
+<td>scaffold-eth-2 + wagmi + ERC-4337 smart account 完整流程</td>
+<td>2 周</td>
+</tr>
+<tr>
+<td>11 基础设施</td>
+<td>03+05</td>
+<td>自跑 Erigon/Reth 节点、起 Subgraph、可选 Flashbots 仿真</td>
+<td>2-3 周</td>
+</tr>
+<tr>
+<td>12 AI x Web3</td>
+<td>04+06</td>
+<td>Claude/Cursor 写合约 → 自审 → 对比差异，写一篇 lessons learned</td>
+<td>1-2 周（持续观察）</td>
+</tr>
+<tr>
+<td>13 NFT 身份与社交</td>
+<td>04+10</td>
+<td>用 Solady 721 + 2981 写 mint 合约 + IPFS metadata + 1 个 Farcaster Frame 或 Lens Open Action</td>
+<td>2-3 周</td>
+</tr>
+<tr>
+<td>14 去中心化存储</td>
+<td>03+11</td>
+<td>同一份 NFT metadata 上 IPFS / Filecoin / Arweave / Walrus 四种方式，对比成本与可恢复性</td>
+<td>1-2 周</td>
+</tr>
+<tr>
+<td>15 DAO 治理与 Tokenomics</td>
+<td>04+06</td>
+<td>OpenZeppelin Governor v5.5 部署 + Tally 集成 + 1 份 token launch 白皮书 + 1 个真实 DAO 提案</td>
+<td>3 周</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7" id="ch08"><span class="chapter-num">Chapter 08</span><br>7. 学习方法论：如何边读边写边验</h2>
+
+<h3 id="71">7.1 三步循环：搜 + 改 + 验</h3>
+<ol>
+<li><strong>搜</strong>：同一名词在 ethereum.org docs、Cyfrin Updraft、相关 EIP、原始论文各看一遍。<strong>不一致处往往是真知识</strong>。</li>
+<li><strong>改</strong>：写最小复现，故意改坏一行（把 <code>nonReentrant</code> 去掉），看测试失败。改坏比写对学到的多。</li>
+<li><strong>验</strong>：跑 <code>forge test -vvvv</code> 读完整 trace；或放 testnet 让钱包真签一次——确认按钮时你会注意到 gas、nonce、chainId 等平时被抽象的细节。</li>
+</ol>
+<h3 id="72">7.2 三类笔记不要混</h3>
+<ul>
+<li><strong>概念笔记</strong>（Markdown，永久）：what + why，每概念一篇 3-5 段，手写不复制粘贴。</li>
+<li><strong>排错笔记</strong>（issue tracker / Linear / Notion）：错误信息 + 复现步骤 + 解决路径。6 个月后回看价值最大，最容易被忽视。</li>
+<li><strong>源码 reading note</strong>（写在 fork 注释里 commit 上去）：每 200 行写 5 行总结，方便 GitHub search 找回。</li>
+</ul>
+<h3 id="73">7.3 反向解释：每周一次</h3>
+<p>挑本周一个新概念，假装给 Web2 后端讲——讲不清楚 = 没真懂。例：90 秒讲清"Merkle Patricia Trie 是什么及以太坊为何用它"，讲不清就回读 ethereumbook 第 6 章。</p>
+<h3 id="74-invariant-driven">7.4 不变量驱动学习（Invariant-Driven）</h3>
+<p>每读一个协议先问"哪些状态绝不能违反？"，写成 Foundry invariant test 跑给自己看——强迫你用形式化语言描述协议行为，远比看视频深刻。</p>
+<p>经典样本：
+- Uniswap V2：swap 前后 <code>k = x * y</code> 不减（无手续费情况）。
+- ERC-20：<code>sum(balanceOf(每地址)) == totalSupply()</code>。
+- Compound v2：<code>sum(underlying value × 折扣因子) &gt;= sum(borrowed value)</code>。
+- ERC-4626 vault：<code>totalSupply == sum(LP shares)</code>，用 ghost variable 在 handler 中累加跟踪。</p>
+<h4 id="7afoundry-invariant-test-runs-depth">工程师注脚 7.A：Foundry invariant test 的 runs / depth</h4>
+<p><code>forge test --match-test invariant_*</code> 关键参数：<code>runs</code>（调用序列条数）、<code>depth</code>（每条序列长度）。默认 <code>runs=256, depth=15</code> 太弱，生产代码至少 <code>runs=5000, depth=50</code>。开 <code>show_metrics=true</code> 查哪些 handler revert 比例过高——handler 不该 90% 被 <code>vm.assume</code> 跳过，否则 fuzzer 在浪费 CPU。</p>
+<h3 id="75">7.5 阅读真实代码而非示例代码</h3>
+<p>教程的 <code>transfer()</code> 永远是 5 行 happy path。OpenZeppelin ERC-20 v5.5 是 200 行，藏着权限校验、重入防护、storage gap、UUPS proxy、namespaced storage（ERC-7201）。每周读 500-1000 行生产代码：</p>
+<ul>
+<li>OZ Contracts v5.5（<a href="https://github.com/OpenZeppelin/openzeppelin-contracts">github.com/OpenZeppelin/openzeppelin-contracts</a>，2025-10-31 发布，含 ERC-6909/7702 SignerEIP7702/7930/WebAuthn）</li>
+<li>Solady（<a href="https://github.com/Vectorized/solady">github.com/Vectorized/solady</a>）/ Solmate（<a href="https://github.com/transmissions11/solmate">github.com/transmissions11/solmate</a>）</li>
+<li>Uniswap V2/V3/V4 core；Compound V3 / Aave V3；Lido stETH</li>
+</ul>
+<p>读不懂就停，去搜对应 EIP 或 issue 讨论。</p>
+<h3 id="76">7.6 公开进度</h3>
+<p>GitHub profile、Twitter/Farcaster、Notion 学习日志保持公开。公开不是为了流量，而是给招聘方与同行一个查证你产出的入口——这也是 Web3 招聘市场默认的工作方式。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-macos-linux2026-04" id="ch09"><span class="chapter-num">Chapter 09</span><br>8. 必备开发环境（macOS / Linux，2026-04 验证）</h2>
+
+<p>所有运行时都走版本管理器，避免被项目锁死在过期编译器上。本节命令按 2026-04-27 实测整理。</p>
+<h3 id="81">8.1 操作系统</h3>
+<p>macOS 14+（Apple Silicon 优先，Foundry 与 Solana CLI 在 ARM64 上速度显著更快）或 Ubuntu 22.04 / 24.04 LTS。Windows 用户用 WSL2 + Ubuntu，<strong>不要</strong>直接用 Git Bash 跑 Foundry——你会在文件路径与 PATH 上踩到无数坑。</p>
+<h3 id="82">8.2 版本管理器（强制）</h3>
+<ul>
+<li><strong>Node.js</strong>：<code>nvm</code>，同时装 Node 20 LTS + 22 LTS（wagmi v2/viem v2 要求 ≥18，18 已 maintenance）。</li>
+<li><strong>Python</strong>：<code>pyenv</code>，Slither/Mythril/ape 要 3.10+。</li>
+<li><strong>Rust</strong>：<code>rustup</code>，nightly + stable 双装（Solana/Anchor/Reth/Foundry 源码编译）。</li>
+<li><strong>Solidity</strong>：<code>solc-select</code> 或 Foundry 自带切换。<strong>不要 <code>brew install solc</code></strong>——brew 只装最新版，老项目会被卡住。</li>
+<li><strong>Foundry</strong>：<code>foundryup</code>。生产项目锁版本：<code>foundryup --install &lt;commit&gt;</code>。</li>
+</ul>
+<h3 id="83">8.3 核心工具链一行命令版</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># === EVM 工具链 ===</span>
+
+<span style="color: #8F5902; font-style: italic"># Foundry（forge / cast / anvil / chisel）</span>
+<span style="color: #8F5902; font-style: italic"># 官方安装地址 2026-04 仍是 paradigm.xyz，最终域名 getfoundry.sh 已并入</span>
+curl<span style="color: #F8F8F8"> </span>-L<span style="color: #F8F8F8"> </span>https://foundry.paradigm.xyz<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash
+foundryup
+
+<span style="color: #8F5902; font-style: italic"># Hardhat 3（2025-08 进入 production，2026-02 v3.1.12，性能关键路径用 Rust 重写）</span>
+<span style="color: #8F5902; font-style: italic"># 项目内：</span>
+pnpm<span style="color: #F8F8F8"> </span>add<span style="color: #F8F8F8"> </span>-D<span style="color: #F8F8F8"> </span>hardhat<span style="color: #F8F8F8"> </span>@nomicfoundation/hardhat-toolbox
+<span style="color: #8F5902; font-style: italic"># 全局缩写：</span>
+npm<span style="color: #F8F8F8"> </span>i<span style="color: #F8F8F8"> </span>-g<span style="color: #F8F8F8"> </span>hardhat-shorthand<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># 之后用 hh 代替 npx hardhat</span>
+
+<span style="color: #8F5902; font-style: italic"># 静态分析</span>
+pipx<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>slither-analyzer
+cargo<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>aderyn<span style="color: #F8F8F8">          </span><span style="color: #8F5902; font-style: italic"># Cyfrin 的 Rust 实现，比 Slither 快 10x</span>
+npm<span style="color: #F8F8F8"> </span>i<span style="color: #F8F8F8"> </span>-g<span style="color: #F8F8F8"> </span>@halmoslabs/halmos<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># 形式化 / symbolic execution</span>
+
+<span style="color: #8F5902; font-style: italic"># === Solana 工具链 ===</span>
+
+<span style="color: #8F5902; font-style: italic"># Solana CLI（注意：2025 起从 solana.com 迁到 release.anza.xyz）</span>
+sh<span style="color: #F8F8F8"> </span>-c<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;</span><span style="color: #204A87; font-weight: bold">$(</span>curl<span style="color: #F8F8F8"> </span>-sSfL<span style="color: #F8F8F8"> </span>https://release.anza.xyz/stable/install<span style="color: #204A87; font-weight: bold">)</span><span style="color: #4E9A06">&quot;</span>
+<span style="color: #8F5902; font-style: italic"># 或锁定版本（2026-04 stable 是 v3.1.9）：</span>
+sh<span style="color: #F8F8F8"> </span>-c<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;</span><span style="color: #204A87; font-weight: bold">$(</span>curl<span style="color: #F8F8F8"> </span>-sSfL<span style="color: #F8F8F8"> </span>https://release.anza.xyz/v3.1.9/install<span style="color: #204A87; font-weight: bold">)</span><span style="color: #4E9A06">&quot;</span>
+
+<span style="color: #8F5902; font-style: italic"># Anchor（Solana 智能合约框架）</span>
+cargo<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>--git<span style="color: #F8F8F8"> </span>https://github.com/coral-xyz/anchor<span style="color: #F8F8F8"> </span>avm<span style="color: #F8F8F8"> </span>--locked
+avm<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>latest<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>avm<span style="color: #F8F8F8"> </span>use<span style="color: #F8F8F8"> </span>latest
+
+<span style="color: #8F5902; font-style: italic"># === 节点客户端（按需）===</span>
+
+<span style="color: #8F5902; font-style: italic"># Reth 2.0（Paradigm 出品，Rust 写，2026-04 发布 v2.0）</span>
+<span style="color: #8F5902; font-style: italic"># 选项 1：从 GitHub release 下二进制</span>
+<span style="color: #8F5902; font-style: italic"># 选项 2：源码编译（需 Rust）</span>
+git<span style="color: #F8F8F8"> </span>clone<span style="color: #F8F8F8"> </span>https://github.com/paradigmxyz/reth
+<span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>reth<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>cargo<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>--locked<span style="color: #F8F8F8"> </span>--path<span style="color: #F8F8F8"> </span>bin/reth<span style="color: #F8F8F8"> </span>--bin<span style="color: #F8F8F8"> </span>reth
+
+<span style="color: #8F5902; font-style: italic"># Lighthouse（Sigma Prime，Rust，CL 客户端）</span>
+curl<span style="color: #F8F8F8"> </span>-LO<span style="color: #F8F8F8"> </span>https://github.com/sigp/lighthouse/releases/latest/download/lighthouse-x86_64-unknown-linux-gnu.tar.gz
+
+<span style="color: #8F5902; font-style: italic"># === ZK 工具链 ===</span>
+
+<span style="color: #8F5902; font-style: italic"># Circom（Iden3）+ snarkjs</span>
+npm<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>-g<span style="color: #F8F8F8"> </span>snarkjs
+<span style="color: #8F5902; font-style: italic"># Circom 需 Rust：</span>
+git<span style="color: #F8F8F8"> </span>clone<span style="color: #F8F8F8"> </span>https://github.com/iden3/circom<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>circom<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>cargo<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>--path<span style="color: #F8F8F8"> </span>circom
+
+<span style="color: #8F5902; font-style: italic"># Noir（Aztec）</span>
+curl<span style="color: #F8F8F8"> </span>-L<span style="color: #F8F8F8"> </span>https://raw.githubusercontent.com/noir-lang/noirup/main/install<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash
+noirup
+
+<span style="color: #8F5902; font-style: italic"># === Move 工具链（按需）===</span>
+
+<span style="color: #8F5902; font-style: italic"># Sui CLI</span>
+brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>sui<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># macOS</span>
+<span style="color: #8F5902; font-style: italic"># 或源码：</span>
+cargo<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>--locked<span style="color: #F8F8F8"> </span>--git<span style="color: #F8F8F8"> </span>https://github.com/MystenLabs/sui.git<span style="color: #F8F8F8"> </span>--branch<span style="color: #F8F8F8"> </span>testnet<span style="color: #F8F8F8"> </span>sui
+
+<span style="color: #8F5902; font-style: italic"># Aptos CLI</span>
+brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>aptos
+</code></pre></div>
+<h4 id="8a">工程师注脚 8.A：版本锁定的硬性纪律</h4>
+<p>任何要部署到主网的项目，<code>foundry.toml</code> 必须固定 <code>solc_version</code> 与 <code>evm_version</code>，<code>package.json</code> 必须有 <code>lockfile</code>，<code>Cargo.toml</code> 必须有 <code>Cargo.lock</code>。Curve Vyper 事故的部分原因就是项目允许浮动编译器版本。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># foundry.toml 示例</span>
+<span style="color: #204A87; font-weight: bold">[profile.default]</span>
+<span style="color: #000">src</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;src&quot;</span>
+<span style="color: #000">out</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;out&quot;</span>
+<span style="color: #000">libs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;lib&quot;</span><span style="color: #000; font-weight: bold">]</span>
+<span style="color: #000">solc_version</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;0.8.28&quot;</span>
+<span style="color: #000">evm_version</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;cancun&quot;</span><span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic"># 2026-04 主网 EVM 版本</span>
+<span style="color: #000">optimizer</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span>
+<span style="color: #000">optimizer_runs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">10_000</span>
+<span style="color: #000">via_ir</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #F8F8F8">                 </span><span style="color: #8F5902; font-style: italic"># 生产代码强烈建议开启</span>
+
+<span style="color: #204A87; font-weight: bold">[invariant]</span>
+<span style="color: #000">runs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">5000</span>
+<span style="color: #000">depth</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">50</span>
+<span style="color: #000">fail_on_revert</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">false</span>
+<span style="color: #000">show_metrics</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span>
+</code></pre></div>
+<h3 id="84-ide">8.4 IDE / 编辑器</h3>
+<ul>
+<li><strong>VS Code</strong>：装 <em>Solidity (Juan Blanco)</em>、<em>Solidity Visual Developer</em>、<em>Hardhat Solidity</em>、<em>Even Better TOML</em>、<em>GitLens</em>。<code>.vscode/settings.json</code> 里把 <code>solidity.formatter</code> 设为 <code>forge</code> 而非默认。</li>
+<li><strong>Cursor</strong>：含 AI，注意第 10 节边界。Composer mode 写测试很快，写资金路径必须人工 review。</li>
+<li><strong>Vim / Neovim</strong>：装 <code>nvim-treesitter</code> + solidity grammar，配 <code>solidity-language-server</code>。</li>
+</ul>
+<h3 id="85">8.5 浏览器与钱包</h3>
+<ul>
+<li><strong>MetaMask</strong>（开发主力）+ <strong>Rabby</strong>（更安全的交易预览，建议日常用）+ <strong>Safe</strong>（多签 / smart account）+ <strong>Coinbase Smart Wallet</strong>（passkey 体验）。</li>
+<li><strong>区块浏览器</strong>：Etherscan（主网）、Blockscan（多链聚合）、<strong>Tenderly</strong>（强烈推荐，trace 调试比 Etherscan 友好十倍）。</li>
+<li>装一个 <strong>MetaMask Flask</strong> 用于测试 EIP-7702、4337 等新特性。</li>
+</ul>
+<h3 id="86-rpc-api">8.6 RPC / API</h3>
+<p>至少注册两个：Alchemy + Infura（主备）；想 self-host 可以跑 Reth（执行层）+ Helios（light client）。</p>
+<p><strong>关键习惯：永远不要在前端代码里 hardcode RPC URL</strong>，用环境变量。前端泄露的 API key 会被刷爆配额。</p>
+<h3 id="87-env">8.7 .env 与密钥管理</h3>
+<p>私钥<strong>绝不</strong>进 git。流程：</p>
+<ol>
+<li><code>.env</code> 加 <code>.gitignore</code>。</li>
+<li>用 <code>direnv</code> 自动加载 <code>.env</code>，进入目录就生效。</li>
+<li>CI 用 GitHub Actions secrets。</li>
+<li><strong>生产私钥用硬件钱包或 Foundry 的 keystore</strong>：</li>
+</ol>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 把私钥加密存到 keystore（一次设置）</span>
+cast<span style="color: #F8F8F8"> </span>wallet<span style="color: #F8F8F8"> </span>import<span style="color: #F8F8F8"> </span>deployer<span style="color: #F8F8F8"> </span>--interactive
+
+<span style="color: #8F5902; font-style: italic"># 之后部署时</span>
+forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </span>Deploy.s.sol<span style="color: #F8F8F8"> </span>--account<span style="color: #F8F8F8"> </span>deployer<span style="color: #F8F8F8"> </span>--sender<span style="color: #F8F8F8"> </span>0xYourAddr<span style="color: #F8F8F8"> </span>--broadcast
+</code></pre></div>
+<h4 id="8b-env">工程师注脚 8.B：为什么不能用 .env 明文私钥部署主网？</h4>
+<p>四个风险：（1）任何能读磁盘的进程可拿走；（2）shell history 记录；（3）CI log 泄露；（4）<code>scp</code> 中间人截获。Foundry <code>--account</code> 签名时弹 password prompt 无法绕过——这正是安全价值所在。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9" id="ch10"><span class="chapter-num">Chapter 10</span><br>9. 真实事故案例研究</h2>
+
+<h3 id="91-the-dao2016-06-17-5000">9.1 The DAO（2016-06-17，损失约 5000 万美元）</h3>
+<p><strong>漏洞类型：</strong> 重入（reentrancy）。</p>
+<p><strong>根因：</strong> <code>splitDAO()</code> 在状态更新前调用用户合约 fallback，攻击者 fallback 反复调用 <code>splitDAO</code>，每次通过同样余额校验，把同一笔 ETH 提多次。</p>
+<p><strong>工程影响：</strong> 催生 <strong>CEI 模式</strong>与 OZ <code>ReentrancyGuard</code>。漏洞两周前已被警告，团队无视——<strong>外部安全反馈不接受，攻击者帮你接受。</strong></p>
+<h3 id="92-ronin-bridge2022-03-23-54">9.2 Ronin Bridge（2022-03-23，损失 5.4 亿美元）</h3>
+<p><strong>漏洞类型：</strong> 多签私钥被社工。</p>
+<p><strong>根因：</strong> 9 节点取 5 签，Sky Mavis 持 4 个。Lazarus Group 用 LinkedIn fake job offer 钓鱼拿到 4 签，再利用 Axie DAO 旧权限拿第 5 签。事后 6 天才被发现（<a href="https://www.elliptic.co/blog/540-million-stolen-from-the-ronin-defi-bridge">elliptic.co/blog/540-million-stolen-from-the-ronin-defi-bridge</a>）。</p>
+<p><strong>工程影响：</strong> 跨链桥是 Web3 最高风险基础设施；m-of-n 签名者必须真正地理与组织分散（<strong>不分散的"多签"是单签的 LARP</strong>）；链上余额+桥进出量必须实时报警。</p>
+<h3 id="93-nomad-bridge2022-08-01-19">9.3 Nomad Bridge（2022-08-01，损失约 1.9 亿美元）</h3>
+<p><strong>漏洞类型：</strong> routine upgrade 把 zero hash 当成 trusted root。</p>
+<p><strong>根因：</strong> <code>confirmAt[bytes32(0)] = 1</code> 导致 <code>acceptableRoot(bytes32(0))</code> 永远返回 true，任何"未证明"的 message 均通过校验。首笔 exploit tx 公开后 2 小时内 300 个地址跟进（<a href="https://medium.com/immunefi/hack-analysis-nomad-bridge-august-2022-5aa63d53814a">medium.com/immunefi/hack-analysis-nomad-bridge-august-2022</a>）。</p>
+<p><strong>工程影响：</strong> upgrade 必须做 storage layout diff；零值不应被赋予特殊语义（<code>mapping</code> 默认全零 ≠ "未设置"）；公开 exploit tx = 公布漏洞，响应窗口仅数分钟。</p>
+<h3 id="94-curve-vyper-reentrancy2023-07-30-5200">9.4 Curve Vyper Reentrancy（2023-07-30，损失约 5200 万美元）</h3>
+<p><strong>漏洞类型：</strong> 编译器级，Vyper 0.2.15/0.2.16/0.3.0 的 <code>@nonreentrant</code> 存储槽分配错误。</p>
+<p><strong>根因：</strong> 不同 lock 字符串被分配到不同 slot 而非共享，跨函数重入保护失效。Curve 代码逻辑正确，但编译器生成的字节码错误（<a href="https://hackmd.io/@vyperlang/HJUgNMhs2">hackmd.io/@vyperlang/HJUgNMhs2</a>）。</p>
+<p><strong>工程影响：</strong> 小众语言依赖编译器更需谨慎；编译器版本必须锁死；任何重入防护逻辑要有 invariant test 在 forked mainnet 验证。MEV searcher 双面角色：白帽抢救 1670 万退还协议，黑帽抢先攻击多池。</p>
+<h3 id="95">9.5 教训汇总（一张表）</h3>
+<table>
+<thead>
+<tr>
+<th>事故</th>
+<th>根本教训</th>
+<th>对应学习模块</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The DAO</td>
+<td>永远先 effects 后 interactions</td>
+<td>04, 05</td>
+</tr>
+<tr>
+<td>Ronin</td>
+<td>多签必须真分散 + 实时监控</td>
+<td>11</td>
+</tr>
+<tr>
+<td>Nomad</td>
+<td>upgrade 要做 storage diff</td>
+<td>04, 06</td>
+</tr>
+<tr>
+<td>Curve</td>
+<td>编译器版本要锁，重入防护逻辑要 invariant 验证</td>
+<td>05, 06</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10" id="ch11"><span class="chapter-num">Chapter 11</span><br>10. 跟踪行业动态的渠道</h2>
+
+<p>行业每周都在变，但能改变你写代码方式的事件每月不超过两条。日常不超过 30 分钟扫一遍标题，深度阅读集中在周末 2 小时——这样既不漏掉协议升级，又不被推特噪音掏空注意力。</p>
+<h3 id="101">10.1 必订（信噪比高）</h3>
+<ul>
+<li><em>Bankless Newsletter</em>：日刊 3 分钟读完，配 Mindshare（AI x Crypto）与 Ethereum Weekly。</li>
+<li><em>Week in Ethereum News</em>（Evan Van Ness）：周刊，2026-04 仍每周更新。</li>
+<li><em>a16z crypto</em> blog 与 <em>Paradigm</em> research blog。</li>
+<li><em>Ethereum Foundation Blog</em>：roadmap、Glamsterdam、Pectra 升级公告权威源。最新一期 <em>Checkpoint #9: Apr 2026</em>（<a href="https://blog.ethereum.org/2026/04/10/checkpoint-9">blog.ethereum.org/2026/04/10/checkpoint-9</a>）。</li>
+<li><em>Solana Compass</em> 或 Solana Foundation 官方 newsletter。</li>
+</ul>
+<h3 id="102-x-pin">10.2 推特/X pin 列表</h3>
+<p>见 § 3.6，同一份列表。</p>
+<h3 id="103-rss">10.3 RSS / 论坛</h3>
+<ul>
+<li>ethresear.ch（高信号研究帖，订阅 RSS）</li>
+<li>ethereum-magicians.org（EIP 讨论原始现场）</li>
+<li>The Block 与 The Defiant（行业新闻）</li>
+<li>Github Trending <code>solidity</code> <code>rust</code> <code>move</code> 标签每周扫一次</li>
+<li><em>rekt.news</em>（事故复盘，残酷但必读）</li>
+</ul>
+<h3 id="104">10.4 会议与录像（年度必看）</h3>
+<ul>
+<li><strong>Devcon / Devconnect</strong>：Ethereum 主会，协议路线图首发地。</li>
+<li><strong>Solidity Summit / Solana Breakpoint / ZK Summit</strong>：各生态最干货。</li>
+<li><strong>ETHCC、ETHDenver、ETHGlobal 黑客松</strong>：找 finalist 源码读一遍。</li>
+</ul>
+<p>录像看完<strong>写一段笔记</strong>，否则等于没看。</p>
+<h3 id="105-roadmap-2026-04">10.5 当前 roadmap 速览（2026-04）</h3>
+<ul>
+<li><strong>Pectra</strong>（2025-05-07）：EIP-7702 + 4337 + 6900 + 7579 构成账户抽象事实标准。</li>
+<li><strong>Fusaka</strong>（2025-Q4）：PeerDAS 落地，L2 数据可用性成本进一步下降。</li>
+<li><strong>Glamsterdam</strong>（2026 H1 目标 05/06）：ePBS + BAL（EIP-7928）让块内交易可并行，目标 L1 10000 TPS 区间。</li>
+</ul>
+<p>你写的合约假设这些升级正在发生——写得太早过时，太晚失先发。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11-ai" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. AI 工具的合理使用边界</h2>
+
+<p>AI 在 Web3 开发里的位置是"草稿生成器和橡皮鸭"，不是"决策者"。决定哪些可以放心交给它、哪些必须人工兜底，关键在于这段代码出错时损失能不能被 revert。</p>
+<h3 id="111">11.1 可以放心用（节省时间，不创造新风险）</h3>
+<ul>
+<li><strong>测试用例骨架</strong>、生成 fuzz test 的输入空间。</li>
+<li><strong>解释</strong>陌生代码、生成 reading note 模板。</li>
+<li>把 Solidity 错误信息翻译成可调试的方向。</li>
+<li><strong>前端胶水代码</strong>（wagmi hook 包装、表单校验、loading 状态）。</li>
+<li>生成 NatSpec / 注释 / 文档。</li>
+<li>写部署脚本、runbook 模板。</li>
+<li>把一份 audit report 转成可勾选的 checklist。</li>
+</ul>
+<h3 id="112-ai">11.2 必须自己懂、不能交给 AI 决定的</h3>
+<ul>
+<li><strong>资金路径</strong>：任何涉及 <code>transfer</code> / <code>approve</code> / <code>call value</code> 的逻辑，AI 写的每一行都要逐行 review。</li>
+<li><strong>访问控制</strong>：<code>onlyOwner</code> / role-based 模式，AI 经常抄错版本（旧 OZ vs 新 OZ）。</li>
+<li><strong>签名校验 / 重放保护</strong>：domain separator、nonce、deadline，错一个就是漏洞。</li>
+<li><strong>upgradability 模式</strong>：proxy storage layout 错位、initializer 漏写，AI 出错率极高。</li>
+<li><strong>跨合约调用</strong>：reentrancy guard、CEI 模式、callback 风险，AI 会礼貌地"看起来对"。</li>
+<li><strong>数学</strong>：固定点运算、价格预言机、清算阈值——必须自己用纸笔推导一遍，最好 Python 脚本验证。</li>
+</ul>
+<h3 id="113">11.3 工作流</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>草稿（AI） → 人工逐行 review → invariant test → Slither/Aderyn → testnet 真签 → 第三方审计（如有）→ mainnet
+</code></pre></div>
+<p>AI 给出代码后强制三问：（1）它假设了什么不变量？（2）最坏情况是什么？（3）能写出让它失败的测试吗？写不出 = 没真懂。</p>
+<p><strong>绝不</strong>让 AI 自动执行任何带私钥的命令——私钥永远手动。</p>
+<h3 id="114">11.4 短期与中期影响</h3>
+<ul>
+<li><strong>短期（2026）</strong>：Cursor + Claude Sonnet 4.5 / GPT-5 写 Solidity 已经能 80% 正确。瓶颈不在生成，在 review。Aderyn + AI agent 可以自动发现 80% 的常见漏洞，剩下 20% 是真正复杂的逻辑漏洞，需要人。</li>
+<li><strong>中期（2027-2028）</strong>：AI agent 配合账户抽象成为 dApp 的 first-class user。"agent 自动管理你的钱包"在技术上可行——也意味着新的攻击面：prompt injection 让 agent 转账。形式化验证（Halmos、Certora）配 LLM 自动生成 spec，把"形式化证明"成本从天降到小时。</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12" id="ch13"><span class="chapter-num">Chapter 13</span><br>12. 常见学习陷阱与反模式</h2>
+
+<h3 id="121-dapp">12.1 把 dApp 当作普通前端项目</h3>
+<p>dApp 的复杂度在于 <strong>transaction lifecycle 的不确定性</strong>：一笔交易可能 pending 5 秒或 stuck 5 小时；可能成功、revert、或在 reorg 后消失。前端必须为每一种状态画 UI。</p>
+<h3 id="122-solidity">12.2 跳过密码学直接学 Solidity</h3>
+<p><code>ecrecover</code> 返回值要校验非零（某些签名产生 zero address，攻击者用它伪造 owner）；ERC-2612 permit 需要 EIP-712 domain separator——密码学直接决定 Solidity 写法，跳过就埋雷。</p>
+<h3 id="123-ai">12.3 信任 AI 写资金路径</h3>
+<p>AI 生成代码<strong>编译通过 ≠ 安全 ≠ 经济正确</strong>。AI 不知道某 EIP 修改了 gas 成本、你的链 oracle 有 1 分钟延迟、你的 token 有 transfer fee。参见第 11 节。</p>
+<h3 id="124">12.4 "学完所有再开始做"</h3>
+<p>Web3 栈太宽，等"学完"早已过时。正确做法：每完成一个模块写一个最小项目挂 GitHub。</p>
+<h3 id="125">12.5 不读真实事故复盘</h3>
+<p><a href="https://rekt.news">rekt.news</a> 每周 1 篇，半年 25 篇安全直觉暴涨——比刷 Ethernaut 更有效，因为真实事故揭示"团队为什么会犯这个错"，往往是社会因素而非技术因素。</p>
+<h3 id="126-evm">12.6 只学 EVM 不看其他生态</h3>
+<p>只懂 EVM = 只懂半个 Web3（Solana TPS 高/UX 好，Move 类型系统更安全，Cosmos SDK 是模块化标准）。优先级：先把 EVM 学透，再用 1-2 个月窥探 Solana 或 Move。</p>
+<h3 id="127">12.7 不公开作品</h3>
+<p>GitHub 私库 = 不存在。<strong>学习成果必须可被外部访问</strong>（见 § 7.6）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="13-1-1" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. 极简推荐：每个细分方向"只读 1 本书 / 只刷 1 个项目"</h2>
+
+<p>§3 列了一份长清单方便检索。如果时间紧、只想保留每个方向最核心的一书一项目，直接看这一节。</p>
+<h3 id="131-1">13.1 通用入门（只能挑 1 本时）</h3>
+<p>读 <em>Mastering Ethereum</em> 2nd Edition（Antonopoulos &amp; Wood，O'Reilly 2025-11-11，<a href="https://github.com/ethereumbook/ethereumbook">github.com/ethereumbook/ethereumbook</a>）。这是 2026 年唯一覆盖 EIP-2930/1559/4844/7702、DeFi、ZK、PoS 的权威以太坊教材；Verkle、PeerDAS、ePBS、Glamsterdam 等更新追 ethereum.org/roadmap 与 EF blog。</p>
+<p>刷一遍 Cyfrin Updraft Foundry Fundamentals + Advanced Foundry（免费，60+ 小时）。项目序列从 SimpleStorage → FundMe → Lottery → ERC-20 → DeFi stablecoin → Upgradeable proxy → DAO，每个都附测试、部署、Sepolia 验证。CryptoZombies 内容停留在 2018 年，已不推荐。</p>
+<h3 id="132">13.2 智能合约工程师方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Mastering Ethereum</em> 2nd Ed（同 13.1）。</li>
+<li><strong>进阶</strong>：<em>The RareSkills Book of Solidity Gas Optimization</em>（<a href="https://rareskills.io/book">rareskills.io/book</a>，免费）——唯一系统性 gas 优化教材。</li>
+<li><strong>首刷项目</strong>：Cyfrin Advanced Foundry → Solady 源码精读 → fork Uniswap V2+V3+V4 写注释。</li>
+<li><strong>付费进阶</strong>：RareSkills Solidity Bootcamp（13 周，$5,850，下期 2026-06-04）。</li>
+</ul>
+<h3 id="133">13.3 安全审计员方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>The RareSkills Book of Zero Knowledge</em>（<a href="https://rareskills.io/zk-book">rareskills.io/zk-book</a>，免费）+ <em>Fundamentals of Smart Contract Security</em>（Richard Ma，Quantstamp）。</li>
+<li><strong>首刷项目</strong>：Ethernaut（30+ 关）→ Damn Vulnerable DeFi v4 → Secureum RACE 1-41 自学 → Code4rena / Sherlock 首赛。</li>
+<li><strong>必读补充</strong>：每周 3-5 份 Trail of Bits / Spearbit / OZ 公开报告，半年 50+。</li>
+</ul>
+<h3 id="134-dapp">13.4 前端 / dApp 全栈方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Hands-On Smart Contract Development with Solidity and Ethereum</em>（Solorio / Kanna / Hoover，O'Reilly 2020）——唯一从前端视角组织的 Solidity 书，合约部分配 viem v2 文档读（原版用旧 ethers）。</li>
+<li><strong>首刷项目</strong>：Speedrun Ethereum 10 关 → scaffold-eth-2 + RainbowKit + Privy → ERC-4337 Bundler + EIP-7702 实战。</li>
+</ul>
+<h3 id="135-defi">13.5 DeFi 协议工程方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>DeFi and the Future of Finance</em>（Harvey / Ramachandran / Santoro，Wiley 2021）——学术级 DeFi 教材，覆盖 Uniswap、Compound 机制。</li>
+<li><strong>进阶</strong>：<em>How to DeFi: Advanced</em>（CoinGecko 团队），偏实战。</li>
+<li><strong>首刷项目</strong>：Uniswap V2 源码逐行注释（178 行 Pair + Factory）→ Compound V2/V3 → 自写 minimal AMM → Uniswap V4 hook（Atrium Hook Incubator）。</li>
+</ul>
+<h3 id="136-l2">13.6 L2 与扩容方向</h3>
+<ul>
+<li><strong>首选</strong>：无完美单本。组合：Vitalik <em>Endgame</em> + <em>Rollup-Centric Roadmap</em> 博客（<a href="https://vitalik.ca">vitalik.ca</a>）；Jon Charbonneau <em>Rollups Are L1s</em> 系列；<em>Upgrading Ethereum</em> PoS/DA 章节（<a href="https://eth2book.info">eth2book.info</a>）。</li>
+<li><strong>首刷项目</strong>：同一合约部署到 Base / Arbitrum / Optimism / zkSync Era / Scroll / Linea，对比 gas + finality + bridge 路径。</li>
+<li><strong>必读 dashboard</strong>：<a href="https://l2beat.com">L2BEAT</a>（每周扫一次 stage classification 与 TVL 流向）。</li>
+</ul>
+<h3 id="137-zk">13.7 零知识证明（ZK）方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Proofs, Arguments, and Zero-Knowledge</em>（Justin Thaler，Now Publishers 免费 PDF）——数学最权威，工程师可读。</li>
+<li><strong>配套</strong>：<em>The MoonMath Manual</em>（Least Authority，<a href="https://github.com/LeastAuthority/moonmath-manual">github.com/LeastAuthority/moonmath-manual</a> 免费）——笔和纸构造 zk-SNARK，配 ZK Hack study group。</li>
+<li><strong>简化入门</strong>：<em>The RareSkills Book of Zero Knowledge</em>（免费），最小数学背景。</li>
+<li><strong>首刷项目</strong>：0xPARC Circom 学习组 → Aztec Noir → 自写 Merkle membership proof + password check → ZK Hackathon。</li>
+</ul>
+<h3 id="138-solana">13.8 Solana 方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Solana Development with Rust and Anchor</em>（Sebastian Dine）——唯一系统性 Solana 工程书。<strong>注意：部分语法已过时（Anchor/web3.js 升级），需配最新官方文档</strong>。</li>
+<li><strong>配套</strong>：<em>The Rust Programming Language</em> + Rustlings + <em>Comprehensive Rust</em>（Google）。</li>
+<li><strong>首刷项目</strong>：Solana Developer Bootcamp 2024（<a href="https://github.com/solana-developers/developer-bootcamp-2024">github.com/solana-developers/developer-bootcamp-2024</a>，20 小时免费）→ Anchor token+NFT → 60 Days of Solana（RareSkills）→ School of Solana（Ackee 安全方向）。</li>
+</ul>
+<h3 id="139-bitcoin">13.9 Bitcoin 方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Programming Bitcoin</em>（Jimmy Song，O'Reilly 2019）——Python 从零实现 Bitcoin 库，14 章，CC-BY-NC-ND。</li>
+<li><strong>配套</strong>：<em>Mastering Bitcoin</em>（Antonopoulos，2nd/3rd）——参考型，SegWit/Lightning。</li>
+<li><strong>进阶</strong>：<em>Learning Bitcoin from the Command Line</em>——命令行交互 Bitcoin Core，覆盖 Taproot + Lightning。</li>
+<li><strong>三本顺序</strong>：Mastering Bitcoin → Bitcoin from Command Line → Programming Bitcoin。</li>
+<li><strong>首刷项目</strong>：逐章实现 Python 库；之后用 bitcoinjs-lib 或 bdk 做测试网钱包。</li>
+</ul>
+<h3 id="1310-dao-tokenomics">13.10 DAO / Tokenomics 方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>DeFi and the Future of Finance</em>（Harvey et al，Wiley 2021）——同 13.5，DAO 代币经济学根基在 DeFi。</li>
+<li><strong>配套</strong>：<em>Token Economy</em>（Voshmgir 第 3 版，<a href="https://token.kitchen/token-economy">token.kitchen/token-economy</a>，部分免费）——系统论 + token 设计经典。</li>
+<li><strong>数学进阶</strong>：<em>Economics and Math of Token Engineering and DeFi</em>（Lisa JY Tan）——博弈论/机制设计公式应用到 token 设计。</li>
+<li><strong>首刷项目</strong>：OZ Governor v5.5 精读 → Tally 集成 → Aragon OSx 部署治理 DAO → 提交真实 DAO 提案 → 写 token launch 白皮书 + Sepolia 上线。</li>
+</ul>
+<h3 id="1311-nft">13.11 NFT / 社交方向</h3>
+<ul>
+<li><strong>首选</strong>：无权威单本。读物组合：全部 NFT EIP（721/1155/2981/4906/6551）；ERC-6551 reference implementation；Farcaster 协议白皮书；Lens v3 文档。</li>
+<li><strong>首刷项目</strong>：Solady ERC-721+ERC-2981 mint 合约 → metadata 上 IPFS + Filecoin pin → 部署 Zora/Base → Farcaster Frame in-app mint → Lens Open Action。</li>
+</ul>
+<h3 id="1312-mev">13.12 基础设施 / MEV 方向</h3>
+<ul>
+<li><strong>首选</strong>：<em>Flash Boys 2.0</em>（Daian et al，2019）——MEV 概念奠基论文。</li>
+<li><strong>配套</strong>：<a href="https://docs.flashbots.net">docs.flashbots.net</a>；MEV-Boost 文档；Reth book。</li>
+<li><strong>首刷项目</strong>：Reth 2.0 + Lighthouse 全节点 → Subgraph/Goldsky/Envio indexer → Flashbots bundle 仿真。</li>
+</ul>
+<h3 id="1313-1">13.13 跨方向通用：1 本政治经济学思想书</h3>
+<p><em>The Sovereign Individual</em>（Davidson &amp; Rees-Mogg，1997）——比特币诞生 11 年前预测"数字 cypher 让个体逃离国家征税权"，理解 Web3 政治经济学源头的必读。Vitalik 与 Balaji Srinivasan 均公开引用。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="14" id="ch15"><span class="chapter-num">Chapter 15</span><br>14. 习题（带完整解答）</h2>
+
+<h3 id="141">习题 14.1（基础）</h3>
+<p><strong>题目：</strong> 用一句话向 Web2 后端工程师解释"为什么以太坊不需要 SQL 事务的 ACID 保证"。</p>
+<p><strong>参考答案：</strong></p>
+<p>以太坊的"事务"在区块层面就是天然 ACID：单笔交易要么完整执行 + 状态变更被纳入区块，要么 revert 还原所有状态变更（原子性 + 一致性）；EVM 是单线程顺序执行，块内交易按 nonce 顺序进行（隔离性）；纳入区块后达到 finality 即不可改（持久性）。所以 Solidity 没有 <code>BEGIN TRANSACTION / COMMIT / ROLLBACK</code> 关键字——每一笔 tx 本身就是一个事务。</p>
+<p><strong>延伸：</strong> Solidity 0.6 前无 <code>try/catch</code>——早期设计认为 revert 是唯一正确的错误处理。后来引入 <code>try/catch</code> 是让外部调用失败可局部处理，本质是"显式选择不让事务全部 revert"。</p>
+<h3 id="142">习题 14.2（中等）</h3>
+<p><strong>题目：</strong> 你在 Foundry 项目里跑测试，得到一条错误信息 <code>EvmError: Revert</code>，没有更多信息。请列出至少 5 个可能的根因 + 对应的调试手段。</p>
+<p><strong>参考答案：</strong></p>
+<ol>
+<li><strong>Solidity require/assert 失败</strong>：跑 <code>forge test -vvvv</code> 看完整 trace 找到 revert 处。</li>
+<li><strong>call 的目标合约不存在</strong>：在 fork 主网测试时常见，检查 fork block number 与目标合约的部署 block。</li>
+<li><strong>gas 不足</strong>：在 trace 里找 <code>OutOfGas</code>。<code>vm.txGasPrice</code> 与 <code>vm.fee</code> 调过度可能让某些操作 OOG。</li>
+<li><strong>assert / panic（除零、数组越界、整数溢出）</strong>：0.8+ 默认 checked math，检查输入边界。</li>
+<li><strong>Solidity custom error</strong>：error selector 8 字节，trace 中显示为 <code>0xXXXXXXXX</code>，用 <code>cast 4byte</code> 反查。</li>
+<li><strong>静默 revert（low-level call 返回 false 没 require）</strong>：Foundry trace 会显示 <code>[Revert]</code> 但没字符串，检查所有 <code>(bool ok, ) = addr.call(...)</code> 是否有 <code>require(ok)</code>.</li>
+<li><strong>delegate call 上下文混淆</strong>：在 proxy 模式下，<code>address(this)</code> 与 storage slot 行为与直接 call 不同，导致 revert。</li>
+</ol>
+<p><strong>调试手段优先级：</strong> <code>forge test -vvvv</code> → 复现最小 case → <code>console2.log</code> 打点 → forge debugger（<code>forge test --debug TestName</code>）单步执行字节码。</p>
+<h3 id="143">习题 14.3（进阶）</h3>
+<p><strong>题目：</strong> 设计一个 ERC-20 token，其要求是：（1）transfer 时收 1% fee 转给 fee receiver；（2）owner 可升级实现；（3）抗重入；（4）支持 EIP-2612 permit。请用文字描述你的合约结构、依赖的 OpenZeppelin 模块、storage layout、关键不变量、以及至少 3 个潜在攻击面。</p>
+<p><strong>参考答案：</strong></p>
+<p><strong>合约结构：</strong></p>
+<p>继承链 <code>MyToken is Initializable, ERC20Upgradeable, ERC20PermitUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable</code>。重写 <code>_update(from, to, value)</code>（OZ v5+ 的 transfer hook）来实现 fee 收取。<code>_authorizeUpgrade</code> 限制 onlyOwner。</p>
+<p><strong>storage layout（关键）：</strong></p>
+<p>OZ Upgradeable v5 的每个父合约都用 namespaced storage（ERC-7201），所以 storage 不会冲突。本合约只新增两个变量：<code>address feeReceiver</code> + <code>uint256 feeBps</code>，必须放在自己的 namespaced storage 里（用 <code>bytes32 private constant STORAGE_LOCATION = keccak256(abi.encode(uint256(keccak256("MyToken.storage")) - 1)) &amp; ~bytes32(uint256(0xff))</code>）。</p>
+<p><strong>关键不变量：</strong>
+1. <code>totalSupply() == sum(balanceOf(每个地址))</code>，包含 fee receiver。
+2. 任何 transfer 后，<code>balanceOf(feeReceiver)</code> 增量 = <code>transfer amount × feeBps / 10000</code>。
+3. owner 升级后，所有 token holder 的余额不变（验证 storage layout 没错位）。</p>
+<p><strong>潜在攻击面：</strong></p>
+<ol>
+<li><strong>Fee 累计精度损失</strong>：小额 transfer 算 fee 后取整为 0，攻击者用大量小额 transfer 绕过 fee。修复：fee 用 <code>mulDiv(amount, feeBps, 10000)</code> + 至少 1 wei 保底。</li>
+<li><strong>Permit 重放</strong>：domain separator 必须含 chainId，跨链复制部署时 nonce 独立；否则签名可跨链重放。</li>
+<li><strong>Upgrade 抽水</strong>：owner 私钥泄露可升级到 <code>transferFrom(any, owner, max)</code> 实现。修复：timelock + multisig 包装或 OZ Governor 治理。</li>
+<li><strong>Reentrancy 经 fee receiver</strong>：feeReceiver 合约 <code>receive()</code> 调回本合约，在 <code>_update</code> 中重入。修复：<code>nonReentrant</code> 修饰整个 transfer 路径，fee receiver 设为 EOA 或可信合约。</li>
+<li><strong>Initializer 漏写</strong>：UUPS 构造函数必须调 <code>_disableInitializers()</code>，否则任何人可抢占 owner。</li>
+</ol>
+<p><strong>测试用例（至少要写）：</strong> invariant fuzz（totalSupply 守恒）+ unit test（fee 计算正确）+ fork test（升级 storage 不错位）+ permit replay test。</p>
+<h3 id="144">习题 14.4（思辨）</h3>
+<p><strong>题目：</strong> 假设 2027 年某条 L1 推出 "AI 原生" 智能合约语言：合约直接以自然语言描述意图，VM 用 LLM 在执行时翻译成字节码。请用 200 字论证你为什么不会把生产资金部署在这种链上。</p>
+<p><strong>参考答案样例：</strong></p>
+<p>LLM 是不确定性系统：同一段自然语言在不同时间、不同 RNG 种子、不同模型版本下可能编译到不同字节码。这违反智能合约最重要的属性——<strong>确定性</strong>。链上结算依赖所有节点对相同输入产生相同输出；引入 LLM 等于引入 byzantine fault 的新维度。即便某次某个 LLM 在测试集上 100% 一致，攻击面仍包括：（1）prompt injection；（2）模型升级时的 backward incompatibility；（3）训练数据投毒。生产资金的核心要求是"五年后这段代码行为仍然可预期"——LLM 系统天然不满足这一点。可以让 LLM 生成 Solidity 代码，但 VM 必须是确定性字节码执行器。这是 AI x Web3 的根本约束之一。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="15" id="ch16"><span class="chapter-num">Chapter 16</span><br>15. 延伸阅读（推荐顺序）</h2>
+
+<h3 id="151">15.1 必读（按顺序）</h3>
+<ol>
+<li><em>Bitcoin Whitepaper</em>（Satoshi Nakamoto，2008，9 页）：<a href="https://bitcoin.org/bitcoin.pdf">bitcoin.org/bitcoin.pdf</a> — 1 小时。</li>
+<li><em>Ethereum Whitepaper</em>（Vitalik Buterin，2013-14）：<a href="https://ethereum.org/whitepaper/">ethereum.org/whitepaper</a> — 2 小时。</li>
+<li><em>Mastering Ethereum</em>（2nd Ed）第 1-3 章：<a href="https://github.com/ethereumbook/ethereumbook">github.com/ethereumbook/ethereumbook</a> — 3 小时。</li>
+<li><em>Endgame</em>（Vitalik，2021-12）：<a href="https://vitalik.ca/general/2021/12/06/endgame.html">vitalik.ca/general/2021/12/06/endgame.html</a> — 1 小时。</li>
+<li>ethereum.org/roadmap 全部条目：<a href="https://ethereum.org/roadmap/">ethereum.org/roadmap</a> — 2 小时。</li>
+</ol>
+<h3 id="152">15.2 强烈推荐（任意顺序）</h3>
+<ol start="6">
+<li><em>Pectra Mainnet Announcement</em>（EF Blog，2025-04-23）：<a href="https://blog.ethereum.org/2025/04/23/pectra-mainnet">blog.ethereum.org/2025/04/23/pectra-mainnet</a></li>
+<li><em>Glamsterdam Plan H1 2026</em>（EF / community 分析）：搜索关键词 "Ethereum Glamsterdam ePBS BAL"</li>
+<li>Patrick Collins <em>Useful Web3 Resources</em>：<a href="https://github.com/PatrickAlphaC">github.com/PatrickAlphaC</a></li>
+<li>Smart Contract Security Field Guide：<a href="https://scsfg.io/">scsfg.io</a></li>
+<li><em>Real-World Cryptography</em>（David Wong）</li>
+</ol>
+<h3 id="153">15.3 工具与课程（学完导论立即开始）</h3>
+<ol start="11">
+<li>Cyfrin Updraft Foundry Fundamentals：<a href="https://updraft.cyfrin.io/courses/foundry">updraft.cyfrin.io/courses/foundry</a></li>
+<li>Speedrun Ethereum：<a href="https://speedrunethereum.com">speedrunethereum.com</a></li>
+<li>Ethernaut：<a href="https://ethernaut.openzeppelin.com">ethernaut.openzeppelin.com</a></li>
+<li>Damn Vulnerable DeFi v4：<a href="https://www.damnvulnerabledefi.xyz">damnvulnerabledefi.xyz</a></li>
+</ol>
+<h3 id="154">15.4 可选（按方向）</h3>
+<p><strong>合约工程：</strong>
+- Solady 源码：<a href="https://github.com/Vectorized/solady">github.com/Vectorized/solady</a>
+- Solmate 源码：<a href="https://github.com/transmissions11/solmate">github.com/transmissions11/solmate</a>
+- Uniswap V4 hooks 教程：<a href="https://docs.uniswap.org/contracts/v4/guides/hooks">docs.uniswap.org/contracts/v4/guides/hooks</a>
+- RareSkills Solidity Bootcamp（付费 $5,850，13 周）</p>
+<p><strong>安全：</strong>
+- SlowMist 审计路线图：<a href="https://github.com/slowmist/SlowMist-Learning-Roadmap-for-Becoming-a-Smart-Contract-Auditor">github.com/slowmist/SlowMist-Learning-Roadmap-for-Becoming-a-Smart-Contract-Auditor</a>
+- blocksec-ctfs：<a href="https://github.com/blockthreat/blocksec-ctfs">github.com/blockthreat/blocksec-ctfs</a>
+- rekt.news：<a href="https://rekt.news">rekt.news</a>
+- Secureum RACE 题库（自学）</p>
+<p><strong>L2：</strong>
+- L2BEAT：<a href="https://l2beat.com">l2beat.com</a>
+- OP Stack 文档：<a href="https://stack.optimism.io">stack.optimism.io</a></p>
+<p><strong>ZK：</strong>
+- 0xPARC 学习材料：<a href="https://learn.0xparc.org">learn.0xparc.org</a>
+- Awesome Noir：<a href="https://github.com/noir-lang/awesome-noir">github.com/noir-lang/awesome-noir</a>
+- <em>Proofs, Arguments, and Zero-Knowledge</em>（Justin Thaler）</p>
+<p><strong>Solana：</strong>
+- Solana Developer Bootcamp 2024（YouTube + GitHub，免费）：<a href="https://github.com/solana-developers/developer-bootcamp-2024">github.com/solana-developers/developer-bootcamp-2024</a>
+- 60 Days of Solana（RareSkills）：<a href="https://rareskills.io/solana-tutorial">rareskills.io/solana-tutorial</a>
+- School of Solana（Ackee）：<a href="https://ackee.xyz/school-of-solana">ackee.xyz/school-of-solana</a></p>
+<p><strong>Move：</strong>
+- The Move Book（Sui）：<a href="https://move-book.com/">move-book.com</a>
+- Aptos Move by Example：<a href="https://aptos.dev/build/smart-contracts/book">aptos.dev/build/smart-contracts/book</a></p>
+<p><strong>协议研发：</strong>
+- Ethereum Yellow Paper：<a href="https://ethereum.github.io/yellowpaper/paper.pdf">ethereum.github.io/yellowpaper/paper.pdf</a>
+- eth2book.info（Ben Edgington）：<a href="https://eth2book.info">eth2book.info</a>
+- ethresear.ch 高赞贴每周扫一次</p>
+<hr />
+<p><em>下一步：<code>01-密码学基础/README.md</code>。已熟悉哈希/椭圆曲线/Merkle tree 可跳到 <code>02-区块链原理与共识/</code>。</em></p>
+</section>
+</body>
+</html>

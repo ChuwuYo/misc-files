@@ -1,0 +1,7 @@
+flowchart LR
+    Item1[Item 1: NFT 1.json] --> Bundler
+    Item2[Item 2: NFT 2.json] --> Bundler
+    Item3[Item 3: image.png] --> Bundler
+    Bundler[Bundler 节点] -->|聚合签名| Tx[一笔 Arweave Tx]
+    Tx --> Chain[Arweave 链]
+    Bundler -->|每个 item 独立 ID| Each[每个 item 独立可寻址]

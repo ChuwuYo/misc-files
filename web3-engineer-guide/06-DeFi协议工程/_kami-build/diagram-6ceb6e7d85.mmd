@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant U as 用户/路由器
+    participant PM as PoolManager
+    participant T0 as token0
+    participant T1 as token1
+
+    U->>PM: unlock(callback)
+    PM->>U: callback 触发
+    U->>PM: swap(pool A): -100 USDC, +0.033 ETH
+    Note over PM: transient: deltaUSDC=-100, deltaETH=+0.033
+    U->>PM: swap(pool B): -0.033 ETH, +99.5 USDT
+    Note over PM: transient: deltaUSDC=-100, deltaUSDT=+99.5, deltaETH=0
+    U->>PM: settle 净额
+    PM->>T0: pull 100 USDC from U
+    PM->>T1: push 99.5 USDT to U
+    Note over PM: transient 清零

@@ -1,0 +1,10 @@
+flowchart LR
+    Genesis --> Headers[headers stage]
+    Headers --> Bodies[bodies stage]
+    Bodies --> SenderRecovery[sender recovery]
+    SenderRecovery --> Execution[execution stage<br/>revm 重放]
+    Execution --> AccountHashing[account hashing]
+    AccountHashing --> StorageHashing[storage hashing]
+    StorageHashing --> MerkleTrie[merkle stage<br/>state root]
+    MerkleTrie --> TxLookup[tx lookup index]
+    TxLookup --> Done[done]

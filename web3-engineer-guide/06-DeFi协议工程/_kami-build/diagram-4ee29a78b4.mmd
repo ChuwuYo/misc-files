@@ -1,0 +1,7 @@
+flowchart LR
+    LP[LP 提供 ETH/BTC/USDC] -->|deposit| Pool[GM 池<br/>对应单一市场]
+    T1[Trader 1 做多 BTC] -->|付 fee + funding| Pool
+    T2[Trader 2 做空 BTC] -->|付 fee + funding| Pool
+    Pool -->|分润给 LP| LP
+    O[Pyth + Chainlink Data Streams] -->|喂价| Pool
+    Pool -->|盈亏对手方| LP

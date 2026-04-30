@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant U as Bot
+    participant V2 as UniV2Pair
+    participant Bot as 你的合约
+    participant Aave as Aave
+
+    U->>V2: swap(0, 100 ETH, Bot, data)
+    V2->>Bot: 直接转 100 ETH
+    V2->>Bot: 调用 uniswapV2Call(...)
+    Bot->>Aave: liquidate 别人，拿 110 ETH 抵押
+    Bot->>V2: 转回 ~101 ETH（含 0.3% 手续费）
+    V2->>V2: 校验 K 不变性
+    Note over V2: 通过 → 这笔 flash swap 成功

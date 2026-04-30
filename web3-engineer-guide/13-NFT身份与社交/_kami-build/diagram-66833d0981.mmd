@@ -1,0 +1,5 @@
+flowchart LR
+    A[DID Subject<br/>张三] -->|controls| B[DID Document<br/>JSON, 含公钥/服务端点]
+    B -->|存于| C[Verifiable Data Registry<br/>区块链/IPFS/Web]
+    A -.->|presents| D[Verifiable Credential<br/>毕业证, 签发方签的]
+    D -->|verified by| E[Verifier<br/>HR系统]

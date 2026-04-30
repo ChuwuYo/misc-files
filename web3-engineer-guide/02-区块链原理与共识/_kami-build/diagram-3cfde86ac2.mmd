@@ -1,0 +1,38 @@
+graph TD
+    Start[共识协议] --> NoCrypto[传统 BFT<br/>permissioned]
+    Start --> WithCrypto[区块链共识<br/>permissionless or permissioned]
+
+    NoCrypto --> Paxos[Paxos 1989]
+    NoCrypto --> Raft[Raft 2014]
+    NoCrypto --> PBFT[PBFT 1999]
+
+    WithCrypto --> PoW[Nakamoto/PoW]
+    WithCrypto --> PoS[Proof of Stake]
+    WithCrypto --> ModernBFT[现代 BFT]
+    WithCrypto --> DAG[DAG 类]
+    WithCrypto --> Hybrid[混合]
+
+    PoW --> BTC[Bitcoin 2009]
+    PoW --> LTC[Litecoin 2011]
+    PoW --> ETC[Ethereum Classic 2016]
+
+    PoS --> Gasper[Ethereum Gasper<br/>FFG+LMD-GHOST 2022]
+    PoS --> Tendermint[Tendermint/CometBFT<br/>Cosmos]
+    PoS --> Ouroboros[Cardano Ouroboros<br/>Praos/Genesis]
+    PoS --> BABE[Polkadot BABE+GRANDPA]
+    PoS --> Algorand[Algorand Pure PoS<br/>VRF+committee]
+    PoS --> Tezos[Tezos LPoS]
+
+    ModernBFT --> HotStuff[HotStuff 2019]
+    HotStuff --> DiemBFT[DiemBFT v4]
+    DiemBFT --> AptosBFT[AptosBFT/Jolteon]
+    HotStuff --> SuiMysti[Sui Mysticeti]
+
+    DAG --> IOTA[IOTA Tangle]
+    DAG --> Hashgraph[Hashgraph<br/>Hedera]
+    DAG --> Narwhal[Narwhal+Bullshark]
+    Narwhal --> AptosQS[Aptos Quorum Store]
+    Narwhal --> SuiBullshark[Sui Bullshark]
+
+    Hybrid --> SolanaPoH[Solana PoH+TowerBFT]
+    Hybrid --> Avalanche[Avalanche Snow*]

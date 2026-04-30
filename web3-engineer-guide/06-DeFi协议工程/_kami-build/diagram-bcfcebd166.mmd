@@ -1,0 +1,14 @@
+flowchart LR
+    U[用户存 ETH/stETH] --> E[EigenLayer]
+    E -->|委托| O[Operator]
+    O -->|opt-in| AVS1[AVS 1: EigenDA]
+    O -->|opt-in| AVS2[AVS 2: AltLayer]
+    O -->|opt-in| AVS3[AVS 3: Hyperlane]
+
+    AVS1 -->|分发奖励| O
+    AVS2 -->|分发奖励| O
+    AVS3 -->|分发奖励| O
+
+    AVS1 -.slashing condition 触发.-> O
+    O -.被罚.-> E
+    E -.传导损失.-> U

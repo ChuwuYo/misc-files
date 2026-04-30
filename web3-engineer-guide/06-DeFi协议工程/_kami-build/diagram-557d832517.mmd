@@ -1,0 +1,10 @@
+flowchart TD
+    D[Builder<br/>stake 500k HYPE] -->|deploy| M1[新 perp 市场<br/>e.g. AAPL/USD]
+    D -->|配置| C1[oracle 源<br/>合约规格<br/>最大杠杆<br/>margin 比例<br/>OI 上限]
+
+    User[Trader] -->|交易| M1
+    M1 -->|fee 50% 给 builder| D
+    M1 -->|fee 50% 给 协议| Protocol
+
+    First3[前 3 个资产免拍卖] -.-> M1
+    Auction[第 4+ 资产<br/>Dutch auction] -.-> M1

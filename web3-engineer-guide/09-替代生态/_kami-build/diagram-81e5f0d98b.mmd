@@ -1,0 +1,7 @@
+flowchart LR
+    User[用户] --> Core[HyperCore<br>原生订单簿 + 永续合约]
+    User --> EVM[HyperEVM<br>EVM 子环境<br>2025-02-18 上线]
+    Core -. 共享 HyperBFT 共识 .- EVM
+    Core --> Liquidity[共享流动性 + USDH]
+    EVM --> DeFi[第三方 DeFi:<br>借贷 / DEX / NFT]
+    Liquidity --> EVM

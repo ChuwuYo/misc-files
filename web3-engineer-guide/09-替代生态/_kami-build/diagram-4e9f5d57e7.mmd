@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Before
+        F1[from_ata<br>owner=Token Program<br>data: amount=100]
+        T1[to_ata<br>owner=Token Program<br>data: amount=0]
+    end
+    Before -- "Tx: SPL.Transfer(amount=30)" --> After
+    subgraph After
+        F2[from_ata<br>owner=Token Program<br>data: amount=70]
+        T2[to_ata<br>owner=Token Program<br>data: amount=30]
+    end

@@ -1,0 +1,10 @@
+flowchart LR
+    Tx[用户 + searcher] -- MEV bundle + tip --> BE[Jito Block Engine]
+    BE --> Leader[Slot Leader<br>Jito-Solana]
+    Leader -- 出块时把 tip 转入合约账户 --> Pool[Tip 累积池]
+    Pool -- epoch 末 --> NCN[TipRouter NCN<br>节点投票计算分配 root]
+    NCN --> Pay[根据 stake 法定分配]
+    Pay --> JitoDAO[Jito DAO 5.7%]
+    Pay --> JitoSOL[JitoSOL stakers 0.15%]
+    Pay --> JTO[JTO stakers 0.15%]
+    Pay --> Validators[剩余验证人 stake-weighted]

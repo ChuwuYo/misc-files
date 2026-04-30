@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph DC1[北京机房]
+        A1[reth + lighthouse]
+        A2[reth + lighthouse]
+    end
+    subgraph DC2[法兰克福机房]
+        B1[reth + lighthouse]
+    end
+    GW[eRPC 网关<br/>round robin + health check]
+    GW --> A1
+    GW --> A2
+    GW --> B1
+    Client[前端 / 后端] --> GW

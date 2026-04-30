@@ -1,0 +1,5 @@
+graph LR
+    A[Type-1<br>完全 EVM 等价<br>能验证主网区块] --> B[Type-2<br>EVM 等价<br>但状态树等内部不同]
+    B --> C[Type-2.5<br>提高某些 opcode gas 成本<br>降低证明成本]
+    C --> D[Type-3<br>不等价但接近<br>少量 opcode 改动]
+    D --> E[Type-4<br>Solidity 兼容<br>但底层完全不同<br>VM 不是 EVM]

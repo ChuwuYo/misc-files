@@ -1,0 +1,7 @@
+graph TD
+    User -->|call f1| Diamond
+    User -->|call f2| Diamond
+    User -->|call f3| Diamond
+    Diamond -->|delegatecall| FacetA[Facet A: f1, f2]
+    Diamond -->|delegatecall| FacetB[Facet B: f3]
+    Diamond -->|delegatecall| FacetC[Facet C: upgrade ops]

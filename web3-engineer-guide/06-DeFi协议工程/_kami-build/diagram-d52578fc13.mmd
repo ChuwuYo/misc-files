@@ -1,0 +1,12 @@
+flowchart LR
+    A[1 ETH] --> B[Lido stake]
+    B --> C[1 stETH]
+    C --> D[Aave 抵押]
+    D --> E[借 USDC]
+    E --> F[Curve 3pool LP]
+    F --> G[Convex stake]
+    G --> H[CRV + CVX 收益]
+    C --> I[wstETH wrap]
+    I --> J[Pendle 切片]
+    J --> K[PT-stETH 锁定 4% 固收]
+    J --> L[YT-stETH 押注利率]

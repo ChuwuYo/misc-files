@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant U as 用户
+    participant CA as Chain A (OP Stack)
+    participant CB as Chain B (OP Stack)
+    participant SC as Superchain<br>Cross-Chain Message Layer
+
+    U->>CA: 发起初始交易 (initiating tx)
+    CA->>SC: emit message event
+    SC->>CB: 在同一 Superchain block 内派发
+    CB->>CB: 执行 destination tx (executing tx)
+    CB-->>U: 完成（< 2 秒）

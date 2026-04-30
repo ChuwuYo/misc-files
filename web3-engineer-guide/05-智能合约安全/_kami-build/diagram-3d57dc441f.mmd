@@ -1,0 +1,9 @@
+flowchart LR
+    Repo[GitHub] --> CI[Actions]
+    CI --> Bundle[JS Bundle]
+    CI --> S3[S3/CloudFront]
+    S3 --> Browser
+    Browser --> Wallet
+    Bundle -. 攻击 .- A1[依赖被换]
+    S3 -. 攻击 .- A2[bucket 凭证泄露]
+    Wallet -. 攻击 .- A3[盲签+UI 篡改]

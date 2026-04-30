@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph 输入 vin
+        I1[UTXO_A 0.3 BTC<br>来自 prev_tx_1:0]
+        I2[UTXO_B 0.2 BTC<br>来自 prev_tx_2:1]
+    end
+    subgraph 输出 vout
+        O1[新 UTXO 0.4 BTC<br>给 Bob 的脚本]
+        O2[新 UTXO 0.099 BTC<br>找零给自己]
+    end
+    I1 --> Tx
+    I2 --> Tx
+    Tx --> O1
+    Tx --> O2
+    Tx -. 手续费 0.001 BTC<br>= 输入和 - 输出和 .- Fee

@@ -1,0 +1,7 @@
+graph TB
+    A[ERC20 on Sepolia] -- lock --> B[Hyperlane Warp Route<br>Sepolia 端]
+    B -- message via Mailbox --> C[Hyperlane validator + relayer]
+    C -- mint on dest --> D[Synthetic ERC20 on Base Sepolia]
+    D -- burn --> E[Hyperlane Warp Route<br>Base Sepolia 端]
+    E -- message via Mailbox --> C
+    C -- unlock on origin --> A

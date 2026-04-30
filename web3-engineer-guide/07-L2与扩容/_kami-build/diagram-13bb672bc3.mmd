@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant U as 用户/L2 sequencer
+    participant E as Ethereum 执行层
+    participant C as Ethereum 共识层
+
+    U->>E: 提交 type-3 tx<br>携带 1-6 个 blob
+    Note right of U: 每个 blob = 4096<br>BLS12-381 标量<br>= 128 KiB
+    E->>E: 仅看到 versioned hash<br>(KZG commitment 的哈希)
+    E-->>U: 状态变更（执行 calldata）
+    Note over C: blob 内容存在共识层<br>~18 天后丢弃
+    U->>E: rollup 合约调用 BLOBHASH opcode
+    E-->>U: 返回 versioned hash
+    U->>E: 调用 0x0a precompile<br>验证 KZG proof
+    Note right of E: precompile 验证<br>50000 gas
+    E-->>U: 通过/失败

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant U as 用户/工程师
+    participant F as 论坛 Discourse
+    participant S as Snapshot
+    participant G as Governor
+    participant T as Timelock
+    participant Tr as Treasury
+
+    U->>F: 1. 发 RFP / 治理论坛帖
+    F->>F: 2-7 天讨论 + temperature check
+    U->>S: 3. Snapshot 链下投票（quorum 检验）
+    S-->>U: 通过/否决
+    U->>G: 4. 链上 propose(targets, values, calldatas, descHash)
+    G->>G: 5. votingDelay（防偷跑）
+    G->>G: 6. votingPeriod（用户投票，gasful）
+    G->>T: 7. queue() — 进入时间锁
+    T->>T: 8. minDelay（社区紧急否决窗口）
+    T->>Tr: 9. execute() — 调用 calldata
+    Tr-->>U: 10. 提案落地

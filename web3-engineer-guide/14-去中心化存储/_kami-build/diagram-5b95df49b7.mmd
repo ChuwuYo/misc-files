@@ -1,0 +1,6 @@
+flowchart LR
+    Bytes[字节] -->|hash| CID[CID 内容寻址]
+    CID -->|要持续存在| Pin[Pinning / Filecoin deal / Arweave endowment]
+    CID -->|要被读到| Path[网关 / DHT / CDN]
+    Pin -.持久性.-> Pin
+    Path -.可用性.-> Path

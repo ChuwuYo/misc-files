@@ -1,0 +1,8 @@
+flowchart LR
+    Client[前端 / 后端] --> Gateway[eRPC 网关<br/>cache + failover]
+    Gateway --> Self[自建 reth]
+    Gateway --> Alch[Alchemy]
+    Gateway --> Quick[QuickNode]
+    Gateway --> Drpc[dRPC]
+    Self -.fail.-> Alch
+    Alch -.fail.-> Quick

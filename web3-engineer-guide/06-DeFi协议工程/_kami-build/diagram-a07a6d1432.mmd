@@ -1,0 +1,8 @@
+flowchart LR
+    Comet[Comet 主合约<br/>cUSDCv3] -->|实现| Logic[CometExt + CometCore<br/>逻辑库]
+    User[用户] -->|存 ETH/cbETH/wstETH 抵押| Comet
+    User2[借款人] -->|借 USDC| Comet
+    Liq[清算人] -->|absorb 坏账账户| Comet
+    Liq -->|后续 buyCollateral 折价买抵押品| Comet
+
+    Treasury[Compound DAO Treasury] -->|reserves 吸收坏账| Comet

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant A as 第一个攻击者
+    participant Bridge as Nomad Bridge
+    participant Mp as Mempool
+    participant Crowd as 300 个跟风者
+
+    A->>Bridge: 调用一个普通"已验证"消息 + 改 receiver = 我
+    Bridge->>A: 兑现 ~$1M
+    A->>Mp: tx 公开
+    Crowd->>Mp: 看到 tx 简单，复制
+    Crowd->>Bridge: 各自改 receiver = 自己
+    Bridge->>Crowd: 都兑现
+    Note over Bridge: 150 分钟内 ~300 个地址 drain ~$190M

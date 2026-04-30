@@ -1,0 +1,9 @@
+flowchart LR
+    Full[bafybeibwzi...ehuy] --> P1[多碱基<br/>multibase]
+    Full --> P2[CID 版本<br/>0x01]
+    Full --> P3[多编解码器<br/>multicodec]
+    Full --> P4[多哈希<br/>multihash]
+    P1 -.-> Note1[b = base32]
+    P2 -.-> Note2[v1]
+    P3 -.-> Note3[0x70 = dag-pb<br/>0x71 = dag-cbor<br/>0x55 = raw]
+    P4 -.-> Note4[算法 0x12 = sha256<br/>长度 0x20 = 32 bytes<br/>哈希值 32 bytes]

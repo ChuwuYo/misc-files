@@ -1,0 +1,22 @@
+flowchart LR
+    subgraph TheGraph[The Graph]
+        TG_RPC[archive RPC] -->|getLogs poll| TG_Node[graph-node]
+        TG_Node -->|WASM mapping<br/>AssemblyScript| TG_PG[(Postgres)]
+        TG_Node -->|GraphQL| TG_Q[GraphQL]
+    end
+    subgraph Ponder[Ponder 0.x]
+        P_RPC[archive RPC<br/>or HyperSync] -->|批量 logs<br/>+ eth_call| P_App[Ponder runtime]
+        P_App -->|TS handler<br/>类型安全| P_PG[(Postgres)]
+        P_App -->|GraphQL/SQL| P_Q[GraphQL]
+    end
+    subgraph Envio[Envio HyperIndex]
+        E_HS[HyperSync<br/>列式归档] -->|Rust query| E_App[HyperIndex]
+        E_App -->|TS/JS handler| E_PG[(Postgres)]
+        E_App -->|GraphQL| E_Q[GraphQL]
+    end
+    subgraph Goldsky[Goldsky]
+        G_RPC[archive RPC] --> G_Sub[Subgraph 兼容]
+        G_RPC --> G_Mir[Mirror 流]
+        G_Sub --> G_PG[(Postgres)]
+        G_Mir --> G_BQ[(BigQuery / Snowflake)]
+    end

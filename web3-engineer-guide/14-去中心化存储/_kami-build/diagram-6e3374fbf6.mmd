@@ -1,0 +1,6 @@
+flowchart LR
+    Client[客户申请 Datacap] -->|说明用途| Notary[Notary 审核]
+    Notary -->|批准| Datacap[拿到 N TiB Datacap]
+    Datacap -->|挑矿工| SP[Storage Provider]
+    SP -->|10× 奖励| BlockReward[Block Reward]
+    Datacap --> Verified[Verified Deal<br/>链上 verified=true 标记]

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant V as 验证者集合
+    participant C as Checkpoint A
+    participant D as Checkpoint B<br/>(下一 epoch)
+
+    Note over V,C: Round 1: justify
+    V->>C: 投票 (source=prev_justified, target=A)
+    Note over C: 收到 ≥2/3 stake → A 成为 justified
+
+    Note over V,D: Round 2: finalize
+    V->>D: 投票 (source=A, target=B)
+    Note over D: 收到 ≥2/3 stake → B 成为 justified
+    Note over C: 同时 → A 成为 finalized

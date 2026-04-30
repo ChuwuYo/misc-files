@@ -1,0 +1,7 @@
+flowchart TB
+    Block[Block 内 N 笔 EVM tx] --> Worker[K 个 worker 并行执行]
+    Worker --> MV[多版本 storage<br>每条 tx 写入新版本]
+    MV --> Validator{冲突检测<br>读到的版本仍是最新?}
+    Validator -- 是 --> Commit[commit]
+    Validator -- 否 --> Rollback[回滚 + 重排队]
+    Rollback --> Worker

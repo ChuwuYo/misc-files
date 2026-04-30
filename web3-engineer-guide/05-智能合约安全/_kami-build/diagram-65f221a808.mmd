@@ -1,0 +1,19 @@
+sequenceDiagram
+    autonumber
+    participant Dev as Safe.global Dev
+    participant DPRK as 朝鲜攻击者
+    participant S3 as AWS S3 (app.safe.global)
+    participant FE as Safe 前端
+    participant L as Ledger
+    participant SC as Safe Multisig 合约
+    DPRK->>Dev: 钓鱼邮件 + 假面试
+    Note over Dev: 开发机被植入木马
+    DPRK->>S3: 用窃取的 AWS key 替换 JS
+    Note over S3: 恶意 JS 只对 Bybit 冷钱包生效
+    Bybit->>FE: 打开 app.safe.global 准备签
+    FE-->>Bybit: 显示"正常"调度 tx
+    FE->>L: hex calldata（已被 JS 篡改）
+    L-->>Bybit: 显示 hex（无解码能力）
+    Bybit->>L: 确认
+    L->>SC: 提交真实的恶意 tx
+    SC-->>DPRK: 401,346 ETH

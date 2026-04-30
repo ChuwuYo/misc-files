@@ -1,0 +1,4 @@
+flowchart LR
+    A1[Atk deposit 1 wei → share=1] --> A2[直接 transfer 100k 给 vault → ts=1, ta=100k+1]
+    A2 --> V1[Victim deposit 50e18 → mint = 50e18*1/100k = 0 floor]
+    V1 --> A3[Atk redeem 1 share → 拿走 100k+50e18 全部]

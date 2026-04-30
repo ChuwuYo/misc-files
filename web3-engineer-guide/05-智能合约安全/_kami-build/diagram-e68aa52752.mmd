@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant A as Attacker
+    participant B as VulnerableBank
+    A->>B: deposit{value:1 ether}()
+    A->>B: withdraw()
+    B->>A: call{value: 1 ether}("")
+    A->>B: withdraw() (reentry, bal still 1!)
+    Note over A,B: 循环至金库空 → balances[A]=0 (太晚)

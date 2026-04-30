@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant S as Searcher
+    participant B as Builder
+    participant R as Relay
+    participant P as Proposer
+    S->>B: bundle + tip
+    B->>R: 整块 + bid
+    R->>P: 仅头部 + bid（隐藏正文防 MEV 偷）
+    P->>R: 签头部
+    R->>P: 释放正文
+    P->>P: 广播完整块

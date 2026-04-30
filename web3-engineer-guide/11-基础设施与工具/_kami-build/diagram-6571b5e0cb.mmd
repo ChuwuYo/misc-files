@@ -1,0 +1,9 @@
+flowchart TD
+    Start[需要 CL] --> A{机器规格}
+    A -->|大型服务器 64GB+| B{语言生态}
+    A -->|资源受限 RPi/IoT| C[nimbus]
+    A -->|笔电级 16-32GB| D[lighthouse]
+    B -->|Rust 团队| E[lighthouse]
+    B -->|Java 企业 + Splunk| F[teku]
+    B -->|JS / 想自定制| G[lodestar]
+    B -->|想要 Web UI / 历史悠久| H[prysm]

@@ -1,0 +1,9 @@
+flowchart LR
+    LP[LP] -->|deposit sUSD/sUSDe/wstETH| V[V3 Core Pool]
+    V -->|liquidity| Markets[Perp / Options 市场]
+
+    Markets --> Perp[Perps Market]
+    Markets --> Spot[Spot Synth]
+    Markets --> Options[Options]
+
+    LP -->|wraps own debt| Debt[Synthetic Debt Position]

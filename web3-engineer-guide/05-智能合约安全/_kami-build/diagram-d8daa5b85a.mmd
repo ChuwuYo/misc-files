@@ -1,0 +1,10 @@
+flowchart LR
+    Sol[Solidity 源码] --> SMT[SMTChecker pragma]
+    Sol --> Comp[solc 编译]
+    Comp --> BC[EVM bytecode]
+    BC --> Halmos[Halmos 符号执行]
+    BC --> Cert[Certora Prover]
+    SpecH[Foundry test_*  函数] --> Halmos
+    SpecC[CVL .spec 文件] --> Cert
+    Halmos --> Counter1[反例 / PASS]
+    Cert --> Counter2[反例 / VERIFIED]

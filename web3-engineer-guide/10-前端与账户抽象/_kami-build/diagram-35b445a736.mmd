@@ -1,0 +1,29 @@
+sequenceDiagram
+  participant App as DApp
+  participant SA as Signer
+  participant B as Bundler
+  participant EP as EntryPoint v0.7
+  participant Acc as Smart Account
+  participant PM as Paymaster
+
+  App->>App: 构造 UserOp（sender, nonce, callData, ...）
+  App->>B: pm_getPaymasterStubData (估 gas 用占位)
+  B-->>App: stub paymasterAndData
+  App->>B: eth_estimateUserOperationGas
+  B-->>App: { callGasLimit, verificationGasLimit, preVerificationGas }
+  App->>B: pm_getPaymasterData (拿真实 paymasterAndData)
+  B-->>App: 真实 paymasterAndData
+  App->>SA: 签 userOpHash
+  SA-->>App: signature
+  App->>B: eth_sendUserOperation
+  B->>EP: handleOps([uo], beneficiary)
+  EP->>Acc: validateUserOp(uo, userOpHash, missingFunds)
+  Acc-->>EP: validationData
+  EP->>PM: validatePaymasterUserOp(uo, userOpHash, maxCost)
+  PM-->>EP: context, validationData
+  EP->>Acc: execute(callData)
+  Acc->>Acc: 业务逻辑
+  EP->>PM: postOp(mode, context, actualGasCost)
+  EP-->>B: UserOperationEvent
+  B-->>App: txHash, userOpHash
+  App->>App: eth_getUserOperationReceipt

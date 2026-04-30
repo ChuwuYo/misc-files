@@ -1,0 +1,11 @@
+graph TD
+    Start[节点 N 持初始偏好 v] --> Sample[随机抽样 k=20 邻居]
+    Sample --> Vote{收到 ≥α 同意 v'？}
+    Vote -->|是, v'≠v| Switch[切换偏好为 v']
+    Vote -->|是, v'=v| Inc[confidence += 1]
+    Vote -->|否| Reset[confidence = 0]
+    Inc --> Check{confidence ≥ β？}
+    Check -->|是| Decide[决定 v']
+    Check -->|否| Sample
+    Switch --> Sample
+    Reset --> Sample

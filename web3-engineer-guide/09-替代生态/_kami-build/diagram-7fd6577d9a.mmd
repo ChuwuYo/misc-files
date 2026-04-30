@@ -1,0 +1,5 @@
+flowchart LR
+    Metadata[Object<Metadata><br>name, symbol, decimals] --> Mint
+    Metadata --> Store1[Object<FungibleStore><br>属于 Alice<br>balance: 100]
+    Metadata --> Store2[Object<FungibleStore><br>属于 Bob<br>balance: 50]
+    Hook[Dispatchable Hook<br>类似 SPL Token-2022 transfer hook] -.每次 transfer.- Store1

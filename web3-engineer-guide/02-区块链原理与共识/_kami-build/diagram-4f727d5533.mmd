@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant C as Client
+    participant P as Primary
+    participant R1 as Replica 1
+    participant R2 as Replica 2
+    participant R3 as Replica 3
+
+    C->>P: REQUEST(op)
+
+    Note over P,R3: 阶段 1：PRE-PREPARE
+    P->>R1: PRE-PREPARE(v, seq, digest)
+    P->>R2: PRE-PREPARE(...)
+    P->>R3: PRE-PREPARE(...)
+
+    Note over P,R3: 阶段 2：PREPARE（all-to-all）
+    R1->>R2: PREPARE
+    R1->>R3: PREPARE
+    R2->>R1: PREPARE
+    R2->>R3: PREPARE
+    R3->>R1: PREPARE
+    R3->>R2: PREPARE
+    Note over R1,R3: 收齐 2f+1 PREPARE → "prepared"
+
+    Note over P,R3: 阶段 3：COMMIT
+    R1->>R2: COMMIT
+    R2->>R1: COMMIT
+    R3->>R1: COMMIT
+    Note over R1,R3: 收齐 2f+1 COMMIT → "committed"
+
+    R1->>C: REPLY
+    R2->>C: REPLY
+    R3->>C: REPLY
+    Note over C: 收齐 f+1 一致 REPLY → 完成

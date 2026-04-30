@@ -1,0 +1,11 @@
+flowchart LR
+    subgraph V1["Storage V1 (旧)"]
+        V1State["state trie + plain state<br/>双写, 写放大 2x"]
+        V1Hist["history changesets<br/>account_changes / storage_changes<br/>MDBX tables"]
+    end
+    subgraph V2["Storage V2 (2026 默认)"]
+        V2State["hashed state only on MDBX<br/>(plain state 已删)"]
+        V2Hist["historical changesets<br/>=> static append-only files<br/>(不进 MDBX, 不被 compaction)"]
+        V2Cache["SparseTrieCacheTask<br/>计算 state root 时<br/>缓存高频访问节点"]
+    end
+    V1 -- migrate-v2 --> V2

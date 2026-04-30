@@ -1,0 +1,3128 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>区块链原理与共识</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  区块链原理与共识";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">区块链原理与共识</div>
+    <div class="cover-sub">19 种共识协议的工程视角</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">0. 序</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">1. 三条不能绕开的定理</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">2. 共识协议全景图</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">3. PoW 谱系导引</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">4. PoW 的核心思路：把 Sybil 转成电费</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">5. Bitcoin：PoW 的标准实现</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">6. Litecoin：换哈希函数的变体</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">7. Ethereum Classic：51% 攻击的活教材</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">8. PoS 谱系导引</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">9. Ethereum Gasper：把 safety 与 liveness 拆到两层</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">10. Cosmos Tendermint / CometBFT：BFT 优先，liveness 让位</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">11. Cardano Ouroboros（Praos / Genesis / Peras）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">12. Polkadot（BABE + GRANDPA）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">13. Algorand（Pure PoS + VRF Sortition）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">14. Tezos（Liquid Proof of Stake / LPoS）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">15. BFT 谱系导引</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">17</span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">16. Paxos 与 Raft：crash 共识的双经典</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">17. PBFT：1999 的工程里程碑</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">19</span>
+    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">18. HotStuff：把 O(n²) 压到 O(n)，并且 responsive</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">20</span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">19. AptosBFT 与 Diem 系：HotStuff 工业化</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">21</span>
+    <span class="toc-title"><a href="#ch21" style="color:inherit;text-decoration:none">20. DAG 谱系导引</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">22</span>
+    <span class="toc-title"><a href="#ch22" style="color:inherit;text-decoration:none">21. IOTA Tangle：第一个 DAG，也是反面教材</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">23</span>
+    <span class="toc-title"><a href="#ch23" style="color:inherit;text-decoration:none">22. Hashgraph：Gossip about Gossip + Virtual Voting</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">24</span>
+    <span class="toc-title"><a href="#ch24" style="color:inherit;text-decoration:none">23. Narwhal + Bullshark / Tusk</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">25</span>
+    <span class="toc-title"><a href="#ch25" style="color:inherit;text-decoration:none">24. Sui Mysticeti</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">26</span>
+    <span class="toc-title"><a href="#ch26" style="color:inherit;text-decoration:none">25. 易混误区：Block-STM、PoH 等"非共识"组件</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">27</span>
+    <span class="toc-title"><a href="#ch27" style="color:inherit;text-decoration:none">26. Solana：PoH + Tower BFT → Alpenglow</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">28</span>
+    <span class="toc-title"><a href="#ch28" style="color:inherit;text-decoration:none">27. Avalanche Snow 系列：metastable 共识</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">29</span>
+    <span class="toc-title"><a href="#ch29" style="color:inherit;text-decoration:none">28. Bitcoin Lightning Network：通道而非共识</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">30</span>
+    <span class="toc-title"><a href="#ch30" style="color:inherit;text-decoration:none">29. 概念辨析专章</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">31</span>
+    <span class="toc-title"><a href="#ch31" style="color:inherit;text-decoration:none">30. 事故复盘之 2010-08 Bitcoin 通胀 bug</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">32</span>
+    <span class="toc-title"><a href="#ch32" style="color:inherit;text-decoration:none">31. 事故复盘之 2020-08 ETC 三连 51%</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">33</span>
+    <span class="toc-title"><a href="#ch33" style="color:inherit;text-decoration:none">32. 事故复盘之 2021-2023 Solana 多次停机</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">34</span>
+    <span class="toc-title"><a href="#ch34" style="color:inherit;text-decoration:none">33. 事故复盘之 2022-05 Beacon Chain 7-block reorg</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">35</span>
+    <span class="toc-title"><a href="#ch35" style="color:inherit;text-decoration:none">34. 事故复盘之 2023-04 Ethereum finality stall</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">36</span>
+    <span class="toc-title"><a href="#ch36" style="color:inherit;text-decoration:none">35. 事故复盘之 2022 Tornado Cash 与 OFAC 制裁</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">37</span>
+    <span class="toc-title"><a href="#ch37" style="color:inherit;text-decoration:none">36. 实战一：从零写最小 PoW 链</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">38</span>
+    <span class="toc-title"><a href="#ch38" style="color:inherit;text-decoration:none">37. 实战二：4 节点 PBFT 模拟</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">39</span>
+    <span class="toc-title"><a href="#ch39" style="color:inherit;text-decoration:none">38. 实战三：CometBFT 4 验证者本地测试网</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">40</span>
+    <span class="toc-title"><a href="#ch40" style="color:inherit;text-decoration:none">39. 习题（含解答）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">41</span>
+    <span class="toc-title"><a href="#ch41" style="color:inherit;text-decoration:none">40. AI 影响：哪里能用，哪里不能用</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">42</span>
+    <span class="toc-title"><a href="#ch42" style="color:inherit;text-decoration:none">42. 延伸阅读（pin 版本 / 链接附 2026-04-27 访问日期）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">43</span>
+    <span class="toc-title"><a href="#ch43" style="color:inherit;text-decoration:none">43. 前沿主题导引</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">44</span>
+    <span class="toc-title"><a href="#ch44" style="color:inherit;text-decoration:none">44. 共识中的机制设计与 cryptoeconomics</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">45</span>
+    <span class="toc-title"><a href="#ch45" style="color:inherit;text-decoration:none">45. MEV-Boost 经济学</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">46</span>
+    <span class="toc-title"><a href="#ch46" style="color:inherit;text-decoration:none">46. ePBS 与 EIP-7732</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">47</span>
+    <span class="toc-title"><a href="#ch47" style="color:inherit;text-decoration:none">47. SSF 与 3-Slot Finality</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">48</span>
+    <span class="toc-title"><a href="#ch48" style="color:inherit;text-decoration:none">48. VDF（Verifiable Delay Functions）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">49</span>
+    <span class="toc-title"><a href="#ch49" style="color:inherit;text-decoration:none">49. Restaking 经济学</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">50</span>
+    <span class="toc-title"><a href="#ch50" style="color:inherit;text-decoration:none">50. Long-Range Attack 与 Weak Subjectivity</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">51</span>
+    <span class="toc-title"><a href="#ch51" style="color:inherit;text-decoration:none">51. PoS 链的 Stake Liquidation 风险</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">52</span>
+    <span class="toc-title"><a href="#ch52" style="color:inherit;text-decoration:none">52. History Expiry 与 EIP-4444</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">53</span>
+    <span class="toc-title"><a href="#ch53" style="color:inherit;text-decoration:none">53. State Expiry 与 Verkle Trees</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">54</span>
+    <span class="toc-title"><a href="#ch54" style="color:inherit;text-decoration:none">54. Bitcoin Covenant 提案</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">55</span>
+    <span class="toc-title"><a href="#ch55" style="color:inherit;text-decoration:none">55. 本册划界</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<hr />
+<section class="chapter">
+<h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 序</h2>
+
+<p>前置：模块 01《密码学基础》。SHA-256、ECDSA、Merkle 树本册作为工具直接调用。</p>
+<p>共识协议解决一个具体问题：N 个互不信任的节点，无中央仲裁，对一份不断追加的日志达成相同视图。这就是 Lamport 在 SMR 论文里定义的"复制状态机"问题，区块链是它的特例——日志是块、节点身份开放、状态转换函数确定。</p>
+<p>DDIA 第 9 章对此的总结：linearizability 在异步网络下需要 consensus；consensus 在 FLP 下需要部分同步或随机性。本册用这套词汇展开 19 个协议——每个协议都是同一道题不同维度上的取舍。</p>
+<p>章节顺序：第 1-2 章理论与谱系；第 3-7 章 PoW；第 8-14 章 PoS 六派；第 15-19 章 BFT；第 20-25 章 DAG；第 26-28 章异类（Solana/Avalanche/Lightning）；第 29 章概念辨析；第 30-35 章事故复盘；第 36-39 章实战与习题；第 40-54 章前沿主题；第 55 章模块边界。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. 三条不能绕开的定理</h2>
+
+<p>后面所有协议的差异都在于"在哪条定理下做了什么取舍"。这一节列出三条边界：3f+1、FLP、CAP。理解之后回看时不会被术语唬住。</p>
+<h3 id="11-n-3f1">1.1 拜占庭容错下界：n ≥ 3f+1</h3>
+<p>Lamport-Shostak-Pease 1982。容忍 f 个任意作恶节点，集合至少 3f+1 大。直觉：n=3 时 C 给 A 说"退"、给 B 说"攻"，A 看到的只有 1:1，多数投票失效；n=4 时同样的攻击下 A 看到 2 攻 1 退，多数 = 攻。</p>
+<p>n=4/f=1、n=7/f=2、n=10/f=3 都是这条公式。本册所有 BFT 类协议（PBFT、Tendermint、HotStuff、Bullshark、Mysticeti）quorum 都是 2f+1，这是 3f+1 的直接推论：任意两个 quorum 至少在 f+1 个诚实节点上重叠。</p>
+<p>将军/传令兵的故事是这个定理的口语版，工程上直接对应"节点/网络消息/拜占庭节点"。</p>
+<hr />
+<h3 id="12-flp">1.2 FLP：异步、确定性、容错三选二</h3>
+<p>Fischer-Lynch-Paterson 1985。异步网络 + 至少一个进程可能崩溃 + 确定性算法 → 不存在保证有限时间终止的共识。注意"保证有限时间"——共识仍能达成，只是没有时间上界。这点常被误读为"共识不可能"。</p>
+<p>绕过方式只有三种，每种放弃一项假设。本册所有协议都能塞进这张表：</p>
+<table>
+<thead>
+<tr>
+<th>放弃</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>异步（改部分同步，DLS 1988）</td>
+<td>Paxos / Raft / PBFT / Tendermint / HotStuff</td>
+</tr>
+<tr>
+<td>确定性（加随机币）</td>
+<td>Ben-Or / HoneyBadgerBFT / Algorand</td>
+</tr>
+<tr>
+<td>决定性（改概率最终性）</td>
+<td>Bitcoin / 所有 Nakamoto 派</td>
+</tr>
+</tbody>
+</table>
+<p>读任何共识论文先翻 "System Model"。synchronous 意味着公网不适用；partial-synchronous 是工程主流（DLS 1988）；asynchronous 模型必须配 randomness。FLP 论文：https://www.cs.princeton.edu/courses/archive/spr22/cos418/papers/flp.pdf （2026-04-27）。</p>
+<h3 id="13-cap-flp">1.3 CAP ≠ FLP</h3>
+<p>两条定理时常混用。CAP（Brewer 2000）：网络分区时 C 与 A 二选一。FLP：异步 + 容错下确定性共识不终止。区块链的选择有两种：Tendermint/Cosmos 在分区时停链（CP）；Bitcoin/Ethereum 继续出块、事后重组（AP，但用更强的概率/经济最终性补偿）。</p>
+<p>DDIA 第 9 章对这两条定理的关系给了一个干净的角度：CAP 只考虑 linearizability + 分区一种故障，FLP 考虑所有异步故障。两者不冲突，CAP 是 FLP 在特定子模型下的工程化表述。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2" id="ch03"><span class="chapter-num">Chapter 03</span><br>2. 共识协议全景图</h2>
+
+<h3 id="21">2.1 谱系树</h3>
+<figure><img src="diagram-3cfde86ac2.png" alt="mermaid diagram"></figure>
+
+<h3 id="22">2.2 横向比较表</h3>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>类别</th>
+<th>安全性来源</th>
+<th>最终性</th>
+<th>出块时间</th>
+<th>真实部署</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bitcoin</td>
+<td>PoW</td>
+<td>哈希算力多数</td>
+<td>概率（6 conf ≈ 60 min）</td>
+<td>600s</td>
+<td>$1T+ 市值</td>
+</tr>
+<tr>
+<td>Litecoin</td>
+<td>PoW (Scrypt)</td>
+<td>同上</td>
+<td>概率</td>
+<td>150s</td>
+<td>$5B+</td>
+</tr>
+<tr>
+<td>Ethereum Classic</td>
+<td>PoW (ETChash)</td>
+<td>同上</td>
+<td>概率</td>
+<td>13s</td>
+<td>$2B+，曾被 51% 攻击</td>
+</tr>
+<tr>
+<td>Ethereum (Gasper)</td>
+<td>PoS+FFG</td>
+<td>经济（slashing）</td>
+<td>经济（2 epoch ≈ 12.8 min）</td>
+<td>12s</td>
+<td>$400B+</td>
+</tr>
+<tr>
+<td>Cosmos (CometBFT)</td>
+<td>BFT-PoS</td>
+<td>2/3 stake</td>
+<td>绝对（即时）</td>
+<td>1-7s</td>
+<td>$10B+，IBC 生态</td>
+</tr>
+<tr>
+<td>Cardano (Ouroboros Praos)</td>
+<td>PoS+VRF</td>
+<td>1/2 stake honest</td>
+<td>概率（settlement param k）</td>
+<td>20s</td>
+<td>$20B+</td>
+</tr>
+<tr>
+<td>Polkadot (BABE+GRANDPA)</td>
+<td>双层 PoS</td>
+<td>NPoS+GRANDPA</td>
+<td>绝对（GRANDPA 终结）</td>
+<td>6s</td>
+<td>$10B+</td>
+</tr>
+<tr>
+<td>Algorand (Pure PoS)</td>
+<td>PoS+VRF 抽签</td>
+<td>2/3 stake</td>
+<td>绝对（一轮即终结）</td>
+<td>3s</td>
+<td>$1B+</td>
+</tr>
+<tr>
+<td>Tezos (LPoS)</td>
+<td>委托 PoS</td>
+<td>2/3 stake</td>
+<td>绝对（2 块）</td>
+<td>8s</td>
+<td>$1B+</td>
+</tr>
+<tr>
+<td>Aptos (AptosBFT v4 → Raptr)</td>
+<td>HotStuff 派</td>
+<td>2/3 stake</td>
+<td>绝对</td>
+<td>0.125s</td>
+<td>$1B+</td>
+</tr>
+<tr>
+<td>Sui (Mysticeti)</td>
+<td>DAG+BFT</td>
+<td>2/3 stake</td>
+<td>绝对（~390ms）</td>
+<td>0.4s</td>
+<td>$5B+</td>
+</tr>
+<tr>
+<td>Hedera (Hashgraph)</td>
+<td>aBFT</td>
+<td>2/3 stake</td>
+<td>绝对（~3s）</td>
+<td>N/A（DAG）</td>
+<td>$5B+</td>
+</tr>
+<tr>
+<td>IOTA</td>
+<td>DAG</td>
+<td>tip 选择</td>
+<td>概率→Coordicide 后绝对</td>
+<td>N/A</td>
+<td>$1B+</td>
+</tr>
+<tr>
+<td>Solana (PoH+Tower BFT → Alpenglow)</td>
+<td>混合</td>
+<td>2/3 stake</td>
+<td>经济（32 conf ≈ 12.8s，未来 150ms）</td>
+<td>0.4s</td>
+<td>$80B+</td>
+</tr>
+<tr>
+<td>Avalanche (Snow*)</td>
+<td>抽样投票</td>
+<td>metastable</td>
+<td>概率终结（β 轮）</td>
+<td>1-2s</td>
+<td>$5B+</td>
+</tr>
+</tbody>
+</table>
+<p>数据来源：各项目官方文档（Algorand pure-PoS 论文、Polkadot wiki、Aptos Baby Raptr 公告、Sui Mysticeti 公告、Hedera 官方文档），均访问 2026-04-27。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="3-pow" id="ch04"><span class="chapter-num">Chapter 04</span><br>3. PoW 谱系导引</h2>
+
+<p>PoW 是区块链共识的零点。它绕过 FLP 的方式是放弃决定性最终性——块永远只有概率上的不可逆。后续 PoS / BFT 协议的几乎所有设计选择，都可以读作"对 PoW 某个方面的不满"：嫌电贵 → PoS；嫌 finality 慢 → BFT；嫌单链瓶颈 → DAG。</p>
+<p>PoW 安全的四个条件必须同时成立：哈希函数抗预映像、算力市场半开放、≥50% 算力诚实、网络延迟有概率上界。第三条在小币种链不成立，第 7 章 ETC 是反例。Bitcoin 的安全预算约等于年挖矿电费（2024 ~80 亿美元）——这是个粗暴但有效的"攻击者要花多少钱"的下界。PoS 后来用 slashing 风险替代电费充当同一角色。</p>
+<figure><img src="diagram-61489254f9.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="4-pow-sybil" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. PoW 的核心思路：把 Sybil 转成电费</h2>
+
+<p>PoW 解决的不是"达成共识"，而是"谁有资格出块"。开放网络下任何人都能创建无穷多账号，"一人一票"立刻被 Sybil 攻击吃死。中本聪的破解思路：把投票权绑定到链外的稀缺资源——电力和硬件。1 万个假账号能伪造，但 1 万份电费做不了假。</p>
+<p>哈希谜题是这个绑定的具体形式。SHA-256 输出每位等概率 0/1，前 16 位全 0 的期望尝试次数 = 2^16 = 65536。求一个前 N 位全 0 的输入只能暴力试——抗预映像保证了这点。PoW 的技术内涵就这一句，剩下都是工程包装：难度自动调整把出块速率稳在 10 分钟（类似 TCP 拥塞控制的 AIMD）；最重链规则把"哪条是主链"约化成"哪条累计了最多 work"。</p>
+<p><strong>反对意见与反驳</strong>。环保派批评 Bitcoin 年耗电堪比荷兰全国（剑桥比特币电力消耗指数）；PoW 派回应：电费就是安全预算，PoS 的 slash 风险必须证明能提供等价砸钱门槛。中心化派担忧 ASIC 把普通矿工挤出，矿池占大头；反驳是经济自检——攻击者自己持币，攻击成功币价崩，自损。</p>
+<p><strong>适用场景</strong>。Bitcoin 这类全球价值存储链是 PoW 主场；高频应用链 PoW 出块太慢；联盟链直接上 PBFT 更便宜；隐私链（Monero/Zcash）历史用 PoW，但近年向 PoS 漂移。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5-bitcoinpow" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. Bitcoin：PoW 的标准实现</h2>
+
+<p>Mastering Bitcoin 第 10 章把 Bitcoin 共识总结为四步：独立验证交易、独立组装区块、解 PoW、独立选择最重链。本节按这条主线展开，重点放在 Bitcoin 在工程上做了哪些妥协来支撑 17 年从未发生协议级 reorg。</p>
+<h3 id="51">5.1 区块结构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>┌─────────────────────────────────────────┐
+│  Block Header (80 bytes)               │
+│  ┌────────────────────────────────────┐ │
+│  │ version (4)                        │ │
+│  │ prev_hash (32) ──→ 链接前一块       │ │
+│  │ merkle_root (32) ──→ 交易树根       │ │
+│  │ timestamp (4)                      │ │
+│  │ bits (4) ──→ 难度                  │ │
+│  │ nonce (4) ──→ 矿工反复改的          │ │
+│  └────────────────────────────────────┘ │
+│  Body                                  │
+│  ┌────────────────────────────────────┐ │
+│  │ tx[0] (coinbase: 矿工奖励)          │ │
+│  │ tx[1] ... tx[N]                    │ │
+│  └────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="52">5.2 出块流程</h3>
+<figure><img src="diagram-9e59d17257.png" alt="mermaid diagram"></figure>
+
+<h3 id="53">5.3 难度调整：为什么必须做</h3>
+<p>如果难度永远固定：</p>
+<ul>
+<li><strong>算力涨</strong>（牛市矿工涌入）→ 出块时间从 10min 降到 30s → 孤块率飙升 → 安全性退化</li>
+<li><strong>算力跌</strong>（黑天鹅 / 矿工撤离）→ 出块时间涨到 1h → UTXO 锁死 → 不可用</li>
+</ul>
+<p>Bitcoin 的策略：每 2016 块（≈ 2 周）调整一次：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>new_difficulty = old_difficulty × (2016 块的实际耗时 / 期望耗时 14 天)
+</code></pre></div>
+<p>调整幅度限制 [0.25x, 4x]，防止单次跳变过大。</p>
+<p>Bitcoin 2024-04 第四次减半后，区块奖励从 6.25 BTC → 3.125 BTC。当前难度约 1.1 × 10¹⁴，全网算力 ~ 600 EH/s（Bitcoin Magazine Pro，2026-04）。</p>
+<h3 id="54-11">5.4 双花概率（白皮书 §11）</h3>
+<p>Alice（攻击者，算力比例 q）想骗 Bob（商家，等 z 个 confirmation）。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P(成功双花) ≈ Σ_{k=0..z} P(攻击者前 z 块挖了 k 块) × P(从领先 z-k 块追上)
+
+简化版：当 q &lt; 0.5 时
+P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
+其中 λ = z·q/p
+</code></pre></div>
+<p>数值结果：</p>
+<table>
+<thead>
+<tr>
+<th>q (攻击者算力)</th>
+<th>z=3</th>
+<th>z=6</th>
+<th>z=12</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.10</td>
+<td>4.4%</td>
+<td>0.024%</td>
+<td>1×10⁻⁹</td>
+</tr>
+<tr>
+<td>0.30</td>
+<td>25%</td>
+<td>13%</td>
+<td>2.0%</td>
+</tr>
+<tr>
+<td>0.40</td>
+<td>51%</td>
+<td>35%</td>
+<td>16%</td>
+</tr>
+</tbody>
+</table>
+<p>交易所等 6 个确认的原因：q=0.10 时 z=6 已经把成功率压到 0.024%，这是中本聪在白皮书附录给的参考值。q 假设要符合实际——Bitcoin 算力 600 EH/s，凑齐 q=0.1 也要 60 EH/s，租 NiceHash 一天约 400 万美元，攻击不划算。但小币种（如 ETC）算力小很多，q=0.5 实际可达，就被 51% 攻击过。</p>
+<h3 id="55-vs">5.5 最长链 vs 最重链</h3>
+<p>Bitcoin 文档说"最长链规则"，但实际是<strong>最重链</strong>（cumulative work）。区别：如果攻击者用低难度块伪造一条更<strong>长</strong>的链，节点不应接受。最重链规则会拒绝它，最长链规则会被骗。代码 <code>code/pow_chain.py</code> 用的就是最重链规则。</p>
+<h3 id="56-bitcoin">5.6 Bitcoin 的真实部署</h3>
+<h4 id="561-2026-04">5.6.1 数字感（2026-04 数据）</h4>
+<ul>
+<li>全网算力：~ 600 EH/s（exa-hash/sec）</li>
+<li>难度：~ 1.1 × 10¹⁴</li>
+<li>区块奖励：3.125 BTC（2024-04 第四次减半后）</li>
+<li>矿工年收入：≈ 100 亿美元（含 fee）</li>
+<li>全球 mining pool 数：~ 15 个主要 pool 占 90%+ 算力</li>
+</ul>
+<h4 id="562">5.6.2 矿池集中化担忧</h4>
+<p>Foundry USA + AntPool 两个矿池占全网算力 ~ 50%，理论上存在 51% 攻击风险。实践层面的反驳：算力不等于矿池——矿池只是把多个矿工的算力聚合到同一节点提交，矿工随时能切到别的池。但这种"切池压力"是事后惩罚，事前合谋仍可行。</p>
+<h3 id="57-bitcoin">5.7 Bitcoin 的工程取舍</h3>
+<p>17 年零协议级 reorg 不是协议有多厉害，而是中本聪在三处做了保守取舍：①脚本图灵不完备（无法表达可能死循环或非确定的程序）；②单 leader、单链、概率最终性，把"快"全让给"稳"；③块大小 1MB 限制吞吐 ~7 TPS，把节点门槛压到家用机能跑。代价是 DApp 生态弱、TPS 跟不上日常支付。Lightning（第 28 章）正是为了打破第三条限制而生的链下层。</p>
+<p>矿池集中是 Bitcoin 当前最大的去中心化软肋。Foundry USA + AntPool 占全网算力 ~50%，理论 51% 风险存在。反驳是"算力不等于矿池——矿工随时切池"，但事前合谋、事后惩罚的非对称仍是真实风险。</p>
+<h3 id="58-reorg">5.8 历史 reorg</h3>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>块奖励 / 块高</th>
+<th>事件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2009-01</td>
+<td>50 BTC / 0</td>
+<td>Genesis</td>
+</tr>
+<tr>
+<td>2010-08-15</td>
+<td>—</td>
+<td>整数溢出 bug，攻击块铸 1.84 亿 BTC，社区软分叉 reorg 53 块</td>
+</tr>
+<tr>
+<td>2012-11</td>
+<td>25 BTC / 210k</td>
+<td>第一次减半</td>
+</tr>
+<tr>
+<td>2013-03</td>
+<td>—</td>
+<td>v0.7/v0.8 LevelDB 兼容 bug，24 块 reorg</td>
+</tr>
+<tr>
+<td>2016-07</td>
+<td>12.5 BTC / 420k</td>
+<td>第二次减半</td>
+</tr>
+<tr>
+<td>2020-05</td>
+<td>6.25 BTC / 630k</td>
+<td>第三次减半</td>
+</tr>
+<tr>
+<td>2024-04</td>
+<td>3.125 BTC / 840k</td>
+<td>第四次减半</td>
+</tr>
+</tbody>
+</table>
+<p>两次重大 reorg 都是客户端 bug 而非协议攻击——协议层稳，实现层是脆弱点。这条规律对所有共识协议适用，第 34 章 Prysm finality stall 是 PoS 版的同类案例。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="6-litecoin" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. Litecoin：换哈希函数的变体</h2>
+
+<p>Litecoin 与 Bitcoin 的协议差异只有两处：哈希函数 SHA-256 → Scrypt，出块时间 10 min → 2.5 min；其余（UTXO 模型、4 年减半、最重链规则）原样照搬。这让它成了"控制变量法"的天然实验场，揭示一条规律：抗 ASIC 设计撑不过 3 年。</p>
+<p>Scrypt（Colin Percival 2009，原用于反 rainbow table）是 memory-hard 函数：先生成长伪随机 buffer V[0..N-1] 占内存，再按上一步 hash 索引随机读取 V 做 XOR。ASIC 想加速必须同时砸 N MB SRAM，硅片成本不再线性下压。设想很优雅，2014 年仍出现了 Scrypt ASIC——优势只维持了 3 年。Ethash（Ethereum 1.0）撑了 ~3 年，Vertcoin 的 Lyra2REv3 更短。Monero 的反应是反向操作：每年硬分叉换算法（CryptoNight → RandomX 等），用社会工程让 ASIC 厂商不敢投流片成本——这是目前唯一持续有效的反 ASIC 路线。</p>
+<p>Litecoin 的真正生态价值是"BIP 试验田"：SegWit 2017-05 在 Litecoin 激活，4 个月后 Bitcoin 跟进；MWEB 2022 在 Litecoin 上线，Bitcoin 至今未跟。算力规模只有 Bitcoin 的 ~1%——理论上易被 51%，实践无大事故，但这份"运气"在 ETC 案例里就用完了。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7-ethereum-classic51" id="ch08"><span class="chapter-num">Chapter 08</span><br>7. Ethereum Classic：51% 攻击的活教材</h2>
+
+<p>Mastering Bitcoin 第 10 章把 51% 攻击描述为"控制 &gt;50% 算力的对手 fork 主链做双花"。教科书写得轻描淡写，是因为 Bitcoin 算力 600 EH/s 把这条曲线推到了经济不可行。但理论曲线对小币种链是真实的。ETC 在 19 个月内被攻击四次，每次都是同一个公式：算力市场流动性 ≫ 该链总算力。</p>
+<h3 id="71-vs">7.1 起源：社会层 vs 协议层的第一次撕裂</h3>
+<p>2016 年 The DAO 黑客事件后以太坊社区分裂：多数派硬分叉退还黑客资金 → ETH，少数派「Code is Law」拒绝退还 → ETC。这是区块链史上首次"社会层共识"与"协议层共识"的公开冲突——Lamport 的 BFT 论文没考虑社会层。Vitalik 后来反思："我们当时不敢相信 PoS 能扛 The DAO，所以选了硬分叉"，这成了他力推 PoS + slashing 的动机。</p>
+<h3 id="72">7.2 四次攻击的经济账</h3>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>reorg 深度</th>
+<th>损失</th>
+<th>攻击成本</th>
+<th>ROI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2019-01</td>
+<td>~100 块</td>
+<td>$1.1M</td>
+<td>未知</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2020-08-01</td>
+<td>4000+ 块</td>
+<td>$5.6M (807K ETC)</td>
+<td>17.5 BTC ≈ $204K</td>
+<td>~27x</td>
+</tr>
+<tr>
+<td>2020-08-06</td>
+<td>4000+ 块</td>
+<td>类似</td>
+<td>类似</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2020-08-29</td>
+<td>7000+ 块（2 天挖矿）</td>
+<td>类似</td>
+<td>类似</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>攻击模板：在交易所充值 ETC → 链上确认 100 块即放 → 私下租 NiceHash 秘密挖更长链 → 提走 USDT/BTC → 广播私链替换公链 → 自己充的 ETC 回到自己钱包。数据来源：Bitquery 2020-08 攻击分析（2026-04-27）。</p>
+<h3 id="73-etc-btc">7.3 ETC 易，BTC 难，差别在算力市场</h3>
+<p>ETC 与 ETH 共用 Ethash 算法，2020 年 ETC 算力只占 Ethash 全网的 ~5%。攻击者从 NiceHash 租用几十万美元就够 51%。Bitcoin 全网 600 EH/s，NiceHash 仅有 ~1 EH/s SHA-256 算力——51% 所需是市场总量的 300 倍，经济不可行。</p>
+<p>PoW 链的真实安全公式不是"绝对算力"，而是"算力 / 同算法可租算力"。这条公式适用于所有租得到算力的小币种链。</p>
+<h3 id="74">7.4 应对与反讽</h3>
+<p>ETC 在 2020-11 Thanos 升级把 Ethash epoch 翻倍 → ETChash，让 ETH 矿机不能直接挖 ETC。事后无大规模攻击。讽刺的是 2022-09 ETH 转 PoS 后所有 Ethash 矿机失业，部分流入 ETC，反而让 ETC 算力翻倍变得更安全。多家交易所把 ETC 确认数提到 5000+ 块（~18 小时）——比 BTC 6 conf 多一个数量级，本身就是产品体验代价。</p>
+<p>工程结论：小币种 PoW 链选独占哈希算法，盯算力市场流动性，确认数随链上算力动态调整，必要时迁 PoS / hybrid（如 Decred）。这条困境也是 Ethereum 自己 2022 年转 PoS 的动机之一。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-pos" id="ch09"><span class="chapter-num">Chapter 09</span><br>8. PoS 谱系导引</h2>
+
+<p>把 PoW 翻译成 PoS 是简单的：算力 → 质押，电费 → slash 风险，Sybil 防御从"硬件稀缺"换成"代币稀缺"。难的是替换之后冒出三个 PoW 没有的问题，每个 PoS 协议都必须给出三份答案。</p>
+<p><strong>Nothing at Stake</strong>：链分叉成 A、B 时 PoW 矿工算力只能投一条，PoS 签名免费 → 两条都签稳赚。解法：slashing 把双签变得比诚实更亏。</p>
+<p><strong>Long-range attack</strong>：旧验证者私钥仍在手中，攻击者低价收购可伪造一条远古历史。解法：弱主观性 + checkpoint，让新节点拒绝接受太老的"另一条历史"；或 Cardano 的 chain density 判定（Genesis）。</p>
+<p><strong>Stake grinding</strong>：leader 选举依赖随机数，攻击者调整自己的签名/状态影响下一轮随机数。解法：VRF（私下掷骰子带证明）或外部 randomness beacon。</p>
+<p>下面六个流派的差异本质上就是三种问题各自怎么解：</p>
+<table>
+<thead>
+<tr>
+<th>流派</th>
+<th>Nothing at Stake</th>
+<th>Long-range</th>
+<th>Grinding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ethereum Gasper</td>
+<td>Casper FFG slashing</td>
+<td>weak subjectivity</td>
+<td>RANDAO + VDF（计划中）</td>
+</tr>
+<tr>
+<td>Cosmos Tendermint</td>
+<td>double-sign slashing</td>
+<td>weak subjectivity</td>
+<td>proposer 轮值</td>
+</tr>
+<tr>
+<td>Cardano Ouroboros</td>
+<td>slashing（晚期版本）</td>
+<td>Genesis chain density</td>
+<td>多方计算随机性</td>
+</tr>
+<tr>
+<td>Polkadot BABE+GRANDPA</td>
+<td>equivocation slashing</td>
+<td>weak subjectivity</td>
+<td>VRF</td>
+</tr>
+<tr>
+<td>Algorand Pure PoS</td>
+<td>无 slashing（honest majority）</td>
+<td>不适用（链短期即定）</td>
+<td>VRF 私下抽签</td>
+</tr>
+<tr>
+<td>Tezos LPoS</td>
+<td>double-baking slashing</td>
+<td>checkpoint</td>
+<td>seed nonce revelation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9-ethereum-gasper-safety-liveness" id="ch10"><span class="chapter-num">Chapter 10</span><br>9. Ethereum Gasper：把 safety 与 liveness 拆到两层</h2>
+
+<p>Casper FFG（Buterin/Griffith 2017）和 LMD-GHOST（基于 Sompolinsky-Zohar 的 GHOST）是两个独立组件，Gasper 是把两者粘起来的胶水。<strong>核心设计选择</strong>：fork-choice 和 finality gadget 分层做不同取舍——LMD-GHOST 在分区时继续出块（liveness 优先），Casper FFG 在分区时拒绝 finalize（safety 优先）。这是 Ethereum 与 Tendermint 最深的分歧（后者两件事一起做，分区时直接停链）。Mastering Ethereum 第 14 章把 Casper 介绍为"hybrid PoW/PoS finality gadget"，2020 年后 PoW 部分被去掉，纯 PoS 版就是 Gasper。</p>
+<h3 id="92">9.2 时间结构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>┌──────── 1 epoch = 32 slot = 384s = 6.4 min ────────┐
+│                                                      │
+│  slot 0   slot 1   ...   slot 31                    │
+│  [block][block]...[block]                           │
+│  ↑12s     ↑12s          ↑12s                        │
+│                                                      │
+│  每 slot：1 个 proposer，1 个 32-人 committee 投票    │
+│  每 epoch 末尾：checkpoint                           │
+└──────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="93-lmd-ghost">9.3 LMD-GHOST 流程图</h3>
+<figure><img src="diagram-180b5bfde5.png" alt="mermaid diagram"></figure>
+
+<p>LMD-GHOST 选择<strong>最重子树</strong>（用最新投票算）。上图中：</p>
+<ul>
+<li>B1 子树总投票 = 10 + 20 + 3 = 33</li>
+<li>B2 子树总投票 = 5 + 2 = 7</li>
+</ul>
+<p>→ head = C1（B1 子树中最大的）。绿色路径 = canonical chain。</p>
+<h3 id="94-casper-ffg">9.4 Casper FFG 双轮投票</h3>
+<figure><img src="diagram-dacb5808ce.png" alt="mermaid diagram"></figure>
+
+<h3 id="95-slashing">9.5 Slashing 两条戒律</h3>
+<p><strong>No Double Vote</strong>：同一个 epoch 不能签两个不同的 target。<strong>No Surround Vote</strong>：不能让旧投票 (s₁,t₁) 包围新投票 (s₂,t₂)，即不能有 h(s₁) &lt; h(s₂) &lt; h(t₂) &lt; h(t₁)。</p>
+<p>任一违反 → 立即 slash。这就是 Ethereum 把"经济最终性"量化的方式：要 revert 一个 finalized block，至少要让 1/3 stake 接受 slash。当前总质押 ~3500-3700 万 ETH（2026-04），1/3 ≈ 1200 万 ETH（数百亿美元）。</p>
+<p>注意区分：上述 slash 针对的是 Casper FFG 的 double/surround vote。<strong>LMD-GHOST attestation 重投不直接被 slash</strong>，而是被 fork-choice 经济性惩罚——投错链的 attestation 拿不到正确链上的 reward，长期下来余额相对受损。</p>
+<h3 id="96-inactivity-leak">9.6 Inactivity Leak</h3>
+<p>≥1/3 stake 离线时，FFG 凑不齐 2/3 票。<strong>Inactivity Leak</strong>：每 epoch 离线验证者余额指数累积削减，数周后离线方份额降到 &lt; 1/3，活跃方重新够 2/3，finality 恢复。短期牺牲 safety（不 finalize），保住 liveness（LMD-GHOST 照走），经济惩罚把 liveness 拉回来。</p>
+<h3 id="97-single-slot-finality-ssf">9.7 Single Slot Finality (SSF) 路线图</h3>
+<p>当前 finality 12.8 min 仍嫌慢。Vitalik 在 2022 提出 SSF：每 slot finalize。</p>
+<p>挑战：100 万验证者签名聚合不可行。可能解：
+- Orbit-SSF：分组轮值
+- 提高最低质押到 1024 ETH（社区争议大）
+- BLS 优化</p>
+<p><strong>2026-04 状态</strong>：仍研究阶段，预计在 Verkle / Danksharding 之后（最早 2027）。来源：ethereum.org/roadmap/single-slot-finality，访问 2026-04-27。</p>
+<h3 id="98-2022-05-25-7-block-reorg">9.8 真实事故：2022-05-25 7-block reorg</h3>
+<p>详细复盘见 <code>exercises/03_reorg_postmortem.md</code>，以及第 33 章。要点：</p>
+<ul>
+<li>三因合流：proposer 出块迟到 + proposer boost 滚动升级不一致 + 部分客户端 fork-choice bug</li>
+<li>7 个 slot 内分裂；Casper FFG finality 未受影响</li>
+<li>教训：fork-choice 改动从此必须打包进硬分叉</li>
+</ul>
+<h3 id="99">9.9 工程画像</h3>
+<p>100 万验证者 + 数千节点是 Gasper 的最大成就，也是它 finality 慢（12.8 min）的根本原因——签名聚合压力直接卡住 SSF。EVM + L2 生态把执行层吞吐推到 5 万+ TPS，但共识层吞吐被 1 slot=12s 钉死。下一阶段路线图（第 47 章 SSF/3SF、第 46 章 ePBS、第 53 章 Verkle）都在啃这块石头。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10-cosmos-tendermint-cometbftbft-liveness" id="ch11"><span class="chapter-num">Chapter 11</span><br>10. Cosmos Tendermint / CometBFT：BFT 优先，liveness 让位</h2>
+
+<p>与 Gasper 相反，Tendermint 把 safety 一路硬到底——块 commit 后绝对不可逆，代价是网络分区时直接停链。这套取舍逻辑使它特别适合做"应用专属链"：100-200 个已知 validator，partial-sync 假设接近真实，停链可接受。Cosmos SDK 把它当默认共识引擎，开发者只写 Go 应用层。</p>
+<p>历史上叫 Tendermint Core（Buchman 2016；Buchman/Kwon/Milosevic 2018，arXiv:1807.04938），2023-02 原作者 Jae Kwon / AiB 停止支持后由 Informal Systems fork 并改名 <strong>CometBFT</strong>。v0.34 → v0.38 → v1.0（2025-02-03 v1.0.1）一脉相承，主流 Cosmos 链当前在 v0.38。</p>
+<h3 id="102">10.2 三阶段流程</h3>
+<figure><img src="diagram-8a3d70af72.png" alt="mermaid diagram"></figure>
+
+<h3 id="103-pbft">10.3 与 PBFT 的三处分歧</h3>
+<p>PBFT 是 Tendermint 的直接祖先（第 17 章详解 PBFT 三阶段）。Tendermint 在三处改造它以适配公链场景：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>PBFT 1999</th>
+<th>Tendermint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户端模型</td>
+<td>client/replica 显式区分</td>
+<td>节点对等，无独立 client</td>
+</tr>
+<tr>
+<td>通信</td>
+<td>全连接 O(n²)</td>
+<td>gossip O(n) per round</td>
+</tr>
+<tr>
+<td>Validator 集合</td>
+<td>静态</td>
+<td>每块可换（PoS 动态）</td>
+</tr>
+<tr>
+<td>出块时机</td>
+<td>client 触发</td>
+<td>自动按 slot</td>
+</tr>
+</tbody>
+</table>
+<p>absolute finality 与 Ethereum 的 economic finality 不在同一坐标系：absolute 是协议层硬保证，分区时停链；economic 是博弈论保证，分区时继续出块但拒 finalize。两条路线都从同一个 PBFT 谱系出发，只在"分区时怎么办"上做了相反选择。</p>
+<h3 id="104-ibc">10.4 IBC 与生态</h3>
+<p>Cosmos 的真正杀手锏是 IBC（Inter-Blockchain Communication）——absolute finality 让跨链消息的"对方链是否真的提交了这个块"问题变得简单：finalized 就是 finalized，无概率歧义。IBC 网络日活跃链 100+，是除了 Ethereum L2 之外最大规模的实战跨链方案。Osmosis (DEX)、Celestia (DA)、Sei (高频)、dYdX v4 (订单簿) 都是 Cosmos 链。</p>
+<h3 id="105">10.5 历史</h3>
+<p>Cosmos Hub 自 2019 launch 至今从未 reorg（absolute finality 保护），但发生过数次 validator 离线超 1/3 导致链停约 1 小时——不是事故，是协议设计选择。2023-02 Tendermint Core → CometBFT 改名，v0.34 完全兼容；2025-02-03 v1.0.1 引入 PBTS（Proposer-Based Timestamps）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11-cardano-ouroborospraos-genesis-peras" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. Cardano Ouroboros（Praos / Genesis / Peras）</h2>
+
+<p>Tendermint 走 BFT 路线（每块多轮投票），Ouroboros 走 chain 路线（单 leader 出块、概率最终性），更接近 PoW 的形态。它的差异化点是<strong>学院派</strong>：第一个带形式化安全证明的 PoS 协议（Kiayias et al. 2017，CRYPTO），后续 Praos/Genesis/Peras 每版都附论文。</p>
+<p>工作方式：每个 epoch（5 天）开始时用上一 epoch 的随机数 + VRF 私下确定本 epoch 每个 slot 的 leader。leader 只有自己知道，slot 到来时出块并附 VRF proof，他人验证。"私下"这点和 Algorand 一脉相承（都用 VRF），但 Ouroboros 是 leader 单一出块，Algorand 是 committee 多人投票，是不同方向的工程化。</p>
+<h3 id="112-vrf">11.2 VRF 是什么</h3>
+<p>VRF（Verifiable Random Function）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>输入：私钥 sk, 消息 m
+输出：(随机值 y, 证明 π)
+
+性质：
+  1. 给定 (pk, m, y, π)，任何人能验证 y 是 sk 的合法输出
+  2. 没 sk 的人无法预测 y
+  3. y 在统计上不可区分于真随机
+</code></pre></div>
+<p>VRF 就是「带证明的伪随机」。每个节点能私下"掷骰子"，掷完能向别人证明自己没作弊。</p>
+<h3 id="113-cardano">11.3 Cardano 的具体参数</h3>
+<ul>
+<li><strong>epoch</strong>：5 天 = 432,000 slot，每 slot 1 秒</li>
+<li><strong>Slot leader 概率</strong>：和质押比例成正比；多个 leader 也可能（出多个块）或没人（空 slot）</li>
+<li><strong>下一 epoch 随机数</strong>：把当前 epoch 前 2/3 块的 VRF 输出哈希起来</li>
+</ul>
+<p>来源：Cardano Developer Portal，访问 2026-04-27：https://developers.cardano.org/docs/operate-a-stake-pool/basics/consensus-staking/</p>
+<h3 id="114-ouroboros">11.4 Ouroboros 家族演进</h3>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>年份</th>
+<th>关键升级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ouroboros Classic</td>
+<td>2017</td>
+<td>最早版本，需要全局同步时钟</td>
+</tr>
+<tr>
+<td>Ouroboros Praos</td>
+<td>2018</td>
+<td>引入 VRF 私下选举，对部分异步网络鲁棒</td>
+</tr>
+<tr>
+<td>Ouroboros Genesis</td>
+<td>2018→2024 mainnet</td>
+<td>解决 long-range attack，新节点能从 genesis 同步</td>
+</tr>
+<tr>
+<td>Ouroboros Peras</td>
+<td>2025</td>
+<td>加快 settlement（"快终结" gadget）</td>
+</tr>
+</tbody>
+</table>
+<p>来源：Cardano.org 2024-05-08 blog "Ouroboros Genesis design update"，访问 2026-04-27。</p>
+<h3 id="115">11.5 弱主观性怎么解</h3>
+<p>Ouroboros Genesis 通过"chain density"判定抵御 long-range attack：遇到候选分叉时，比较两条链在过去 K 个 slot 内的块密度——诚实链 ≥ k/2 个块，伪造链很难维持该密度。新节点能<strong>完全从 genesis 同步</strong>，零外部信任。</p>
+<h4 id="1151-ethereum">11.5.1 与 Ethereum 的对比</h4>
+<table>
+<thead>
+<tr>
+<th>链</th>
+<th>新节点同步</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ethereum</td>
+<td>必须信任一个 weak subjectivity checkpoint（朋友/EF/交易所）</td>
+</tr>
+<tr>
+<td>Cardano (Genesis)</td>
+<td>完全从 genesis 同步，零信任假设</td>
+</tr>
+</tbody>
+</table>
+<h3 id="116">11.6 真实部署</h3>
+<h4 id="1161-2026-04">11.6.1 数字感（2026-04）</h4>
+<ul>
+<li>验证者池（stake pool）：~ 3000 个</li>
+<li>总质押：约 22 B ADA（占流通量 ~ 60%）</li>
+<li>出块时间：20 秒</li>
+<li>TPS：实测 ~ 250</li>
+</ul>
+<h4 id="1162">11.6.2 重要里程碑</h4>
+<ul>
+<li><strong>2017-09 Ouroboros Classic 论文</strong></li>
+<li><strong>2020-07 Shelley 升级</strong>：从中央化 → 去中心化 PoS</li>
+<li><strong>2021-09 Alonzo 升级</strong>：上线智能合约（Plutus）</li>
+<li><strong>2024-09 Chang 升级</strong>：Ouroboros Genesis 主网激活</li>
+<li><strong>2025-Q4 Peras（计划）</strong>：快终结 gadget</li>
+</ul>
+<p>来源：IOG 2024-10-14 blog "Ouroboros Peras: the next step"，访问 2026-04-27。</p>
+<h3 id="117">11.7 工程画像</h3>
+<p>Genesis 是 Ouroboros 在 long-range attack 上做出的独特解法——其他 PoS 链都用 weak subjectivity，Cardano 选择形式化证明 chain density 检测。代价是 20s 出块、250 TPS 这一段性能数字平庸。Plutus + eUTXO 让智能合约学习曲线陡（与 EVM 模型几乎不互通），是 DeFi 生态相对薄的根本原因。链层从无 reorg 超过 settlement param k 的纪录。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12-polkadotbabe-grandpa" id="ch13"><span class="chapter-num">Chapter 13</span><br>12. Polkadot（BABE + GRANDPA）</h2>
+
+<p>Polkadot 把 Gasper 的"出块层 + finality gadget"分层做得更彻底。BABE 负责出块（VRF 选 primary slot leader，思路与 Ouroboros Praos 同源），GRANDPA 负责 finalize——但与 Casper FFG 不同，GRANDPA 一次能 finalize 一段链的最长公共前缀，不是单块。两层各自承担安全性的一部分：BABE 出概率块，GRANDPA 把任意时刻已稳定的链段一次性敲死。</p>
+<h3 id="122-grandpa">12.2 GRANDPA 全名</h3>
+<p><strong>G</strong>HOST-based <strong>R</strong>ecursive <strong>AN</strong>cestor <strong>D</strong>eriving <strong>P</strong>refix <strong>A</strong>greement：每次 finalize 一段链的"最长公共前缀"，不是单块。</p>
+<h3 id="123">12.3 工作流程</h3>
+<figure><img src="diagram-e62fabb1a5.png" alt="mermaid diagram"></figure>
+
+<p>BABE 持续出块；GRANDPA 隔一段时间投票，一次 finalize 多个块（图中一次 finalize 了 2-4）。</p>
+<h3 id="124">12.4 验证者集合</h3>
+<ul>
+<li><strong>active validators</strong>：当前 era 选出的 600 个验证者（2024 年起 Active Set 由 297 提升至 600，来源：Polkadot DOT staking dashboard，访问 2026-04）</li>
+<li><strong>nominators</strong>：质押 DOT 委托给验证者；最少 250 DOT 直接 nominate，1 DOT 可加入 pool</li>
+</ul>
+<h3 id="125-ethereum-gasper">12.5 与 Ethereum Gasper 的对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Ethereum Gasper</th>
+<th>Polkadot BABE+GRANDPA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>出块层</td>
+<td>LMD-GHOST</td>
+<td>BABE (VRF-based)</td>
+</tr>
+<tr>
+<td>终结层</td>
+<td>Casper FFG（每 epoch finalize）</td>
+<td>GRANDPA（任意时刻可 finalize）</td>
+</tr>
+<tr>
+<td>终结粒度</td>
+<td>块</td>
+<td>链段（前缀）</td>
+</tr>
+<tr>
+<td>验证者数</td>
+<td>~100 万</td>
+<td>~300</td>
+</tr>
+<tr>
+<td>Slashing</td>
+<td>有</td>
+<td>有</td>
+</tr>
+</tbody>
+</table>
+<h3 id="126-polkadot">12.6 真实部署：Polkadot 的"中继链 + 平行链"</h3>
+<h4 id="1261-relay-chain">12.6.1 中继链（Relay Chain）</h4>
+<p>承载 BABE+GRANDPA 共识的核心链。验证者只验证中继链 + 分配的 parachain slot。</p>
+<h4 id="1262-parachains">12.6.2 平行链（Parachains）</h4>
+<p>通过竞拍获得 slot 的应用链。每个 parachain 有自己的 collator 节点收集交易，但安全靠中继链 finality。</p>
+<figure><img src="diagram-304d3bab15.png" alt="mermaid diagram"></figure>
+
+<h3 id="127">12.7 工程画像</h3>
+<p>平行链共享中继链 finality 是 Polkadot 与 Cosmos IBC 的关键差异：Cosmos 各链独立 finality，跨链消息要等对方链 finalize；Polkadot 平行链没有自己的 finality，全部依赖中继链 GRANDPA 一次敲定。代价是 600 个 validator 比 Ethereum 少两个数量级，Substrate 框架学习曲线陡。2024 Polkadot 2.0 路线图把 slot 拍卖换成 agile coretime（按 core-second 租用），是对早期 slot 拍卖资本门槛过高的反应。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="13-algorandpure-pos-vrf-sortition" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. Algorand（Pure PoS + VRF Sortition）</h2>
+
+<p>Algorand（Micali 等人，2017）的核心赌注是"committee 私下选举"——每块抽出 ~1000 人 committee，成员公布 VRF proof 之前连自己都不知道被选上。这绕过了 nothing-at-stake 问题（链没有持续 fork 的窗口），代价是没有 slashing（丢私钥不赔钱），而是用 honest-majority 假设 + committee 每步换人来防御。这是与所有其他 PoS 链最大的差异：不靠经济惩罚，靠"攻击者根本不知道该攻击谁"。</p>
+<p>2024-09 起 Algorand 改为主动质押模型（之前 ALGO 自动在线），与其他 PoS 趋同；但 VRF sortition 这套核心机制保留。</p>
+<h3 id="132-cryptographic-sortition">13.2 Cryptographic Sortition</h3>
+<p>每一块开始时：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>for each ALGO holder with key sk:
+    seed = blockchain_round_seed
+    (y, π) = VRF(sk, seed)
+    # y 是 [0, 1] 之间的随机数
+    if y &lt; threshold(my_stake):
+        I&#39;m selected for this round!
+        publish (block_proposal, y, π)
+</code></pre></div>
+<p><strong>关键</strong>：sortition 是<strong>私下</strong>进行的——直到我自己公布 VRF proof，没人知道我被选上了。这就是它抗"针对性 DDoS"的方式：攻击者根本不知道该攻击谁。</p>
+<h3 id="133-ba">13.3 BA⋆ 协议</h3>
+<p>委员会选出来后，做一个简化的 BFT：</p>
+<figure><img src="diagram-f299ba6de4.png" alt="mermaid diagram"></figure>
+
+<h3 id="134">13.4 安全性边界</h3>
+<p>Algorand 论文证明：在 honest-majority（≥ 2/3 stake honest）假设下，BA⋆ 能在 O(1) 轮内 finalize。当前出块时间约 3 秒。</p>
+<p>Algorand 的"absolute finality" 是<strong>第一轮就 finalize</strong>——比 Cosmos 还彻底。</p>
+<h4 id="1341">13.4.1 安全模型</h4>
+<ul>
+<li><strong>honest-majority 假设</strong>：≥ 2/3 stake 诚实</li>
+<li><strong>网络模型</strong>：弱同步（能容忍部分异步，但不能完全异步）</li>
+<li><strong>抗 adaptive adversary</strong>：因为 sortition 私下进行，攻击者无法事前定位 committee 成员</li>
+</ul>
+<h4 id="1342-slashing-nothing-at-stake">13.4.2 没有 slashing 怎么防 Nothing at Stake</h4>
+<p><strong>Algorand 的答案</strong>：committee 每块都换 + 单轮即 finalize。Nothing at Stake 的前提是"对多条 fork 都签名"，但没有持续 fork 的可能。代价：一旦 &lt; 2/3 honest，链停（safety 优先）。</p>
+<h3 id="135">13.5 真实部署</h3>
+<h4 id="1351-2026-04">13.5.1 数字感（2026-04）</h4>
+<ul>
+<li>出块时间：~ 3.3 秒</li>
+<li>TPS：实测 6000+</li>
+<li>总质押：占流通量 ~ 50%（自动参与）</li>
+<li>验证节点：~ 1500 个</li>
+<li>终结性：单轮（&lt; 5 秒）</li>
+</ul>
+<h4 id="1352">13.5.2 应用生态</h4>
+<p>Algorand 偏向"机构链"路线：CBDC（El Salvador、Marshall Islands）、carbon credits、tokenized securities（Hesab Pay）。DeFi 生态较 Ethereum 弱。</p>
+<h3 id="136">13.6 工程画像</h3>
+<p>单轮 finality + 6000 TPS 是 Algorand 性能数字最亮眼的部分，但生态押注机构链（CBDC、tokenized securities），DeFi/NFT 与 Ethereum 不在同一量级。2024-06 一次 ~2 小时停滞事件验证了 Algorand 选 safety 牺牲 liveness 的设计——relay 节点配置问题导致出块中断，但绝对终结性保留，无 reorg。这与 Cosmos 的"validator 离线超 1/3 链停"是同一类设计后果。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="14-tezosliquid-proof-of-stake-lpos" id="ch15"><span class="chapter-num">Chapter 15</span><br>14. Tezos（Liquid Proof of Stake / LPoS）</h2>
+
+<p>Tezos 与前面五个 PoS 的差异不在共识算法本身，而在<strong>经济模型 + 治理路径</strong>两层。委托不锁仓（"liquid"）、链上自动协议升级（无需硬分叉）——这两点把 Tezos 从纯共识协议变成"协议本身就能投票升级自己"的系统。2022 年 Tenderbake 升级后底层共识从 LPoS 变成 BFT 风格（基于 Tendermint），但治理与委托模型没动。</p>
+<h3 id="141">14.1 关键词</h3>
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baker（烤面包）</td>
+<td>Tezos 里的"出块者"。Baking = 出块</td>
+</tr>
+<tr>
+<td>Endorser</td>
+<td>验证者；负责"背书"已出块</td>
+</tr>
+<tr>
+<td>Delegate</td>
+<td>把投票权委托给 baker 的普通持币人</td>
+</tr>
+<tr>
+<td>Liquid</td>
+<td>委托不锁仓——随时可改委托对象</td>
+</tr>
+</tbody>
+</table>
+<h3 id="142-liquid">14.2 "liquid"的含义</h3>
+<p>委托不锁仓：钱还在账户里，收益归委托的 baker，baker 分成给你——类似活期理财而非定期。</p>
+<h3 id="143">14.3 出块流程</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>每块：
+  1 个 baker 烤块（按 stake 比例随机选）
+  32 个 endorser 背书前一块（也按 stake 比例随机）
+
+baker 没及时烤 → 槽位空 → 罚款
+baker / endorser 双签 → slash
+</code></pre></div>
+<p>来源：OpenTezos / Tezos.com，访问 2026-04-27。</p>
+<h3 id="144-dpos">14.4 与传统 DPoS 的差异</h3>
+<p>Tezos 不是 DPoS（Delegated PoS，如 EOS / Tron）。区别：DPoS 有固定 N 个超级节点（EOS 21 个），LPoS 没有固定数量，bakers 数量动态浮动。</p>
+<h4 id="1441-pos">14.4.1 三种 PoS 风格对比</h4>
+<table>
+<thead>
+<tr>
+<th>风格</th>
+<th>代表</th>
+<th>验证者数</th>
+<th>委托是否锁仓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直接 PoS</td>
+<td>Ethereum</td>
+<td>100 万</td>
+<td>是（32 ETH）</td>
+</tr>
+<tr>
+<td>LPoS（流动）</td>
+<td>Tezos</td>
+<td>数百</td>
+<td><strong>否</strong></td>
+</tr>
+<tr>
+<td>DPoS（委托）</td>
+<td>EOS / Tron</td>
+<td>21-100</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Pure PoS</td>
+<td>Algorand</td>
+<td>全民</td>
+<td>否（自动参与）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="145-tezos">14.5 Tezos 的链上治理</h3>
+<p>Tezos 最独特的设计：<strong>协议本身可以投票升级</strong>，无需硬分叉。至 2026-04 已激活 18 次以上（Athens / Babylon / Carthage / Delphi / ... / Quebec / Rio）。</p>
+<h4 id="1451">14.5.1 投票流程</h4>
+<figure><img src="diagram-5f4e69406b.png" alt="mermaid diagram"></figure>
+
+<p>每阶段约 2 周，整个升级周期约 2 个月。</p>
+<h3 id="146">14.6 真实部署</h3>
+<ul>
+<li>验证者（baker）：~ 400 个</li>
+<li>总质押：占流通量 ~ 70%</li>
+<li>出块时间：8 秒</li>
+<li>终结性：2 块（约 16 秒）</li>
+</ul>
+<h3 id="147">14.7 工程画像</h3>
+<p>链上自动升级是 Tezos 与所有其他链的本质差异。Bitcoin 的 Taproot 走了 2 年软分叉、Ethereum 每次 hardfork 要协调全网客户端同步发版；Tezos 累计 18 次以上协议升级（Athens / Babylon / ... / Quebec / Rio），全部用链上投票完成。代价是治理周期约 2 个月，对突发安全升级不够敏捷。NFT 生态（Hic et Nunc 等）相对强，DeFi 弱。</p>
+<h3 id="148">14.8 历史</h3>
+<p>2018-06 mainnet（经过 2 年法律纠纷）；2019 Athens 第一次链上升级成功；2022 Tenderbake 升级把底层共识从 LPoS 改为 BFT 风格；2024 Paris/Quebec 性能优化。</p>
+<p>PoS 六派走完。它们的共同结构性局限：validator 数量越多投票通信越重、finality 越慢。BFT 派的下一组协议反向操作——从一开始把 validator 数控制住（几十到几百），用精密多轮投票换即时最终性。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="15-bft" id="ch16"><span class="chapter-num">Chapter 16</span><br>15. BFT 谱系导引</h2>
+
+<p>PoS 解决"谁出块"，BFT 解决"怎么快速 finalize"。本节后续协议（PBFT / HotStuff / Tendermint / Bullshark / Mysticeti）共享一套词汇——QC、view、lock——在第一次出现时定义，后面章节直接调用。</p>
+<p><strong>Quorum Certificate (QC)</strong>：≥2f+1 节点对同一消息的签名集合，1.1 节 3f+1 定理保证两个 QC 必有诚实重叠。集齐 QC 等于"网络已达 supermajority"的可转发证据。</p>
+<p><strong>View / Round</strong>：每个 view 一个 leader 负责提议，其他节点投票。leader 故障时 view-change 选新 leader——这是 BFT 协议处理 leader fail 的标准模式。</p>
+<p><strong>Lock</strong>：view-change 时为不丢已 prepared 的值，节点锁定某个 view 的提议；新 leader 必须保留这些锁。三阶段 BFT 协议（PBFT、HotStuff）的第三阶段就是为 lock 设计的——见 17.3 节。</p>
+<figure><pre><code class="language-mermaid">graph TD
+    Lamport[Lamport BGP 1982&lt;br/>3f+1 下界]
+    Lamport --> Paxos[Paxos 1989 crash-only]
+    Paxos --> Raft[Raft 2014]
+    Lamport --> PBFT[PBFT 1999 工程可用]
+    PBFT --> Tendermint[Tendermint 2014 gossip O(n)]
+    PBFT --> HotStuff[HotStuff 2019 O(n) responsive]
+    HotStuff --> LibraBFT[LibraBFT 2019]
+    LibraBFT --> DiemBFT[DiemBFT v4]
+    DiemBFT --> AptosBFT[AptosBFT v4 Jolteon]
+    AptosBFT --> Raptr[Raptr 2024]
+    HotStuff --> Mysticeti[Sui Mysticeti 2024]</code></pre><figcaption>diagram render failed: 
+Error: Parse error on line 6:
+...ermint 2014 gossip O(n)]    PBFT --> Ho
+-----------------------^
+Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', 'PIPE', 'CYLINDEREND',</figcaption></figure>
+
+<p>经典 BFT 与区块链 BFT 的差异：前者 validator 静态、O(n²) 全连接、规模几十；后者 validator 动态、gossip O(n)、规模上百到上千。Tendermint/HotStuff 都是把 PBFT 的"客户端独立 + 全连接 + 静态集"三个 1999 年假设逐个改掉的产物。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="16-paxos-raftcrash" id="ch17"><span class="chapter-num">Chapter 17</span><br>16. Paxos 与 Raft：crash 共识的双经典</h2>
+
+<p>PBFT/HotStuff 的"提议-投票-提交"骨架直接来自 Paxos。两者只容 crash 故障（不容拜占庭）——不直接用于公链，但如果不懂 Paxos 的两阶段就读不懂 PBFT 三阶段为什么需要第三阶段。</p>
+<h3 id="161-paxos1989-lamport">16.1 Paxos：1989 由 Lamport 发明</h3>
+<p>原型：希腊 Paxos 岛上的兼职议会。工程本质：N 个节点中容忍 f &lt; N/2 个 crash 故障（不是拜占庭）的共识协议。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>角色：
+  proposer：提议者
+  acceptor：决定接收哪个提议
+  learner：学习已通过的提议
+
+两阶段：
+  Phase 1: prepare（占位）
+    proposer 选编号 n，向多数 acceptor 发 prepare(n)
+    acceptor 承诺不再接受编号 &lt; n 的提议
+  Phase 2: accept（提议）
+    收到多数承诺 → proposer 发 accept(n, v)
+    acceptor 接受 → 通过
+</code></pre></div>
+<h3 id="162-raft2014-stanford-paxos">16.2 Raft：2014 Stanford "可理解版 Paxos"</h3>
+<figure><img src="diagram-91537875fa.png" alt="mermaid diagram"></figure>
+
+<p>三个角色（Leader / Candidate / Follower），选举超时随机化（150-300ms）避免 split vote。</p>
+<p><strong>Raft 的工程影响巨大</strong>：etcd / Consul / TiKV / CockroachDB 都用 Raft。但都是 crash-fault-tolerant，不是拜占庭——所以在公链上不能直接用。</p>
+<p>来源：Raft Wikipedia / raft.github.io，访问 2026-04-27。</p>
+<h3 id="163-paxos-vs-raft">16.3 Paxos vs Raft 对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Paxos</th>
+<th>Raft</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>发明</td>
+<td>1989 Lamport</td>
+<td>2014 Ongaro/Ousterhout</td>
+</tr>
+<tr>
+<td>容错</td>
+<td>crash f &lt; N/2</td>
+<td>同左</td>
+</tr>
+<tr>
+<td>论文可读性</td>
+<td>★☆☆☆☆</td>
+<td>★★★★★</td>
+</tr>
+<tr>
+<td>工程实现</td>
+<td>Multi-Paxos / Mencius / EPaxos</td>
+<td>etcd / Consul / TiKV</td>
+</tr>
+<tr>
+<td>是否可用于公链</td>
+<td>否（不容拜占庭）</td>
+<td>否（同上）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="164">16.4 为什么不能直接用于公链</h3>
+<p>Paxos/Raft 假设故障节点只是停掉，不会作恶。公链节点可故意签错、向不同人发矛盾消息、伪造历史——Byzantine 故障下"诚实 = N/2+1"不足以保证安全。Castro-Liskov 把这条门槛改为"诚实 ≥ 2/3"（即 n=3f+1）就是 PBFT。</p>
+<p>工程影响：数据中心几乎所有强一致性系统都跑 Raft——etcd、Consul、TiKV/TiDB、CockroachDB；联盟链/许可链（Hyperledger Fabric 后期、企业 BaaS）也用 Raft，因为身份已知，无需 BFT 开销。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="17-pbft1999" id="ch18"><span class="chapter-num">Chapter 18</span><br>17. PBFT：1999 的工程里程碑</h2>
+
+<p>PBFT（Castro-Liskov 1999）是第一个 BFT 工程可用方案。在 PBFT 之前的 BFT 协议要么纯理论，要么在同步假设下，运行不动公网。PBFT 的贡献是：n=3f+1、三阶段（PRE-PREPARE/PREPARE/COMMIT）、客户端 5 阶段内得到回应、partial-sync 模型。所有现代区块链 BFT（Tendermint、HotStuff、Bullshark）都直接对照 PBFT 改进。</p>
+<h3 id="172">17.2 三阶段细节流程图</h3>
+<figure><img src="diagram-4f727d5533.png" alt="mermaid diagram"></figure>
+
+<h3 id="173">17.3 为什么三阶段而不是两阶段</h3>
+<p>两阶段无法在 view-change 时保留"已 prepared 但未 commit 的请求"。第三阶段引入锁机制，让新 leader 必须保留前 view 的 prepared 值。</p>
+<h3 id="174-view-change">17.4 view-change 流程</h3>
+<figure><img src="diagram-6221b012f2.png" alt="mermaid diagram"></figure>
+
+<h3 id="175-pbft">17.5 PBFT 的局限</h3>
+<table>
+<thead>
+<tr>
+<th>局限</th>
+<th>工程影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>O(n²) 通信</td>
+<td>n=100 时一轮万条消息，公链不可扩</td>
+</tr>
+<tr>
+<td>静态 validator set</td>
+<td>不能动态加 / 退节点</td>
+</tr>
+<tr>
+<td>假设客户端独立存在</td>
+<td>区块链场景下客户端 = 节点，模型不直接适用</td>
+</tr>
+</tbody>
+</table>
+<p>→ Tendermint / HotStuff 都是冲着这些局限改进。</p>
+<h3 id="176">17.6 工程画像</h3>
+<p>工业落地集中在节点数 &lt;30 的联盟链——Hyperledger Fabric v1.0、政府/银行许可链。一旦 n&gt;50，O(n²) 通信开销难承受。学术地位上 PBFT 是 BFT 的"Hello World"，Tendermint/HotStuff/Aardvark/Zyzzyva/SBFT 都把它当 baseline。下一节 HotStuff 把通信压到 O(n) 是直接奔着这条限制去的。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="18-hotstuff-on2-on-responsive" id="ch19"><span class="chapter-num">Chapter 19</span><br>18. HotStuff：把 O(n²) 压到 O(n)，并且 responsive</h2>
+
+<p>HotStuff（Yin et al. 2019，PODC best paper）相对 PBFT 做了两件事：①节点不再 all-to-all 广播投票，而是只发给 leader，leader 聚合成 QC 后再广播——通信从 O(n²) 降到 O(n)；②<strong>responsive</strong>——leader 收齐 n-f 投票即可推进，无需等已知最长网络延迟 Δ。PBFT 不 responsive，必须等 Δ。这两点让 HotStuff 成了所有 Diem 系（Aptos、Sui、Movement、Espresso）的母本。</p>
+<h3 id="182-prepare-pre-commit-commit">18.2 三阶段（PREPARE / PRE-COMMIT / COMMIT）</h3>
+<p>阶段名与 PBFT 重叠但语义不同：HotStuff 每阶段都是 leader 中转聚合 QC（O(n)），不是 all-to-all（O(n²)）。第三阶段（COMMIT）的存在原因和 PBFT 一样——见 17.3 节关于 lock 的解释。</p>
+<figure><img src="diagram-192aab8517.png" alt="mermaid diagram"></figure>
+
+<p>QC = Quorum Certificate（聚合签名证据）。</p>
+<h3 id="183-pipelined-chained-hotstuff">18.3 Pipelined / Chained HotStuff</h3>
+<p>让每个 view 提议一个新块，新块的 PREPARE 复用上一块的 PRE-COMMIT 投票。三个 view 流水线推进：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>view  1   2   3   4   5   6
+块    B1  B2  B3  B4  B5  B6
+B1: PREPARE  PRE-COMMIT  COMMIT  DECIDE
+B2:          PREPARE     PRE-COMMIT  COMMIT  DECIDE
+B3:                      PREPARE     PRE-COMMIT  COMMIT  DECIDE
+</code></pre></div>
+<p>→ <strong>稳态吞吐 = 每 view 1 块，单块 commit 延迟 = 3 view</strong>。</p>
+<h3 id="184">18.4 工业落地链路</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>HotStuff 论文 (2019, PODC best paper)
+   ↓
+LibraBFT (Facebook Libra 2019)
+   ↓
+DiemBFT v4 (2021)  → Diem 关闭，团队带代码去 Aptos
+   ↓
+Jolteon = AptosBFT v1 (2022 active pacemaker)
+   ↓
+AptosBFT v4 (2023 reputation-based leader)
+   ↓
+Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
+</code></pre></div>
+<p>工程门槛主要在 threshold signature（BLS 聚合）——这也是为什么 HotStuff 直到 BLS12-381 库成熟后才大规模工业化。来源：Aptos Foundation "Baby Raptr Is Here"（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="19-aptosbft-diem-hotstuff" id="ch20"><span class="chapter-num">Chapter 20</span><br>19. AptosBFT 与 Diem 系：HotStuff 工业化</h2>
+
+<p>HotStuff 是协议骨架，AptosBFT 是把骨架打磨成主网产品的 6 年工程链路。本章重点不再是"算法是什么"（已在第 18 章给出），而是"工业化过程中加了哪些非协议成分"——主动起搏器、reputation-based leader、Quorum Store mempool、prefix consensus。</p>
+<h3 id="191">19.1 系谱</h3>
+<figure><img src="diagram-e95ac446b5.png" alt="mermaid diagram"></figure>
+
+<h3 id="192-jolteon">19.2 Jolteon 的核心改进：主动起搏器</h3>
+<p>不依赖 timeout，改为 leader 主动发起 view 切换，view-change 延迟从 5 消息降到 3 消息，commit latency 降 ~33%。</p>
+<h3 id="193-aptosbft-v4-leader">19.3 AptosBFT v4："声誉机制" leader 选举</h3>
+<p>v4 引入 reputation-based leader election：leader 除质押外还看历史表现（出块速度、掉线率、是否 equivocate），是"GPA + 出勤率 + 工作表现"的综合评定。</p>
+<h3 id="194-quorum-storemempool">19.4 Quorum Store：mempool 改造</h3>
+<p>Aptos 不转 DAG 共识，但把 Narwhal 的 mempool 设计借过来（Quorum Store）——只取"mempool 解耦"的收益，不为 DAG 而 DAG。</p>
+<h4 id="1941">19.4.1 性能数字</h4>
+<ul>
+<li>主网峰值 TPS：~ 19,000</li>
+<li>Raptr 测试 TPS：260,000，延迟 &lt; 800ms</li>
+<li>Zaptos 测试：100 节点 geo-distributed，sub-second latency at 20k TPS</li>
+</ul>
+<p>来源：Stakin 2025 ecosystem report，访问 2026-04-27。</p>
+<h3 id="195-raptr-baby-raptr">19.5 Raptr 与 Baby Raptr</h3>
+<h4 id="1951-raptr-2024-09">19.5.1 Raptr 设计目标（2024-09 提案）</h4>
+<ul>
+<li>prefix consensus model：把 Quorum Store 的 DA check 直接合进共识，减少消息往返（从 6 跳降到 4 跳）</li>
+<li>提升 ~ 20% 终结性延迟（100-150ms 改善）</li>
+</ul>
+<h4 id="1952-baby-raptr2025-06">19.5.2 Baby Raptr（2025-06 上线）</h4>
+<p>第一个 Raptr 组件上线主网。完整 Raptr 仍在分阶段推进。</p>
+<h3 id="196-sui">19.6 与 Sui 的分叉</h3>
+<p>Aptos 与 Sui 同出 Diem/Libra 团队，都用 Move 语言，共识却选了相反路线：Aptos 保 HotStuff 单链单 leader 加 Narwhal mempool；Sui 押注 DAG 共识（第 23-24 章）让所有 validator 同时广播，共识只在 DAG 上做总序。这是过去三年共识层最戏剧化的一次工程哲学分叉——从同一个 codebase 出发，三年后两条路线成为本册第 19 章和第 24 章。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="20-dag" id="ch21"><span class="chapter-num">Chapter 21</span><br>20. DAG 谱系导引</h2>
+
+<p>链式共识的瓶颈在 leader——任意时刻只一个节点出块，吞吐被该节点的网络/CPU/磁盘上限钉死。DAG 共识的破解思路是把分布式共识的两件事拆开：可靠传输（哪些 tx 已被网络收到）由所有 validator 并行处理；总序（按什么顺序提交）只在已传输的 DAG 上做轻量计算。链共识把两件事耦合在一起，DAG 共识把它们解耦。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>        ┌─→ A2 ─┐
+  A1 ───┤        ├─→ A3
+        └─→ B2 ─┤
+                └─→ B3
+多个 leader 同时出 vertex，共识层只在 DAG 上选 commit 顺序
+</code></pre></div>
+<h3 id="203-dag">20.3 DAG 共识的家族</h3>
+<figure><img src="diagram-ff83dcc91e.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="21-iota-tangle-dag" id="ch22"><span class="chapter-num">Chapter 22</span><br>21. IOTA Tangle：第一个 DAG，也是反面教材</h2>
+
+<p>IOTA 是第一个尝试 DAG 公链的项目，但它揭示的与其说是 DAG 共识的可能性，不如说是它的难度。每笔新交易必须引用 2 笔现有交易作 parent，构成无块、无矿工的 Tangle。理论上验证两笔上游 tx 就是发送成本，零 fee 适合 IoT。</p>
+<p>实际困境：2017-2023 IOTA 依赖中心化 Coordinator 防 fork——不算真 DAG 共识；零 fee 导致 spam 泛滥；IoT 场景从未大规模落地。Coordicide 升级（2023 起）用 Mana 声誉积分替代 Coordinator，至 2026-04 仍在迭代。叠加 2018 Curl-P 哈希函数漏洞争议（MIT PoC + 团队回应不当）、2020 Trinity 钱包种子词被盗（~$2M 损失），IOTA 整体信任受损。</p>
+<p>历史价值在于"DAG 共识能跑"是 IOTA 先证明的——后续 Hashgraph、Narwhal、Mysticeti 都在它的基础上修补具体缺陷。来源：IOTA Foundation 文档（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="22-hashgraphgossip-about-gossip-virtual-voting" id="ch23"><span class="chapter-num">Chapter 23</span><br>22. Hashgraph：Gossip about Gossip + Virtual Voting</h2>
+
+<p>Hashgraph（Baird 2016）的核心招式是把"投票"完全消除：节点两两 gossip 交易时附带"我刚才和谁 gossip 过"的元信息，每个节点本地都能重建完整 gossip 历史 DAG，于是可以本地推演他人投票（virtual voting），不必发任何实际投票消息。这与 PBFT/HotStuff 的"显式投票 → 聚合 QC"路线完全相反——Hashgraph 把投票内化进通信结构本身。aBFT（asynchronous BFT）是它达到的最强等级，已被 Coq 形式化证明。</p>
+<h3 id="222-gossip-about-gossip">22.2 Gossip about Gossip 流程图</h3>
+<figure><img src="diagram-fa144fa3ed.png" alt="mermaid diagram"></figure>
+
+<p>每次 gossip 不只传 tx，还传"我和谁 gossip 过"——这让 DAG 自然形成。</p>
+<h3 id="223-virtual-voting">22.3 Virtual Voting</h3>
+<p>DAG 一致后，每个节点本地推演他人投票，不发实际投票消息，省 O(n) 通信。</p>
+<h3 id="224-hedera">22.4 性能与商业实现 Hedera</h3>
+<p>Hedera（Hashgraph 的商业实现）2026-04 数据：</p>
+<ul>
+<li>10,000+ TPS（认证）</li>
+<li>3 秒最终性</li>
+<li>aBFT（asynchronous BFT，最强等级，被 Coq 形式化证明）</li>
+<li>39 人理事会治理（Google / IBM / Boeing 等）</li>
+</ul>
+<p>来源：Hedera 官方文档，访问 2026-04-27：https://docs.hedera.com/hedera/core-concepts/hashgraph-consensus-algorithms/virtual-voting</p>
+<h3 id="225">22.5 工程画像</h3>
+<p>技术上 Hashgraph 接近完美（aBFT + 形式化证明 + 10k TPS + 3s finality），但生态被两件事压住：①算法长期受专利保护（到 2030+），核心代码 2022 才部分开源；②39 人企业理事会决策（Google/IBM/Boeing 等），去中心化弱。Hashgraph 的命运是个反面教材：好协议没有开源生态等于没有共识研究的下一代。Mysticeti 等开源 DAG 共识跑得更快，是因为整个开源社区都在迭代。来源：Hedera 文档（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="23-narwhal-bullshark-tusk" id="ch24"><span class="chapter-num">Chapter 24</span><br>23. Narwhal + Bullshark / Tusk</h2>
+
+<p>Narwhal 把第 20 章的"传输/总序解耦"做成了具体协议。每个 validator 持续把收到的 tx 打包成 batch（vertex），引用前一 round 至少 2f+1 个其他 validator 的 batch——所有 vertex 自然形成跨 round 的 DAG。传输持续进行，共识只在 DAG 上做轻量总序。来源：Danezis et al., "Narwhal and Tusk"（EuroSys 2022）。</p>
+<h3 id="232-narwhal-mempool-dag">23.2 Narwhal：把 mempool 做成 DAG</h3>
+<p>每个 validator 持续把它收到的交易打包成 batch（叫 "vertex"），引用前一 round 至少 2f+1 个其他 validator 的 batch。所有 vertex 形成跨 round 的 DAG。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>round  1     2     3     4
+ V1   v1.1  v2.1  v3.1  v4.1
+ V2   v1.2  v2.2  v3.2  v4.2
+ V3   v1.3  v2.3  v3.3  v4.3
+ V4   v1.4  v2.4  v3.4  v4.4
+
+边：v2.1 引用 v1.1, v1.2, v1.3（≥ 2f+1）
+</code></pre></div>
+<h3 id="233-bullshark-dag-bft">23.3 Bullshark：在 DAG 上跑 BFT 总序</h3>
+<ul>
+<li>偶数 round 选一个 leader</li>
+<li>奇数 round 每个 vertex 通过引用结构"自动投票"给上 round 的 leader</li>
+<li>当一个 leader vertex 在下一 round 收到 f+1 个引用 → commit</li>
+</ul>
+<p>投票就是 Narwhal 的 DAG 边，<strong>没有任何额外的 BFT 投票消息</strong>，投票成本被传输层完全摊销。</p>
+<h3 id="234-bullshark-vs-tusk">23.4 Bullshark vs Tusk</h3>
+<p>Tusk 和 Bullshark 都是 Narwhal 之上的总序协议：<strong>Tusk</strong>（2022 早期版本）纯异步，更"完美"但延迟稍高；<strong>Bullshark</strong>（2022 后续优化）使用 partial-sync，延迟更低，是当前主流。</p>
+<h3 id="235">23.5 性能数据</h3>
+<p>Bullshark + Narwhal 在 100 节点广域网下：</p>
+<ul>
+<li>100,000+ TPS</li>
+<li>&lt; 3s 延迟</li>
+</ul>
+<p>来源：Spiegelman et al. 2022 CCS paper "Bullshark: DAG BFT Protocols Made Practical"，arXiv:2201.05677，访问 2026-04-27。</p>
+<h3 id="236">23.6 工业落地</h3>
+<ul>
+<li><strong>Sui</strong>：主网 2023 上线 Narwhal+Bullshark，2024-07 升级为 Mysticeti</li>
+<li><strong>Aptos</strong>：Narwhal 改造为 Quorum Store（仅作 mempool），共识仍由 AptosBFT 跑——保 BFT 可证明性，享 DAG 吞吐红利</li>
+</ul>
+<h3 id="237">23.7 后续研究</h3>
+<p>Narwhal + Bullshark 的关键工程价值是引爆了 DAG 共识研究热潮。下一代改进基本沿同一脉络：Mysticeti（2024，Sui 自研）把延迟压到 &lt;500ms，主要靠 uncertified DAG（24.3 节）；Shoal（2023，Aptos 团队）提高 Bullshark 延迟稳定性；Bullshark 2.0（2024，原作者团队）优化版。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="24-sui-mysticeti" id="ch25"><span class="chapter-num">Chapter 25</span><br>24. Sui Mysticeti</h2>
+
+<p>Mysticeti 在 Narwhal+Bullshark 基础上的核心改动是 <strong>uncertified DAG</strong>：Bullshark 要求每个 vertex 收齐 ≥2f+1 签名才能成为 DAG 节点（贡献 ~50% 延迟），Mysticeti 允许 uncertified vertex 直接入 DAG，commit 时再统一验证 quorum。这把 ~390ms 的 consensus 延迟（v1）进一步压到 ~250ms（v2，2025-11），代价是边复杂度上升。</p>
+<h3 id="241">24.1 时间线与性能</h3>
+<ul>
+<li><strong>2023-05</strong>：Sui 主网上线，使用 Narwhal + Bullshark</li>
+<li><strong>2024-07</strong>：Mysticeti v1 上线 Sui 主网</li>
+<li><strong>2025-11</strong>：Mysticeti v2 上线，再降 35% 延迟</li>
+</ul>
+<h3 id="242">24.2 性能数据</h3>
+<p>Mysticeti v1（2024-07 数据）：
+- consensus 延迟：390ms
+- end-to-end settlement：640ms
+- 测试网中比前一代降 80% 延迟</p>
+<p>Mysticeti v2（2025-11 数据）：
+- 进一步降 35% → ~250ms 延迟
+- 与共识合并交易验证，减少冗余步骤</p>
+<p>来源：Sui blog "Mysticeti v2: Faster and Lighter Sui Transaction Processing"，访问 2026-04-27。</p>
+<h3 id="243-uncertified-dag">24.3 核心创新：uncertified DAG</h3>
+<p>Bullshark 要求每个 vertex 先收到 ≥ 2f+1 签名才能成为 DAG 节点（贡献 ~50% 延迟）。Mysticeti 允许 uncertified vertex 直接入 DAG，commit 时再统一验证 quorum——延迟显著降低，边复杂度上升。</p>
+<h3 id="244-mysticeti-v2">24.4 Mysticeti v2 进一步优化</h3>
+<p>把交易验证（signature check / state precondition check）合进共识层，减少冗余 round-trip：延迟降 35%（390ms → 250ms），提交块数增 ~20%，稳态 ~50k TPS，峰值 &gt;100k。</p>
+<h3 id="245">24.5 工程画像</h3>
+<p>Sui 主网 2026-04：稳态 ~7000 TPS，峰值 &gt;30k，~110 个 validator，TVL &gt;$1B，从未有 reorg 或 finality stall。Sui 的并行执行是 object-based 声明式：每笔 tx 显式声明读写哪些 object，互不冲突的 tx 直接并行——与 Aptos 的 Block-STM 乐观并行（25.1 节）是对偶选择，前者由用户预申报，后者由运行时检测冲突回滚。这两条路线代表了 Account 模型链突破并行瓶颈的两种工程哲学。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="25-block-stmpoh" id="ch26"><span class="chapter-num">Chapter 26</span><br>25. 易混误区：Block-STM、PoH 等"非共识"组件</h2>
+
+<h3 id="251-block-stmaptos">25.1 Block-STM：Aptos 的并行执行引擎</h3>
+<p>Block-STM 是<strong>执行引擎</strong>，不是共识。共识（AptosBFT v4/Raptr）决定顺序，Block-STM 在 commit 后乐观并行执行：先假设无冲突，检测到冲突则回滚串行重试。让 Aptos 在 Account 模型下拿到 25k+ TPS。</p>
+<h3 id="252-solana-poh">25.2 Solana PoH：易混组件</h3>
+<p>PoH 是时间戳服务（见第 26 章），不是共识。给共识层（Tower BFT）省去事件排序工作。</p>
+<h3 id="253-sui-object-dag-vs-dag">25.3 Sui object DAG vs 共识 DAG</h3>
+<p>两件不同的事：<strong>对象 DAG</strong> 是状态层的读写依赖；<strong>共识 DAG</strong>（Mysticeti）是消息层的 vertex 引用。属不同抽象层。</p>
+<h3 id="254">25.4 易混点速查表</h3>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>是共识吗</th>
+<th>真实角色</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aptos Block-STM</td>
+<td>✗</td>
+<td>并行执行引擎</td>
+</tr>
+<tr>
+<td>Solana PoH</td>
+<td>✗</td>
+<td>时间戳服务</td>
+</tr>
+<tr>
+<td>Aptos Quorum Store</td>
+<td>✗</td>
+<td>mempool（学 Narwhal）</td>
+</tr>
+<tr>
+<td>Sui Mysticeti</td>
+<td>✓</td>
+<td>DAG 共识协议</td>
+</tr>
+<tr>
+<td>Polkadot BABE</td>
+<td>部分</td>
+<td>出块协议（与 GRANDPA 共同构成共识）</td>
+</tr>
+<tr>
+<td>Polkadot GRANDPA</td>
+<td>✓</td>
+<td>finality gadget</td>
+</tr>
+<tr>
+<td>Ethereum LMD-GHOST</td>
+<td>部分</td>
+<td>fork choice（与 FFG 共同）</td>
+</tr>
+<tr>
+<td>Ethereum Casper FFG</td>
+<td>✓</td>
+<td>finality gadget</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="26-solanapoh-tower-bft-alpenglow" id="ch27"><span class="chapter-num">Chapter 27</span><br>26. Solana：PoH + Tower BFT → Alpenglow</h2>
+
+<p>Solana 的设计选择和前面所有协议都不同：把"排事件顺序"和"共识"拆成两个独立组件。PoH 是全网一致的时间戳服务（不是共识），Tower BFT 是带 lockout 的 PBFT 变体（是共识）。这套架构 2026 年正在被 Alpenglow（Votor + Rotor）替换——Solana 自己也承认 PoH+Tower BFT 跑了 7 年，5 次以上停机暴露了"全局时间作为单点"的脆弱。</p>
+<h3 id="262-poh">26.2 PoH 是什么</h3>
+<p>leader 持续跑：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">some_seed</span>
+<span style="color: #204A87; font-weight: bold">for</span> <span style="color: #000">i</span> <span style="color: #204A87; font-weight: bold">in</span> <span style="color: #0000CF; font-weight: bold">1.</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #A40000; border: 1px solid #EF2929">∞</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">i</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">SHA256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">i</span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">])</span>
+    <span style="color: #8F5902; font-style: italic"># 每 N 步，把收到的交易 tx 穿插进去：</span>
+    <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #000">has_pending_tx</span><span style="color: #000; font-weight: bold">():</span>
+        <span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">i</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">SHA256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">i</span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">||</span> <span style="color: #000">tx</span><span style="color: #000; font-weight: bold">)</span>
+</code></pre></div>
+<p>→ 所有 validator 拿到序列后确定地知道每笔交易的相对顺序。PoH 像全网共享的"加密秒表"——验证秒表没倒走，但不决定"哪个分叉合法"（那是 Tower BFT 的职责）。</p>
+<h3 id="263-tower-bft">26.3 Tower BFT</h3>
+<p>PBFT 变体，加了<strong>lockout 机制</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>每次投一个分支，对该分支的承诺时间指数加倍
+→ 32 次连续投票后，承诺达到最大 lockout
+→ 该分支被认为 economically finalized
+</code></pre></div>
+<h3 id="264-poh-tower-bft">26.4 PoH 与 Tower BFT 的协作</h3>
+<p>PoH 负责"打时间戳 / 排事件顺序"，Tower BFT 负责"决定哪条链合法"。两者分工：</p>
+<ul>
+<li><strong>PoH</strong>：Leader 持续生成哈希链条，其他节点验证顺序合法性（无需通信）。</li>
+<li><strong>Tower BFT</strong>：每个 slot 结束后，Validator 对 PoH 记录的区块投票；lockout 机制保证切换分支成本指数增加。</li>
+<li>合并效果：PoH 节省了 BFT 投票中"排序消息"的通信开销，Tower BFT 提供拜占庭容错安全保证。</li>
+</ul>
+<h3 id="265-2026-04">26.5 当前性能（2026-04）</h3>
+<ul>
+<li>区块时间：~ 400ms</li>
+<li>平均 TPS（实测）：~ 3000-5000</li>
+<li>理论 TPS：65,000+</li>
+<li>终结时间：32 confirmation ≈ 12.8s</li>
+</ul>
+<h3 id="266">26.6 历史故障</h3>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>事件</th>
+<th>时长</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2021-09</td>
+<td>Grape Protocol IDO，每秒 40 万 TX 涌入</td>
+<td>17 小时</td>
+</tr>
+<tr>
+<td>2022-04</td>
+<td>NFT bot 滥发交易</td>
+<td>7 小时</td>
+</tr>
+<tr>
+<td>2022-05</td>
+<td>共识 bug</td>
+<td>4 小时</td>
+</tr>
+<tr>
+<td>2023-02</td>
+<td>区块状态恢复慢</td>
+<td>19 小时（最长）</td>
+</tr>
+</tbody>
+</table>
+<p>教训：PoH 把"时间"当全局变量，全局变量在大规模故障时极难恢复。</p>
+<h3 id="267-alpenglowpoh">26.7 Alpenglow：PoH 退役计划</h3>
+<p>2025 年 Anza 提出 Alpenglow，要用 <strong>Votor + Rotor</strong> 替换 PoH + Tower BFT。</p>
+<ul>
+<li><strong>Votor</strong>：把 32 轮确认压缩到 1-2 轮；80% stake 在线时单轮 finality ≈ 100ms</li>
+<li><strong>Rotor</strong>：替换 Turbine 数据广播树为 one-hop broadcast</li>
+</ul>
+<p>时间线：
+- 2025-09：Solana 治理通过 Alpenglow（98.27% 赞成）
+- 2026-Q3：Agave 4.1 发布
+- 2026-Q4：安全审计
+- 2026 年底：mainnet 激活</p>
+<p>来源：CoinDesk 2025-09-03 "Solana Community Approves Alpenglow Upgrade"，访问 2026-04-27。</p>
+<h3 id="268-ethereum">26.8 与 Ethereum 的工程对比</h3>
+<p>Solana 与 Ethereum 在每个轴上选择都相反，是共识工程取舍的极端样本：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Ethereum</th>
+<th>Solana</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设计目标</td>
+<td>安全 + 去中心化</td>
+<td>性能优先</td>
+</tr>
+<tr>
+<td>Validator 硬件</td>
+<td>4 核 16GB</td>
+<td>32+ 核 256GB+ NVMe</td>
+</tr>
+<tr>
+<td>节点数</td>
+<td>~10000+</td>
+<td>~1500-2000</td>
+</tr>
+<tr>
+<td>区块时间</td>
+<td>12s</td>
+<td>0.4s</td>
+</tr>
+<tr>
+<td>平均 TPS</td>
+<td>~30</td>
+<td>~4000</td>
+</tr>
+<tr>
+<td>历史停机</td>
+<td>0</td>
+<td>5+ 次（最长 19h）</td>
+</tr>
+</tbody>
+</table>
+<p>性能高的代价是恢复成本——PoH 把"时间"做成全局变量，全局变量出错就是全网停机。Alpenglow 替换 PoH 是 Solana 团队对这条结构性教训的承认。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="27-avalanche-snow-metastable" id="ch28"><span class="chapter-num">Chapter 28</span><br>27. Avalanche Snow 系列：metastable 共识</h2>
+
+<p>Snow 系（Rocket et al. 2018）和前面所有 BFT 协议结构上不同。PBFT/HotStuff 每决定一块所有 n 节点都参与；Snow 让每个节点只随机问 k=20 个邻居就决定，依赖大数定律——类似选举民调。代价是放弃了 BFT 派的"≤1/3 拜占庭即安全"硬保证，换成 metastable 性质："网络绝大多数最终会偏好同一值"——这是个统计学性质，不是绝对 BFT 保证。这条路线学界至今仍有争议（Bern University 2024 报告）。</p>
+<h3 id="272">27.2 协议演进</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Slush（不容拜占庭，只是个 toy）
+   ↓
+Snowflake（加 conviction counter）
+   ↓
+Snowball（加 confidence counter）
+   ↓
+Snowman（线性链版本，Avalanche C-Chain 用）
+   ↓
+Avalanche（DAG 版本）
+</code></pre></div>
+<h3 id="273">27.3 核心参数</h3>
+<p>来源：Avalanche 官方文档 / pkg.go.dev/snowball，访问 2026-04-27：</p>
+<ul>
+<li><strong>k = 20</strong>：每次随机抽样 20 个邻居</li>
+<li><strong>AlphaPreference = 15</strong>：15/20 偏好同一答案 → 改变本地偏好</li>
+<li><strong>AlphaConfidence = 15</strong>：15/20 偏好同一答案 → confidence +1</li>
+<li><strong>β = 20</strong>：连续 20 轮 confidence 累计 → 决定</li>
+</ul>
+<h3 id="274-snowball">27.4 Snowball 决策流程图</h3>
+<figure><img src="diagram-241b7a61a1.png" alt="mermaid diagram"></figure>
+
+<h3 id="275">27.5 安全模型</h3>
+<p>抽 20 个邻居的安全性来自概率：攻击者 &lt;20% 节点时，期望拜占庭 &lt;4 个，达不到 α=15 majority。但这条曲线在攻击者份额 ≥50% 时开始失效，70%+ 几乎一定能控制（见习题 8）——所以 Avalanche 的安全边界 ~50%，与 BFT 经典 33% 不同。这点经常被忽视。Avalanche 团队 2024 提的 Frosty 改进加强了 liveness 保证。来源：crypto.unibe.ch/2024/05/21/avalanche.html（2026-04-27）。</p>
+<h3 id="276-avalanche">27.6 Avalanche 真实部署</h3>
+<h4 id="2761">27.6.1 三链架构</h4>
+<p>Avalanche 不是单链，而是 X-Chain（资产）+ P-Chain（治理 + staking）+ C-Chain（EVM 兼容）三链。Snowman 共识跑在 P/C-Chain，Avalanche DAG 共识跑在 X-Chain。</p>
+<h4 id="2762-2026-04">27.6.2 数字感（2026-04）</h4>
+<ul>
+<li>验证者数：~ 1300+</li>
+<li>平均 TPS：~ 50（C-Chain），峰值 4000+（X-Chain）</li>
+<li>终结性：~ 1.2-2 秒</li>
+<li>TVL：$1B+</li>
+</ul>
+<h3 id="277">27.7 工程画像</h3>
+<p>三链架构（X-Chain 资产 / P-Chain 治理 + staking / C-Chain EVM）对开发者不友好——多数 EVM DApp 直接跑 C-Chain，X/P 链是历史包袱。2024 Subnets/L1 公告把"起子链"做成基础设施级能力，2025 ACP-77 重构 Subnet 经济激励。Snow 系本身仍是 Avalanche 最强的差异化——但形式化证明的争议让它在企业链场景拼不过 Hashgraph 的 aBFT 标签。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="28-bitcoin-lightning-network" id="ch29"><span class="chapter-num">Chapter 29</span><br>28. Bitcoin Lightning Network：通道而非共识</h2>
+
+<p>Lightning 不是共识协议，而是绕开共识的工程方案——把高频小额转账从主链卸载到链下双方共识，只用主链做"开/关通道结算"。这条思路后来被 Ethereum L2（rollup）继承——见模块 07。</p>
+<h3 id="282">28.2 直觉：开个储值卡</h3>
+<p>假设 Alice 一天给 Bob 转 50 次，每次 0.001 BTC，每次手续费 ~ $5，一天 $250 fee，但只转了 ~ $50 价值——荒谬。<strong>Lightning 的解法</strong>：双方先共同质押 0.05 BTC 开"通道"，通道里随便转账（链下，免 fee），关通道时把"最终余额"上链——只 1 笔交易。</p>
+<h3 id="283-htlc">28.3 HTLC：让转账经过中间节点也安全</h3>
+<figure><img src="diagram-b0f8a6b7bc.png" alt="mermaid diagram"></figure>
+
+<p>HTLC = Hashed TimeLock Contract。靠<strong>hash 验证 + timelock 退款</strong>保证：</p>
+<ul>
+<li>要么所有跳都成功（C 拿到钱，B 中转，A 付了钱）</li>
+<li>要么所有跳都退款</li>
+</ul>
+<h3 id="284-2026-04">28.4 当前规模（2026-04）</h3>
+<ul>
+<li>节点数：~ 14,940（峰值 2022-01 是 20,700）</li>
+<li>通道数：~ 48,678</li>
+<li>总容量：5,637 BTC（2025-12 新高）</li>
+<li>月交易量：$1.17B / 5.22M 笔（2025-11）</li>
+</ul>
+<p>来源：Bitcoin Visuals / 1ML statistics，访问 2026-04-27。</p>
+<h3 id="285">28.5 工程画像与遗产</h3>
+<p>Lightning 是 L2 思路的鼻祖：链下计算 + 链上结算 + 加密学保证（hashlock + timelock），同样的三件套后来被 Ethereum Optimistic Rollup 替换为"链下 EVM + 周期 batch upload + fraud proof"。两条路线的核心差异在"链下结算"的可信化方式：Lightning 用 hashlock 保证两两通道，rollup 用经济信任 + 数学证明做开放结算。</p>
+<p>两条结构性局限：①路由 NP-hard——A→C 间不一定直连，每跳要有足够 inbound liquidity；②Watchtower 问题——离线时对方可能提交旧状态作弊，watchtower 服务监控引入新信任假设。</p>
+<p>19 个协议走完，下一章把散落的术语集中辨析：confirmation/finality/liveness/safety/ordering 在不同协议文档含义微妙不同。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="29" id="ch30"><span class="chapter-num">Chapter 30</span><br>29. 概念辨析专章</h2>
+
+<p>DDIA 第 9 章在讨论 consensus 时反复强调：每个保证都要追问"在什么模型下、需要什么前提"。区块链共识协议文档常把 confirmation / finality / safety / liveness 混用，工程决策时踩的坑大多源于此。本章统一定义。</p>
+<h3 id="291">29.1 四种最终性</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>confirmation</th>
+<th>probabilistic</th>
+<th>economic</th>
+<th>absolute</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>含义</td>
+<td>"块被埋多深"</td>
+<td>越深越难逆转，但永不为 0</td>
+<td>逆转需可量化经济代价</td>
+<td>协议层保证不可逆</td>
+</tr>
+<tr>
+<td>例子</td>
+<td>Bitcoin 6 conf</td>
+<td>Bitcoin 任意深度</td>
+<td>Ethereum 2 epoch</td>
+<td>Tendermint 单块</td>
+</tr>
+<tr>
+<td>工程代价</td>
+<td>—</td>
+<td>等够深（PoW 链）</td>
+<td>看 stake 总量（PoS 链）</td>
+<td>分区时停链</td>
+</tr>
+</tbody>
+</table>
+<p>PoW 链的概率最终性遵循中本聪公式 P(逆转 z 块) = (q/p)^z（q&lt;p），交易所通常等到 P&lt;0.001% 才入账——Bitcoin q=0.1 时 6 conf P≈0.024% 是这条阈值的来源。Ethereum 经济最终性的具体数字：回滚 finalized 块至少需 1/3 stake 被 slash ≈ 10M+ ETH，是博弈论而非数学保证。Tendermint/Algorand/GRANDPA 的 absolute finality 是协议层硬约束，代价是分区时停链。</p>
+<h3 id="292-safety-vs-liveness">29.2 Safety vs Liveness</h3>
+<p>Safety = 永不出错（不会两块在同高度都 finalized）；Liveness = 永远在进步（链一直出块）。FAB 的标准定义。两者不能同时百分百保证（FLP），所有协议都在分区时做取舍：</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>网络分区时</th>
+<th>选了什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bitcoin / Nakamoto</td>
+<td>双方都继续出块，后续重组</td>
+<td>Liveness（safety 概率）</td>
+</tr>
+<tr>
+<td>Tendermint / Cosmos</td>
+<td>链停</td>
+<td>Safety</td>
+</tr>
+<tr>
+<td>Ethereum Gasper</td>
+<td>LMD-GHOST 继续出块，FFG 不 finalize</td>
+<td>双层分别选择</td>
+</tr>
+<tr>
+<td>Avalanche Snow</td>
+<td>metastable，可能两边都不收敛</td>
+<td>概率 safety + 概率 liveness</td>
+</tr>
+</tbody>
+</table>
+<p>Gasper 把 safety 和 liveness 拆到两层做不同选择，是它被低估的工程价值——下一代链（Polkadot / Solana Alpenglow）都在抄这条路。</p>
+<h3 id="293-ordering-consensus">29.3 Ordering ≠ Consensus</h3>
+<p>DDIA 把这两件事画得很清楚：ordering 是给一组 tx 排次序，consensus 是在多个候选 history 中选一个。链共识把两件事耦合，DAG 共识（第 23 章）把它们解耦。Solana 也是解耦的（PoH 做 ordering，Tower BFT 做 consensus），但路线不同——PoH 是单 leader 时间戳，Narwhal 是多 validator 并行 mempool。</p>
+<h3 id="294-smr-utxo-account">29.4 状态模型：SMR / UTXO / Account</h3>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>状态形式</th>
+<th>并行度</th>
+<th>智能合约</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMR</td>
+<td>任意状态 + transition function</td>
+<td>取决于 function</td>
+<td>高</td>
+<td>Tendermint apps</td>
+</tr>
+<tr>
+<td>UTXO</td>
+<td>不可变输出集合</td>
+<td>高（独立 UTXO 并行）</td>
+<td>低（图灵不完备）</td>
+<td>Bitcoin / Cardano eUTXO</td>
+</tr>
+<tr>
+<td>Account</td>
+<td>全局地址 → 余额 + 存储</td>
+<td>低（同账户串行）</td>
+<td>高</td>
+<td>Ethereum / Solana / Aptos</td>
+</tr>
+</tbody>
+</table>
+<p>Aptos Block-STM 是个有趣的妥协：Account 模型 + 乐观并行 + 冲突回滚重排，拿到 ~25k TPS 而不丢智能合约友好性。Sui object-based 是另一极：让用户预申报读写 object，运行时直接并行——把冲突检测前置到 tx 提交时。</p>
+<h3 id="295-permissioned-vs-permissionless">29.5 Permissioned vs Permissionless</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>permissioned</th>
+<th>permissionless</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>例子</td>
+<td>Hyperledger Fabric / Hedera</td>
+<td>Bitcoin / Ethereum / Cosmos</td>
+</tr>
+<tr>
+<td>优点</td>
+<td>性能高，监管友好</td>
+<td>抗审查</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td>去中心化弱</td>
+<td>性能受限</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="30-2010-08-bitcoin-bug" id="ch31"><span class="chapter-num">Chapter 31</span><br>30. 事故复盘之 2010-08 Bitcoin 通胀 bug</h2>
+
+<p>2010-08-15，Bitcoin 唯一一次协议级 reorg。<code>CTransaction::CheckTransaction</code> 对 output value 求和时未检查溢出，攻击者构造一个交易铸出 2 笔各 9.22 亿 BTC（远超 2100 万总量），上链于块 74638。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">int64_t</span><span style="color: #F8F8F8"> </span><span style="color: #000">sum</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #204A87; font-weight: bold">for</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">auto</span><span style="color: #CE5C00; font-weight: bold">&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #000">out</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">outputs</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000">sum</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+=</span><span style="color: #F8F8F8"> </span><span style="color: #000">out</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">value</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 没检查溢出</span>
+</code></pre></div>
+<p>时间线：0809 UTC 攻击块上链 → 0820 UTC Satoshi 在 Bitcointalk 发警报 → 0900 UTC 修复 patch v0.3.10 发布 → 1330 UTC 社区 reorg 53 块。整起事故 5 小时 21 分。</p>
+<p>整数溢出是数字货币经典 bug。此后 Bitcoin 所有 amount check 加溢出验证，Ethereum/Solidity 强制 SafeMath 是同根同源的反应。这次事故是中本聪此后极度保守对待 codebase 的来源——协议层稳，实现层脆弱，是所有共识协议的通用规律。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="31-2020-08-etc-51" id="ch32"><span class="chapter-num">Chapter 32</span><br>31. 事故复盘之 2020-08 ETC 三连 51%</h2>
+
+<p>详细时间线和经济账见第 7 章。本节只补充复盘维度的两点：</p>
+<p>①<strong>根因结构性</strong>：ETC 与 ETH 共用 Ethash，2020 年 ETC 算力仅占 Ethash 全网 ~5%——攻击者付几十万美元就够 51%。这不是实现 bug，是"算法兼容大币种 + 公共算力市场"的结构性脆弱。</p>
+<p>②<strong>应对反讽</strong>：2020-11 Thanos 升级把 Ethash epoch 翻倍 → ETChash 与 ETH 矿机解耦；2022-09 ETH 转 PoS 后 Ethash 矿机失业反而部分流入 ETC，算力翻倍。结构性安全的恢复来自 ETH 的协议变迁，而不是 ETC 自己的努力——共识协议安全有时由生态而非协议决定。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="32-2021-2023-solana" id="ch33"><span class="chapter-num">Chapter 33</span><br>32. 事故复盘之 2021-2023 Solana 多次停机</h2>
+
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>时长</th>
+<th>触发</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2021-09</td>
+<td>17h</td>
+<td>Grape Protocol IDO，40 万 TX/s 涌入</td>
+</tr>
+<tr>
+<td>2022-01</td>
+<td>4h</td>
+<td>共识 bug</td>
+</tr>
+<tr>
+<td>2022-04</td>
+<td>7h</td>
+<td>NFT bot 滥发交易</td>
+</tr>
+<tr>
+<td>2022-05</td>
+<td>4h</td>
+<td>共识 bug</td>
+</tr>
+<tr>
+<td>2022-06</td>
+<td>4h</td>
+<td>状态机问题</td>
+</tr>
+<tr>
+<td>2023-02</td>
+<td><strong>19h</strong></td>
+<td>区块状态恢复慢</td>
+</tr>
+</tbody>
+</table>
+<p>共同模式：mempool flooding（NFT mint / IDO 4-40 万 TX/s）→ leader 处理不过来 → PoH tick 速率掉 → 全网失步 → validator 重启必须协调同一 snapshot 高度，全局协调慢。这是"全局时间作为单点"的代价——Ethereum 各 validator 可独立恢复，Solana 必须全网同步。</p>
+<p>应对：QUIC 替 UDP（2022-Q4）、Stake-weighted QoS（2023）、Firedancer（2023+ 第二客户端）、Alpenglow（2026 替换 PoH+Tower BFT）。前三项是补丁，第四项是结构性承认——Solana 团队 7 年后接受 PoH 这条路走到了头。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="33-2022-05-beacon-chain-7-block-reorg" id="ch34"><span class="chapter-num">Chapter 34</span><br>33. 事故复盘之 2022-05 Beacon Chain 7-block reorg</h2>
+
+<p>slot 3,887,075 proposer 出块迟到 ~4 秒 + proposer boost 滚动升级不一致 + 部分客户端 fork-choice bug，三因合流导致 7 个 slot 内链分叉，7 块被 reorg。FFG finality 全程未受影响——这是 Gasper 双层设计（29.2 节）的实际验证：fork-choice 出错时 finality gadget 还在保 safety。</p>
+<p>应对：post-Merge 所有 fork-choice 修改必须打包进硬分叉，所有客户端同时切换。"软分叉式 fork-choice 修改"成为禁区。详细复盘见 <code>exercises/03_reorg_postmortem.md</code>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="34-2023-04-ethereum-finality-stall" id="ch35"><span class="chapter-num">Chapter 35</span><br>34. 事故复盘之 2023-04 Ethereum finality stall</h2>
+
+<p>2023-04 mainnet 两次 finality 暂停（~25s）。无 reorg、无资金损失。根因：Prysm（占 40% stake）一个 bug 导致 attestation 延迟超截止线，FFG 凑不齐 2/3。</p>
+<p>事后客户端多样性运动推动 Prysm 降到 30%、Lighthouse 升至 40%。规律：单一客户端 stake &gt;33% = 系统性风险——这是 BFT 容错下界（1.1 节 3f+1）的另一种表现，对所有 PoS/BFT 链通用。客户端多样性不只是去中心化口号，是 finality 的硬保险。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="35-2022-tornado-cash-ofac" id="ch36"><span class="chapter-num">Chapter 36</span><br>35. 事故复盘之 2022 Tornado Cash 与 OFAC 制裁</h2>
+
+<p>2022-08-08 OFAC 把 Tornado Cash 合约地址列入 SDN 制裁名单。这不是技术故障，是社会层故障——部分美国 validator/builder 拒绝包含相关交易。制裁后 ~30 天 OFAC-compliant 块占 60%，高峰期 80%+（mevwatch.info，2026-04）。</p>
+<p>协议层应对是 Inclusion List（EIP-7547，2024）：proposer 强制要求"必须包含某些交易"，builder 即使不愿意也得包。这条路线把"抗审查"从社会层 reapproach 到协议层。Bitcoin 矿池在美国可能受类似压力，Solana validator 集中度更高风险也更高，Cosmos 各链独立分散风险。</p>
+<p>这一事件改变了 Ethereum 路线图——从"只解决技术问题"到"承认社会层威胁"。第 1 章 FLP/CAP 讨论的网络模型不包含监管模型，这是经典共识理论的盲区，本册第 44 章机制设计、第 46 章 ePBS 都在这个盲区里展开。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="36-pow" id="ch37"><span class="chapter-num">Chapter 37</span><br>36. 实战一：从零写最小 PoW 链</h2>
+
+<h3 id="361">36.1 设计目标</h3>
+<p>&lt; 200 行，覆盖：区块、链、PoW、难度调整、最重链规则。不写：UTXO / 签名 / Merkle 树（见模块 01 / 03）。</p>
+<h3 id="362">36.2 区块结构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #5C35CC; font-weight: bold">@dataclass</span>
+<span style="color: #204A87; font-weight: bold">class</span><span style="color: #F8F8F8"> </span><span style="color: #000">Block</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">height</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                  <span style="color: #8F5902; font-style: italic"># 区块高度，方便人看；不参与共识规则</span>
+    <span style="color: #000">prev_hash</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">str</span>               <span style="color: #8F5902; font-style: italic"># 上一区块哈希——这就是&quot;链&quot;的来源</span>
+    <span style="color: #000">merkle</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">str</span>                  <span style="color: #8F5902; font-style: italic"># 交易树根</span>
+    <span style="color: #000">timestamp</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">float</span>             <span style="color: #8F5902; font-style: italic"># 出块时间；难度调整要用</span>
+    <span style="color: #000">difficulty_bits</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>         <span style="color: #8F5902; font-style: italic"># 难度：要求哈希前导 0 的 bit 数</span>
+    <span style="color: #000">nonce</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                   <span style="color: #8F5902; font-style: italic"># 矿工反复改的&quot;幸运数字&quot;</span>
+    <span style="color: #000">txs</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">[</span><span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">]</span>               <span style="color: #8F5902; font-style: italic"># body：教学化的字符串交易</span>
+</code></pre></div>
+<p>header 字段固定就这几个，是因为 PoW 哈希难题哈的是 header，不是整个 block——所以 header 必须紧凑。</p>
+<h3 id="363">36.3 难度判定</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">def</span><span style="color: #F8F8F8"> </span><span style="color: #000">meets_difficulty</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">h_hex</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">bits</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-&gt;</span> <span style="color: #204A87">bool</span><span style="color: #000; font-weight: bold">:</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">&quot;&quot;&quot;前 bits 个 bit 必须为 0。&quot;&quot;&quot;</span>
+    <span style="color: #000">h_int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #204A87">int</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">h_hex</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">16</span><span style="color: #000; font-weight: bold">)</span>
+    <span style="color: #204A87; font-weight: bold">return</span> <span style="color: #000">h_int</span> <span style="color: #CE5C00; font-weight: bold">&lt;</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">1</span> <span style="color: #CE5C00; font-weight: bold">&lt;&lt;</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">256</span> <span style="color: #CE5C00; font-weight: bold">-</span> <span style="color: #000">bits</span><span style="color: #000; font-weight: bold">))</span>
+</code></pre></div>
+<h3 id="364">36.4 挖矿循环</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">def</span><span style="color: #F8F8F8"> </span><span style="color: #000">mine</span><span style="color: #000; font-weight: bold">(</span><span style="color: #3465A4">self</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">txs</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">[</span><span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">],</span> <span style="color: #000">max_nonce</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">1</span> <span style="color: #CE5C00; font-weight: bold">&lt;&lt;</span> <span style="color: #0000CF; font-weight: bold">32</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-&gt;</span> <span style="color: #000">Block</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">prev</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">tip</span>
+    <span style="color: #000">bits</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">next_difficulty</span><span style="color: #000; font-weight: bold">()</span>
+    <span style="color: #000">blk</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">Block</span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">...</span><span style="color: #000; font-weight: bold">)</span>
+    <span style="color: #204A87; font-weight: bold">for</span> <span style="color: #000">nonce</span> <span style="color: #204A87; font-weight: bold">in</span> <span style="color: #204A87">range</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">max_nonce</span><span style="color: #000; font-weight: bold">):</span>
+        <span style="color: #000">blk</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">nonce</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">nonce</span>
+        <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #000">meets_difficulty</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">blk</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">hash</span><span style="color: #000; font-weight: bold">(),</span> <span style="color: #000">bits</span><span style="color: #000; font-weight: bold">):</span>
+            <span style="color: #204A87; font-weight: bold">return</span> <span style="color: #000">blk</span>
+    <span style="color: #204A87; font-weight: bold">raise</span> <span style="color: #C00; font-weight: bold">RuntimeError</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;max_nonce 用尽&quot;</span><span style="color: #000; font-weight: bold">)</span>
+</code></pre></div>
+<p>除了暴力试，没有更聪明的办法——SHA-256 抗预映像，无法反推。这就是"Proof of Work"。</p>
+<h3 id="365">36.5 最重链规则</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">def</span><span style="color: #F8F8F8"> </span><span style="color: #000">cumulative_work</span><span style="color: #000; font-weight: bold">(</span><span style="color: #3465A4">self</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-&gt;</span> <span style="color: #204A87">int</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #204A87; font-weight: bold">return</span> <span style="color: #204A87">sum</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">1</span> <span style="color: #CE5C00; font-weight: bold">&lt;&lt;</span> <span style="color: #000">b</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">difficulty_bits</span> <span style="color: #204A87; font-weight: bold">for</span> <span style="color: #000">b</span> <span style="color: #204A87; font-weight: bold">in</span> <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">blocks</span><span style="color: #000; font-weight: bold">)</span>
+</code></pre></div>
+<p>用 <code>cumulative_work</code> 而非 <code>len(blocks)</code>——否则攻击者可用低难度块伪造更长的链。</p>
+<h3 id="366">36.6 跑起来</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code/
+python3<span style="color: #F8F8F8"> </span>pow_chain.py<span style="color: #F8F8F8">            </span><span style="color: #8F5902; font-style: italic"># 自检</span>
+python3<span style="color: #F8F8F8"> </span>pow_chain.py<span style="color: #F8F8F8"> </span>demo<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">5</span><span style="color: #F8F8F8">     </span><span style="color: #8F5902; font-style: italic"># 挖 5 个块</span>
+</code></pre></div>
+<p>预期输出：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>[genesis] hash=5b1b438b... bits=16
+[block 1] hash=00007dd4... bits=16 nonce=111643 took=0.28s
+[block 2] hash=0000a7b7... bits=16 nonce=18562 took=0.05s
+...
+</code></pre></div>
+<p>完整代码（含逐行注释）见 <code>code/pow_chain.py</code>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="37-4-pbft" id="ch38"><span class="chapter-num">Chapter 38</span><br>37. 实战二：4 节点 PBFT 模拟</h2>
+
+<h3 id="371">37.1 设计目标</h3>
+<p>n=4, f=1 的最小 BFT。演示正常路径 + 拜占庭主节点 + view-change。不模拟：真异步、消息丢失（教学简化）。</p>
+<h3 id="372">37.2 节点数据结构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #5C35CC; font-weight: bold">@dataclass</span>
+<span style="color: #204A87; font-weight: bold">class</span><span style="color: #F8F8F8"> </span><span style="color: #000">Node</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">nid</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                    <span style="color: #8F5902; font-style: italic"># node id</span>
+    <span style="color: #000">n</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                      <span style="color: #8F5902; font-style: italic"># 总节点数</span>
+    <span style="color: #000">f</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                      <span style="color: #8F5902; font-style: italic"># 容错门限</span>
+    <span style="color: #000">view</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>               <span style="color: #8F5902; font-style: italic"># 当前视图</span>
+    <span style="color: #000">seq</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>                <span style="color: #8F5902; font-style: italic"># 主节点用来分配序号</span>
+    <span style="color: #000">log</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">[</span><span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">]</span>              <span style="color: #8F5902; font-style: italic"># 已 commit 的请求列表</span>
+    <span style="color: #000">prepares</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>              <span style="color: #8F5902; font-style: italic"># 收到的 PREPARE 集合</span>
+    <span style="color: #000">commits</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>               <span style="color: #8F5902; font-style: italic"># 收到的 COMMIT 集合</span>
+    <span style="color: #000">vc_votes</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>              <span style="color: #8F5902; font-style: italic"># 视图切换投票</span>
+    <span style="color: #000">byzantine</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">bool</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #204A87; font-weight: bold">False</span>     <span style="color: #8F5902; font-style: italic"># 是否拜占庭主节点（仅演示用）</span>
+
+    <span style="color: #204A87; font-weight: bold">def</span><span style="color: #F8F8F8"> </span><span style="color: #000">quorum</span><span style="color: #000; font-weight: bold">(</span><span style="color: #3465A4">self</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-&gt;</span> <span style="color: #204A87">int</span><span style="color: #000; font-weight: bold">:</span>
+        <span style="color: #204A87; font-weight: bold">return</span> <span style="color: #0000CF; font-weight: bold">2</span> <span style="color: #CE5C00; font-weight: bold">*</span> <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">f</span> <span style="color: #CE5C00; font-weight: bold">+</span> <span style="color: #0000CF; font-weight: bold">1</span>   <span style="color: #8F5902; font-style: italic"># n=4 → 3</span>
+</code></pre></div>
+<h3 id="373">37.3 三阶段流程</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">elif</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">kind</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #4E9A06">&quot;PRE_PREPARE&quot;</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #204A87; font-weight: bold">not</span> <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">is_primary</span><span style="color: #000; font-weight: bold">():</span>
+        <span style="color: #8F5902; font-style: italic"># 备份节点收到主节点提议 → 广播 PREPARE</span>
+        <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">broadcast</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">Msg</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;PREPARE&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">view</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">seq</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">digest</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">nid</span><span style="color: #000; font-weight: bold">))</span>
+
+<span style="color: #204A87; font-weight: bold">elif</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">kind</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #4E9A06">&quot;PREPARE&quot;</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">prepares</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">key</span><span style="color: #000; font-weight: bold">]</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">add</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sender</span><span style="color: #000; font-weight: bold">)</span>
+    <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #204A87">len</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">prepares</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">key</span><span style="color: #000; font-weight: bold">])</span> <span style="color: #CE5C00; font-weight: bold">&gt;=</span> <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">quorum</span><span style="color: #000; font-weight: bold">():</span>
+        <span style="color: #8F5902; font-style: italic"># 收齐 2f+1 → 进入 COMMIT 阶段</span>
+        <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">broadcast</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">Msg</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;COMMIT&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">view</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">seq</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">digest</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">nid</span><span style="color: #000; font-weight: bold">))</span>
+
+<span style="color: #204A87; font-weight: bold">elif</span> <span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">kind</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #4E9A06">&quot;COMMIT&quot;</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">commits</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">key</span><span style="color: #000; font-weight: bold">]</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">add</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sender</span><span style="color: #000; font-weight: bold">)</span>
+    <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #204A87">len</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">commits</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">key</span><span style="color: #000; font-weight: bold">])</span> <span style="color: #CE5C00; font-weight: bold">&gt;=</span> <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">quorum</span><span style="color: #000; font-weight: bold">():</span>
+        <span style="color: #8F5902; font-style: italic"># 收齐 2f+1 → 本地 apply</span>
+        <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">committed</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">add</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">key</span><span style="color: #000; font-weight: bold">)</span>
+        <span style="color: #000">node</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">append</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">m</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">digest</span><span style="color: #000; font-weight: bold">)</span>
+</code></pre></div>
+<h3 id="374">37.4 跑起来</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>python3<span style="color: #F8F8F8"> </span>pbft_sim.py<span style="color: #F8F8F8">             </span><span style="color: #8F5902; font-style: italic"># 正常路径</span>
+python3<span style="color: #F8F8F8"> </span>pbft_sim.py<span style="color: #F8F8F8"> </span>byzantine<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># 主节点拜占庭 → view-change</span>
+</code></pre></div>
+<p>正常路径输出：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>== 正常路径：4 节点，主节点 = N0 ==
+  请求 &#39;req:set x=0&#39; -&gt; 已交付节点： [0, 1, 2, 3]
+  请求 &#39;req:set x=1&#39; -&gt; 已交付节点： [0, 1, 2, 3]
+  请求 &#39;req:set x=2&#39; -&gt; 已交付节点： [0, 1, 2, 3]
+</code></pre></div>
+<p>拜占庭路径输出：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>== 拜占庭主节点：N0 不发 PRE_PREPARE -&gt; 触发视图切换 ==
+  视图切换前已 delivered: []
+  各节点视图: [1, 1, 1, 1]
+  请求 &#39;req:set y=42&#39; -&gt; 已交付节点： [0, 1, 2, 3]
+</code></pre></div>
+<p>完整代码见 <code>code/pbft_sim.py</code>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="38-cometbft-4" id="ch39"><span class="chapter-num">Chapter 39</span><br>38. 实战三：CometBFT 4 验证者本地测试网</h2>
+
+<h3 id="381-pin-v03812">38.1 安装（pin v0.38.12）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># macOS</span>
+brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>cometbft
+
+<span style="color: #8F5902; font-style: italic"># 通用 Go 安装</span>
+go<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>github.com/cometbft/cometbft/cmd/cometbft@v0.38.12
+cometbft<span style="color: #F8F8F8"> </span>version<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># 应输出 0.38.12</span>
+</code></pre></div>
+<p>选用 v0.38 而非 v1.0：v1.0 在 2025-02 发布（v1.0.1），引入 PBTS（Proposer-Based Timestamps）等新特性，但 Cosmos SDK 多数链仍在 v0.38 上，教学用 v0.38 更稳定。</p>
+<h3 id="382">38.2 一键脚本</h3>
+<p><code>code/cometbft_testnet.sh</code> 帮你完成所有事：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>init<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic"># 生成 4 节点配置</span>
+bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>start<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># tmux 4 窗口起 4 个 validator</span>
+bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>status<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># 查 4 节点高度</span>
+bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;alice=1&quot;</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># 发交易</span>
+bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>stop<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic"># 停掉</span>
+</code></pre></div>
+<p>启动后预期看到：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>node0 height=12
+node1 height=12
+node2 height=12
+node3 height=12
+</code></pre></div>
+<p>四节点高度同步说明 BFT 在工作。</p>
+<h3 id="383">38.3 故意制造故障</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 杀掉 1 个节点（n=4, f=1 应该还能跑）</span>
+tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> </span>-t<span style="color: #F8F8F8"> </span>comet:n3<span style="color: #F8F8F8"> </span>C-c
+<span style="color: #8F5902; font-style: italic"># 观察：链应继续推进（剩下 3 个 ≥ 2f+1=3）</span>
+bash<span style="color: #F8F8F8"> </span>code/cometbft_testnet.sh<span style="color: #F8F8F8"> </span>status
+
+<span style="color: #8F5902; font-style: italic"># 再杀 1 个（剩 2 个，凑不齐 quorum）</span>
+tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> </span>-t<span style="color: #F8F8F8"> </span>comet:n2<span style="color: #F8F8F8"> </span>C-c
+<span style="color: #8F5902; font-style: italic"># 观察：链停止出块</span>
+</code></pre></div>
+<p>BFT 协议的 n ≥ 3f+1 不是抽象数字，是工程的 hard requirement。</p>
+<h3 id="384">38.4 教学要点</h3>
+<ol>
+<li>n=3f+1 是真实工程硬约束</li>
+<li>quorum=2f+1 是 liveness 最低要求</li>
+<li>崩溃恢复后 safety 不破坏（已 commit 的块不消失）</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="39" id="ch40"><span class="chapter-num">Chapter 40</span><br>39. 习题（含解答）</h2>
+
+<h3 id="391-1">39.1 习题 1：双花概率</h3>
+<p><strong>题目</strong>：Alice 算力 q=0.25，Bob 等 6 confirmation。Alice 攻击成功概率？</p>
+<p><strong>解</strong>：代入中本聪公式 λ = z·q/p = 6×0.25/0.75 = 2.0：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P_attack ≈ 1 − Σ_{k=0..6} P(λ^k·e^{-λ}/k!) × (1−(q/p)^(6-k))
+       ≈ 0.0024 = 0.24%
+</code></pre></div>
+<p><strong>含义</strong>：q=0.25 时 6 conf 是商家可接受的；如果 q=0.40，同样 6 conf 下 P 约 35%，应等更多。</p>
+<h3 id="392-2bft">39.2 习题 2：BFT 节点数</h3>
+<p><strong>题目</strong>：联盟链要容忍 2 个拜占庭 + 1 个崩溃。需要多少节点？</p>
+<p><strong>解</strong>：</p>
+<p>PBFT 类协议：crash 是拜占庭的特例 → f = 3 → n ≥ 10。</p>
+<p>某些协议（如 SMaRt）把 crash 单独算 → n ≥ 3·2 + 1 + 1 = 8。先确认协议怎么定义 f。</p>
+<h3 id="393-3finality">39.3 习题 3：finality 与确认（产品设计）</h3>
+<p><strong>题目</strong>：交易所充值业务，给两类用户推荐确认深度并解释。</p>
+<ul>
+<li>用户 A：散户 &lt; 1000 USDT，要 5 min 内到账</li>
+<li>用户 B：机构 &gt; 100 万 USDT，可以等</li>
+</ul>
+<p><strong>解</strong>：</p>
+<ul>
+<li>用户 A：等 12 slot ≈ 2.4 min。理由：5 min 内不能等 finality；12 slot 内 reorg 历史 &lt; 0.001%；金额低，期望损失 &lt; 0.01 USDT 可接受。</li>
+<li>用户 B：等 2 epoch finality + 2 epoch buffer ≈ 25 min。理由：机构合规要求 black swan 风险接近 0；finalized 块协议层保证不可逆。</li>
+</ul>
+<h3 id="394-451">39.4 习题 4：51% 攻击模拟</h3>
+<p><strong>题目</strong>：写蒙特卡洛模拟 q=0.4, z=3 的攻击成功率。</p>
+<p><strong>解</strong>：见 <code>exercises/01_51pct_attack.py</code>。运行结果：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>alpha=0.4  成功率=18.40%  中位追上轮数=14.0
+</code></pre></div>
+<p>公式预测约 18%——匹配。</p>
+<h3 id="395-5view-change">39.5 习题 5：view-change 阅读</h3>
+<p><strong>题目</strong>：让 N0 给 N1/N2 发 digest=A，给 N3 发 digest=B。会发生什么？</p>
+<p><strong>解</strong>：N1/N2 互发 PREPARE(A)，凑齐 2f+1=3 commit A。N3 只收 1 个 PREPARE(B)，永远卡住。N3 应通过 sync 机制追到 A——但我们的简化模型不实现，只能靠外部触发 view-change。</p>
+<h3 id="396-6finality">39.6 习题 6：finality 反推参与率</h3>
+<p><strong>题目</strong>：beaconcha.in 上 finality 时间是 25.6 min（4 epoch）。粗估当前参与率。</p>
+<p><strong>解</strong>：见 <code>exercises/02_eth_finality_calc.py</code>。25.6 min = 4 epoch = 正常 2 + leak 2。
+反推 p / (p + (1-p)·(1-0.005)²) ≥ 2/3 → p ≈ 0.665——正好低于 2/3。</p>
+<h3 id="397-7">39.7 习题 7：选共识（系统设计）</h3>
+<p><strong>题目</strong>：你为以下场景选共识，写理由：</p>
+<ol>
+<li>一个金融结算清算链，参与方 50 家银行</li>
+<li>一个全球 NFT 链，要 100k+ TPS</li>
+<li>一个跨境支付通道，对延迟极敏感</li>
+</ol>
+<p><strong>参考答案</strong>：</p>
+<ol>
+<li>CometBFT / HotStuff 类（permissioned PoS）。理由：50 家银行规模，BFT 通信成本可承受；finality 即时；监管友好。</li>
+<li>Sui Mysticeti 或 Aptos Raptr。理由：DAG 共识 100k+ TPS，sub-second 延迟。</li>
+<li>Lightning + Bitcoin。理由：通道网络，最低延迟。备选：Solana（Alpenglow 后 150ms finality）。</li>
+</ol>
+<h3 id="398-8avalanche">39.8 习题 8：Avalanche 参数推导</h3>
+<p><strong>题目</strong>：Avalanche 默认 k=20, α=15, β=20。如果攻击者控制 30% 节点，安全吗？</p>
+<p><strong>解</strong>：</p>
+<p>抽 20 个，期望拜占庭数 = 6。要让攻击者操控结果需要 ≥ α=15 个 → 远超 6 → 概率极低。</p>
+<p>但如果攻击者 ≥ 50% 节点（k=20 中期望 ≥ 10），开始有可能；超过 70% 几乎一定能控制。</p>
+<p>→ <strong>Avalanche 安全性边界约 50%（与 BFT 经典 33% 不同）</strong>。这点经常被忽视。来源：Bern University 2024 分析。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="40-ai" id="ch41"><span class="chapter-num">Chapter 41</span><br>40. AI 影响：哪里能用，哪里不能用</h2>
+
+<p>AI 在共识层的角色是助教，不是主作者。能用的场景集中在"把工程师注意力收到正确窗口"——mempool 监控（bloXroute / Blocknative）、MEV 分类（Flashbots Inspect / EigenPhi）、共识异常告警（Beaconcha.in / Rated）、故障复盘日志检索、安全审计的模式匹配（Forta）。这些场景的最终判断仍由人做。</p>
+<p>不能用的是共识协议设计本身。三条结构性禁区：①共识出错爆破半径是全网，LLM 出错只影响一次会话；②形式化证明 LLM 做不到（Tendermint 用 Coq，HotStuff 用 TLA+）；③参数 trade-off 涉及社会维度（客户端多样性、治理流程），训练数据覆盖不到。工程师能切的方向是链下分析（mempool ML / MEV 量化）、节点运维预测、EIP 与代码 diff 对齐——不是自动生成共识协议、不是自适应调整核心参数、不是自动 fork resolution。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="42-pin-2026-04-27" id="ch42"><span class="chapter-num">Chapter 42</span><br>42. 延伸阅读（pin 版本 / 链接附 2026-04-27 访问日期）</h2>
+
+<h3 id="421-5">42.1 论文（必读 5 篇）</h3>
+<ol>
+<li>Nakamoto, S. (2008). <em>Bitcoin: A Peer-to-Peer Electronic Cash System</em>. https://bitcoin.org/bitcoin.pdf</li>
+<li>Castro, M., Liskov, B. (1999). <em>Practical Byzantine Fault Tolerance</em>. OSDI 1999. https://pmg.csail.mit.edu/papers/osdi99.pdf</li>
+<li>Yin, M. et al. (2019). <em>HotStuff: BFT Consensus with Linearity and Responsiveness</em>. PODC 2019. https://arxiv.org/abs/1803.05069</li>
+<li>Buterin, V., Griffith, V. (2017, rev. 2019). <em>Casper the Friendly Finality Gadget</em>. arXiv:1710.09437. https://arxiv.org/abs/1710.09437</li>
+<li>Spiegelman, A. et al. (2022). <em>Bullshark: DAG BFT Protocols Made Practical</em>. CCS 2022. https://arxiv.org/abs/2201.05677</li>
+</ol>
+<h3 id="422-8">42.2 论文（推荐 8 篇）</h3>
+<ol start="6">
+<li>Buchman, E., Kwon, J., Milosevic, Z. (2018). <em>The latest gossip on BFT consensus</em>. arXiv:1807.04938.</li>
+<li>Buterin, V. et al. (2020). <em>Combining GHOST and Casper</em>. arXiv:2003.03052.</li>
+<li>Kiayias, A. et al. (2017). <em>Ouroboros: A Provably Secure Proof-of-Stake Blockchain Protocol</em>. CRYPTO 2017.</li>
+<li>David, B. et al. (2018). <em>Ouroboros Praos</em>. EUROCRYPT 2018.</li>
+<li>Gilad, Y. et al. (2017). <em>Algorand: Scaling Byzantine Agreements</em>. SOSP 2017. https://people.csail.mit.edu/nickolai/papers/gilad-algorand.pdf</li>
+<li>Rocket, T. (2018). <em>Snowflake to Avalanche</em>. https://arxiv.org/pdf/1906.08936</li>
+<li>Baird, L. (2016). <em>The Swirlds Hashgraph Consensus Algorithm</em>.</li>
+<li>Fischer, M., Lynch, N., Paterson, M. (1985). <em>Impossibility of Distributed Consensus</em>. JACM 32(2).</li>
+</ol>
+<h3 id="423">42.3 教材级在线资源</h3>
+<ul>
+<li><em>Upgrading Ethereum</em> (eth2book) by Ben Edgington — https://eth2book.info/</li>
+<li>Ethereum.org Consensus docs — https://ethereum.org/developers/docs/consensus-mechanisms/pos/</li>
+<li>Anza Agave validator docs — https://docs.anza.xyz/</li>
+<li>CometBFT docs v0.38 — https://docs.cometbft.com/v0.38/</li>
+<li>Aptos validator docs — https://aptos.dev/network/glossary</li>
+<li>Sui Mysticeti blog — https://blog.sui.io/mysticeti-consensus-reduce-latency/</li>
+<li>Avalanche Builder Hub — https://docs.avax.network/learn/avalanche-consensus</li>
+<li>Cardano Developer Portal — https://developers.cardano.org/</li>
+</ul>
+<h3 id="424-pin-commit-version">42.4 工程参考实现（pin commit / version）</h3>
+<ul>
+<li>bitcoin-core/bitcoin@v27.0</li>
+<li>ethereum/consensus-specs@v1.5.0-alpha.10</li>
+<li>cometbft/cometbft@v0.38.12（v1.0.1 已发布但生态多在 v0.38）</li>
+<li>aptos-labs/aptos-core@aptos-node-v1.21.0</li>
+<li>MystenLabs/sui@mainnet-v1.40.1</li>
+<li>anza-xyz/agave@v2.0.18</li>
+<li>IntersectMBO/ouroboros-network</li>
+</ul>
+<h3 id="425">42.5 案例 / 复盘文章</h3>
+<ul>
+<li>Barnabé Monnot. <em>Visualising the 7-block reorg</em>. 2022-05. https://barnabe.substack.com/p/pos-ethereum-reorg</li>
+<li>CoinDesk. <em>Ethereum Classic Suffers 51% Attacks</em>. 2020-08.</li>
+<li>Sui Network. <em>Mysticeti v2: Faster and Lighter</em>. 2025-11. https://blog.sui.io/mysticeti-v2-sui-consensus/</li>
+<li>Aptos Foundation. <em>Baby Raptr Is Here</em>. 2025-06.</li>
+<li>CoinDesk. <em>Solana Community Approves Alpenglow Upgrade</em>. 2025-09-03.</li>
+<li>Cardano. <em>Ouroboros Genesis Design Update</em>. 2024-05-08.</li>
+<li>IOG. <em>Ouroboros Peras: the next step</em>. 2024-10-14.</li>
+</ul>
+<h3 id="426">42.6 经典书籍</h3>
+<ul>
+<li>Cachin, C., Guerraoui, R., Rodrigues, L. (2011). <em>Introduction to Reliable and Secure Distributed Programming</em>. Springer.</li>
+<li>Lynch, N. (1996). <em>Distributed Algorithms</em>. Morgan Kaufmann.</li>
+<li>Antonopoulos, A.M., Wood, G. (2018). <em>Mastering Ethereum</em>. O'Reilly.</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="43" id="ch43"><span class="chapter-num">Chapter 43</span><br>43. 前沿主题导引</h2>
+
+<p>前 42 章是"协议是什么"。本节后续是"协议要往哪里走"——MEV 经济、ePBS、SSF、VDF、Restaking、状态/历史过期、Bitcoin Covenants 都在主网升级路线图上排队，但尚未沉淀进经典教科书。每章独立可读，与前 42 章交叉引用最多的是第 9 章（Gasper）、第 33 章（reorg）、第 34 章（finality stall）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="44-cryptoeconomics" id="ch44"><span class="chapter-num">Chapter 44</span><br>44. 共识中的机制设计与 cryptoeconomics</h2>
+
+<p>共识协议同时是博弈规则——让自利节点在追求利益最大化时恰好做出诚实行为（Hurwicz/Maskin/Myerson 2007 诺奖的核心思路）。区块链场景下这件事比传统机制设计困难，原因有三：参与者完全自利且匿名、随时进出、设计错误意味着协议断崖崩溃而非缓慢退化。</p>
+<p><strong>Incentive compatibility</strong>：诚实行为即最优策略。PoW 矿工跟最重链是最优（否则自己块作废）；PoS validator 诚实在线投票是最优（双签 → slash，不投 → inactivity leak）。MEV 是这套思路的 emergent failure——Ethereum 设计共识时没把"proposer 对 mempool 的独裁排序权"当成机制变量，结果排序权自己长出市场价值。第 45 章展开。</p>
+<p>Cryptoeconomics 的三块基石：①公开可验证（规则 = 代码 + 链上数据）；②可量化攻击成本（PoW = 算力成本，PoS = slash 成本）；③incentive compatibility。Token-based voting 不是民主——token 可被买、借、合约控制——所以 Vitalik 2025-09 提出 on-chain 治理分两层：execution 层（验证/提议，可用市场机制）和 value judgment 层（协议升级/应急救援，不能纯 token 投票）。替代方案：proof of personhood、quadratic voting、futarchy。</p>
+<p>设计 web3 协议时五个必问：①谁参与，动机是什么？②谁出钱，出钱方有否决权吗？③作恶的最便宜方式是什么？④作恶代价是否 ≥ 攻击收益？⑤完全自利假设下能否收敛到诚实？最后一项不成立则机制设计失败。来源：bitcoinworld.co.in 2025-09（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="45-mev-boost" id="ch45"><span class="chapter-num">Chapter 45</span><br>45. MEV-Boost 经济学</h2>
+
+<p>MEV（Maximal Extractable Value，PoS 后从 Miner 改名）是 proposer 出块时排序权的市场价值。三种典型策略：①Frontrunning，看到 Bob mempool 大单买 ETH，抢在前面买、待 Bob 推高价格后卖出；②Sandwich，抢跑 + 反向收割，[Alice 买入][Bob 买入推高价][Alice 卖出]；③Back-running，Bob 推高某 DEX 价格后，Alice 立即跨池套利。三种策略都依赖 proposer 能完全控制 tx 顺序——这就是 MEV 的物理来源。</p>
+<h3 id="453-pbs-mev">45.3 PBS：把 MEV 制度化</h3>
+<p><strong>PBS（Proposer-Builder Separation）</strong>：proposer 不自己排序，把出块权拍卖给 builder，谁出价最高用谁的块。</p>
+<h4 id="4531">45.3.1 三方角色</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Searcher（搜索者）：编写 MEV 策略，打包成 bundle
+   ↓ 出价 + bundle
+Builder（构建者）：从 mempool + searcher bundle 选最优交易组合
+   ↓ 整块 + bid
+Relay（中继）：从 builder 收 bid，转发给 proposer
+   ↓ 头部 + bid
+Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 上链
+</code></pre></div>
+<h4 id="4532">45.3.2 信息流图</h4>
+<figure><img src="diagram-56e17724ef.png" alt="mermaid diagram"></figure>
+
+<h3 id="454-mev-boostflashbots">45.4 MEV-Boost：Flashbots 实现</h3>
+<p>2026-04 约 <strong>90% 的 Ethereum 块</strong>通过 MEV-Boost 出块，proposer 收入提升 ~261%。2024-12 Flashbots 启动 BuilderNet，把 builder 去中心化。</p>
+<p>来源：mdpi.com/2504-2289/9/6/156 / boost.flashbots.net，访问 2026-04-27。</p>
+<h3 id="455">45.5 中心化担忧</h3>
+<p>2025 初：两个 builder 占 90%+ 块。原因：大 builder 与 wallet / DEX 签独家 orderflow 协议，小 builder 被边缘化。两 builder 联手拒绝某些 tx → 90% 块都不带 → 这是为什么要推 ePBS + inclusion list（见第 46 章）。</p>
+<h3 id="456-relay">45.6 Relay 是信任点</h3>
+<p>proposer 必须信任 relay 不会在签好头部后拒绝释放正文。2023-04 Flashbots relay bug 导致 ~30 个 slot 出块失败。ePBS 把 PBS 内置进协议消除 relay（详见第 46 章）。</p>
+<h3 id="457">45.7 工程规律</h3>
+<p>排序权天生有市场价值，不会自然均匀分配；任何"先看见交易"的角色都会牟利；反 MEV 机制必须主动设计——这三条对所有公链/DeFi 协议适用。下一章 ePBS 是把 MEV-Boost 的中介信任 enshrine 进协议的尝试。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="46-epbs-eip-7732" id="ch46"><span class="chapter-num">Chapter 46</span><br>46. ePBS 与 EIP-7732</h2>
+
+<p>MEV-Boost 当前的三个弱点：relay 是中心化信任点（45.6 节）、proposer 可能两面派（拿 bid 后又自己出块）、builder 集中度高（两家占 90%+）。ePBS（enshrined PBS）的思路是把 PBS 角色和奖励直接写进协议消除 relay——builder slash 机制让"不披露完整块"在协议层就被惩罚。</p>
+<h3 id="462-eip-7732">46.2 EIP-7732 核心机制</h3>
+<ol>
+<li>builder 向 proposer 投标（仅提交头部 + bid）</li>
+<li>proposer 选最高 bid，签 commit（这是给 proposer 的奖励）</li>
+<li>builder 必须在 deadline 前披露完整块；否则被 slash</li>
+<li>validator attest 是否看到完整块；没看到 → 块作废，builder 损失 bid</li>
+</ol>
+<p>来源：eips.ethereum.org/EIPS/eip-7732，访问 2026-04-27。</p>
+<h3 id="463">46.3 设计变化对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>MEV-Boost (current)</th>
+<th>ePBS (EIP-7732)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>relay 是否需要</td>
+<td>需要</td>
+<td>不需要</td>
+</tr>
+<tr>
+<td>信任假设</td>
+<td>信任 relay</td>
+<td>协议层强制</td>
+</tr>
+<tr>
+<td>builder slash</td>
+<td>无</td>
+<td>有（不披露 → slash）</td>
+</tr>
+<tr>
+<td>proposer 不诚实</td>
+<td>relay 制约</td>
+<td>协议层硬制约</td>
+</tr>
+</tbody>
+</table>
+<h3 id="464-glamsterdam">46.4 Glamsterdam 升级时间表</h3>
+<h4 id="4641">46.4.1 路线图</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>2025-Q4：early ePBS + BAL devnets
+2026-H1：公开测试网 + 双重审计
+2026-06（预计）：mainnet 激活（Glamsterdam 升级一部分）
+</code></pre></div>
+<h4 id="4642-2026-04">46.4.2 当前进度（2026-04）</h4>
+<p>测试网激活已完成多次；Glamsterdam 升级仍在最终审计阶段。具体激活日期未确定，但开发组目标 2026 年内。</p>
+<p>来源：indexbox.io 2026 / etherworld.co Devconnect 2025，访问 2026-04-27。</p>
+<h3 id="465">46.5 反对意见</h3>
+<p>Sigma Prime 2025 发文反对 EIP-7732 进入 Glamsterdam：增加协议复杂度；强制所有 validator 客户端实现新逻辑；builder 去中心化效果未必达成。来源：blog.sigmaprime.io/glamsterdam-eip7732.html，访问 2026-04-27。</p>
+<h3 id="466-inclusion-listeip-7547">46.6 Inclusion List（EIP-7547）</h3>
+<p>proposer 投标前预先指定一组"必须包含的交易"，builder 无法审查这些 tx——反 OFAC-style 审查的协议层补丁，也在 Glamsterdam 候选中。</p>
+<h3 id="467">46.7 规律</h3>
+<p>ePBS 是"协议层吞掉中介"的典型。未来 5 年所有链外信任点（relay / sequencer / oracle）都会被尝试 enshrine 进协议——这是 cryptoeconomics 第一基石（公开可验证）的必然延伸。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="47-ssf-3-slot-finality" id="ch47"><span class="chapter-num">Chapter 47</span><br>47. SSF 与 3-Slot Finality</h2>
+
+<p>Ethereum Gasper finality 12.8 min 是所有主流链最慢的——直接原因是 100 万验证者每 slot 出 200 万消息 / 12s = 17 万 msg/s 的签名聚合压力。SSF（Single Slot Finality）的目标是每 slot finalize ≈ 12s，但任何网络延迟波动就 timeout 停链。3SF（D'Amato et al. 2024，arXiv:2411.00558）是工程妥协方案：每 slot 1 轮投票，3 slot 内 finalize ≈ 36s，把 SSF 的 head+FFG 两轮合并为一轮减少聚合压力。来源：ethereum.org/roadmap/single-slot-finality（2026-04-27）。</p>
+<h3 id="474-ssf-vs-3sf">47.4 SSF vs 3SF 对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>SSF（理想）</th>
+<th>3SF（实用）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>终结时间</td>
+<td>1 slot ≈ 12s</td>
+<td>3 slot ≈ 36s</td>
+</tr>
+<tr>
+<td>每 slot 投票轮数</td>
+<td>3 轮</td>
+<td>1 轮</td>
+</tr>
+<tr>
+<td>网络延迟容忍</td>
+<td>极敏感</td>
+<td>可承受波动</td>
+</tr>
+<tr>
+<td>工程难度</td>
+<td>极高</td>
+<td>高但可行</td>
+</tr>
+<tr>
+<td>学界评估</td>
+<td>长期目标</td>
+<td>短中期方案</td>
+</tr>
+</tbody>
+</table>
+<h3 id="475">47.5 路线图</h3>
+<p>Vitalik 2024-06 建议把 SSF 改解释为 "Speedy Secure Finality"——3SF 也算 SSF（来源：vitalik.eth.limo/general/2024/06/30/epochslot.html，访问 2026-04-27）：</p>
+<ul>
+<li>2024-2026：3SF 学术验证 + devnet</li>
+<li>2026-2028：Glamsterdam 后续 hardfork 部署</li>
+<li>2028+：优化到 1-2 slot</li>
+</ul>
+<p><strong>配套工作</strong>：验证者数量需从 100 万降到 10 万级别（方案：提高最低 stake 到 1024 ETH / Orbit-SSF 分组轮值 / Aggregator 子网）；BLS 聚合算法优化。</p>
+<h3 id="476">47.6 与其他链对比</h3>
+<table>
+<thead>
+<tr>
+<th>链</th>
+<th>当前 finality</th>
+<th>路线图</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ethereum</td>
+<td>12.8 min</td>
+<td>36s（3SF）→ 12s（SSF）</td>
+</tr>
+<tr>
+<td>Cosmos</td>
+<td>即时（1 块）</td>
+<td>已经是 SSF</td>
+</tr>
+<tr>
+<td>Solana</td>
+<td>12.8s（32 conf）</td>
+<td>150ms（Alpenglow）</td>
+</tr>
+<tr>
+<td>Aptos</td>
+<td>&lt;1s</td>
+<td>持续优化</td>
+</tr>
+<tr>
+<td>Sui Mysticeti</td>
+<td>~250ms</td>
+<td>持续优化</td>
+</tr>
+</tbody>
+</table>
+<p>Ethereum 慢的代价换来的是 100 万验证者的去中心化——这是 trade-off，不是缺陷。Cosmos / Algorand 之所以快是因为 validator 数量两个数量级以下。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="48-vdfverifiable-delay-functions" id="ch48"><span class="chapter-num">Chapter 48</span><br>48. VDF（Verifiable Delay Functions）</h2>
+
+<p>VDF 解决的是 PoS 中的 stake grinding 问题（8 章导引）：leader 选举依赖随机数，而随机数生成方能事后选择性丢弃不利的种子。VDF 让"生成"和"使用"之间强制一段无法压缩的延迟——必须串行计算 T 时间，但验证只需 O(log T)。三性质：串行（无法并行加速）、唯一（输入→唯一输出）、高效验证。这套思路与 PoH（26.2 节）相似但更严格：PoH 验证时间 = 计算时间 O(N)，严格不算 VDF。</p>
+<h3 id="482-pietrzak-wesolowski">48.2 Pietrzak / Wesolowski 两种构造</h3>
+<p>共同基础：<code>y = x^(2^T) mod N</code>（T 步串行平方，无法并行）。
+- <strong>Pietrzak</strong>（2018）：proof O(log T)，验证 O(log T)
+- <strong>Wesolowski</strong>（2019）：proof O(1)，验证 O(1)，需 fiat-shamir</p>
+<p>详见 eprint.iacr.org/2018/601 和 /2018/623。</p>
+<h3 id="483-solana-poh-vdf">48.3 Solana PoH：弱 VDF</h3>
+<p>PoH = <code>h[i] = SHA256(h[i-1])</code>，每步依赖前一步，无法并行。但验证时间与计算时间相同（O(N)），不满足"验证 &lt;&lt; 计算"要求，严格来说不是 VDF——Solana 团队称为"VDF-like"，是工程妥协。</p>
+<h3 id="484-ethereumrandao-vdf">48.4 Ethereum：RANDAO + VDF</h3>
+<p>RANDAO 当前问题：proposer 可选择不出块 → 操控一位 bit。VDF 解法：RANDAO 累计后跑一遍 VDF（~1 epoch），proposer 来不及调整。2026-04 状态：仍研究阶段，主网未部署专用 VDF（VDF Alliance ASIC 因进度变慢搁置）。</p>
+<p>来源：ethresear.ch/t/verifiable-delay-functions-and-attacks/2365，访问 2026-04-27。</p>
+<h3 id="485">48.5 工程难点</h3>
+<p>VDF 必须用 ASIC——否则攻击者买 100 倍快的硬件即可"提前算"，违反串行假设。参数选择：T 太小攻击者算得过来，T 太大协议吞吐受限（Ethereum 目标 T ~1-2 epoch）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="49-restaking" id="ch49"><span class="chapter-num">Chapter 49</span><br>49. Restaking 经济学</h2>
+
+<p>Restaking 把"已质押"的 ETH 同时拿来保护其他协议（桥、Oracle、L2 sequencer），相当于一栋房子同时抵给多家银行、都同意违约时可没收。AVS（Actively Validated Service）= 任何借用 Ethereum stake 安全性的应用。这是机制设计上的重大试验——把"安全预算"做成可借贷资源。</p>
+<h3 id="492-eigenlayer2026-04">49.2 EigenLayer（2026-04 数据）</h3>
+<p>TVL $15.26B，市占 93.9%，operator commission 10%，AVS 50+ 个。<strong>AVS（Actively Validated Service）</strong>：任何借用 Ethereum stake 安全性的应用（跨链桥 / Oracle / L2 sequencer / DA layer）。</p>
+<p>来源：abcmoney.co.uk 2025-06；blockeden.xyz 2026-03，访问 2026-04-27。</p>
+<h3 id="493-symbiotic">49.3 Symbiotic</h3>
+<p>TVL ~$897M，市占 5.5%。特色：完全 permissionless（任何人能创建 vault），多资产支持。</p>
+<h4 id="4931-eigenlayer">49.3.1 与 EigenLayer 的差异</h4>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>EigenLayer</th>
+<th>Symbiotic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>准入</td>
+<td>团队审批 AVS</td>
+<td>完全开放</td>
+</tr>
+<tr>
+<td>资产范围</td>
+<td>ETH-centric</td>
+<td>多资产</td>
+</tr>
+<tr>
+<td>治理</td>
+<td>EIGEN token</td>
+<td>模块化</td>
+</tr>
+<tr>
+<td>启动时间</td>
+<td>2023</td>
+<td>2024</td>
+</tr>
+</tbody>
+</table>
+<h3 id="494-karak-babylon">49.4 Karak 与 Babylon</h3>
+<ul>
+<li><strong>Karak</strong>：TVL ~$102M，跨链多资产 restaking</li>
+<li><strong>Babylon</strong>：让 BTC 持有者 restake 给 PoS 链提供安全。BTC 不能直接 slash，Babylon 用"timelock 抵押 + Babylon 链 BFT 投票 + cryptographic equivocation"机制，双签时把 Bitcoin 上的抵押打成 slash</li>
+</ul>
+<h3 id="495">49.5 系统性风险</h3>
+<p>级联清算路径：同一份 stake 担保 N 个 AVS，一个 AVS slash → stake 减少 → 其他 AVS 安全度下降 → 滚雪球。结构上等同 2008 金融危机的 rehypothecation（重复抵押）。</p>
+<p>经济学边界：EigenLayer 借走 $15B = Ethereum 总安全的 5%；每个 AVS 实际分到的安全 = $15B / N，N 越多越稀薄。"号称 $15B 安全" ≠ 攻击需花 $15B——攻击者只需 slash 收益 &gt; slash 成本即可。restaking 不是白送的安全，每个 AVS 必须独立做安全审计 + 经济模型，关注 slash 机制和清算路径。来源：app.thebigwhale.io "Restaking: Post-Hype Reality Check"（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="50-long-range-attack-weak-subjectivity" id="ch50"><span class="chapter-num">Chapter 50</span><br>50. Long-Range Attack 与 Weak Subjectivity</h2>
+
+<p>第 8 章导引提到 long-range attack，本章展开。已退出的验证者（V_old）私钥仍在手，攻击者低价收购可从历史某点重写链——PoW 攻击者伪造历史必须重新挖矿（算力成本真实），PoS 签名免费，旧私钥就是定时炸弹。</p>
+<p>弱主观性是 Ethereum 的标准解法：新节点必须信任一个"不太老的 checkpoint"——信任来源主观（朋友/Etherscan/Lido）。Cardano Genesis（11.5 节）选择不同路线，用 chain density 判定避免外部信任。这两条是当前 PoS 长程攻击的两种主流方案。</p>
+<table>
+<thead>
+<tr>
+<th>级别</th>
+<th>链</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客观</td>
+<td>Bitcoin / Cardano Genesis</td>
+<td>从 genesis 同步，零外部信任</td>
+</tr>
+<tr>
+<td>弱主观</td>
+<td>Ethereum PoS</td>
+<td>从 WS period 内某 checkpoint 同步</td>
+</tr>
+</tbody>
+</table>
+<p>Ethereum 当前 WS period 约 2 周。超期未在线的节点重新加入必须接受外部 checkpoint。来源：ethereum.org/developers/docs/consensus-mechanisms/pos/weak-subjectivity（2026-04-27）。</p>
+<h3 id="504-checkpoint-sync">50.4 Checkpoint Sync 实操</h3>
+<h4 id="5041">50.4.1 怎么做</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Lighthouse 客户端</span>
+lighthouse<span style="color: #F8F8F8"> </span>beacon_node<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--checkpoint-sync-url<span style="color: #F8F8F8"> </span>https://beaconstate.ethstaker.cc<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--checkpoint-sync-url-timeout<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">300</span>
+
+<span style="color: #8F5902; font-style: italic"># Teku</span>
+teku<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="color: #F8F8F8"> </span>https://...
+
+<span style="color: #8F5902; font-style: italic"># Prysm</span>
+prysm<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="color: #F8F8F8"> </span>https://...
+</code></pre></div>
+<h4 id="5042">50.4.2 信任谁</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>- 自己的另一台节点（最佳）
+- 朋友的节点
+- 公开 checkpoint 服务（ethstaker / Infura）
+- 交易所（Coinbase / Kraken）
+</code></pre></div>
+<p>来源：lighthouse-book.sigmaprime.io/checkpoint-sync.html，访问 2026-04-27。</p>
+<h3 id="505-long-range">50.5 三种 long-range 攻击与现实威胁</h3>
+<p>①<strong>Posterior corruption</strong>：事后收购旧私钥（最常见），weak subjectivity 解决；②<strong>Stake bleeding</strong>：伪造低密度旧链，chain density 判定（Cardano Genesis）可识别；③<strong>Costless simulation</strong>：签名免费完全不花钱伪造，weak subjectivity + slashing 联合解。</p>
+<p>Lido 控制 ~28% stake 接近 33% 红线——stake 集中度让 long-range 从理论走向现实威胁。规律：PoS 链同步永远涉及主观信任，checkpoint 多源校验、定期更新 URL 是运维硬约束。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="51-pos-stake-liquidation" id="ch51"><span class="chapter-num">Chapter 51</span><br>51. PoS 链的 Stake Liquidation 风险</h2>
+
+<p>LST（Liquid Staking Token）= 把 ETH 质押给 Lido 等服务换得可流通的"质押凭证"（Lido stETH ~$30B / Coinbase cbETH / Rocket Pool rETH / Frax sfrxETH）。这是 50 章 long-range 担忧（Lido 28% stake 接近 33% 红线）的另一面——stake 不只过度集中，还在外层做了流动化包装。</p>
+<p>挂钩机制要分两层：协议层 stETH 永远 1:1（Lido 退出等 1-5 天队列）；二级市场（Curve/Uniswap）可波动到 0.93-1.00。Shapella 升级（2023-04）开放提取后套利让偏离通常 &lt;0.2%。但极端市场会破坏这条收敛——2022-05 Terra/Luna 崩盘 → DeFi 流动性枯竭 → 3AC 等抛售 stETH → Curve 上 stETH 跌到 ~0.93 ETH → Aave 抵押头寸清算 ~$180M。链上 stake 安全，LST 杠杆头寸不安全，是两件事。</p>
+<p>级联清算路径：deposit stETH → 借 ETH → 再 stake，Aave 上形成 $9.5B 抵押。stETH 跌 5% → 清算潮 → 二级市场压价 → 死亡螺旋。2024 起 LRT（Liquid Restaking Token）在 LST 上再加一层杠杆，底层 stETH 出问题 LRT 同时崩。运维规律：区分"协议层 1:1"与"二级市场价"；极端市场假设 LST 短期 -10% 提取队列延长 5x；LRT 清算路径不能循环依赖底层 LST。来源：dlnews.com（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="52-history-expiry-eip-4444" id="ch52"><span class="chapter-num">Chapter 52</span><br>52. History Expiry 与 EIP-4444</h2>
+
+<p>2026-04 Ethereum 全节点 ~1.2 TB、归档节点 ~18 TB，每年增长 400-600 GB。这是节点中心化的隐性源头——硬件门槛抬高，能跑节点的人变少，34 章 finality stall 的"客户端 stake &gt;33%"风险只会被放大。EIP-4444 的解法：节点不再需要 Merge 之前（2022-09）的区块数据，全节点存储减少 300-500 GB，2 TB 硬盘可流畅跑节点（2025-07-08 实施）。</p>
+<h3 id="522">52.2 客户端实施</h3>
+<table>
+<thead>
+<tr>
+<th>客户端</th>
+<th>版本</th>
+<th>默认</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geth</td>
+<td>v1.16.0+</td>
+<td>支持但需手动</td>
+</tr>
+<tr>
+<td>Nethermind</td>
+<td>v1.32.2+</td>
+<td>默认开启</td>
+</tr>
+<tr>
+<td>Besu</td>
+<td>v25.7.0+</td>
+<td>支持</td>
+</tr>
+<tr>
+<td>Erigon</td>
+<td>v3.0.12+</td>
+<td>支持</td>
+</tr>
+</tbody>
+</table>
+<p>来源：Ethereum Foundation Blog 2025-07-08；blockchain.news 2025-07（2026-04-27）。</p>
+<h3 id="523">52.3 数据没消失，只是搬家</h3>
+<p>普通全节点不存旧数据，归档节点（Etherscan/Alchemy）继续保留并提供 API。应用开发者从"自建归档节点"迁移到"调用归档 API"。长期 EIP-7927 元提案推 rolling history expiry，每节点只存最近 1 年。当前归档节点主要由大公司维护——是 Ethereum 数据层的中心化点；Portal Network 和 The Graph 是去中心化方向。</p>
+<p>各链存储压力对比：Bitcoin ~50 GB/年（仅留 UTXO + recent blocks）；Ethereum ~500 GB/年（EIP-4444 + Verkle）；Solana ~4 TB/年（自带 snapshot + warehouse，是 Solana validator 必须 32 核 256GB SSD 的根本原因）；Aptos ~1 TB/年（sharded archive）。Solana 的存储压力是 Ethereum 的 8 倍——这条数字解释了"为什么 Solana 节点门槛远高于 Ethereum"，第 26 章性能与去中心化对比的物理底层。来源：eips.ethereum.org/EIPS/eip-7927（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="53-state-expiry-verkle-trees" id="ch53"><span class="chapter-num">Chapter 53</span><br>53. State Expiry 与 Verkle Trees</h2>
+
+<p>History 可删（52 章 EIP-4444），state（账户余额、合约存储）是共识必需，不能简单删。2026-04 Ethereum state ~250 GB 且增长，10 年后 1+ TB。经济上不可持续：用户付一次 SSTORE，节点永远存——这是 SSTORE 当前定价模型的结构性 bug。</p>
+<p>Verkle Trees 用 vector commitment（Pedersen/KZG）替换 Merkle Patricia Trie，state proof 缩小 ~30 倍（32 KB → 1-2 KB / 账户）。2025-12-03 Fusaka 升级已部署主网。stateless client 思路：每块附带 ~1 MB Verkle witness（本块涉及账户的 proof），节点无需存 state 即可验证。节点门槛 1.2 TB → 50 GB，同步时间天 → 小时。</p>
+<p>EIP-7736 在 Verkle 之上加 state expiry：长期未访问的 state（2 年没动的合约存储槽）被标记 expired，节点可删除；复活时提交 Verkle 证明 + 复活费。来源：notes.ethereum.org/@vbuterin/verkle_and_state_expiry_proposal、ethereum.org/roadmap/verkle-trees（2026-04-27）。</p>
+<h3 id="535">53.5 路线图、挑战与对照</h3>
+<p>路线图：2025-12 Fusaka Verkle 主网；2026-H1 Glamsterdam ePBS/BAL；2026-H2 Hegota state expiry 上线 + Verkle 优化。经济模型从"一次付费永久存"改为"租地模型"——不续约则过期，复活要再付费。</p>
+<p>实施挑战两点：①已部署合约假设 state 永在，expiry 后可能突然失效（解法：重要 state 白名单 / 推迟 expiry 到 5 年后）；②复活费定价两难——太低攻击者用垃圾复活压垮节点，太高用户体验差。</p>
+<p>各链 state 策略：Ethereum Verkle + 计划 expiry；Solana 2020 已上线 rent model（每账户每年付租金否则回收）；Near 类似 Solana；Cosmos 应用层各自决定。Solana 的 rent model 是 Ethereum 团队反复学习的对象——这是少数几个 Ethereum 抄 Solana 的方向。来源：levex.com Ethereum roadmap 2025-2027（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="54-bitcoin-covenant" id="ch54"><span class="chapter-num">Chapter 54</span><br>54. Bitcoin Covenant 提案</h2>
+
+<p>Covenant = 限制 UTXO 未来只能怎么花的脚本约束。当前 Bitcoin 脚本做不到，社区用 presigned transactions 凑合（繁琐、易丢、不可升级）。Covenant 解锁的用例：vault（timelock 防丢私钥）、支付池（多人共享 UTXO）、拥堵控制、L2/Drivechain。</p>
+<p>主要提案对照：</p>
+<table>
+<thead>
+<tr>
+<th>提案</th>
+<th>核心思路</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BIP-119 CTV</td>
+<td>新 opcode 接 hash 模板，下笔 tx outputs hash 必须匹配</td>
+<td>最简洁，争议最小，未激活</td>
+</tr>
+<tr>
+<td>BIP-348 CSFS</td>
+<td>脚本可验证任意数据签名（不只是 tx hash）</td>
+<td>与 CTV 组合 = 5 年最接近共识的方案</td>
+</tr>
+<tr>
+<td>BIP-345 OP_VAULT</td>
+<td>丢私钥时恢复密钥触发 24h timelock</td>
+<td>依赖 CTV，激活路径排队中</td>
+</tr>
+<tr>
+<td>BIP-300/301 Drivechains</td>
+<td>主链 lock，侧链发等量，miner 投票 unlock</td>
+<td>2024 被 core 团队否决（争议：miner 决定主链余额）</td>
+</tr>
+</tbody>
+</table>
+<p>软分叉激活路径：BIP 提交 → core 评审（数月-数年）→ 矿工 signal 90%+ → 节点升级 → 激活。SegWit 耗时 1 年+，Taproot 2 年，covenants 至 2026-04 仍未达共识。Bitcoin 升级慢是 feature 不是 bug——这是 14 年零协议级 reorg 的工程纪录的另一面。当前做 BTC L2 / 复杂逻辑只能用 Lightning + presigned tx + multisig。长期看 CTV+CSFS 是最可能的下一次软分叉。来源：covenants.info、blog.bitfinex.com 2025 covenant 综述、bip119.com（2026-04-27）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="55" id="ch55"><span class="chapter-num">Chapter 55</span><br>55. 本册划界</h2>
+
+<table>
+<thead>
+<tr>
+<th>主题</th>
+<th>模块</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>签名 / 哈希 / Merkle 树细节</td>
+<td>01 密码学基础</td>
+</tr>
+<tr>
+<td>EVM 指令集 / gas / 账户抽象</td>
+<td>03 以太坊与 EVM</td>
+</tr>
+<tr>
+<td>Liquid staking / restaking 应用</td>
+<td>06 DeFi 协议工程</td>
+</tr>
+<tr>
+<td>Rollup sequencer / shared sequencer</td>
+<td>07 L2 与扩容</td>
+</tr>
+<tr>
+<td>MEV 攻防 / Flashbots SDK</td>
+<td>11 基础设施与工具</td>
+</tr>
+</tbody>
+</table>
+<p>本册回答的是"共识层选什么、为什么"。模块 01 提供原子工具（哈希让 PoW 成立、ECDSA 让签名验证成立、VRF 让 PoS 抽签安全），本册把工具组合成完整共识系统。模块 03《以太坊与 EVM》在本册第 9 章 Gasper 共识之上展开——EVM 指令集、gas 定价、账户抽象，每个执行层设计选择都能追溯到共识层的某个约束。</p>
+<hr />
+</section>
+</body>
+</html>

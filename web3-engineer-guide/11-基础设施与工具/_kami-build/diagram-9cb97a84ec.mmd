@@ -1,0 +1,15 @@
+flowchart TD
+    PR[Pull Request] --> Build[build & test job]
+    Build --> Fmt[forge fmt --check]
+    Build --> Compile[forge build --sizes]
+    Build --> Test[forge test -vvv]
+    Build --> Cov[forge coverage --report lcov]
+    Cov --> Threshold{coverage >= 80%?}
+    Threshold -->|否| FailPR[fail PR]
+    Threshold -->|是| OK[continue]
+    PR --> Invariant[invariant-fuzz job<br/>5000 runs]
+    PR --> Slither[Slither 静态分析<br/>fail-on=high]
+    PR --> Aderyn[Aderyn 增量 lint]
+    Tag[push tag v*] --> Deploy[deploy job]
+    Deploy --> Verify[forge verify-contract]
+    Deploy --> Upload[upload broadcast artifacts]

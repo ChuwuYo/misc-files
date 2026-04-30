@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Cardano_eUTXO
+        UC[UTXO + datum]
+        UC -- 客户端构造交易 + 提供 redeemer --> Validator[Plutus Validator<br>纯函数验证]
+        Validator -- True / False --> Spend[花掉 UTXO]
+    end
+    subgraph EVM_Account
+        Tx --> Contract[Solidity Contract<br>可读写状态]
+        Contract --> NewState[State Transition]
+    end

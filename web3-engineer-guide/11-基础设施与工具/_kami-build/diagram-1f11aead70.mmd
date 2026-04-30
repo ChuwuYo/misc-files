@@ -1,0 +1,7 @@
+flowchart TD
+    Start[需要监控] --> A{TVL 规模}
+    A -->|< 10M| B{开源/自托管偏好}
+    A -->|10M-100M| C[Tenderly Alert + Forta]
+    A -->|> 100M| D[Tenderly + Forta + Hypernative + Ironblocks]
+    B -->|是| E[OpenZeppelin Monitor 开源版 + 自有 dispatcher]
+    B -->|否| F[Tenderly Alert]

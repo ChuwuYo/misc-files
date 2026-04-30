@@ -1,0 +1,8 @@
+graph TB
+    A[ETH staker] -->|质押 ETH| B[Ethereum L1<br>赚 staking 收益]
+    B -.->|授权同一份 ETH| C[EigenLayer<br>给 AVS 提供安全]
+    C --> D1[EigenDA<br>DA 服务]
+    C --> D2[Lagrange<br>ZK Prover Network]
+    C --> D3[AltLayer<br>Shared Sequencer]
+    C --> D4[更多 AVS...]
+    C -.->|违规| E[被 slash<br>承担额外风险]

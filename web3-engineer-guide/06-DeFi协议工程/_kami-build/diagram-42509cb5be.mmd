@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Oracle as Chainlink
+    participant Pool as Aave Pool
+    participant Liq as 清算 Bot
+    participant Flash as Flashloan
+    participant DEX as Uniswap V3
+
+    Oracle->>Pool: ETH 价格更新到 $2,400
+    Note over Pool: HF<1 触发清算
+    Liq->>Flash: 借 10,000 USDC（无抵押闪电贷）
+    Flash->>Liq: 收到 10,000 USDC
+    Liq->>Pool: liquidationCall(用户, 10,000 USDC, 拿 aETH)
+    Pool->>Liq: 转出 ~4.6 ETH（含 5% 折扣激励）
+    Liq->>DEX: swap 4.6 ETH 换回 ~11,000 USDC
+    DEX->>Liq: 11,000 USDC
+    Liq->>Flash: 还 10,000 USDC + fee
+    Note over Liq: 净利 ~900 USDC

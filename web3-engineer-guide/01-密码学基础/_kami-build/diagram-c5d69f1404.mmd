@@ -1,0 +1,7 @@
+graph TD
+    BH[区块头 BlockHeader] --> SR[stateRoot]
+    BH --> TR[transactionsRoot]
+    BH --> RR[receiptsRoot]
+    BH --> WR[withdrawalsRoot]
+    SR --> S1[每个账户的 (nonce, balance, codeHash, storageRoot)]
+    S1 --> ST[每个账户自己的 storageTrie]

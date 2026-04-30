@@ -1,0 +1,9 @@
+flowchart LR
+    NFT[NFT in Kiosk] --> Buy{用户买单}
+    Buy --> Policy[TransferPolicy<br>必须满足]
+    Policy --> R1[Royalty Rule<br>抽 5% 给创作者]
+    Policy --> R2[Lock Rule<br>必须放回 Kiosk]
+    Policy --> R3[Whitelist Rule<br>仅指定市场]
+    R1 --> Done[完成转账]
+    R2 --> Done
+    R3 --> Done

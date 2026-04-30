@@ -1,0 +1,13 @@
+flowchart LR
+    Code[Solidity 源码] --> Compile[solc / Vyper]
+    Compile --> AST[AST + SlithIR]
+    AST --> Slither[Slither 0.11<br/>110+ detectors]
+    AST --> Aderyn[Aderyn<br/>Rust 静态分析]
+    AST --> Anal[4naly3er]
+    Compile --> BC[EVM Bytecode]
+    BC --> Myth[Mythril<br/>符号执行]
+    BC --> Sec[Securify v2]
+    Slither -->|JSON/SARIF| CI[CI/CD]
+    Aderyn -->|markdown| CI
+    Slither -->|+--codex| LLM[GPT 二次复核]
+    Aderyn -->|+--ai| LLM

@@ -1,0 +1,9 @@
+graph LR
+    A[ZK 证明系统] --> B[SNARK]
+    A --> C[STARK]
+    B --> B1[Groth16<br>per-circuit setup<br>200B proof / 200k gas]
+    B --> B2[PLONK / Halo2<br>universal setup<br>1-10KB proof / 200-500k gas]
+    C --> C1[纯 STARK<br>无 setup<br>50-200KB proof / 1-5M gas]
+    B --> D[递归 SNARK<br>把多个证明压一个]
+    C --> D
+    D --> E[落 L1 那一层<br>200B-2KB / <500k gas]

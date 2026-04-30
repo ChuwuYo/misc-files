@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph "EVM 模型: 共享状态机"
+        E1[Ethereum<br>统一状态机] --> Eapp1[Uniswap]
+        E1 --> Eapp2[Aave]
+        E1 --> Eapp3[OpenSea]
+        E1 -. 共享 gas / 共享区块 / 共享拥堵 .- E1
+    end
+    subgraph "Cosmos 模型: 每应用一链"
+        C1[Osmosis 链<br>DEX 专用]
+        C2[dYdX 链<br>永续合约专用]
+        C3[Celestia 链<br>DA 专用]
+        C4[Berachain 链<br>EVM 兼容 + PoL]
+        C1 -.IBC.- C2
+        C2 -.IBC.- C3
+        C3 -.IBC.- C4
+    end

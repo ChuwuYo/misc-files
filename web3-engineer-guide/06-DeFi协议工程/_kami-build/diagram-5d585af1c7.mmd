@@ -1,0 +1,15 @@
+flowchart TD
+    R[现实世界资产] --> R1[国债 / 短债]
+    R --> R2[企业贷款 / 私募信用]
+    R --> R3[应收账款]
+    R --> R4[房地产 / 艺术品]
+
+    R1 --> T1[BUIDL / USYC / OUSG]
+    R2 --> T2[Maple / Goldfinch / Clearpool]
+    R3 --> T3[Centrifuge]
+    R4 --> T4[小众 NFT 化]
+
+    T1 -->|抵押| Stable[Frax V3 / DAI / sUSDS]
+    T2 -->|放贷给| Inst[机构借款人]
+    T3 -->|发行 DAI| Sky
+    T4 -->|流动性差| Niche

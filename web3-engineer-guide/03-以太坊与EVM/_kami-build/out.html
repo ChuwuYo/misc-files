@@ -1,0 +1,3807 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>以太坊与 EVM</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  以太坊与 EVM";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">以太坊与 EVM</div>
+    <div class="cover-sub">执行引擎、字节码、Pectra 与 Fusaka</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">目录</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">0 学习目标</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">1 直觉先行：从一笔 USDC 转账反推整个 EVM</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">2 升级时间线：从 Frontier 到 Fusaka 与 Glamsterdam</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">3 账户与交易</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">4 Gas 模型</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">5 EVM 内部：栈机的六个数据区</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">6 Opcodes 全解：按类讲透</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">7 Precompiles 全表</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">8 状态树：MPT 现在 → Verkle 将来</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">9 客户端谱系：执行层与共识层逐个看</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">10 升级机制：硬分叉是怎么开会开出来的</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">11 工程实现：viem / Foundry / cast 实战</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">12 真实交易 trace 逐步走读（PC by PC）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">13 ABI 与函数选择器深入</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">14 事件与 logs（receiptsRoot 与 logsBloom）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">17</span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">15 代理模式与 DELEGATECALL 工程</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">16 区块构建链路：mempool → builder → relay → proposer</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">19</span>
+    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">17 EVM 字节码逆向工程</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">20</span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">18 常见坑（Top 12）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">21</span>
+    <span class="toc-title"><a href="#ch21" style="color:inherit;text-decoration:none">19 AI 在 EVM 工作流的位置</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">22</span>
+    <span class="toc-title"><a href="#ch22" style="color:inherit;text-decoration:none">20 习题（含完整解答）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">23</span>
+    <span class="toc-title"><a href="#ch23" style="color:inherit;text-decoration:none">22 EOF 深入：被剔除又复活的 EVM 重整方案</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">24</span>
+    <span class="toc-title"><a href="#ch24" style="color:inherit;text-decoration:none">23 Verkle Trees 深入：原理、过渡与 EIP-6800</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">25</span>
+    <span class="toc-title"><a href="#ch25" style="color:inherit;text-decoration:none">24 State expiry / History expiry / 弱无状态</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">26</span>
+    <span class="toc-title"><a href="#ch26" style="color:inherit;text-decoration:none">25 Lean Ethereum：beam chain 与后量子安全</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">27</span>
+    <span class="toc-title"><a href="#ch27" style="color:inherit;text-decoration:none">26 Reth 内部架构与 Execution Extensions (ExEx)</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">28</span>
+    <span class="toc-title"><a href="#ch28" style="color:inherit;text-decoration:none">27 Engine API：执行层与共识层之间的对话</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">29</span>
+    <span class="toc-title"><a href="#ch29" style="color:inherit;text-decoration:none">28 USDC 字节码 walkthrough（FiatTokenV2_2）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">30</span>
+    <span class="toc-title"><a href="#ch30" style="color:inherit;text-decoration:none">29 Pectra 一年后的现场观察</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">31</span>
+    <span class="toc-title"><a href="#ch31" style="color:inherit;text-decoration:none">30 延伸阅读</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<p>时间锚点 2026-04：Pectra（2025-05-07）、Fusaka（2025-12-03，含 BPO1 12-09 与 BPO2 2026-01-07）已上线；Glamsterdam 在 2026 H1 末/Q3 候选；Hegota（Verkle）规划在 2026-H2 ~ 2027。操作码速查以 <a href="https://www.evm.codes/">evm.codes</a> 为准。</p>
+<p>前置：<a href="../02-区块链原理与共识/README.md">模块 02 — 区块链原理与共识</a>。后置：<a href="../04-Solidity开发/README.md">模块 04 — Solidity 开发</a>。</p>
+<section class="chapter">
+<h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
+
+<ul>
+<li><a href="#0-学习目标">0 学习目标</a></li>
+<li><a href="#1-直觉与历史为什么-evm-长这样">1 直觉与历史：为什么 EVM 长这样</a></li>
+<li><a href="#2-升级时间线从-frontier-到-fusaka-与-glamsterdam">2 升级时间线：从 Frontier 到 Fusaka 与 Glamsterdam</a></li>
+<li><a href="#3-账户与交易">3 账户与交易</a></li>
+<li><a href="#4-gas-模型">4 Gas 模型</a></li>
+<li><a href="#5-evm-内部栈机的六个数据区">5 EVM 内部：栈机的六个数据区</a></li>
+<li><a href="#6-opcodes-全解按类讲透">6 Opcodes 全解：按类讲透</a></li>
+<li><a href="#7-precompiles-全表">7 Precompiles 全表</a></li>
+<li><a href="#8-状态树mpt-现在--verkle-将来">8 状态树：MPT 现在 → Verkle 将来</a></li>
+<li><a href="#9-客户端谱系执行层与共识层逐个看">9 客户端谱系：执行层与共识层逐个看</a></li>
+<li><a href="#10-升级机制硬分叉是怎么开会开出来的">10 升级机制：硬分叉是怎么开会开出来的</a></li>
+<li><a href="#11-工程实现viem--foundry--cast-实战">11 工程实现：viem / Foundry / cast 实战</a></li>
+<li><a href="#12-真实交易-trace-逐步走读pc-by-pc">12 真实交易 trace 逐步走读（PC by PC）</a></li>
+<li><a href="#13-abi-与函数选择器深入">13 ABI 与函数选择器深入</a></li>
+<li><a href="#14-事件与-logsreceiptsroot-与-logsbloom">14 事件与 logs（receiptsRoot 与 logsBloom）</a></li>
+<li><a href="#15-代理模式与-delegatecall-工程">15 代理模式与 DELEGATECALL 工程</a></li>
+<li><a href="#16-区块构建链路mempool--builder--relay--proposer">16 区块构建链路：mempool → builder → relay → proposer</a></li>
+<li><a href="#17-evm-字节码逆向工程">17 EVM 字节码逆向工程</a></li>
+<li><a href="#18-常见坑top-12">18 常见坑（Top 12）</a></li>
+<li><a href="#19-ai-在-evm-工作流的位置">19 AI 在 EVM 工作流的位置</a></li>
+<li><a href="#20-习题含完整解答">20 习题（含完整解答）</a></li>
+<li><a href="#22-eof-深入被剔除又复活的-evm-重整方案">22 EOF 深入：被剔除又复活的 EVM 重整方案</a></li>
+<li><a href="#23-verkle-trees-深入原理过渡与-eip-6800">23 Verkle Trees 深入：原理、过渡与 EIP-6800</a></li>
+<li><a href="#24-state-expiry--history-expiry--弱无状态">24 State expiry / History expiry / 弱无状态</a></li>
+<li><a href="#25-lean-ethereumbeam-chain-与后量子安全">25 Lean Ethereum：beam chain 与后量子安全</a></li>
+<li><a href="#26-reth-内部架构与-execution-extensions-exex">26 Reth 内部架构与 Execution Extensions (ExEx)</a></li>
+<li><a href="#27-engine-api执行层与共识层之间的对话">27 Engine API：执行层与共识层之间的对话</a></li>
+<li><a href="#28-usdc-字节码-walkthroughfiattokenv2_2">28 USDC 字节码 walkthrough（FiatTokenV2_2）</a></li>
+<li><a href="#29-pectra-一年后的现场观察">29 Pectra 一年后的现场观察</a></li>
+<li><a href="#30-延伸阅读">30 延伸阅读</a></li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="0" id="ch02"><span class="chapter-num">Chapter 02</span><br>0 学习目标</h2>
+
+<p>读完能做到：</p>
+<ol>
+<li>白板画 EOA → CA 调用栈，标出 stack/memory/storage/calldata/transient/code 边界，标出 CALL/STATICCALL/DELEGATECALL 差异。</li>
+<li>用 viem 2.43.3 在 Sepolia 手动构造、签名、发送 Type 2（1559）和 Type 4（7702）交易。</li>
+<li>识别函数选择器分发表，用 <code>evm.codes</code> disassembler 推断函数签名。</li>
+<li>推导一段汇编的 gas，含 SSTORE 冷热、memory 二次项、CALL 63/64、blob gas。</li>
+<li>一句话讲清 Pectra、Fusaka 干了什么；讲清 Verkle 与无状态客户端。</li>
+<li>看懂 AllCoreDevs 纪要、EIP 阶段、EOF 为何被剔除。</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="1-usdc-evm" id="ch03"><span class="chapter-num">Chapter 03</span><br>1 直觉先行：从一笔 USDC 转账反推整个 EVM</h2>
+
+<h3 id="11">1.1 一笔交易必须答三个问题</h3>
+<p>钱包按"transfer 1000 USDC"按钮。这条 RLP 字节流送进网络之前，协议必须把三个问题在 12 秒内答完：</p>
+<ol>
+<li><strong>谁付钱？</strong> 怎么从一串字节恢复到付款人地址，并扣他的 ETH？</li>
+<li><strong>谁执行？</strong> 一段 16 KB 的字节码该按什么规则跑？跑多久才停？</li>
+<li><strong>谁记账？</strong> 跑完后哪些状态被改了、改成了什么、所有节点凭什么相信你？</li>
+</ol>
+<p>每个问题对应一个 EVM 设计选择。把这三条线拉直，整个模块的内容是它们的展开。</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>EVM 选择</th>
+<th>见</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>怎么签 + 扣钱</td>
+<td>secp256k1 + EIP-2718 typed envelope；EIP-1559 base fee 烧 + 小费</td>
+<td>§3, §4</td>
+</tr>
+<tr>
+<td>怎么停机 + 怎么算</td>
+<td>栈机 + 每 opcode 付 gas + 超额 revert</td>
+<td>§5, §6</td>
+</tr>
+<tr>
+<td>怎么记 + 怎么核对</td>
+<td>账户模型 + Merkle Patricia Trie + 全节点重算 stateRoot</td>
+<td>§3.1, §8</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-evm">1.2 四个硬约束塌缩出 EVM 的形状</h3>
+<table>
+<thead>
+<tr>
+<th>约束</th>
+<th>它逼出的设计</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全节点必须算出<strong>完全相同</strong>的状态</td>
+<td>32 字节定长字、整数运算、无浮点</td>
+</tr>
+<tr>
+<td>必须停机</td>
+<td>每条指令付 gas，超额回滚</td>
+</tr>
+<tr>
+<td>状态必须可承诺、可批量验证</td>
+<td>Merkle Patricia Trie；header 写 stateRoot</td>
+</tr>
+<tr>
+<td>合约不能互相污染对方的存储</td>
+<td>每次 CALL 开新栈帧；storage 按合约地址分桶</td>
+</tr>
+</tbody>
+</table>
+<p>栈机不是哲学选择，是约束的副产品：每条 opcode 对栈高度影响确定，给定入口高度静态算出整个 basic block 的栈变化——jump 合法性、gas 计费、字节码大小都因此简单。代价是没有寄存器分配，重复读栈靠 DUP/SWAP。</p>
+<h3 id="13">1.3 六组对偶贯穿全文</h3>
+<p>读到任何概念时，先把它放到下表对应的位置：</p>
+<ol>
+<li>EOA vs CA — 谁能签 vs 谁只能被叫</li>
+<li>memory vs storage — 帧内重置 vs 进 stateRoot</li>
+<li>CALL vs DELEGATECALL — 切上下文 vs 借上下文（代理的根）</li>
+<li>base fee vs priority fee — 烧 vs 给提议者</li>
+<li>execution gas vs blob gas — 两套独立市场</li>
+<li>MPT vs Verkle — 现在 vs 将来</li>
+</ol>
+<h3 id="14-evm-vm">1.4 EVM 在 VM 谱系里的位置</h3>
+<table>
+<thead>
+<tr>
+<th>VM</th>
+<th>类型</th>
+<th>状态模型</th>
+<th>项目</th>
+<th>与 EVM 比</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EVM</td>
+<td>栈式</td>
+<td>account + MPT</td>
+<td>以太坊全家</td>
+<td>字段定长、生态最大</td>
+</tr>
+<tr>
+<td>WASM (eWASM)</td>
+<td>栈式</td>
+<td>自定</td>
+<td>Polkadot、Soroban</td>
+<td>通用、字节码大；ETH 已搁置</td>
+</tr>
+<tr>
+<td>SVM</td>
+<td>寄存器 (BPF)</td>
+<td>account + 平铺</td>
+<td>Solana</td>
+<td>并行执行强</td>
+</tr>
+<tr>
+<td>MoveVM</td>
+<td>寄存器</td>
+<td>resource</td>
+<td>Aptos、Sui</td>
+<td>编译期防 double-spend</td>
+</tr>
+<tr>
+<td>CairoVM</td>
+<td>多项式</td>
+<td>Merkle</td>
+<td>Starknet</td>
+<td>STARK 原生</td>
+</tr>
+</tbody>
+</table>
+<p>OP / Arbitrum / Base / zkSync Era / Linea / Scroll / Polygon zkEVM 都以 EVM 为执行层。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2-frontier-fusaka-glamsterdam" id="ch04"><span class="chapter-num">Chapter 04</span><br>2 升级时间线：从 Frontier 到 Fusaka 与 Glamsterdam</h2>
+
+<p>EVM 不是一次设计完的，是十年里被攻击、被滥用、被 L2 倒逼出来的。每次硬分叉都对应一次具体的疼痛——读时盯着"它解了什么问题"。</p>
+<h3 id="21-frontier2015-07-30">2.1 Frontier（2015-07-30）</h3>
+<p>第一版主网。CALL/CREATE/SSTORE 已存在但 gas 表过松（CALL 40 gas），状态膨胀严重。留下 EVM 雏形与 Yellow Paper 第一版。</p>
+<h3 id="22-homestead2016-03-14">2.2 Homestead（2016-03-14）</h3>
+<ul>
+<li><strong>EIP-2</strong>：contract creation gas 升到 32000；私钥 s 值规范化（防 malleability）</li>
+<li><strong>EIP-7</strong>：引入 <strong>DELEGATECALL</strong>——代理模式的祖先；CALLCODE 开始弃用（msg.sender 语义不对）</li>
+</ul>
+<h3 id="23-the-dao-2016-07-20-1920000">2.3 The DAO 分叉（2016-07-20，区块 1,920,000）</h3>
+<p>The DAO 募 1150 万 ETH（≈$1.5 亿）；<code>splitDAO</code> 先转账后改余额，攻击者递归抽走 360 万 ETH。社区硬分叉产生 <strong>Ethereum</strong> vs <strong>Ethereum Classic</strong> 双链，确立了 <strong>Checks-Effects-Interactions</strong> 模式与 ACD 公开讨论惯例。</p>
+<p>来源：<a href="https://www.gemini.com/cryptopedia/the-dao-hack-makerdao">Gemini: DAO Hack Explained</a>。</p>
+<h3 id="24-tangerine-whistle2016-10-18-spurious-dragon2016-11-22">2.4 Tangerine Whistle（2016-10-18）+ Spurious Dragon（2016-11-22）</h3>
+<p>针对 2016-09/10 月 DoS 攻击（攻击者反复调用 IO-heavy opcode 拖慢全网）：</p>
+<ul>
+<li><strong>EIP-150（Tangerine Whistle）</strong>：IO 类 opcode 大幅涨价；引入 <strong>63/64 规则</strong>——CALL 最多转发当前 gas 的 63/64，剩 1/64 留本地，阻断"1024 层 call depth attack"</li>
+<li><strong>EIP-155（Spurious Dragon）</strong>：交易签名加 chainId，防跨链重放</li>
+</ul>
+<p>来源：<a href="https://eips.ethereum.org/EIPS/eip-150">EIPS/eip-150</a>、<a href="https://rareskills.io/post/eip-150-and-the-63-64-rule-for-gas">RareSkills: 63/64 rule</a>。</p>
+<p><strong>63/64 规则的现实影响</strong>：栈深度名义上是 1024，但因为每层 CALL 都掉 1/64 gas，实际可达深度大约只有 200~340。安全审计里看到 "1024 stack depth attack" 的话术多半是过时知识——今天根本到不了 1024。</p>
+<h3 id="25-byzantium2017-10-16">2.5 Byzantium（2017-10-16）</h3>
+<ul>
+<li><strong>EIP-196 / EIP-197</strong>：bn254 椭圆曲线加法、乘法、配对 precompile（0x06/0x07/0x08），zkSNARK 首次可在主网验证</li>
+<li><strong>EIP-198</strong>：modexp precompile（0x05），RSA / ZK 通用</li>
+<li><strong>EIP-211</strong>：RETURNDATASIZE / RETURNDATACOPY，调用方能读完整返回值</li>
+<li><strong>EIP-214</strong>：STATICCALL，强制只读 CALL，view 函数链上保护的基础</li>
+<li><strong>EIP-100</strong>：难度调整变软（基于平均出块时间）</li>
+</ul>
+<h3 id="26-constantinople-petersburg2019-02-28">2.6 Constantinople / Petersburg（2019-02-28）</h3>
+<p><strong>唯一一次因安全问题被回滚的硬分叉</strong>。原计划 2019-01-16 上线 Constantinople，含 EIP-1283（net gas metering for SSTORE）；ChainSecurity 提前一天发现 EIP-1283 让 2300 gas 假设失效，引入再入攻击面。社区紧急回退，2019-02-28 上线 Petersburg 剔除 EIP-1283，保留：</p>
+<ul>
+<li><strong>EIP-145</strong>：SHL/SHR/SAR 位移指令</li>
+<li><strong>EIP-1014</strong>：<strong>CREATE2</strong>，确定性合约地址，counterfactual deployment 的根</li>
+<li><strong>EIP-1052</strong>：EXTCODEHASH</li>
+<li><strong>EIP-1234</strong>：区块奖励 3 → 2 ETH，延后难度炸弹</li>
+</ul>
+<p>来源：<a href="https://www.coindesk.com/markets/2019/01/15/ethereums-constantinople-upgrade-faces-delay-due-to-security-vulnerability">CoinDesk: Constantinople delay</a>。</p>
+<p>教训：<strong>硬分叉前必须完成 invariant 复审</strong>——EIP-1283 本身逻辑正确，错在未考虑现有合约对 2300 gas 边界的隐式依赖。</p>
+<h3 id="27-istanbul2019-12-08-muir-glacier2020-01-02">2.7 Istanbul（2019-12-08）+ Muir Glacier（2020-01-02）</h3>
+<ul>
+<li><strong>EIP-152</strong>：blake2f precompile（地址 0x09），用于 Zcash 等链跨链</li>
+<li><strong>EIP-1108</strong>：bn254 价格大降，让 ZK 操作更便宜</li>
+<li><strong>EIP-1344</strong>：CHAINID opcode（之前要硬编码）</li>
+<li><strong>EIP-1884</strong>：状态访问类 opcode 涨价（SLOAD 200 → 800）；新增 SELFBALANCE</li>
+<li><strong>EIP-2200</strong>：第三版 SSTORE gas 表，最终版本（基本沿用至今）</li>
+<li><strong>EIP-2384（Muir Glacier）</strong>：再次推迟难度炸弹</li>
+</ul>
+<h3 id="28-berlin2021-04-15">2.8 Berlin（2021-04-15）</h3>
+<ul>
+<li><strong>EIP-2565</strong>：modexp 涨价（之前算大数 RSA 太便宜）</li>
+<li><strong>EIP-2929</strong>：状态访问 opcode 引入 <strong>cold/warm 双轨制</strong>——同一笔交易内首次访问某个 (address, slot) 收 cold 价（SLOAD 2100、SSTORE +2100 cold），后续 warm 价（100）</li>
+<li><strong>EIP-2718</strong>：<strong>Typed Transaction Envelope</strong>，未来一切新交易类型的总框架</li>
+<li><strong>EIP-2930</strong>：Type 1 交易（access list），可以预热槽位省 gas</li>
+</ul>
+<h3 id="29-london2021-08-05">2.9 London（2021-08-05）</h3>
+<ul>
+<li><strong>EIP-1559</strong>：Type 2 dynamic fee，引入 base fee（烧毁）+ priority fee（小费）</li>
+<li><strong>EIP-3198</strong>：BASEFEE opcode</li>
+<li><strong>EIP-3529</strong>：refund 上限砍到 gas_used / 5；移除 SELFDESTRUCT 退款，终结 GST2 等 gas token 滥用</li>
+<li><strong>EIP-3554</strong>：再推一次难度炸弹</li>
+</ul>
+<p>base fee 由协议自动调节，钱包从"猜 gas price"改为"设 max fee + max priority fee"。base fee 烧毁 + Merge 后低发行率（~0.5%/年）使 ETH 多数时间净通缩。</p>
+<h3 id="210-arrow-glacier2021-12-09-gray-glacier2022-06-30">2.10 Arrow Glacier（2021-12-09）+ Gray Glacier（2022-06-30）</h3>
+<p>纯延后难度炸弹的过渡升级。</p>
+<h3 id="211-the-merge2022-09-15bellatrix-paris">2.11 The Merge（2022-09-15，Bellatrix + Paris）</h3>
+<p>执行层几乎不变，<strong>共识层从 PoW 切到 PoS</strong>：</p>
+<ul>
+<li>mining 完全停止；DIFFICULTY opcode → <strong>PREVRANDAO</strong>（信标链上一个 epoch 的随机数）</li>
+<li>区块时间：13 秒 → 精确 12 秒（slot）</li>
+<li>ETH 发行量下降约 90%，与 EIP-1559 烧毁结合</li>
+</ul>
+<p>来源：<a href="https://blog.ethereum.org/2022/08/24/mainnet-merge-announcement">Mainnet Merge Announcement</a>。</p>
+<h3 id="212-shanghai-capella2023-04-12">2.12 Shanghai / Capella（2023-04-12）</h3>
+<ul>
+<li><strong>EIP-4895</strong>：信标链验证者提款（withdrawal 不再单向锁仓）</li>
+<li><strong>EIP-3651</strong>：COINBASE 直接 warm</li>
+<li><strong>EIP-3855</strong>：PUSH0 opcode</li>
+<li><strong>EIP-3860</strong>：限制 initcode size</li>
+</ul>
+<h3 id="213-cancun-denebdencun2024-03-13">2.13 Cancun / Deneb（Dencun，2024-03-13）</h3>
+<ul>
+<li><strong>EIP-4844</strong>：Proto-danksharding，blob 交易（Type 3），L2 DA 成本下降一个量级</li>
+<li><strong>EIP-1153</strong>：transient storage（TSTORE/TLOAD）</li>
+<li><strong>EIP-5656</strong>：MCOPY opcode</li>
+<li><strong>EIP-6780</strong>：SELFDESTRUCT 弱化——仅"同一 tx 内创建+自毁"才真删，否则等同 transfer</li>
+<li><strong>EIP-4788</strong>：信标链区块根写进执行层（合约可 trustless 读共识层数据）</li>
+<li><strong>EIP-7516</strong>：BLOBBASEFEE opcode</li>
+</ul>
+<p>2024 年起 Optimism、Arbitrum 等 rollup 全部迁到 blob，主网 calldata 让出大半，L2 swap 费从几美元降到几美分。</p>
+<h3 id="214-prague-electrapectra2025-05-07-100511-utcepoch-364032">2.14 Prague / Electra（Pectra，2025-05-07 10:05:11 UTC，epoch 364032）</h3>
+<p>Merge 后单次 EIP 最多（11 个），一次解决账户抽象、机构质押、L2 吞吐。</p>
+<p>执行层（Prague）：</p>
+<ul>
+<li><strong>EIP-7702</strong>：<strong>SetCode 交易（Type 4）</strong>，EOA 临时挂 designator code，任何已有 EOA 都能跑合约逻辑（§3.5）</li>
+<li><strong>EIP-2537</strong>：<strong>BLS12-381 系列 precompile</strong>（0x0b ~ 0x11，共 7 个，§7）</li>
+<li><strong>EIP-2935</strong>：把过去 8192 个区块哈希存进 <code>0x0000F90827F1C53a10cb7A02335B175320002935</code> 系统合约。ZK rollup、跨链桥从此不用维护自己的历史 trie</li>
+<li><strong>EIP-7623</strong>：<strong>calldata "floor"</strong> 机制——一笔 tx 收的 gas 不能低于 <code>21000 + 10 × (zero_bytes + 4 × non_zero_bytes)</code>。压制纯 calldata 滥用，把"租 calldata 占空间"挤进 blob</li>
+<li><strong>EIP-7691</strong>：blob 目标 3→6、上限 6→9</li>
+<li><strong>EIP-2935</strong>、<strong>EIP-7549</strong>（attestation 聚合优化）</li>
+</ul>
+<p>共识层（Electra）：</p>
+<ul>
+<li><strong>EIP-7251</strong>：单验证者最大有效余额（MaxEB）32 → 2048 ETH，机构无需拆数千 validator，attestation 数量减少</li>
+<li><strong>EIP-6110</strong>：deposit 由执行层系统合约直接处理，新质押 4-12 分钟生效（之前 ~12 小时）</li>
+<li><strong>EIP-7002</strong>：执行层触发的 partial / full exit。质押者用普通 EVM 交易就能发起退出，无需共识层签名</li>
+</ul>
+<p>来源：<a href="https://blog.ethereum.org/2025/04/23/pectra-mainnet">Pectra Mainnet Announcement</a>、<a href="https://www.theblock.co/post/353407/ethereum-pectra-upgrade">The Block: Pectra activated with 11 changes</a>、<a href="https://ethpandaops.io/posts/pectra-mainnet-checklist/">ethPandaOps: Pectra Mainnet Checklist</a>。</p>
+<h3 id="215-fulu-osakafusaka2025-12-03-214911-utcepoch-411392">2.15 Fulu / Osaka（Fusaka，2025-12-03 21:49:11 UTC，epoch 411392）</h3>
+<p>blob 上限 9 已接近家用带宽极限（~1.1 MB/slot），继续提升需节点只采样部分 blob——即 PeerDAS。</p>
+<p>完整 12 个 EIP（来源：<a href="https://www.alchemy.com/blog/ethereum-fusaka-upgrade-dev-guide-to-12-eips">Alchemy: Fusaka Dev Guide to 12 EIPs</a>、<a href="https://www.conduit.xyz/blog/ethereum-fusaka-upgrade-eips-cheat-sheet/">Conduit: Fusaka EIPs Cheat Sheet</a>）：</p>
+<table>
+<thead>
+<tr>
+<th>EIP</th>
+<th>名字</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EIP-7594</strong></td>
+<td><strong>PeerDAS</strong></td>
+<td>节点只采样部分数据列；header 加 <code>data_column_sidecars</code> 字段</td>
+</tr>
+<tr>
+<td>EIP-7642</td>
+<td>eth/69 协议</td>
+<td>移除 mempool gossip 中的 pre-Merge 字段（PoW total difficulty 等）</td>
+</tr>
+<tr>
+<td>EIP-7823</td>
+<td>MODEXP 上限</td>
+<td>base/exp/mod 各 ≤ 8192 字节，防 DoS</td>
+</tr>
+<tr>
+<td>EIP-7825</td>
+<td>tx gas cap</td>
+<td>单笔交易 gas 上限 30M（≈ block gas 一半）</td>
+</tr>
+<tr>
+<td>EIP-7883</td>
+<td>MODEXP 涨价</td>
+<td>基数 + 阶 + 模再涨一档，与 Berlin EIP-2565 接力</td>
+</tr>
+<tr>
+<td>EIP-7892</td>
+<td>Blob Parameter Only fork</td>
+<td>引入"轻量分叉"机制：只调 blob 参数不改 EVM，一行配置即可（BPO1/BPO2 就靠它）</td>
+</tr>
+<tr>
+<td>EIP-7910</td>
+<td><code>eth_config</code> JSON-RPC</td>
+<td>标准化客户端报告自己当前激活了哪些 fork 与 EIP</td>
+</tr>
+<tr>
+<td>EIP-7917</td>
+<td>提议者前瞻确定性</td>
+<td>proposer lookahead 进 beacon state，让 builder 提前知道下个 slot 的 proposer</td>
+</tr>
+<tr>
+<td>EIP-7918</td>
+<td>blob base fee 下限</td>
+<td>把 blob base fee 与执行 gas 挂钩，防 blob fee 永远在最低 1 wei</td>
+</tr>
+<tr>
+<td>EIP-7934</td>
+<td>RLP 区块 size 上限</td>
+<td>单区块 RLP 序列化后 ≤ 10 MB</td>
+</tr>
+<tr>
+<td>EIP-7935</td>
+<td>默认 gas limit 60M</td>
+<td>默认建议 gas_limit 从 30M 提到 60M（节点共识投票）</td>
+</tr>
+<tr>
+<td>EIP-7939</td>
+<td><strong>CLZ opcode</strong></td>
+<td>Count Leading Zeros，新增 <code>0x1e</code> opcode，bit 操作硬件友好</td>
+</tr>
+<tr>
+<td>EIP-7951</td>
+<td><strong>secp256r1 precompile</strong></td>
+<td>又名 P-256，地址 0x100。passkey / WebAuthn 直接上链</td>
+</tr>
+</tbody>
+</table>
+<p><strong>EOF 命运</strong>：原计划进 Fusaka 的 EOF（EIP-3540 / 3670 / 4200 / 4750 / 5450 / 6206 / 7480 / 663）整组被剔除。理由：工程复杂度高、与 EIP-7702 的交互未充分研究、社区担心过早冻结字节码格式。可能在 Glamsterdam 之后再议。</p>
+<p><strong>已激活的 BPO 链</strong>：</p>
+<ul>
+<li><strong>BPO1</strong>（2025-12-09）：blob 目标 6 → <strong>10</strong>、上限 9 → <strong>15</strong></li>
+<li><strong>BPO2</strong>（2026-01-07）：blob 目标 → <strong>14</strong>、上限 → <strong>21</strong></li>
+</ul>
+<p><strong>Prysm 事件</strong>：升级后约一周 Prysm attestation 处理 bug 致依赖 Prysm 的 validator 掉线，finality participation 一度降到 ~75%。其他四客户端未受影响，再次证明<strong>客户端多样性是系统韧性的核心</strong>。</p>
+<p>来源：<a href="https://blog.ethereum.org/2025/11/06/fusaka-mainnet-announcement">Fusaka Mainnet Announcement</a>、<a href="https://www.coindesk.com/tech/2025/12/03/ethereum-activates-fusaka-upgrade">CoinDesk: Ethereum Activates Fusaka</a>、<a href="https://cointelegraph.com/news/ethereum-prysm-bug-fusaka-client-diversity-risk">Cointelegraph: Prysm Bug Knocks Ethereum</a>。</p>
+<h3 id="216-glamsterdamgloas-amsterdam-2026-h1-q3">2.16 Glamsterdam（Gloas + Amsterdam，预计 2026-H1 末 / Q3）</h3>
+<p>目标：把 builder-proposer 协议写进协议层（ePBS），取代中心化 relay。</p>
+<p>两个头牌 EIP：</p>
+<ul>
+<li><strong>EIP-7732（ePBS）</strong>：proposer 只对 builder 的 commitment 盲签，交易在 finality 后公开，MEV 操控空间大幅压缩</li>
+<li><strong>EIP-7928（Block-Level Access Lists, BAL）</strong>：每块附带 (address, slot) 访问清单，节点并行执行、提前 prefetch；为 stateless / 并行执行铺路</li>
+</ul>
+<p>候选：EIP-7954（合约 size 上限上调）、多项 EVM 小改</p>
+<p>来源：<a href="https://blog.quicknode.com/ethereum-glamsterdam-upgrade-whats-coming-in-h1-2026/">Quicknode: Glamsterdam Upgrade</a>、<a href="https://ethereum.org/roadmap/glamsterdam/">ethereum.org/roadmap/glamsterdam</a>。</p>
+<h3 id="217-hegota-2026-h2-2027">2.17 Hegota（预计 2026-H2 ~ 2027）</h3>
+<p>承载 Verkle Trees 主迁移（详见 §8.2）及过渡期 dual-tree（MPT + Verkle 并行一段时间）。</p>
+<p>来源：<a href="https://ethereum.org/roadmap/verkle-trees/">ethereum.org/roadmap/verkle-trees</a>、<a href="https://ethers.news/articles/ethereum-2026-upgrade-roadmap-glamsterdam-hegota-explained">ethers.news: 2026 roadmap</a>。</p>
+<h3 id="218-mermaid">2.18 一图流时间线（Mermaid）</h3>
+<figure><img src="diagram-a1e4db5405.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="3" id="ch05"><span class="chapter-num">Chapter 05</span><br>3 账户与交易</h2>
+
+<p>§1.1 三个问题里的"谁付钱"和"谁记账"，答案的载体是<strong>账户</strong>和<strong>交易</strong>。先看账户结构，再看交易把账户串起来的五种格式。</p>
+<h3 id="31">3.1 两种账户</h3>
+<p><code>address → Account</code>，四字段：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>nonce       u64
+balance     u256       (单位 wei，1 ETH = 1e18 wei)
+codeHash    bytes32    (keccak256 of code，EOA 为 keccak256(&quot;&quot;))
+storageRoot bytes32    (该账户 storage trie 的根)
+</code></pre></div>
+<p>分两类：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>EOA</th>
+<th>CA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>创建方式</strong></td>
+<td>算 secp256k1 公钥 → keccak256 后 20 字节</td>
+<td>由其他账户的 CREATE/CREATE2 部署</td>
+</tr>
+<tr>
+<td><strong>codeHash</strong></td>
+<td>空 <code>keccak256("")</code> 或（Pectra 后）designator hash</td>
+<td>部署字节码哈希</td>
+</tr>
+<tr>
+<td><strong>能签交易</strong></td>
+<td>能</td>
+<td>不能</td>
+</tr>
+<tr>
+<td><strong>能持有 ETH</strong></td>
+<td>能</td>
+<td>能</td>
+</tr>
+<tr>
+<td><strong>能被调用</strong></td>
+<td>能（无代码 → 仅转账；有 designator → 跑代理代码）</td>
+<td>能</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pectra 后的微妙变化</strong>：EOA 的 codeHash 字段在挂上 designator 时变成 <code>keccak256(0xef0100 || delegateAddress)</code>。链上看 <code>getCode(eoa)</code> 返回 23 字节 <code>0xef0100 + 20 字节地址</code>。这是 EIP-7702 的硬约定，任何执行层客户端都按此识别。撤销委托（authorization 指向 0x0）后，EOA 的 codeHash 仍是 <code>keccak256(0xef0100 || 0x0...0)</code>，<strong>不会</strong>变回 <code>keccak256("")</code>。codeHash 字段一旦被 SetCode 改写，就永远是 designator hash，区分"从未委托过"与"曾委托又撤销"需要看 code 内容（指向 0x0 的 designator）而非比对 codeHash 是否等于空哈希。</p>
+<h3 id="32">3.2 五种交易类型</h3>
+<p>EIP-2718 typed envelope（<code>type_byte || rlp(payload)</code>，Type 0 legacy 除外）：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>名字</th>
+<th>EIP</th>
+<th>引入</th>
+<th>关键字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00</td>
+<td>Legacy</td>
+<td>—</td>
+<td>创世</td>
+<td><code>nonce, gasPrice, gas, to, value, data, v, r, s</code></td>
+</tr>
+<tr>
+<td>0x01</td>
+<td>Access List</td>
+<td>EIP-2930</td>
+<td>Berlin</td>
+<td>+ <code>chainId, accessList</code></td>
+</tr>
+<tr>
+<td>0x02</td>
+<td>Dynamic Fee</td>
+<td>EIP-1559</td>
+<td>London</td>
+<td>+ <code>maxPriorityFeePerGas, maxFeePerGas</code></td>
+</tr>
+<tr>
+<td>0x03</td>
+<td>Blob</td>
+<td>EIP-4844</td>
+<td>Cancun</td>
+<td>+ <code>maxFeePerBlobGas, blobVersionedHashes</code></td>
+</tr>
+<tr>
+<td>0x04</td>
+<td>SetCode</td>
+<td>EIP-7702</td>
+<td>Pectra</td>
+<td>+ <code>authorizationList</code></td>
+</tr>
+</tbody>
+</table>
+<p>新类型几乎是上一类型的"加字段"：1559 ⊃ 2930，4844 ⊃ 1559，7702 ⊃ 1559（4844 与 7702 不同分支）。</p>
+<h3 id="33-eip-1559type-2">3.3 EIP-1559（Type 2）字段细解</h3>
+<p>RLP 结构：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x02 || rlp([
+  chain_id,
+  nonce,
+  max_priority_fee_per_gas,   # 给提议者的小费 上限
+  max_fee_per_gas,            # 用户愿意付的总价 上限
+  gas_limit,
+  to,                          # 0x 表示部署
+  value,
+  data,
+  access_list,                 # 可选预热
+  v, r, s                       # 签名（v 为 0/1）
+])
+</code></pre></div>
+<p>实际花费：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>gas_price = min(max_fee_per_gas, base_fee + max_priority_fee_per_gas)
+fee       = gas_price * gas_used
+burn      = base_fee  * gas_used         # 被烧毁
+tip       = (gas_price - base_fee) * gas_used   # 给提议者
+</code></pre></div>
+<p><code>max_fee_per_gas &lt; base_fee</code> → 交易进不了 mempool。烧毁是协议层直接从 sender 余额扣除、不进任何账户，等价 ETH 总量减少。</p>
+<h3 id="34-eip-4844-blob-type-3">3.4 EIP-4844 Blob 交易（Type 3）字段细解</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x03 || rlp([
+  chain_id, nonce,
+  max_priority_fee_per_gas, max_fee_per_gas,
+  gas_limit, to, value, data, access_list,
+  max_fee_per_blob_gas,             # blob 单价上限
+  blob_versioned_hashes,            # 每个 blob 的 KZG commitment 的 versioned hash 列表
+  v, r, s
+])
+</code></pre></div>
+<p>Blob 数据走 sidecar（共识层 P2P），约 18 天后删除，versioned hash 永久上链。执行层只能用 <code>BLOBHASH (0x49)</code> 取 versioned hash、用 <code>0x0a</code> precompile 验 KZG 证明。每 blob = 128 KB，每 blob 的 blob gas = <code>131072</code>；单块 blob 上限随分叉演进（Cancun 6、Pectra 9、Fusaka BPO1 15、BPO2 21）。</p>
+<h3 id="35-eip-7702-setcodetype-4">3.5 EIP-7702 SetCode（Type 4）字段细解</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x04 || rlp([
+  chain_id, nonce,
+  max_priority_fee_per_gas, max_fee_per_gas,
+  gas_limit, to, value, data, access_list,
+  authorization_list,           # 关键新字段
+  v, r, s
+])
+</code></pre></div>
+<p><code>authorization_list</code> 数组，每元素是 EOA 自签的小授权：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>[chain_id, address, nonce, y_parity, r, s]
+</code></pre></div>
+<p>含义："我（EOA）授权把 code 指向 <code>address</code>"。chain_id = 0 表示跨链有效（极不推荐）。</p>
+<p>执行流程：</p>
+<ol>
+<li>验证发送者签名，收手续费</li>
+<li>对每条 authorization：恢复 EOA 地址 → 校验 chain_id 与 nonce → 写 code = <code>0xef0100 || address</code>，EOA nonce +1</li>
+<li>像普通 1559 跑 <code>to</code> 调用</li>
+</ol>
+<p><strong>authority 不必是 sender</strong>——任何人可替你代发，需你签的 authorization（gas sponsor 核心机制）。</p>
+<p>安全提醒：authorization 一旦上链即生效，签向恶意合约 = 交出 EOA。<strong>永远只签向审计过/可信的合约</strong>。</p>
+<p>来源：<a href="https://eips.ethereum.org/EIPS/eip-7702">EIPS/eip-7702</a>、<a href="https://ethereum.org/roadmap/pectra/7702/">ethereum.org/roadmap/pectra/7702</a>。</p>
+<h3 id="36-erc-4337vs-eip-7702">3.6 ERC-4337（账户抽象）vs EIP-7702</h3>
+<p>两者不互斥，经常组合：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>ERC-4337</th>
+<th>EIP-7702</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>类型</td>
+<td>应用层（合约）</td>
+<td>协议层（硬分叉）</td>
+</tr>
+<tr>
+<td>钱包形态</td>
+<td>独立合约钱包，地址 ≠ EOA</td>
+<td>改造已有 EOA，地址不变</td>
+</tr>
+<tr>
+<td>Mempool</td>
+<td>独立的 4337 mempool</td>
+<td>走主网 mempool</td>
+</tr>
+<tr>
+<td>入口</td>
+<td>EntryPoint 合约（v0.7）</td>
+<td>协议直接处理</td>
+</tr>
+<tr>
+<td>谁付 gas</td>
+<td>Paymaster 或自己</td>
+<td>sender（可以是任何人）</td>
+</tr>
+</tbody>
+</table>
+<p>实际工程：EOA 通过 EIP-7702 委托到 4337 兼容合约，拥有 4337 全部能力同时保持 EOA 地址。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="4-gas" id="ch06"><span class="chapter-num">Chapter 06</span><br>4 Gas 模型</h2>
+
+<h3 id="41">4.1 基本费用结构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>total_fee   = gas_used × gas_price
+gas_price   = min(max_fee_per_gas, base_fee + max_priority_fee_per_gas)
+burn        = base_fee × gas_used
+miner_tip   = (gas_price - base_fee) × gas_used
+</code></pre></div>
+<p>base fee 调整算法（EIP-1559）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>parent_gas_target = parent_gas_limit / ELASTICITY (ELASTICITY = 2)
+if parent.gas_used &gt; target:
+  delta = parent.base_fee × (parent.gas_used - target) / target / 8
+  base_fee = parent.base_fee + max(delta, 1)
+else if parent.gas_used &lt; target:
+  delta = parent.base_fee × (target - parent.gas_used) / target / 8
+  base_fee = parent.base_fee - delta
+else:
+  base_fee = parent.base_fee
+</code></pre></div>
+<p>每块最多 ±12.5%。block gas_limit ≈ 30M（ELASTICITY=2，上限 60M）。</p>
+<h3 id="42-yellow-paper-gas">4.2 Yellow Paper 的 gas 公式（节选）</h3>
+<p>Yellow Paper 用 <code>C(σ, μ, A, I)</code> 表示某状态下下一步指令的 gas 消耗。多数 opcode 是常数；特殊家族：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>C_SSTORE  = 复杂状态依赖（见 §4.3）
+C_SLOAD   = warm 100 / cold 2100 + EIP-2929
+C_CALL    = 700 base + value 转账加价 + new account 加价 + 63/64 rule
+C_CREATE  = 32000 base + 200 × code_size + memory_expansion
+C_LOG_n   = 375 base + 8 × len(data) + 375 × n
+C_mem(a)  = 3 × a + ⌊a²/512⌋  ；a = 单位 32 字节字
+</code></pre></div>
+<p><code>C_mem</code> 二次项：前 22 个字（约 700 字节）基本线性，到几 MB 要数百万 gas。</p>
+<h3 id="43-sstore-eip-2929-eip-3529refund-gas_used-5">4.3 SSTORE 大表（EIP-2929 + EIP-3529，refund ≤ gas_used / 5）</h3>
+<table>
+<thead>
+<tr>
+<th>旧值 → 新值</th>
+<th>warm</th>
+<th>cold（追加 +2100）</th>
+<th>refund</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 → 0</td>
+<td>100</td>
+<td>2200</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0 → X（新写）</td>
+<td>20000</td>
+<td>22100</td>
+<td>0</td>
+</tr>
+<tr>
+<td>X → 0（清零）</td>
+<td>2900</td>
+<td>5000</td>
+<td>+4800</td>
+</tr>
+<tr>
+<td>X → Y（X≠0, Y≠0, Y≠X）</td>
+<td>2900</td>
+<td>5000</td>
+<td>0</td>
+</tr>
+<tr>
+<td>X → X（等价无操作）</td>
+<td>100</td>
+<td>2200</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>读：</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>warm</th>
+<th>cold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SLOAD</td>
+<td>100</td>
+<td>2100</td>
+</tr>
+<tr>
+<td>TLOAD（EIP-1153）</td>
+<td>100</td>
+<td>100（无 cold/warm 概念）</td>
+</tr>
+<tr>
+<td>TSTORE</td>
+<td>100</td>
+<td>100</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-expansion">4.4 内存 expansion 的二次项</h3>
+<p>EVM memory 惰性扩展：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>C_mem(a) = 3a + ⌊a² / 512⌋
+expansion_cost = C_mem(new_size) - C_mem(old_size)
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>大小</th>
+<th>a（32 字节字）</th>
+<th>gas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 KB</td>
+<td>32</td>
+<td>98</td>
+</tr>
+<tr>
+<td>32 KB</td>
+<td>1024</td>
+<td>5120</td>
+</tr>
+<tr>
+<td>1 MB</td>
+<td>32768</td>
+<td>~2.2M</td>
+</tr>
+</tbody>
+</table>
+<p>来源：<a href="https://ethereum.github.io/yellowpaper/paper.pdf">Yellow Paper 等式 326</a>、<a href="https://ethereum.org/developers/tutorials/yellow-paper-evm/">ethereum.org/developers/tutorials/yellow-paper-evm</a>。</p>
+<h3 id="45-call-6364-stipend">4.5 CALL 的 63/64 规则与 stipend</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>forward_gas = min(requested, available × 63/64)
+</code></pre></div>
+<p>EIP-150 引入，1/64 留调用方防深度攻击。<code>CALL</code>/<code>CALLCODE</code> 带 value 时额外 +9000 gas 并赠被调方 <strong>2300 gas stipend</strong>；<code>STATICCALL</code> / <code>DELEGATECALL</code> 无 value 加价也无 stipend。</p>
+<p>Istanbul EIP-1884 把 SLOAD 涨到 800 后，2300 gas stipend 已无法完成任何有意义操作。<strong>永远别硬编码 gas 常数</strong>——用 <code>call{value:x}</code> + checks-effects-interactions，不要 <code>transfer</code>/<code>send</code>。</p>
+<h3 id="46-transient-storage-gaseip-1153">4.6 transient storage 的 gas（EIP-1153）</h3>
+<p><code>TSTORE</code> / <code>TLOAD</code> 固定 100 gas，无 cold/warm，tx 结束清零，不入 stateRoot。典型用途：re-entrancy guard（22100 → 100 gas）、一次性 approve+transferFrom、闪电贷簿记。</p>
+<p>来源：<a href="https://www.soliditylang.org/blog/2024/01/26/transient-storage/">Solidity 0.8.24 transient storage</a>。</p>
+<h3 id="47-blob-gas">4.7 blob gas（独立费用市场）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>blob_base_fee = fake_exponential(MIN_BASE_FEE_PER_BLOB_GAS, excess_blob_gas, BLOB_BASE_FEE_UPDATE_FRACTION)
+fee_per_blob  = blob_base_fee × 131072
+</code></pre></div>
+<p><code>fake_exponential</code> 用泰勒展开模拟 e^x（避免浮点）。<code>BLOB_BASE_FEE_UPDATE_FRACTION = 3338477</code>（Cancun；Pectra 有调整）。两套费用市场完全独立。</p>
+<h3 id="48-intrinsic-gas">4.8 intrinsic gas</h3>
+<p>每笔交易执行前先收：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>21000                    # 基础（普通转账）
++ 32000                  # 如果是合约部署
++ 4   per zero byte      of calldata
++ 16  per non-zero byte  of calldata    (Pectra 前 16；EIP-7623 后引入&quot;floor&quot;机制)
++ 2400 per access list address
++ 1900 per access list (address, key)
++ PER_EMPTY_ACCOUNT_COST = 25000 per authorization (EIP-7702)
+  # 若被授权的 authority EOA 已存在（绝大多数情况），退 PER_EMPTY_ACCOUNT_COST - PER_AUTH_BASE_COST = 12500，
+  # 净收 PER_AUTH_BASE_COST = 12500 gas。
+</code></pre></div>
+<p>EIP-7623（Pectra）引入 calldata floor——tx 总 gas 不能低于 calldata floor，把"租 calldata 占空间"挤进 blob。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5-evm" id="ch07"><span class="chapter-num">Chapter 07</span><br>5 EVM 内部：栈机的六个数据区</h2>
+
+<p>§3 把账户和交易讲完了，但交易最终要变成 <strong>CALL 进合约 → 跑字节码 → 改状态</strong>。这一节回答"跑字节码时 EVM 在哪里读、在哪里写"。</p>
+<p>256 位字长，无寄存器，无浮点。所有数据落在六个区里。看下表时盯三列：「持久？」决定是否进 stateRoot 影响 gas，「谁能写」决定隔离边界，「生命周期」决定能否跨调用读到。</p>
+<table>
+<thead>
+<tr>
+<th>区</th>
+<th>字节寻址？</th>
+<th>持久？进 stateRoot？</th>
+<th>谁能写</th>
+<th>生命周期</th>
+<th>主要 opcode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>stack</strong></td>
+<td>否（按栈位）</td>
+<td>否</td>
+<td>当前帧</td>
+<td>当前调用帧</td>
+<td>PUSH, POP, DUP, SWAP</td>
+</tr>
+<tr>
+<td><strong>memory</strong></td>
+<td>是</td>
+<td>否</td>
+<td>当前帧</td>
+<td>当前调用帧</td>
+<td>MLOAD, MSTORE, MSTORE8, MCOPY, MSIZE</td>
+</tr>
+<tr>
+<td><strong>storage</strong></td>
+<td>否（256 位 slot）</td>
+<td><strong>是</strong></td>
+<td>当前合约自己</td>
+<td>永久</td>
+<td>SSTORE, SLOAD</td>
+</tr>
+<tr>
+<td><strong>transient storage</strong></td>
+<td>否（256 位 slot）</td>
+<td><strong>否</strong>（不进 stateRoot）</td>
+<td>当前合约自己</td>
+<td>当前 tx</td>
+<td>TSTORE, TLOAD</td>
+</tr>
+<tr>
+<td><strong>calldata</strong></td>
+<td>是</td>
+<td>—</td>
+<td>调用方传入</td>
+<td>当前帧（只读）</td>
+<td>CALLDATALOAD, CALLDATACOPY, CALLDATASIZE</td>
+</tr>
+<tr>
+<td><strong>code</strong></td>
+<td>是</td>
+<td><strong>是</strong></td>
+<td>部署时一次写定（EOA Pectra 后例外）</td>
+<td>永久</td>
+<td>CODECOPY, CODESIZE, EXTCODECOPY, EXTCODESIZE, EXTCODEHASH</td>
+</tr>
+</tbody>
+</table>
+<h3 id="51-stack">5.1 stack</h3>
+<p>最大 1024 项，每项 32 字节。所有算术与控制流从栈取值、把结果推回栈。</p>
+<ul>
+<li>PUSH1..PUSH32：推 1~32 字节字面量</li>
+<li>PUSH0（Shanghai 起）：推零</li>
+<li>POP：丢弃</li>
+<li>DUP1..DUP16：复制栈顶第 1~16 项</li>
+<li>SWAP1..SWAP16：交换栈顶与下方第 1~16 位</li>
+</ul>
+<p>栈过深触发 "Stack too deep" 编译错误（编译时报，非运行时）。</p>
+<h3 id="52-memory">5.2 memory</h3>
+<p>线性字节数组，初始空，按 32 字节对齐惰性扩展，帧结束销毁（不跨 CALL 帧共享）。Solidity 约定 0x40 为 free memory pointer（非协议强制）。MCOPY（EIP-5656）比循环 MLOAD/MSTORE 省约 1/3。</p>
+<h3 id="53-storage">5.3 storage</h3>
+<p>每合约独立 storage trie（32 字节 KV）。Solidity 状态变量映射 slot 0、1、2...；mapping 用 <code>keccak256(key ‖ slot)</code>。SLOAD 冷 2100、SSTORE 新写冷 22100——<strong>优化首要原则：减少 SSTORE</strong>。</p>
+<h3 id="54-transient-storage">5.4 transient storage</h3>
+<p>EIP-1153（Cancun），slot KV，tx 结束清零，不入 stateRoot，100 gas。Solidity 0.8.24 起原生 <code>transient</code> 类型。</p>
+<h3 id="55-calldata">5.5 calldata</h3>
+<p>调用方传入的只读字节。<code>bytes calldata</code> 避免拷到 memory 省 gas。注意：constructor 参数附在 initcode 末尾，需 CODECOPY 读，不走 calldata。</p>
+<h3 id="56-code">5.6 code</h3>
+<p>不可变（7702 EOA 例外）。CODECOPY 拷自身代码到 memory；EXTCODECOPY / EXTCODESIZE / EXTCODEHASH 读他人代码。</p>
+<h3 id="57-mermaid">5.7 一张图把六个数据区串起来（Mermaid）</h3>
+<figure><img src="diagram-be2fc20771.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="6-opcodes" id="ch08"><span class="chapter-num">Chapter 08</span><br>6 Opcodes 全解：按类讲透</h2>
+
+<p>EVM 大约 150 条指令。逐条解释会变成字典，所以我们只在表格里给出"形状"（栈进/出、gas 公式、引入分叉），把会咬人的少数 opcode 单独拉出来讲。完整速查以 <a href="https://www.evm.codes/">evm.codes</a> 为准。</p>
+<p>读表约定：<strong>栈</strong> 列写 <code>输入 → 输出</code>，栈顶在右；<strong>gas</strong> 列省略 memory expansion 与 cold/warm 可变部分；标 <strong>粗体</strong> 的 opcode 在工程实践中容易踩坑或被审计反复盯。</p>
+<h3 id="61-0x00-0x0b">6.1 停机 / 算术 (0x00-0x0B)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00</td>
+<td>STOP</td>
+<td><code>→</code></td>
+<td>0</td>
+<td>正常停机；不消耗 gas</td>
+</tr>
+<tr>
+<td>0x01</td>
+<td>ADD</td>
+<td><code>a, b → a+b</code></td>
+<td>3</td>
+<td>256 位 wrap</td>
+</tr>
+<tr>
+<td>0x02</td>
+<td>MUL</td>
+<td><code>a, b → a×b</code></td>
+<td>5</td>
+<td>wrap</td>
+</tr>
+<tr>
+<td>0x03</td>
+<td>SUB</td>
+<td><code>a, b → a-b</code></td>
+<td>3</td>
+<td>wrap</td>
+</tr>
+<tr>
+<td>0x04</td>
+<td>DIV</td>
+<td><code>a, b → a÷b</code>（b=0 返 0）</td>
+<td>5</td>
+<td>无符号</td>
+</tr>
+<tr>
+<td>0x05</td>
+<td>SDIV</td>
+<td><code>a, b → a÷b</code></td>
+<td>5</td>
+<td>二补码有符号</td>
+</tr>
+<tr>
+<td>0x06</td>
+<td>MOD</td>
+<td><code>a, b → a mod b</code></td>
+<td>5</td>
+<td>无符号</td>
+</tr>
+<tr>
+<td>0x07</td>
+<td>SMOD</td>
+<td><code>a, b → a mod b</code></td>
+<td>5</td>
+<td>有符号</td>
+</tr>
+<tr>
+<td>0x08</td>
+<td>ADDMOD</td>
+<td><code>a, b, n → (a+b) mod n</code></td>
+<td>8</td>
+<td>防中间溢出</td>
+</tr>
+<tr>
+<td>0x09</td>
+<td>MULMOD</td>
+<td><code>a, b, n → (a×b) mod n</code></td>
+<td>8</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>0x0a</td>
+<td>EXP</td>
+<td><code>a, b → a^b</code></td>
+<td>10 + 50×byte_len(b)</td>
+<td>byte_len(b) 是 b 的字节数</td>
+</tr>
+<tr>
+<td>0x0b</td>
+<td>SIGNEXTEND</td>
+<td><code>b, x → ...</code></td>
+<td>5</td>
+<td>x 按 b 字节符号扩展到 32 字节</td>
+</tr>
+</tbody>
+</table>
+<p>三个反直觉行为：DIV/MOD 在 b=0 时返 0 不是 panic（Solidity 0.8 自己插 revert）；EXP gas 与指数字节数线性，固定二次幂用 <code>1 &lt;&lt; N</code> 而非 <code>2 ** N</code>；Solidity &lt; 0.8 整数运算无 checked，<code>unchecked { }</code> 块在 0.8 后仍能关掉——审计盯每个 unchecked 边界。</p>
+<h3 id="62-0x10-0x1d">6.2 比较与位运算 (0x10-0x1D)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x10</td>
+<td>LT</td>
+<td><code>a, b → a&lt;b ? 1 : 0</code></td>
+<td>3</td>
+<td>无符号</td>
+</tr>
+<tr>
+<td>0x11</td>
+<td>GT</td>
+<td><code>a, b → a&gt;b ? 1 : 0</code></td>
+<td>3</td>
+<td>无符号</td>
+</tr>
+<tr>
+<td>0x12</td>
+<td>SLT</td>
+<td><code>a, b → ...</code></td>
+<td>3</td>
+<td>有符号</td>
+</tr>
+<tr>
+<td>0x13</td>
+<td>SGT</td>
+<td><code>a, b → ...</code></td>
+<td>3</td>
+<td>有符号</td>
+</tr>
+<tr>
+<td>0x14</td>
+<td>EQ</td>
+<td><code>a, b → a==b ? 1 : 0</code></td>
+<td>3</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x15</td>
+<td>ISZERO</td>
+<td><code>a → a==0 ? 1 : 0</code></td>
+<td>3</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x16</td>
+<td>AND</td>
+<td><code>a, b → a&amp;b</code></td>
+<td>3</td>
+<td>按位</td>
+</tr>
+<tr>
+<td>0x17</td>
+<td>OR</td>
+<td><code>a, b → a｜b</code></td>
+<td>3</td>
+<td>按位</td>
+</tr>
+<tr>
+<td>0x18</td>
+<td>XOR</td>
+<td><code>a, b → a^b</code></td>
+<td>3</td>
+<td>按位</td>
+</tr>
+<tr>
+<td>0x19</td>
+<td>NOT</td>
+<td><code>a → ~a</code></td>
+<td>3</td>
+<td>按位取反</td>
+</tr>
+<tr>
+<td>0x1a</td>
+<td>BYTE</td>
+<td><code>i, x → x 的第 i 字节（高位优先）</code></td>
+<td>3</td>
+<td>i ≥ 32 返 0</td>
+</tr>
+<tr>
+<td>0x1b</td>
+<td>SHL</td>
+<td><code>shift, value → value &lt;&lt; shift</code></td>
+<td>3</td>
+<td>EIP-145 (Constantinople)</td>
+</tr>
+<tr>
+<td>0x1c</td>
+<td>SHR</td>
+<td><code>shift, value → value &gt;&gt; shift</code></td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>0x1d</td>
+<td>SAR</td>
+<td><code>shift, value → value &gt;&gt; shift (算术)</code></td>
+<td>3</td>
+<td>同上</td>
+</tr>
+<tr>
+<td>0x1e</td>
+<td>CLZ</td>
+<td><code>x → 前导零位数</code></td>
+<td>5</td>
+<td>EIP-7939 (<strong>Fusaka</strong>)</td>
+</tr>
+</tbody>
+</table>
+<p>CLZ（Count Leading Zeros，EIP-7939）：Fusaka 新增，用于 fast-log2、定点数实现，硬件友好。</p>
+<h3 id="63-sha3-keccak-0x20">6.3 SHA3 / KECCAK (0x20)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x20</td>
+<td>KECCAK256（旧名 SHA3）</td>
+<td><code>offset, len → keccak256(mem[offset..offset+len])</code></td>
+<td>30 + 6 × ⌈len/32⌉ + mem_expand</td>
+<td>EVM 唯一原生哈希</td>
+</tr>
+</tbody>
+</table>
+<p>小哈希便宜，<strong>不要在循环里 keccak 大 buffer</strong>——memory expansion + per-word 费用叠加。</p>
+<h3 id="64-0x30-0x3f">6.4 环境信息 (0x30-0x3F)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x30</td>
+<td>ADDRESS</td>
+<td><code>→ this</code></td>
+<td>2</td>
+<td>当前合约地址</td>
+</tr>
+<tr>
+<td>0x31</td>
+<td>BALANCE</td>
+<td><code>addr → balance(addr)</code></td>
+<td>2600 (cold) / 100 (warm)</td>
+<td>跨账户读</td>
+</tr>
+<tr>
+<td>0x32</td>
+<td>ORIGIN</td>
+<td><code>→ tx.origin</code></td>
+<td>2</td>
+<td><strong>永远不要用做权限</strong></td>
+</tr>
+<tr>
+<td>0x33</td>
+<td>CALLER</td>
+<td><code>→ msg.sender</code></td>
+<td>2</td>
+<td>直接调用方</td>
+</tr>
+<tr>
+<td>0x34</td>
+<td>CALLVALUE</td>
+<td><code>→ msg.value</code></td>
+<td>2</td>
+<td>wei</td>
+</tr>
+<tr>
+<td>0x35</td>
+<td>CALLDATALOAD</td>
+<td><code>i → calldata[i..i+32]</code></td>
+<td>3</td>
+<td>越界部分填 0</td>
+</tr>
+<tr>
+<td>0x36</td>
+<td>CALLDATASIZE</td>
+<td><code>→ size</code></td>
+<td>2</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x37</td>
+<td>CALLDATACOPY</td>
+<td><code>destOffset, offset, len →</code></td>
+<td>3 + 3×⌈len/32⌉ + mem_expand</td>
+<td>calldata→memory</td>
+</tr>
+<tr>
+<td>0x38</td>
+<td>CODESIZE</td>
+<td><code>→ size</code></td>
+<td>2</td>
+<td>当前合约 code 长度</td>
+</tr>
+<tr>
+<td>0x39</td>
+<td>CODECOPY</td>
+<td><code>destOffset, offset, len →</code></td>
+<td>3 + 3×⌈len/32⌉</td>
+<td>自身 code→memory</td>
+</tr>
+<tr>
+<td>0x3a</td>
+<td>GASPRICE</td>
+<td><code>→ effective_gas_price</code></td>
+<td>2</td>
+<td>1559 后可能等于 baseFee+tip</td>
+</tr>
+<tr>
+<td>0x3b</td>
+<td>EXTCODESIZE</td>
+<td><code>addr → size</code></td>
+<td>2600/100</td>
+<td>别人的 code 长度</td>
+</tr>
+<tr>
+<td>0x3c</td>
+<td>EXTCODECOPY</td>
+<td><code>addr, destOffset, offset, len →</code></td>
+<td>同上 + copy fee</td>
+<td>别人 code→memory</td>
+</tr>
+<tr>
+<td>0x3d</td>
+<td>RETURNDATASIZE</td>
+<td><code>→ size</code></td>
+<td>2</td>
+<td>上次 CALL 返回数据长度</td>
+</tr>
+<tr>
+<td>0x3e</td>
+<td>RETURNDATACOPY</td>
+<td><code>destOffset, offset, len →</code></td>
+<td>3 + 3×⌈len/32⌉</td>
+<td>RETURNDATA→memory</td>
+</tr>
+<tr>
+<td>0x3f</td>
+<td>EXTCODEHASH</td>
+<td><code>addr → keccak256(code)</code></td>
+<td>2600/100</td>
+<td>EIP-1052</td>
+</tr>
+</tbody>
+</table>
+<p><strong>BLOCKHASH 在 Pectra (EIP-2935) 后的语义</strong>：opcode 本身仍标价 20 gas，但客户端实现会内部读 history contract（<code>0x0000F90827F1C53a10cb7A02335B175320002935</code>）的 storage。冷读时会触发 SLOAD cold 价（2100 gas）隐性成本——同一笔 tx 内首次访问该 slot 计 cold，后续 warm。Gas 估算时不能再当成纯 20 gas opcode。</p>
+<h3 id="65-0x40-0x4a">6.5 区块信息 (0x40-0x4A)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x40</td>
+<td>BLOCKHASH</td>
+<td><code>n → hash</code></td>
+<td>20</td>
+<td>仅最近 256 块；EIP-2935 后由系统合约提供 8192（见下方 caveat）</td>
+</tr>
+<tr>
+<td>0x41</td>
+<td>COINBASE</td>
+<td><code>→ proposer_addr</code></td>
+<td>2</td>
+<td>Merge 前是 miner</td>
+</tr>
+<tr>
+<td>0x42</td>
+<td>TIMESTAMP</td>
+<td><code>→ block.timestamp</code></td>
+<td>2</td>
+<td>proposer 可小幅操纵</td>
+</tr>
+<tr>
+<td>0x43</td>
+<td>NUMBER</td>
+<td><code>→ block.number</code></td>
+<td>2</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x44</td>
+<td>PREVRANDAO</td>
+<td><code>→ randao mix</code></td>
+<td>2</td>
+<td>Merge 后替代 DIFFICULTY</td>
+</tr>
+<tr>
+<td>0x45</td>
+<td>GASLIMIT</td>
+<td><code>→ block.gaslimit</code></td>
+<td>2</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x46</td>
+<td>CHAINID</td>
+<td><code>→ chain_id</code></td>
+<td>2</td>
+<td>EIP-1344 (Istanbul)</td>
+</tr>
+<tr>
+<td>0x47</td>
+<td>SELFBALANCE</td>
+<td><code>→ balance(this)</code></td>
+<td>5</td>
+<td>比 BALANCE(this) 便宜</td>
+</tr>
+<tr>
+<td>0x48</td>
+<td>BASEFEE</td>
+<td><code>→ block.baseFee</code></td>
+<td>2</td>
+<td>EIP-3198 (London)</td>
+</tr>
+<tr>
+<td>0x49</td>
+<td>BLOBHASH</td>
+<td><code>i → blob_hashes[i]</code></td>
+<td>3</td>
+<td>EIP-4844 (Cancun)</td>
+</tr>
+<tr>
+<td>0x4a</td>
+<td>BLOBBASEFEE</td>
+<td><code>→ blob_base_fee</code></td>
+<td>2</td>
+<td>EIP-7516 (Cancun)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="66-0x50-0x5f">6.6 栈、内存、存储、控制流 (0x50-0x5F)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x50</td>
+<td>POP</td>
+<td><code>a →</code></td>
+<td>2</td>
+<td>丢弃栈顶</td>
+</tr>
+<tr>
+<td>0x51</td>
+<td>MLOAD</td>
+<td><code>offset → mem[offset..+32]</code></td>
+<td>3 + mem_expand</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x52</td>
+<td>MSTORE</td>
+<td><code>offset, value →</code></td>
+<td>3 + mem_expand</td>
+<td>写 32 字节</td>
+</tr>
+<tr>
+<td>0x53</td>
+<td>MSTORE8</td>
+<td><code>offset, value →</code></td>
+<td>3 + mem_expand</td>
+<td>仅写 1 字节</td>
+</tr>
+<tr>
+<td>0x54</td>
+<td>SLOAD</td>
+<td><code>key → storage[key]</code></td>
+<td>100 (warm) / 2100 (cold)</td>
+<td>见 §4.3</td>
+</tr>
+<tr>
+<td>0x55</td>
+<td>SSTORE</td>
+<td><code>key, value →</code></td>
+<td>见 §4.3 大表</td>
+<td>最贵的 opcode 家族</td>
+</tr>
+<tr>
+<td>0x56</td>
+<td>JUMP</td>
+<td><code>dest →</code></td>
+<td>8</td>
+<td>dest 必须是 JUMPDEST</td>
+</tr>
+<tr>
+<td>0x57</td>
+<td>JUMPI</td>
+<td><code>dest, cond →</code></td>
+<td>10</td>
+<td>cond ≠ 0 才跳</td>
+</tr>
+<tr>
+<td>0x58</td>
+<td>PC</td>
+<td><code>→ pc</code></td>
+<td>2</td>
+<td>当前 PC，调试用</td>
+</tr>
+<tr>
+<td>0x59</td>
+<td>MSIZE</td>
+<td><code>→ memory_size_bytes</code></td>
+<td>2</td>
+<td>当前 memory 高水位</td>
+</tr>
+<tr>
+<td>0x5a</td>
+<td>GAS</td>
+<td><code>→ gasleft</code></td>
+<td>2</td>
+<td>剩余 gas</td>
+</tr>
+<tr>
+<td>0x5b</td>
+<td>JUMPDEST</td>
+<td><code>→</code></td>
+<td>1</td>
+<td>合法跳转标记</td>
+</tr>
+<tr>
+<td>0x5c</td>
+<td>TLOAD</td>
+<td><code>key → transient[key]</code></td>
+<td>100</td>
+<td>EIP-1153 (Cancun)</td>
+</tr>
+<tr>
+<td>0x5d</td>
+<td>TSTORE</td>
+<td><code>key, value →</code></td>
+<td>100</td>
+<td>EIP-1153 (Cancun)</td>
+</tr>
+<tr>
+<td>0x5e</td>
+<td>MCOPY</td>
+<td><code>dest, src, len →</code></td>
+<td>3 + 3×⌈len/32⌉ + mem_expand</td>
+<td>EIP-5656 (Cancun)</td>
+</tr>
+<tr>
+<td>0x5f</td>
+<td>PUSH0</td>
+<td><code>→ 0</code></td>
+<td>2</td>
+<td>EIP-3855 (Shanghai)</td>
+</tr>
+</tbody>
+</table>
+<p>JUMPDEST 是"合法跳转目标"，跳到非 JUMPDEST 字节会 revert。这是字节码形式的"函数边界"，也是 disassembler 划分 basic block 的依据。</p>
+<h3 id="67-push-dup-swap-0x60-0x9f">6.7 PUSH / DUP / SWAP (0x60-0x9F)</h3>
+<ul>
+<li><strong>PUSH1..PUSH32 (0x60-0x7F)</strong>：推字面量 1..32 字节，3 gas</li>
+<li><strong>DUP1..DUP16 (0x80-0x8F)</strong>：复制栈顶第 1..16 项，3 gas</li>
+<li><strong>SWAP1..SWAP16 (0x90-0x9F)</strong>：交换栈顶与第 2..17 项，3 gas</li>
+</ul>
+<p>PUSH0（EIP-3855，Shanghai）省 1 字节，降合约部署费。</p>
+<h3 id="68-0xa0-0xa4">6.8 日志 (0xA0-0xA4)</h3>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0xa0</td>
+<td>LOG0</td>
+<td><code>offset, len →</code></td>
+<td>375 + 8×len</td>
+<td>无 indexed</td>
+</tr>
+<tr>
+<td>0xa1</td>
+<td>LOG1</td>
+<td><code>offset, len, t1 →</code></td>
+<td>750 + 8×len</td>
+<td>1 个 indexed topic</td>
+</tr>
+<tr>
+<td>0xa2</td>
+<td>LOG2</td>
+<td><code>offset, len, t1, t2 →</code></td>
+<td>1125 + 8×len</td>
+<td>2 个</td>
+</tr>
+<tr>
+<td>0xa3</td>
+<td>LOG3</td>
+<td><code>offset, len, t1, t2, t3 →</code></td>
+<td>1500 + 8×len</td>
+<td>3 个</td>
+</tr>
+<tr>
+<td>0xa4</td>
+<td>LOG4</td>
+<td><code>offset, len, t1..t4 →</code></td>
+<td>1875 + 8×len</td>
+<td>4 个</td>
+</tr>
+</tbody>
+</table>
+<p>LOG 不影响 stateRoot，只进 receiptsRoot 与 logsBloom，前端与 indexer 读它。ERC-20 转账用 LOG3（topic = [Transfer 哈希, from, to]，data = amount）。</p>
+<h3 id="69-0xf0-0xff-call-create">6.9 系统调用 (0xF0-0xFF)：四种 CALL 与 CREATE</h3>
+<p>四个 CALL 变体的差别全在三件事上：<strong>msg.sender 是谁、storage 写到哪、能不能改状态</strong>。先把对比表盯死，再去看每个 opcode 的字节。</p>
+<table>
+<thead>
+<tr>
+<th>Opcode</th>
+<th>msg.sender</th>
+<th>storage 写到</th>
+<th>能转 ETH</th>
+<th>状态可写</th>
+<th>引入</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CALL</code></td>
+<td>当前合约</td>
+<td>被调合约</td>
+<td>是</td>
+<td>是</td>
+<td>Frontier</td>
+</tr>
+<tr>
+<td><code>CALLCODE</code></td>
+<td>当前合约</td>
+<td><strong>当前合约</strong>（!）</td>
+<td>是</td>
+<td>是</td>
+<td>Frontier（弃用）</td>
+</tr>
+<tr>
+<td><code>DELEGATECALL</code></td>
+<td><strong>保持原 caller</strong></td>
+<td><strong>当前合约</strong></td>
+<td>否（继承 value）</td>
+<td>是</td>
+<td>Homestead</td>
+</tr>
+<tr>
+<td><code>STATICCALL</code></td>
+<td>当前合约</td>
+<td>被调合约</td>
+<td>否</td>
+<td><strong>否</strong></td>
+<td>Byzantium</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>助记符</th>
+<th>栈</th>
+<th>gas</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0xf0</td>
+<td>CREATE</td>
+<td><code>value, off, len → addr</code></td>
+<td>32000 + initcode 执行 + 200×deployed_size</td>
+<td>地址 = <code>keccak256(rlp([sender, nonce]))[12:]</code></td>
+</tr>
+<tr>
+<td>0xf1</td>
+<td>CALL</td>
+<td><code>gas, addr, value, ai, as, ro, rs → success</code></td>
+<td>700 + 9000(value≠0) + 25000(new account) + cold + child gas</td>
+<td>标准外部调用</td>
+</tr>
+<tr>
+<td>0xf2</td>
+<td>CALLCODE</td>
+<td>同上</td>
+<td>同上</td>
+<td><strong>已弃用</strong>；用 DELEGATECALL</td>
+</tr>
+<tr>
+<td>0xf3</td>
+<td>RETURN</td>
+<td><code>offset, len →</code></td>
+<td>0 + mem_expand</td>
+<td>正常返回</td>
+</tr>
+<tr>
+<td>0xf4</td>
+<td>DELEGATECALL</td>
+<td><code>gas, addr, ai, as, ro, rs → success</code></td>
+<td>700 + cold + child</td>
+<td>保留 sender 与 storage 上下文</td>
+</tr>
+<tr>
+<td>0xf5</td>
+<td>CREATE2</td>
+<td><code>value, off, len, salt → addr</code></td>
+<td>32000 + 6×⌈len/32⌉ + ...</td>
+<td>地址 = <code>keccak256(0xff‖sender‖salt‖keccak(initcode))[12:]</code></td>
+</tr>
+<tr>
+<td>0xfa</td>
+<td>STATICCALL</td>
+<td><code>gas, addr, ai, as, ro, rs → success</code></td>
+<td>700 + cold + child</td>
+<td>强制只读</td>
+</tr>
+<tr>
+<td>0xfd</td>
+<td>REVERT</td>
+<td><code>offset, len →</code></td>
+<td>0 + mem_expand</td>
+<td>回滚但保留 returndata</td>
+</tr>
+<tr>
+<td>0xfe</td>
+<td>INVALID</td>
+<td><code>→</code></td>
+<td>all gas</td>
+<td>故意非法字节，吃光 gas</td>
+</tr>
+<tr>
+<td>0xff</td>
+<td>SELFDESTRUCT</td>
+<td><code>recipient →</code></td>
+<td>5000 (cold +2600)</td>
+<td>EIP-6780 后弱化</td>
+</tr>
+</tbody>
+</table>
+<h4 id="691-callcode">6.9.1 CALLCODE 为什么死了</h4>
+<p>CALLCODE 借代码到自己上下文跑，但 msg.sender 还是当前合约，调用者无法 spoof <code>owner</code> 检查。EIP-7（Homestead）引入 DELEGATECALL，把 msg.sender 保留为原 caller，代理模式才真正成立。CALLCODE 随即废弃。</p>
+<h4 id="692-delegatecall">6.9.2 DELEGATECALL：代理模式的根</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>proxy.fallback() {
+  delegatecall(implementation, calldata)
+  return returndata
+}
+</code></pre></div>
+<p>implementation 的代码跑在 proxy 上下文：proxy 的 storage 被读写，msg.sender/msg.value 保持用户原值，implementation 自身 storage 永远不被动。这是 EIP-1967（Transparent / UUPS proxy）、Diamond（EIP-2535）、4337 钱包的核心机制。</p>
+<p><strong>Parity 多签事件（2017-11-06）</strong>：</p>
+<ul>
+<li>钱包逻辑放在 library 合约，每个 stub 钱包调用 library。library 本身是普通合约，无人 init</li>
+<li>攻击者直接调 library 的 <code>initWallet</code> 自封 owner，再调 <code>kill</code> 触发 SELFDESTRUCT</li>
+<li>library 消失，所有依赖它的 stub 永久无法工作，<strong>约 51.3 万 ETH 冻结</strong></li>
+</ul>
+<p>来源：<a href="https://blog.openzeppelin.com/parity-wallet-hack-reloaded">OpenZeppelin: Parity Wallet Hack Reloaded</a>、<a href="https://smartcontractshacking.com/attacks/call-attacks">smartcontractshacking.com: delegatecall attacks</a>。</p>
+<p>教训：永远 init library 自身；implementation 加 <code>require(address(this) != _self)</code>；EIP-6780 后 SELFDESTRUCT 危害已降（同 tx 创建+自毁才真删）。</p>
+<h4 id="693-create-vs-create2">6.9.3 CREATE vs CREATE2</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>CREATE  : keccak256(rlp([sender, nonce]))[12:32]
+CREATE2 : keccak256(0xff || sender || salt || keccak256(initCode))[12:32]
+</code></pre></div>
+<p>CREATE 依赖 nonce，地址不可控。CREATE2 由 salt 与 initCode 决定地址，<strong>部署前即可算出</strong>——用于 Uniswap V2/V3 pair/pool 地址、4337 wallet 的 counterfactual 部署。</p>
+<h4 id="694-staticcall-view">6.9.4 STATICCALL：链上 view 的硬保护</h4>
+<p>EIP-214（Byzantium）。STATICCALL 强制整个调用栈只读——子调里任何 SSTORE、CREATE、SELFDESTRUCT、LOG 均 revert。Solidity 编译 view/pure 外部调用时优先用 STATICCALL。</p>
+<h4 id="695-selfdestruct-cancun-eip-6780">6.9.5 SELFDESTRUCT 在 Cancun 后的弱化（EIP-6780）</h4>
+<p>Cancun（EIP-6780）前：删账户并转 ETH（Parity 事件的核心）。EIP-6780 后：仅<strong>同 tx 内创建+自毁</strong>才真删，否则只转 ETH——历史合约的 SELFDESTRUCT 实际变成普通转账。</p>
+<p><strong>注意</strong>：EIP-6780 下"非同 tx 创建+自毁"的合约，code 不会被清除，storage 也不会被清除。之前依赖 SELFDESTRUCT 清空 storage 然后用 CREATE2 同地址重部署"重置状态"的合约模式现在不再奏效——旧 storage 仍保留，新部署在同 salt+initCode 下会读到残留状态。审计 metamorphic contract / 可重置合约时务必重点检查。</p>
+<h3 id="610">6.10 一段汇编反汇编后的可读形态</h3>
+<p><code>0x6080604052348015600f57600080fd5b5060358060206000396000f3fe...</code> 反汇编：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>PUSH1 0x80     ; free memory pointer 初值
+PUSH1 0x40     ; Solidity 约定 fmp 槽
+MSTORE          ; memory[0x40..0x60] = 0x80
+CALLVALUE       ; msg.value
+DUP1
+ISZERO
+PUSH1 0x0f
+JUMPI           ; if value == 0 跳到主体
+PUSH1 0x00
+DUP1
+REVERT          ; 否则 revert（构造函数不接受 ETH）
+JUMPDEST        ; 0x0f
+POP
+...
+</code></pre></div>
+<p>这是所有 Solidity 合约的 prelude——分配 fmp、检查 msg.value、部署 runtime code。看到此段即可认定来自 Solidity 编译器，而非手写 Yul。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7-precompiles" id="ch09"><span class="chapter-num">Chapter 09</span><br>7 Precompiles 全表</h2>
+
+<p>Precompile 是协议层硬编码合约，地址固定，不在状态树存字节码，用普通 CALL 调用。截至 Pectra（2025-05），共 17 个：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>名字</th>
+<th>引入</th>
+<th>主要用途</th>
+<th>gas 公式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0x01</code></td>
+<td>ecrecover</td>
+<td>Frontier</td>
+<td>secp256k1 签名恢复</td>
+<td>3000</td>
+</tr>
+<tr>
+<td><code>0x02</code></td>
+<td>sha256</td>
+<td>Frontier</td>
+<td>SHA-256 哈希</td>
+<td>60 + 12 × ⌈len/32⌉</td>
+</tr>
+<tr>
+<td><code>0x03</code></td>
+<td>ripemd160</td>
+<td>Frontier</td>
+<td>RIPEMD-160</td>
+<td>600 + 120 × ⌈len/32⌉</td>
+</tr>
+<tr>
+<td><code>0x04</code></td>
+<td>identity</td>
+<td>Frontier</td>
+<td>datacopy（memory 拷贝）</td>
+<td>15 + 3 × ⌈len/32⌉</td>
+</tr>
+<tr>
+<td><code>0x05</code></td>
+<td>modexp</td>
+<td>Byzantium / Berlin EIP-2565 涨价</td>
+<td>大数模幂（RSA、ZK）</td>
+<td>复杂公式，与位长平方相关</td>
+</tr>
+<tr>
+<td><code>0x06</code></td>
+<td>bn254 G1 add</td>
+<td>Byzantium</td>
+<td>bn254 加法</td>
+<td>150</td>
+</tr>
+<tr>
+<td><code>0x07</code></td>
+<td>bn254 G1 mul</td>
+<td>Byzantium</td>
+<td>bn254 标量乘</td>
+<td>6000</td>
+</tr>
+<tr>
+<td><code>0x08</code></td>
+<td>bn254 pairing</td>
+<td>Byzantium</td>
+<td>bn254 配对（zkSNARK）</td>
+<td>45000 + 34000 × k</td>
+</tr>
+<tr>
+<td><code>0x09</code></td>
+<td>blake2f</td>
+<td>Istanbul</td>
+<td>BLAKE2 压缩</td>
+<td>1 / round</td>
+</tr>
+<tr>
+<td><code>0x0a</code></td>
+<td>point evaluation</td>
+<td>Cancun</td>
+<td>KZG 点求值（4844）</td>
+<td>50000（定值）</td>
+</tr>
+<tr>
+<td><code>0x0b</code></td>
+<td>BLS12-381 G1 ADD</td>
+<td><strong>Pectra</strong></td>
+<td>BLS 加法</td>
+<td>375</td>
+</tr>
+<tr>
+<td><code>0x0c</code></td>
+<td>BLS12-381 G1 MSM</td>
+<td><strong>Pectra</strong></td>
+<td>G1 多标量乘法</td>
+<td>复杂（discount 表）</td>
+</tr>
+<tr>
+<td><code>0x0d</code></td>
+<td>BLS12-381 G2 ADD</td>
+<td><strong>Pectra</strong></td>
+<td>G2 加法</td>
+<td>600</td>
+</tr>
+<tr>
+<td><code>0x0e</code></td>
+<td>BLS12-381 G2 MSM</td>
+<td><strong>Pectra</strong></td>
+<td>G2 多标量乘法</td>
+<td>复杂</td>
+</tr>
+<tr>
+<td><code>0x0f</code></td>
+<td>BLS12-381 PAIRING_CHECK</td>
+<td><strong>Pectra</strong></td>
+<td>BLS 配对检查</td>
+<td>32600 + 37700 × k</td>
+</tr>
+<tr>
+<td><code>0x10</code></td>
+<td>BLS12-381 MAP_FP_TO_G1</td>
+<td><strong>Pectra</strong></td>
+<td>base field → G1</td>
+<td>5500</td>
+</tr>
+<tr>
+<td><code>0x11</code></td>
+<td>BLS12-381 MAP_FP2_TO_G2</td>
+<td><strong>Pectra</strong></td>
+<td>extension field → G2</td>
+<td>23800</td>
+</tr>
+</tbody>
+</table>
+<p>来源：<a href="https://eips.ethereum.org/EIPS/eip-2537">EIPS/eip-2537</a>、<a href="https://www.evm.codes/precompiled">evm.codes/precompiled</a>。</p>
+<h3 id="71-ecrecover0x01">7.1 ecrecover（0x01）</h3>
+<p>输入 128 字节 <code>hash || v || r || s</code>，输出 32 字节地址。最常见用途：EIP-712 签名验证。</p>
+<p>经典坑：<strong>signature malleability</strong>——(r, s) 与 (r, n-s) 恢复同一地址，攻击者改 s 绕过基于 sig 哈希的去重。ecrecover 自身<strong>不</strong>强制 s ≤ n/2，需合约主动检查或用 OZ ECDSA.sol。</p>
+<h3 id="72-modexp0x05">7.2 modexp（0x05）</h3>
+<p><code>(B^E) mod M</code>，big-int。Berlin EIP-2565 收紧 gas 公式（大致是 max(Bsize, Msize)² × bit_len(E) / 3），与计算量对齐。用于 RSA 验证、ZK 电路。</p>
+<h3 id="73-bn254-0x060708">7.3 bn254 系列（0x06/07/08）</h3>
+<p>bn254（alt_bn128）。zkSNARK（Groth16）基于此曲线。安全性约 110 位，BLS12-381（128 位）在 Pectra 引入。</p>
+<h3 id="74-blake2f0x09">7.4 blake2f（0x09）</h3>
+<p>BLAKE2 的压缩函数（非完整函数），让 ETH 能验证 Zcash 等用 BLAKE2 的链的区块头。</p>
+<h3 id="75-point-evaluation0x0a">7.5 point evaluation（0x0a）</h3>
+<p>EIP-4844 核心。输入 192 字节：<code>versioned_hash(32) || z(32) || y(32) || commitment(48) || proof(48)</code>。校验"承诺多项式在点 z 确实等于 y"。rollup 用 (z, y, proof) 在主网证明 batch 数据完整性，比放 calldata 便宜约 100 倍。</p>
+<h3 id="76-bls12-381-0x0b-0x11eip-2537pectra">7.6 BLS12-381 系列（0x0b ~ 0x11，EIP-2537，Pectra）</h3>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>名字</th>
+<th>输入 / 输出</th>
+<th>gas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x0b</td>
+<td>G1 ADD</td>
+<td>256 → 128 字节</td>
+<td>375</td>
+</tr>
+<tr>
+<td>0x0c</td>
+<td>G1 MSM <code>Σ k_i×P_i</code></td>
+<td>N×160 → 128 字节</td>
+<td>discount 表</td>
+</tr>
+<tr>
+<td>0x0d</td>
+<td>G2 ADD</td>
+<td>512 → 256 字节</td>
+<td>600</td>
+</tr>
+<tr>
+<td>0x0e</td>
+<td>G2 MSM</td>
+<td>N×288 → 256 字节</td>
+<td>discount 表</td>
+</tr>
+<tr>
+<td>0x0f</td>
+<td>PAIRING_CHECK <code>Πe(P_i,Q_i)==1</code></td>
+<td>N×384 → 32 字节</td>
+<td>32600 + 37700×k</td>
+</tr>
+<tr>
+<td>0x10</td>
+<td>MAP_FP_TO_G1</td>
+<td>64 → 128 字节</td>
+<td>5500</td>
+</tr>
+<tr>
+<td>0x11</td>
+<td>MAP_FP2_TO_G2</td>
+<td>128 → 256 字节</td>
+<td>23800</td>
+</tr>
+</tbody>
+</table>
+<p>曲线安全性 ~128 位。MSM 替代了原草案的分散 G1MUL/G2MUL（BLST/arkworks 标准做法的硬件化）。工程意义：链上验证 Cosmos/Polkadot/Sui 的 BLS 签名、ZK rollup 最终配对验证、信标链 BLS 签名在执行层廉价验证。</p>
+<h3 id="77-secp256r1-p-2560x100eip-7951fusaka">7.7 secp256r1 / P-256（0x100，EIP-7951，Fusaka）</h3>
+<p>WebAuthn / passkey 曲线。输入 160 字节（hash + sig + pubkey），返回 32 字节。手机原生 passkey 无需中间层即可上链验证——EOA / 4337 钱包从助记词升级到生物识别的关键基础设施。</p>
+<h3 id="78">7.8 总览记忆口诀</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x01-0x04 : 哈希 / 签名 / 拷贝（Frontier）
+0x05      : modexp（Byzantium）
+0x06-0x08 : bn254（Byzantium，ZK Groth16）
+0x09      : blake2f（Istanbul，跨链）
+0x0a      : KZG point eval（Cancun，4844）
+0x0b-0x11 : BLS12-381 全家（Pectra，BLS / 现代 ZK）
+0x100     : secp256r1（Fusaka，passkey）
+</code></pre></div>
+<p>口诀："1234 哈希拷，5 modexp，678 bn254，9 blake，A KZG，B 起 BLS，100 P-256"。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-mpt-verkle" id="ch10"><span class="chapter-num">Chapter 10</span><br>8 状态树：MPT 现在 → Verkle 将来</h2>
+
+<h3 id="81-merkle-patricia-trie">8.1 Merkle Patricia Trie（现行）</h3>
+<p>Patricia trie + Merkle（节点 RLP 序列化后 keccak256 当指针）= MPT。四种节点：Null / Leaf（剩余路径, value）/ Extension（共享前缀, child）/ Branch（16 子节点 + 可选 value）。</p>
+<p>实际四棵 MPT：State trie（address → Account）、每合约 storage trie、Transactions trie、Receipts trie，四 root 均进区块头。</p>
+<p><strong>痛点</strong>：全节点状态约 350 GB（2026-04）；单槽 Merkle 证明 ~1 KB，数百槽即数百 KB，无状态客户端不可行；扇出 16，典型路径深 7-9 层。</p>
+<h3 id="82-verkle-trees">8.2 Verkle Trees（将来）</h3>
+<p>承诺方案：Pedersen + 椭圆曲线（Banderwagon over BLS12-381）。关键参数：扇出 256、证明 ~150 字节（可批量聚合，证 1000 个 slot 共 ~10 KB）、树深 3-4。一个区块的 witness ~200 KB，任何人能用一块 + witness 在轻硬件上验证状态转移（<strong>无状态客户端</strong>）。代价：椭圆曲线运算比 keccak 慢，节点 CPU 升高。</p>
+<p><strong>2026-04 状态</strong>：Verkle 测试网（kaustinen 系列）迭代多轮，geth/reth/besu 均有 Verkle 分支。预计 Hegota（2026-H2 ~ 2027）落主网。</p>
+<p>来源：<a href="https://ethereum.org/roadmap/verkle-trees/">ethereum.org/roadmap/verkle-trees</a>、<a href="https://blog.stake.fish/the-state-of-ethereum-in-2026/">The State of Ethereum in 2026 — stake.fish</a>。</p>
+<h3 id="83">8.3 一个工程师视角的对比表</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>MPT（现行）</th>
+<th>Verkle（将来）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>节点扇出</td>
+<td>16</td>
+<td>256</td>
+</tr>
+<tr>
+<td>哈希</td>
+<td>keccak256</td>
+<td>Pedersen + 椭圆曲线</td>
+</tr>
+<tr>
+<td>单证明大小</td>
+<td>~1 KB</td>
+<td>~150 字节</td>
+</tr>
+<tr>
+<td>批证明聚合</td>
+<td>不支持</td>
+<td>支持，O(log n)</td>
+</tr>
+<tr>
+<td>平均深度</td>
+<td>7-9</td>
+<td>3-4</td>
+</tr>
+<tr>
+<td>单节点 CPU</td>
+<td>低（纯哈希）</td>
+<td>高（曲线运算）</td>
+</tr>
+<tr>
+<td>状态可"无"持有？</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>工程成熟度</td>
+<td>极高</td>
+<td>测试网迭代中</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9" id="ch11"><span class="chapter-num">Chapter 11</span><br>9 客户端谱系：执行层与共识层逐个看</h2>
+
+<p>每台节点跑一个 EL 客户端（EVM 与状态）+ 一个 CL 客户端（PoS）。两者通过 <strong>Engine API</strong>（HTTPS + JWT）通信。</p>
+<h3 id="91-mermaid">9.1 一图看清架构（Mermaid）</h3>
+<figure><img src="diagram-9e1dcd1758.png" alt="mermaid diagram"></figure>
+
+<h3 id="92-elgo-ethereum-geth">9.2 EL：go-ethereum (geth)</h3>
+<ul>
+<li><strong>作者</strong>：以太坊基金会，Go</li>
+<li><strong>版本</strong>（2026-04）：v1.16.7 "Ballistic Drift Stabilizer"，含 BPO1/BPO2 mainnet 配置</li>
+<li><strong>特点</strong>：最老最完整，新分叉语义规范以 geth 行为为准；v1.16 起 path-based archive（PBSS）</li>
+<li><strong>份额</strong>：曾长期 80%+，2025 年起降至 50% 上下</li>
+<li>文档：<a href="https://geth.ethereum.org/docs">geth.ethereum.org/docs</a></li>
+</ul>
+<h3 id="93-elreth-paradigm">9.3 EL：reth (Paradigm)</h3>
+<ul>
+<li><strong>作者</strong>：Paradigm，Rust</li>
+<li><strong>版本</strong>（2026-04）：v2.1.0；v2.0 默认启用 Storage V2（MDBX 重写），1.7 Gigagas/s，磁盘 ~240 GB；<code>reth db migrate-v2</code> 无须 resync</li>
+<li><strong>特点</strong>：模块化（EVM、状态 DB、RPC 均可独立用作 crate）；衍生 <a href="https://github.com/paradigmxyz/ress"><code>ress</code></a>（无状态客户端原型）</li>
+<li><strong>份额</strong>（2026-04）：约 20-25%，2025 年起快速增长</li>
+<li>文档：<a href="https://reth.rs/">reth.rs</a></li>
+</ul>
+<h3 id="94-elerigon">9.4 EL：erigon</h3>
+<ul>
+<li><strong>作者</strong>：erigontech，Go</li>
+<li><strong>版本</strong>（2026-04）：v3.x；扁平 KV（plain state），存档节点省 ~50% 存储；v3 起内嵌 Caplin（CL）做单进程节点</li>
+<li><strong>注意</strong>：erigon 2 已于 2025-05-01 停机，必须迁 v3</li>
+<li>文档：<a href="https://docs.erigon.tech/">docs.erigon.tech</a></li>
+</ul>
+<h3 id="95-elnethermind">9.5 EL：nethermind</h3>
+<ul>
+<li><strong>作者</strong>：Nethermind，C# / .NET</li>
+<li><strong>特点</strong>：可配置性强；Fusaka 12 个 EIP 中 Nethermind 工程师 co-author 7 个；多数 staking-as-a-service 平台默认</li>
+<li>文档：<a href="https://github.com/NethermindEth/nethermind/releases">github.com/NethermindEth/nethermind/releases</a></li>
+</ul>
+<h3 id="96-elbesu">9.6 EL：besu</h3>
+<ul>
+<li><strong>作者</strong>：Hyperledger / Consensys，Java</li>
+<li><strong>特点</strong>：企业取向（QBFT / IBFT、隐私交易、permissioned）；状态库 Bonsai Tries（扁平 + 压缩）</li>
+<li>文档：<a href="https://besu.hyperledger.org/">besu.hyperledger.org</a></li>
+</ul>
+<h3 id="97-cllighthouse-sigma-prime">9.7 CL：lighthouse (Sigma Prime)</h3>
+<ul>
+<li><strong>作者</strong>：Sigma Prime，Rust；v8.0.0+（2026-04），支持 PeerDAS、<code>--supernode</code> / <code>--semi-supernode</code></li>
+<li><strong>特点</strong>：低内存、稳定，home staker 常选</li>
+<li>文档：<a href="https://github.com/sigp/lighthouse/releases">github.com/sigp/lighthouse/releases</a></li>
+</ul>
+<h3 id="98-clprysm-offchain-labs">9.8 CL：prysm (Offchain Labs)</h3>
+<ul>
+<li><strong>作者</strong>：Offchain Labs，Go；曾长期 CL 份额第一</li>
+<li><strong>2025-12 事件</strong>：Fusaka 上线后 ~7 天 attestation 处理 bug，依赖 Prysm 的 validator 掉线，finality 降至 ~75%；其他四客户端维持了链。此后 lighthouse/teku 份额各涨 ~5%</li>
+<li>文档：<a href="https://github.com/OffchainLabs/prysm/releases">github.com/OffchainLabs/prysm/releases</a></li>
+</ul>
+<h3 id="99-clteku-consensys">9.9 CL：teku (Consensys)</h3>
+<ul>
+<li><strong>作者</strong>：Consensys，Java；Infura 内部使用；JVM 生态友好</li>
+<li>Fusaka 后移除 <code>GOSSIP_MAX_SIZE</code> / <code>MAX_CHUNK_SIZE</code> / <code>TTFB_TIMEOUT</code> / <code>RESP_TIMEOUT</code> 配置项</li>
+<li>文档：<a href="https://github.com/ConsenSys/teku/releases">github.com/Consensys/teku/releases</a></li>
+</ul>
+<h3 id="910-clnimbus-status">9.10 CL：nimbus (Status)</h3>
+<ul>
+<li><strong>作者</strong>：Status，Nim；v25.11.0+；极致省资源，可跑树莓派全验证者；<code>--light-supernode</code> 配合 PeerDAS</li>
+<li>文档：<a href="https://github.com/status-im/nimbus-eth2">github.com/status-im/nimbus-eth2</a></li>
+</ul>
+<h3 id="911-cllodestar-chainsafe">9.11 CL：lodestar (ChainSafe)</h3>
+<ul>
+<li><strong>作者</strong>：ChainSafe，TypeScript；v1.36.0+；唯一 TS/JS 共识客户端，浏览器友好</li>
+<li>文档：<a href="https://github.com/ChainSafe/lodestar/releases">github.com/ChainSafe/lodestar/releases</a></li>
+</ul>
+<h3 id="912">9.12 客户端选型决策表</h3>
+<table>
+<thead>
+<tr>
+<th>你是</th>
+<th>推荐 EL</th>
+<th>推荐 CL</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Home staker</td>
+<td>reth / nimbus</td>
+<td>lighthouse / nimbus</td>
+<td>资源轻、稳定</td>
+</tr>
+<tr>
+<td>大型 staking 平台</td>
+<td>nethermind / erigon</td>
+<td>teku / lighthouse</td>
+<td>可观测性 + JVM 生态</td>
+</tr>
+<tr>
+<td>RPC provider（Alchemy 等）</td>
+<td>reth / geth</td>
+<td>lighthouse</td>
+<td>性能 + 历史 archive</td>
+</tr>
+<tr>
+<td>研究 / 实验</td>
+<td>reth</td>
+<td>lodestar / nimbus</td>
+<td>模块化 + 可读源码</td>
+</tr>
+<tr>
+<td>企业 / permissioned</td>
+<td>besu</td>
+<td>teku</td>
+<td>Java + 隐私功能</td>
+</tr>
+<tr>
+<td>移动 / 嵌入式</td>
+<td>（等 stateless / Verkle）</td>
+<td>nimbus</td>
+<td>资源极小</td>
+</tr>
+</tbody>
+</table>
+<p><strong>黄金规则</strong>：优先选份额 &lt; 33% 的客户端——见 §29.5 Prysm 事件复盘。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10" id="ch12"><span class="chapter-num">Chapter 12</span><br>10 升级机制：硬分叉是怎么开会开出来的</h2>
+
+<h3 id="101-eip">10.1 EIP 流程</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Idea → Draft → Review → Last Call → Final
+                                     ↓
+                                Withdrawn / Stagnant
+</code></pre></div>
+<p>每个 EIP 一个 markdown 文件，存在 <a href="https://github.com/ethereum/EIPs">github.com/ethereum/EIPs</a>。<code>Status: Final</code> ≠ 上主网——还要进硬分叉的 meta EIP 列表（如 <a href="https://eips.ethereum.org/EIPS/eip-7600">EIP-7600 Pectra Hardfork Meta</a>）。</p>
+<h3 id="102-acdallcoredevs">10.2 ACD（AllCoreDevs）</h3>
+<p>ACDE（执行层）和 ACDC（共识层）每两周各开一次，Zoom + YouTube 直播，议程：EIP 纳入清单、客户端进度、devnet 结果、testnet 日期。会议纪要：<a href="https://github.com/ethereum/pm">github.com/ethereum/pm</a>。另有 <strong>ACDT</strong> 专门追踪当前硬分叉的实现进度。</p>
+<h3 id="103">10.3 测试链路</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>local devnet → public devnet (devnet-N) → testnet (Holesky / Hoodi / Sepolia) → mainnet
+</code></pre></div>
+<ul>
+<li><strong>Holesky</strong>（2023-09 起）：大规模 PoS / 验证者测试</li>
+<li><strong>Hoodi</strong>（2025 起）：Pectra/Fusaka 长寿命测试网，Pectra 在此首发</li>
+<li><strong>Sepolia</strong>：开发者日常用，轻量</li>
+<li><strong>Goerli</strong>：已退役（2024-12）</li>
+</ul>
+<h3 id="104-devnet">10.4 devnet 节奏</h3>
+<p>每次分叉上测试网前约经历 10 个 devnet 周期（devnet-0 → ... → devnet-N）。任何客户端在某 devnet 无法跟住，对应 EIP 可能延至下次分叉（EOF 在 Fusaka 被剔除的直接原因之一）。</p>
+<h3 id="105-fusaka">10.5 Fusaka 后的节奏</h3>
+<p>Fusaka 上线时 ACD 决议：大致<strong>春季 + 秋季</strong>各一次硬分叉。Glamsterdam 春季款，Hegota 秋季款。</p>
+<p>来源：<a href="https://www.theblock.co/post/381285/fusaka-rollout-ethereum-twice-year-hard-fork-schedule">The Block: twice-a-year hard-fork schedule</a>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11-viem-foundry-cast" id="ch13"><span class="chapter-num">Chapter 13</span><br>11 工程实现：viem / Foundry / cast 实战</h2>
+
+<p>§3 - §6 是规则，本节是把规则落到键盘。每个示例对应前面一个具体公式：1559 落到 <code>serializeTransaction</code> + <code>keccak256</code> + <code>signTransaction</code>、SSTORE 冷热表落到 <code>forge test -vvvv</code> 的 trace、CREATE2 公式落到 <code>cast create2</code>。</p>
+<p>环境锁定：Node.js <code>20.18.0</code> LTS / viem <code>2.43.3</code>（2026-02）/ Foundry stable <code>v1.0.x</code> 或 nightly <code>2026-04-25+</code> / Sepolia RPC：<code>https://ethereum-sepolia-rpc.publicnode.com</code></p>
+<p>来源：<a href="https://www.paradigm.xyz/2025/02/announcing-foundry-v1-0">Foundry v1.0 Announcement</a>、<a href="https://github.com/wevm/viem/releases">viem releases</a>。</p>
+<h3 id="111-viem-code01-read-mainnetts">11.1 viem 读链 — <code>code/01-read-mainnet.ts</code></h3>
+<p><code>createPublicClient</code> + 公开 RPC：读最新区块、ETH / USDC 余额、估 gas、查 1559 fee。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">03</span>-以太坊与EVM/code
+pnpm<span style="color: #F8F8F8"> </span>i<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>pnpm<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span><span style="color: #204A87">read</span>
+</code></pre></div>
+<h3 id="112-viem-1559-code02-sign-and-send-1559ts">11.2 viem 手撸 1559 — <code>code/02-sign-and-send-1559.ts</code></h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000">SEPOLIA_PRIVATE_KEY</span><span style="color: #CE5C00; font-weight: bold">=</span>0xabc...<span style="color: #F8F8F8"> </span>pnpm<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>send
+</code></pre></div>
+<p>代码展示：<code>serializeTransaction()</code>（EIP-2718+1559 编码）→ <code>keccak256()</code>（secp256k1 实际签的消息）→ <code>account.signTransaction()</code>（本地签名）→ <code>sendRawTransaction()</code> → 按 <code>gasUsed × baseFee</code> 算烧毁 ETH。</p>
+<h3 id="113-viem-eip-7702-code03-eip7702-delegatets">11.3 viem EIP-7702 — <code>code/03-eip7702-delegate.ts</code></h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000">SEPOLIA_PRIVATE_KEY</span><span style="color: #CE5C00; font-weight: bold">=</span>0xabc...<span style="color: #F8F8F8"> </span>pnpm<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>delegate
+</code></pre></div>
+<p>跑完去 sepolia.etherscan.io 看你的 EOA 的 code 字段，应该是 <code>0xef0100...</code>。viem 文档：<a href="https://viem.sh/docs/eip7702/sending-transactions">Sending Transactions with EIP-7702</a>。</p>
+<h3 id="114-cast-code04-cast-recipessh">11.4 cast 速查 — <code>code/04-cast-recipes.sh</code></h3>
+<p>12 个配方：查余额、解码 calldata、估 gas、计算 keccak、解析 storage slot、CREATE2 地址预言、读 EOA designator。挑感兴趣的段落复制粘贴，勿直接 <code>bash 04-...</code>。</p>
+<h3 id="115-foundry-evm-trace-code05-foundry-bytecode">11.5 Foundry 跑 EVM trace — <code>code/05-foundry-bytecode/</code></h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code/05-foundry-bytecode
+forge<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>foundry-rs/forge-std<span style="color: #F8F8F8"> </span>--no-commit
+forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</span><span style="color: #F8F8F8"> </span>-vvvv<span style="color: #F8F8F8"> </span>--match-contract<span style="color: #F8F8F8"> </span>StackPlayTest
+</code></pre></div>
+<p>三个 demo：<code>bump()</code>（SSTORE cold/warm）、<code>transientPlay()</code>（TSTORE/TLOAD）、<code>mcopyPlay()</code>（MCOPY）。<code>-vvvv</code> 打印每步 opcode trace。</p>
+<h3 id="116-evmcodes-playground">11.6 evm.codes Playground</h3>
+<p><a href="https://www.evm.codes/playground">evm.codes/playground</a> 粘贴：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>60 06  PUSH1 0x06
+60 07  PUSH1 0x07
+02     MUL          ; stack: [42]
+60 00  PUSH1 0x00
+55     SSTORE       ; storage[0] = 42
+00     STOP
+</code></pre></div>
+<p>点 Run 逐步显示 stack / storage。替换 <code>02</code> 为 <code>01/04/07</code> 等过一遍算术 opcode。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12-trace-pc-by-pc" id="ch14"><span class="chapter-num">Chapter 14</span><br>12 真实交易 trace 逐步走读（PC by PC）</h2>
+
+<p>回到 §1.1 那笔 USDC 转账。前面所有的概念——RLP envelope、selector dispatch、栈机、SSTORE 冷热、DELEGATECALL 上下文、LOG3 + receiptsRoot——都在这 60000 gas 里发生。本节按 PC 顺序把它一遍走完。</p>
+<p>调用形式：EOA → USDC proxy → DELEGATECALL → FiatTokenV2_2.transfer。tx 哈希示意：<code>0x4d61c79e21b81df9...</code>，可用 <code>cast run --quick</code> 拉自己的 trace。</p>
+<h3 id="121">12.1 交易解码</h3>
+<p><code>cast tx 0x4d61...</code> 输出大致：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>type:                eip1559
+nonce:               123
+to:                  0xA0b8...USDC
+value:               0
+data:                0xa9059cbb000000...0000003b9aca00
+gasLimit:            65000
+maxFeePerGas:        25 gwei
+maxPriorityFeePerGas: 2 gwei
+</code></pre></div>
+<p><code>0xa9059cbb</code> = <code>bytes4(keccak256("transfer(address,uint256)"))</code> (ERC-20 transfer selector)。后 32 字节 = to 地址（前 12 字节填 0），再 32 字节 = amount = <code>0x3b9aca00</code> = 1e9 = 1000 USDC（6 位小数）。</p>
+<h3 id="122-usdc-fallback-dispatcher">12.2 USDC 合约的 fallback / dispatcher（简化）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>PUSH1 0x80           ; init free memory pointer
+PUSH1 0x40
+MSTORE
+CALLVALUE            ; msg.value
+DUP1
+ISZERO
+PUSH2 0x000f
+JUMPI                ; if value == 0 跳到主体
+PUSH1 0
+DUP1
+REVERT               ; 否则 revert（USDC 不接受 ETH）
+JUMPDEST [0x000f]
+POP
+PUSH1 0x04           ; 取 calldata 的前 4 字节
+CALLDATASIZE
+LT                   ; calldata &lt; 4 ?
+PUSH2 0x0094         ; 跳到 fallback
+JUMPI
+PUSH1 0
+CALLDATALOAD
+PUSH1 0xe0
+SHR                  ; 把高 4 字节移到低位（取出 selector）
+DUP1
+PUSH4 0xa9059cbb     ; 比对 transfer
+EQ
+PUSH2 0x00b9
+JUMPI                ; 命中跳到 transfer 实现
+... (其他 selector 比较) ...
+JUMPDEST [0x00b9]
+... transfer 实现 ...
+</code></pre></div>
+<p>stack 每步状态确定——这就是 disassembler 的工作。</p>
+<h3 id="123-pc-by-pcdispatcher-24">12.3 PC-by-PC：dispatcher 的 24 步演示</h3>
+<p>假设 calldata = <code>0xa9059cbb || 0x...vitalik || 0x...3b9aca00</code>（76 bytes），msg.value = 0。</p>
+<table>
+<thead>
+<tr>
+<th>PC</th>
+<th>字节</th>
+<th>opcode</th>
+<th>执行后 stack</th>
+<th>memory / storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00</td>
+<td>60 80</td>
+<td>PUSH1 0x80</td>
+<td><code>[0x80]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x02</td>
+<td>60 40</td>
+<td>PUSH1 0x40</td>
+<td><code>[0x80, 0x40]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x04</td>
+<td>52</td>
+<td>MSTORE</td>
+<td><code>[]</code></td>
+<td>mem[0x40..0x60] = 0x80（free memory pointer 初值）</td>
+</tr>
+<tr>
+<td>0x05</td>
+<td>34</td>
+<td>CALLVALUE</td>
+<td><code>[0]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x06</td>
+<td>80</td>
+<td>DUP1</td>
+<td><code>[0, 0]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x07</td>
+<td>15</td>
+<td>ISZERO</td>
+<td><code>[0, 1]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x08</td>
+<td>61 00 0f</td>
+<td>PUSH2 0x000f</td>
+<td><code>[0, 1, 0x0f]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x0b</td>
+<td>57</td>
+<td>JUMPI</td>
+<td><code>[0]</code>（跳走，因栈顶 1 truthy）</td>
+<td>PC = 0x0f</td>
+</tr>
+<tr>
+<td>0x0f</td>
+<td>5b</td>
+<td>JUMPDEST</td>
+<td><code>[0]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x10</td>
+<td>50</td>
+<td>POP</td>
+<td><code>[]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x11</td>
+<td>60 04</td>
+<td>PUSH1 0x04</td>
+<td><code>[4]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x13</td>
+<td>36</td>
+<td>CALLDATASIZE</td>
+<td><code>[4, 76]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x14</td>
+<td>10</td>
+<td>LT</td>
+<td><code>[0]</code>（4 &lt; 76 = false）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x15</td>
+<td>61 00 94</td>
+<td>PUSH2 0x0094</td>
+<td><code>[0, 0x94]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x18</td>
+<td>57</td>
+<td>JUMPI</td>
+<td><code>[]</code>（不跳走，因栈顶 0）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x19</td>
+<td>60 00</td>
+<td>PUSH1 0x00</td>
+<td><code>[0]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x1b</td>
+<td>35</td>
+<td>CALLDATALOAD</td>
+<td><code>[0xa9059cbb000000...]</code></td>
+<td>取 calldata[0..32]</td>
+</tr>
+<tr>
+<td>0x1c</td>
+<td>60 e0</td>
+<td>PUSH1 0xe0</td>
+<td><code>[0xa9059cbb..., 224]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x1e</td>
+<td>1c</td>
+<td>SHR</td>
+<td><code>[0x00000000a9059cbb]</code></td>
+<td>右移 224 位提出 selector</td>
+</tr>
+<tr>
+<td>0x1f</td>
+<td>80</td>
+<td>DUP1</td>
+<td><code>[0xa9059cbb, 0xa9059cbb]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x20</td>
+<td>63 a9 05 9c bb</td>
+<td>PUSH4 0xa9059cbb</td>
+<td><code>[0xa9059cbb, 0xa9059cbb, 0xa9059cbb]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x25</td>
+<td>14</td>
+<td>EQ</td>
+<td><code>[0xa9059cbb, 1]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x26</td>
+<td>61 00 b9</td>
+<td>PUSH2 0x00b9</td>
+<td><code>[0xa9059cbb, 1, 0xb9]</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>0x29</td>
+<td>57</td>
+<td>JUMPI</td>
+<td><code>[0xa9059cbb]</code>（跳到 transfer 实现）</td>
+<td>PC = 0xb9</td>
+</tr>
+</tbody>
+</table>
+<p>dispatcher 全过程无 SSTORE，全在 stack 上完成——通常只占 200-500 gas。</p>
+<h3 id="124-mermaid">12.4 Mermaid 调用栈</h3>
+<figure><img src="diagram-631a8f6389.png" alt="mermaid diagram"></figure>
+
+<p>USDC 用 EIP-1967 透明代理——实际执行地址与用户调用地址不同，但 storage 永远是 proxy 的（DELEGATECALL 语义）。</p>
+<h3 id="125-transfer-gas">12.5 transfer 内部 gas 实拆</h3>
+<ul>
+<li>SLOAD <code>balance[from]</code>（cold，<strong>2100 gas</strong>）</li>
+<li>检查余额够不够（GTE）；不够 revert</li>
+<li>SLOAD <code>balance[to]</code>（cold，<strong>2100 gas</strong>）</li>
+<li>SSTORE 新 from balance（X→Y，cold，<strong>5000 gas</strong>，无 refund）</li>
+<li>SSTORE 新 to balance：原来是 0 → "0→X 新写"，<strong>22100 gas</strong>；已有余额则 5000</li>
+<li>LOG3：emit Transfer(from, to, amount)，约 <strong>1875 gas</strong>（375 base + 3×375 topic + 8×32 data）</li>
+<li>RETURN bool true</li>
+</ul>
+<p>对一笔"双方都已经持有 USDC"的 transfer，链上 gas 大致：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>21000 (intrinsic)
++ 4   × N_zero  + 16 × N_nonzero (calldata ~ 700)
++ 2 SLOAD        (4200 cold)
++ 2 SSTORE       (5000 + 5000)
++ 1 LOG3         (~ 1875)
++ misc opcodes   (~ 5000)
+≈ 47000 gas
+</code></pre></div>
+<p>实测 USDC transfer 约 41000-65000 gas，与估算同数量级。</p>
+<h3 id="126-receipts-logsbloom">12.6 receipts 与 logsBloom</h3>
+<p>receipt 里能看到：</p>
+<ul>
+<li><code>gasUsed</code></li>
+<li><code>effectiveGasPrice = min(maxFee, baseFee + maxPriority)</code></li>
+<li><code>logs</code>（被 indexer 抓走）</li>
+<li><code>status = 1</code>（成功）或 <code>0</code>（revert）</li>
+<li><code>type = 2</code>（EIP-1559）</li>
+<li><code>logsBloom</code>：256 字节布隆过滤器，把每个 log 的 address 与每个 indexed topic 哈希后映射进 bit 向量。indexer 用它做"快速过滤无关 tx"</li>
+</ul>
+<p>跑 <code>cast receipt 0x4d61...</code> 后塞给 <a href="https://blocksec.com/explorer">Phalcon Explorer</a> 或 <a href="https://tenderly.co/">Tenderly</a> 看完整可视化 trace。</p>
+<h3 id="127-foundry-trace">12.7 Foundry 复现这次 trace</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># fork 主网到调用块的前一刻</span>
+anvil<span style="color: #F8F8F8"> </span>--fork-url<span style="color: #F8F8F8"> </span><span style="color: #000">$ETH_RPC_URL</span><span style="color: #F8F8F8"> </span>--fork-block-number<span style="color: #F8F8F8"> </span><span style="color: #000">$BLOCK_NUMBER</span>
+
+<span style="color: #8F5902; font-style: italic"># 另开一个终端</span>
+cast<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>0x4d61...<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span>http://127.0.0.1:8545<span style="color: #F8F8F8"> </span>--quick
+<span style="color: #8F5902; font-style: italic"># 输出 trace tree，能逐层看到 CALL / DELEGATECALL / SLOAD / SSTORE / LOG</span>
+</code></pre></div>
+<p><code>--quick</code> 跳过状态预热；<code>-vvv</code> 打开详细 trace；<code>--debug</code> 启动单步调试器（forge debug 风格）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="13-abi" id="ch15"><span class="chapter-num">Chapter 15</span><br>13 ABI 与函数选择器深入</h2>
+
+<h3 id="131-selector">13.1 selector 的来历</h3>
+<p>函数选择器 = <code>bytes4(keccak256(canonical_signature))</code>，canonical_signature 是函数名 + 参数类型规范写法（无空格，<code>uint</code> 必须写成 <code>uint256</code>）。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;transfer(address,uint256)&quot;</span><span style="color: #F8F8F8">     </span><span style="color: #8F5902; font-style: italic"># → 0xa9059cbb</span>
+cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;balanceOf(address)&quot;</span><span style="color: #F8F8F8">             </span><span style="color: #8F5902; font-style: italic"># → 0x70a08231</span>
+cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;approve(address,uint256)&quot;</span><span style="color: #F8F8F8">       </span><span style="color: #8F5902; font-style: italic"># → 0x095ea7b3</span>
+</code></pre></div>
+<h3 id="132-abi-encoding">13.2 ABI encoding 三规则</h3>
+<ol>
+<li><strong>静态类型</strong>右侧填 0 至 32 字节</li>
+<li><strong>动态类型</strong>（bytes、string、T[]）放在尾部，头部写 offset；offset 单位是字节，从参数列表起始算</li>
+<li>数组先 32 字节 length，后元素</li>
+</ol>
+<p>实战例子：<code>transfer(address to, uint256 amount)</code>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0xa9059cbb                                                          // selector
+000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa96045    // to (左 12 字节填 0)
+000000000000000000000000000000000000000000000000000000003b9aca00    // amount = 1e9
+</code></pre></div>
+<h3 id="133-selector-clash">13.3 selector clash</h3>
+<p>概率约 <code>1/2^32</code>，但确实发生（如 <a href="https://www.4byte.directory/signatures/?bytes4_signature=0x42966c68"><code>burn(uint256)</code></a>）。Diamond（EIP-2535）多 facet 设计时必须检查唯一性。用 <code>forge inspect Contract methodIdentifiers</code> 批量查。</p>
+<h3 id="134-solidity-abi-packed">13.4 Solidity ABI 与 packed 编码差异</h3>
+<ul>
+<li><code>abi.encode</code>：标准 ABI，每参数独立 32 字节</li>
+<li><code>abi.encodePacked</code>：紧凑无 padding。<strong>永远不要拿来做哈希参数</strong>——<code>encodePacked("a","bc")</code> 与 <code>encodePacked("ab","c")</code> 哈希相同，是经典签名漏洞</li>
+</ul>
+<p>EIP-712：用 <code>abi.encode</code> + 类型 hash 串联，杜绝 packed 歧义。</p>
+<h3 id="135-calldata">13.5 calldata 优化技巧</h3>
+<ul>
+<li><code>bytes calldata</code> 替代 <code>bytes memory</code>，省 calldata→memory 拷贝</li>
+<li>长度固定时用 <code>bytes32</code> 替代 <code>bytes memory</code></li>
+<li>ABI v2 默认开启（Solidity 0.8+），支持 nested struct</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="14-logsreceiptsroot-logsbloom" id="ch16"><span class="chapter-num">Chapter 16</span><br>14 事件与 logs（receiptsRoot 与 logsBloom）</h2>
+
+<h3 id="141-log-opcode">14.1 LOG opcode 系列</h3>
+<ul>
+<li><code>LOG0 (0xa0)</code>：无 indexed topic，只有 data</li>
+<li><code>LOG1 (0xa1)</code>：1 个 topic（通常是事件签名 hash）</li>
+<li><code>LOG2 (0xa2)</code>：2 个 topic</li>
+<li><code>LOG3 (0xa3)</code>：3 个 topic</li>
+<li><code>LOG4 (0xa4)</code>：4 个 topic（事件最多 3 个 indexed 参数 + 事件签名）</li>
+</ul>
+<p>gas：<code>375 base + 8 × len(data) + 375 × n</code>（n 个 topic）。</p>
+<h3 id="142-hash">14.2 事件签名 hash</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">event</span><span style="color: #F8F8F8"> </span><span style="color: #000">Transfer</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>from<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">value</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #8F5902; font-style: italic">// topic[0] = keccak256(&quot;Transfer(address,address,uint256)&quot;)</span>
+<span style="color: #8F5902; font-style: italic">//         = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef</span>
+<span style="color: #8F5902; font-style: italic">// topic[1] = from (address padded to 32 bytes)</span>
+<span style="color: #8F5902; font-style: italic">// topic[2] = to</span>
+<span style="color: #8F5902; font-style: italic">// data     = abi.encode(value)</span>
+</code></pre></div>
+<p>anonymous 事件没有 topic[0]，indexer 检索时只能用其它 topic 过滤。Solidity 里写 <code>event Foo() anonymous;</code> 即声明。</p>
+<h3 id="143-logsbloom">14.3 logsBloom</h3>
+<p>256 字节布隆过滤器：对 (address, 每个 topic) 哈希后取 3 个 11 位偏移置位。轻节点拉一块即 O(1) 判断"可能含我感兴趣的 log"。进 receiptsRoot 和 block header，Etherscan logs 查询、viem <code>getLogs</code> 依赖此结构。</p>
+<h3 id="144-indexer">14.4 indexer 工程</h3>
+<ul>
+<li><a href="https://thegraph.com/">The Graph</a>：subgraph，GraphQL</li>
+<li><a href="https://www.sqd.dev/">Subsquid</a>：高性能替代</li>
+<li><a href="https://goldsky.com/">Goldsky</a>、<a href="https://envio.dev/">Envio</a>：商用</li>
+<li>自建：<code>eth_getLogs</code> + PostgreSQL / ClickHouse</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="15-delegatecall" id="ch17"><span class="chapter-num">Chapter 17</span><br>15 代理模式与 DELEGATECALL 工程</h2>
+
+<h3 id="151">15.1 为什么需要代理</h3>
+<p>EVM 合约字节码不可改。代理模式把"地址"与"逻辑"分开——proxy 持有用户地址 + 全部 storage，implementation 只持有逻辑。升级 = 改 proxy 的 implementation 指针。</p>
+<h3 id="152-eip-1967-storage-slot">15.2 EIP-1967：标准化 storage slot</h3>
+<p>EIP-1967 规定伪随机 slot，避免 proxy 与 implementation 变量撞槽：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>implementation slot = bytes32(uint256(keccak256(&quot;eip1967.proxy.implementation&quot;)) - 1)
+                    = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+admin slot          = bytes32(uint256(keccak256(&quot;eip1967.proxy.admin&quot;)) - 1)
+beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;)) - 1)
+</code></pre></div>
+<p><code>keccak("...") - 1</code>：减 1 把它推出 keccak 像空间，mapping 计算无法碰撞到它。</p>
+<h3 id="153">15.3 三种主流代理形态</h3>
+<ul>
+<li><strong>TransparentProxy（OZ）</strong>：admin 走 admin path，普通用户走 fallback → DELEGATECALL。slot 防撞清晰，每次调用多 ~2k gas</li>
+<li><strong>UUPS（EIP-1822）</strong>：升级逻辑在 implementation，proxy 极简只 fallback。代价：implementation 必须包含 <code>_authorizeUpgrade</code>，否则<strong>永久不能再升级</strong></li>
+<li><strong>Diamond（EIP-2535）</strong>：多 facet 按 selector 路由，复杂但适合大型协议</li>
+</ul>
+<h3 id="154-beacon-proxy">15.4 Beacon proxy</h3>
+<p>信标合约持有 implementation 地址，多 proxy 共享同一 beacon。一次更新 beacon = 全部 proxy 升级。Compound、Aave 常用。</p>
+<h3 id="155-storage-layout">15.5 Storage layout 升级金科玉律</h3>
+<ul>
+<li>只追加新变量，不改现有变量类型和顺序</li>
+<li>不在父合约删 / 重命名变量</li>
+<li>用 OZ <code>__gap</code> 占位留 50 个 slot</li>
+</ul>
+<h3 id="156-delegatecall">15.6 DELEGATECALL 安全清单</h3>
+<ul>
+<li><code>disableInitializers()</code> 锁死 implementation，防止直接调用 + selfdestruct</li>
+<li>入口加 <code>require(address(this) != _self)</code>（onlyProxy）</li>
+<li>升级前 <code>forge inspect</code> 比对 storage layout</li>
+<li>用 OpenZeppelin Upgrades 插件自动检查</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="16-mempool-builder-relay-proposer" id="ch18"><span class="chapter-num">Chapter 18</span><br>16 区块构建链路：mempool → builder → relay → proposer</h2>
+
+<h3 id="161">16.1 区块生命周期</h3>
+<figure><img src="diagram-16f673bea4.png" alt="mermaid diagram"></figure>
+
+<h3 id="162-mempool-vs-mempool">16.2 公共 mempool vs 私有 mempool</h3>
+<p>公开 mempool：广播给所有节点，搜索者可见，容易被 sandwich。</p>
+<p>私有保护方案：Flashbots Protect / MEV Blocker（直发 builder）、Alchemy / QuickNode MEV-protected RPC。</p>
+<h3 id="163-epbseip-7732glamsterdam">16.3 ePBS（EIP-7732，Glamsterdam）</h3>
+<p>proposer 只盲签 commitment，builder 在共识层独立公开 block body——去掉 relay 的信任依赖，压缩 MEV 操控空间。</p>
+<h3 id="164-tx">16.4 一个 tx 在每个阶段可能花费的时间</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>- 签名后入 mempool       : 即刻
+- builder 看到           : 100-300 ms
+- builder 模拟入候选块   : 1-3 s
+- proposer 接受 bid       : 在 slot 开始前 200 ms
+- block 广播             : slot 内 4 s 之前
+- 2 epochs 之后 finality : ~12.8 minutes (32 slot × 12s × 2)
+</code></pre></div>
+<hr />
+
+</section><section class="chapter">
+<h2 id="17-evm" id="ch19"><span class="chapter-num">Chapter 19</span><br>17 EVM 字节码逆向工程</h2>
+
+<h3 id="171">17.1 工作流</h3>
+<ol>
+<li>获取 bytecode：<code>cast code &lt;address&gt;</code> 或 Etherscan</li>
+<li>识别 selector 表：找 <code>0xe0 SHR</code> + <code>EQ</code> + <code>JUMPI</code> 模式</li>
+<li>反查每个 4-byte selector：<a href="https://www.4byte.directory/">4byte.directory</a> 或 <code>cast 4byte</code></li>
+<li>跟踪 JUMP 目标，逐 PC 模拟</li>
+<li>重建 Solidity 等价</li>
+</ol>
+<h3 id="172">17.2 工具</h3>
+<ul>
+<li><a href="https://www.evm.codes/playground">evm.codes Playground</a> — 浏览器内 EVM</li>
+<li><a href="https://github.com/shazow/whatsabi">whatsabi</a> — 字节码 → ABI 推断</li>
+<li><a href="https://github.com/acuarica/evm">Sevm</a> — 字节码 → IR</li>
+<li><a href="https://github.com/Jon-Becker/heimdall-rs">Heimdall-rs</a> — 反编译为伪 Solidity</li>
+<li><a href="https://github.com/eveem-org/panoramix">Panoramix</a> — 老牌反编译，Etherscan 上的 "Decompile" 来源</li>
+<li><a href="https://library.dedaub.com/">Dedaub</a> — 在线高质量反编译，对 OZ 模板识别强</li>
+</ul>
+<h3 id="173">17.3 字节码常见模式</h3>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>出现位置</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>608060405234801561...</code></td>
+<td>合约头</td>
+<td>Solidity prelude（init free mem ptr + check msg.value=0）</td>
+</tr>
+<tr>
+<td><code>6080604052348015...600080fd5b50...</code></td>
+<td>constructor 头</td>
+<td>等价 <code>if (msg.value != 0) revert();</code></td>
+</tr>
+<tr>
+<td><code>7f&lt;32 bytes&gt;...EQ</code></td>
+<td>dispatcher</td>
+<td>EIP-712 domain hash 检查</td>
+</tr>
+<tr>
+<td><code>60a060405234801561</code></td>
+<td>合约头（带 immutable）</td>
+<td>constructor 把 immutable 写入</td>
+</tr>
+<tr>
+<td><code>0x360894a13ba1a3...</code></td>
+<td>proxy 合约</td>
+<td>EIP-1967 implementation slot</td>
+</tr>
+<tr>
+<td><code>5b6000fd5b...</code></td>
+<td>function 边界</td>
+<td>JUMPDEST + STOP</td>
+</tr>
+</tbody>
+</table>
+<h3 id="174">17.4 对照练习</h3>
+<p>找 Etherscan 上一个未 verify 的合约：<code>cast code</code> → <code>cast 4byte</code> 反查 → <a href="https://library.dedaub.com/">Dedaub</a> / Heimdall 反编译 → 让 Claude 按"PC by PC + stack"格式（§19.3）逐段解释 → <code>forge test vm.prank</code> 验证重建 ABI。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="18-top-12" id="ch20"><span class="chapter-num">Chapter 20</span><br>18 常见坑（Top 12）</h2>
+
+<p>按频率 × 危害排序：</p>
+<ol>
+<li><strong>DELEGATECALL 到 storage layout 不一致的合约</strong> — Parity 级灾难</li>
+<li><strong>tx.origin 做权限</strong> — 钓鱼必过</li>
+<li><strong>签名 malleability</strong> — 未限 s 值，(r,s) 与 (r,n-s) 恢复同一地址</li>
+<li><strong>跨链重放</strong> — chainId 未编进 signed message</li>
+<li><strong>整数溢出</strong> — 0.8 前；现多见于 unchecked 块</li>
+<li><strong>未初始化 implementation</strong> — Parity 另一面</li>
+<li><strong>重入</strong> — checks-effects-interactions 被破坏</li>
+<li><strong>依赖 block.timestamp</strong> — 验证者可小幅操纵</li>
+<li><strong>依赖 BLOCKHASH</strong> — 仅最近 256 块</li>
+<li><strong>假设 1024 stack depth</strong> — 实际 ~340</li>
+<li><strong>transfer/send 假设 2300 gas stipend</strong> — 现已无法完成任何有意义操作</li>
+<li><strong>未删 SELFDESTRUCT</strong> — EIP-6780 后危害降低但非零</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="19-ai-evm" id="ch21"><span class="chapter-num">Chapter 21</span><br>19 AI 在 EVM 工作流的位置</h2>
+
+<h3 id="191-ai">19.1 用 AI 能省时间的场景</h3>
+<ul>
+<li>逆向字节码：推断函数签名、识别 OZ / Uniswap V2-V4 / AAVE 模板，常见模板准确率高；混淆（inlining、selector 乱序）会掉点</li>
+<li>解释 calldata：Etherscan、Phalcon Explorer、Tenderly Tx Trace 均自带 AI 旁注</li>
+<li>生成 ABI：未 verify 合约配合 whatsabi / Sevm 更稳</li>
+<li>审计副驾驶：Cyfrin Aderyn、OZ Defender、Slither 的 LLM 解释器；Phalcon AI Investigator 给套利/攻击摘要</li>
+<li>gas 优化 hint：指出 SSTORE 0→X 能否合并</li>
+</ul>
+<h3 id="192-ai">19.2 AI 帮不了的场景</h3>
+<p>ACD trade-off 决策、形式化 invariant 证明（Halmos / Certora / Kontrol）、gas 优化最后 5-10%（人眼盯字节码仍有效）、全新加密原语设计。</p>
+<h3 id="193-ai-prompt">19.3 让 AI 解释字节码的正确 prompt</h3>
+<p>错：<code>把这段字节码翻译成 Solidity</code> —— 它会幻觉重写，编出不存在的逻辑。</p>
+<p>对：</p>
+<blockquote>
+<p>这段字节码从 PC=0 执行，请逐 PC 列出：opcode、执行后 stack（<code>[a,b,c]</code> 栈顶在右）、改变的 memory（<code>mem[off..len] = ...</code>）、改变的 storage（<code>slot k = ...</code>）。JUMP/JUMPI 列出所有可能分支。完成后再给 Solidity 译文。</p>
+</blockquote>
+<p>强制它老实模拟 EVM，幻觉率显著下降。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="20" id="ch22"><span class="chapter-num">Chapter 22</span><br>20 习题（含完整解答）</h2>
+
+<h3 id="201-1">20.1 题 1：函数选择器逆向</h3>
+<p>给定 4-byte selector <code>0x70a08231</code>，请反查它对应的 Solidity 函数签名。</p>
+<p><strong>解答</strong></p>
+<p><code>0x70a08231</code> = <code>bytes4(keccak256("balanceOf(address)"))</code>。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>keccak<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;balanceOf(address)&quot;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># → 0x70a08231...</span>
+</code></pre></div>
+<p>不用 cast：查 <a href="https://www.4byte.directory/signatures/?bytes4_signature=0x70a08231">4byte.directory</a> 或暴力字典枚举。</p>
+<h3 id="202-2eip-1559-legacy">20.2 题 2：EIP-1559 与 legacy 费用差</h3>
+<p>设某区块 <code>baseFee = 50 gwei</code>，某用户发 legacy 交易愿付 <code>gasPrice = 70 gwei</code>，gas_used = 50000；同样的事换成 EIP-1559（<code>maxFeePerGas = 70 gwei, maxPriorityFeePerGas = 5 gwei</code>），用户实际付多少？被烧多少？</p>
+<p><strong>解答</strong></p>
+<p>Legacy：<code>70 gwei × 50000 = 0.0035 ETH</code>，全给矿工，无烧毁。</p>
+<p>EIP-1559：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>gasPrice = min(70, 50 + 5) = 55 gwei
+fee  = 55 × 50000 = 0.00275 ETH
+burn = 50 × 50000 = 0.0025 ETH
+tip  =  5 × 50000 = 0.00025 ETH
+</code></pre></div>
+<p><strong>用户付 0.00275 ETH（省 21.4%）；0.0025 烧毁，0.00025 给提议者。</strong></p>
+<h3 id="203-3sstore-gas">20.3 题 3：SSTORE gas</h3>
+<p>合约里有：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">C</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">x</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 0</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">y</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 1</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">f</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span>x<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">        </span>x<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">2</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">        </span>y<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>x<span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">        </span>y<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>调用 <code>f()</code> 一共消耗多少 SSTORE 相关的 gas（不算其他 opcode、不算 intrinsic）？给 refund。</p>
+<p>假设 x = 0、y = 0 在调用前。</p>
+<p><strong>解答</strong></p>
+<ol>
+<li><code>x = 1</code>：slot 0，0→1，cold 写：<strong>22100</strong>，refund 0</li>
+<li><code>x = 2</code>：slot 0 已 warm，1→2，warm 非零→非零：<strong>2900</strong></li>
+<li><code>y = x</code>：SLOAD slot 0（warm <strong>100</strong>）；SSTORE slot 1，0→2，cold 写：<strong>22100</strong></li>
+<li><code>y = 0</code>：slot 1 已 warm，2→0，warm 清零：<strong>2900</strong>，refund +4800</li>
+</ol>
+<p>SSTORE 合计 = 22100 + 2900 + 22100 + 2900 = <strong>50,000 gas</strong>；SLOAD = 100；refund = 4800（受 EIP-3529 截断：refund ≤ gas_used / 5）。</p>
+<h3 id="204-4create2">20.4 题 4：CREATE2 地址预言</h3>
+<p>deployer = <code>0x4e59b44847b379578588920ca78fbf26c0b4956c</code>（Foundry 默认 deterministic deployer）；salt = <code>0x0000...0001</code>；initCode = <code>0x6080604052348015..</code>（哈希为 <code>0x1234..</code> 共 32 字节，假设你已知 keccak256(initCode)）。</p>
+<p>请写出 CREATE2 地址的计算过程，并给出步骤。</p>
+<p><strong>解答</strong></p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>addr = keccak256(0xff || deployer || salt || keccak256(initCode))[12:32]
+</code></pre></div>
+<p><code>0xff</code>（1B）+ deployer（20B）+ salt（32B）+ initCodeHash（32B）= 85 字节 → keccak256 → 取低 20 字节。<code>0xff</code> 把 CREATE2 输入与 CREATE 的 RLP 格式区分开。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>create2<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--deployer<span style="color: #F8F8F8"> </span>0x4e59b44847b379578588920ca78fbf26c0b4956c<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--salt<span style="color: #F8F8F8"> </span>0x0000000000000000000000000000000000000000000000000000000000000001<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--init-code-hash<span style="color: #F8F8F8"> </span>0x1234...
+</code></pre></div>
+<h3 id="205-5">20.5 题 5：字节码逆向（中等难度）</h3>
+<p>给定下面这段 runtime bytecode：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x6080604052348015600f57600080fd5b50600436106032576000357c0100000000000000000000000000000000000000000000000000000000900480632e64cec11460375780636057361d146052575b600080fd5b603e6079565b6040518082815260200191505060405180910390f35b6077600480360360208110156065576000fd5b81019080803590602001909291905050506082565b005b60008054905090565b806000819055505056fea2646970...
+</code></pre></div>
+<p>请回答：</p>
+<ol>
+<li>这个合约有几个 public 函数？</li>
+<li>各自的选择器是什么？</li>
+<li>各自实现的功能是什么？</li>
+<li>它对应的 Solidity 源码大致是什么样？</li>
+</ol>
+<p><strong>解答</strong></p>
+<p><strong>步骤 1：识别 dispatcher</strong></p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>80632e64cec1 14 6037 57   ; if selector == 0x2e64cec1 jump 0x37
+80636057361d 14 6052 57   ; else if selector == 0x6057361d jump 0x52
+</code></pre></div>
+<p><strong>步骤 2：反查</strong></p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>4byte<span style="color: #F8F8F8"> </span>0x2e64cec1<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># → retrieve()</span>
+cast<span style="color: #F8F8F8"> </span>4byte<span style="color: #F8F8F8"> </span>0x6057361d<span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic"># → store(uint256)</span>
+</code></pre></div>
+<p><strong>步骤 3：retrieve 实现</strong>（PC=0x79）：<code>PUSH1 0x00 DUP1 SLOAD SWAP1 POP</code> → <code>return SLOAD(0)</code></p>
+<p><strong>步骤 4：store 实现</strong>（PC=0x82）：<code>DUP1 PUSH1 0x00 DUP2 SWAP1 SSTORE</code> → <code>SSTORE(0, value)</code></p>
+<p><strong>步骤 5：还原 Solidity</strong></p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>
+<span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">^</span><span style="color: #204A87; font-weight: bold">0.8.0</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Storage</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">number</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">store</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">num</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span>number<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>num<span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">retrieve</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>view<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span>number<span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>这是 Remix IDE 的"Hello World"模板，最常见的字节码之一。</p>
+<h3 id="206-6yul-vs-solidity-keccak256">20.6 题 6：Yul vs Solidity 实现 keccak256</h3>
+<p>练习 <a href="./exercises/03-yul-keccak-vs-solidity.md"><code>exercises/03-yul-keccak-vs-solidity.md</code></a> 给出完整代码与对比。简答：</p>
+<p><strong>纯 Solidity</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">hash</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">memory</span><span style="color: #F8F8F8"> </span>data<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>pure<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>data<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p><strong>Yul（汇编）</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">hashYul</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">memory</span><span style="color: #F8F8F8"> </span>data<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>pure<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">result</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span>assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span>result<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">:=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>add<span style="color: #000; font-weight: bold">(</span>data<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0x20</span><span style="color: #000; font-weight: bold">),</span><span style="color: #F8F8F8"> </span>mload<span style="color: #000; font-weight: bold">(</span>data<span style="color: #000; font-weight: bold">))</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>两者 gas 几乎相同（差几十）——Solidity 内部就是这样编译的。Yul 的真正价值：手写 dispatcher（省 fmp 开销）、packed encoding（绕开 32 字节对齐）、已知安全算术跳 overflow check、使用 EXTCODEHASH 等 Solidity 不直接暴露的 opcode。</p>
+<hr />
+<hr />
+
+</section><section class="chapter">
+<h2 id="22-eof-evm" id="ch23"><span class="chapter-num">Chapter 23</span><br>22 EOF 深入：被剔除又复活的 EVM 重整方案</h2>
+
+<h3 id="221-eof">22.1 EOF 想解决什么</h3>
+<p>字节码格式扁平、JUMPDEST 必须运行时检查、栈深要每条指令复查——这些是 ZK 证明 EVM 时最贵的几项。EOF（EVM Object Format）把字节码改成带 header + section 的对象文件（类似 ELF/PE），部署时一次校验，运行时不再检查。原计划 Fusaka 引入，2025-09 ACD 整组剔除：工程复杂度高、与 EIP-7702 交互未充分研究、devnet 多次同步失败。目前规划 Glamsterdam 之后再议。</p>
+<p>来源：<a href="https://blog.tenderly.co/guide-to-evm-object-format-eip-7692/">Tenderly: EVM Object Format (EIP-7692) 完整指南</a>、<a href="https://ethereum.org/roadmap/fusaka/">ethereum.org/roadmap/fusaka</a>。</p>
+<h3 id="222-eip-eof-mega-eip-eip-7692">22.2 完整 EIP 清单（"EOF Mega EIP" = EIP-7692）</h3>
+<table>
+<thead>
+<tr>
+<th>EIP</th>
+<th>名字</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EIP-3540</strong></td>
+<td>EOF v1</td>
+<td>顶层格式：magic <code>0xEF00</code> + version + section header</td>
+</tr>
+<tr>
+<td><strong>EIP-3670</strong></td>
+<td>Code Validation</td>
+<td>部署时静态校验 opcode 合法性、JUMPDEST 可达性</td>
+</tr>
+<tr>
+<td><strong>EIP-4200</strong></td>
+<td>Static relative jumps</td>
+<td>RJUMP/RJUMPI/RJUMPV 替代动态 JUMP，去掉运行时 JUMPDEST 检查</td>
+</tr>
+<tr>
+<td><strong>EIP-4750</strong></td>
+<td>Functions</td>
+<td>CALLF/RETF：真正的函数 ABI，分离调用栈与数据栈</td>
+</tr>
+<tr>
+<td><strong>EIP-5450</strong></td>
+<td>Stack Validation</td>
+<td>部署时静态算每个 PC 的栈高度，运行时不再检查栈深</td>
+</tr>
+<tr>
+<td><strong>EIP-6206</strong></td>
+<td>JUMPF</td>
+<td>函数尾调用，对应栈帧复用</td>
+</tr>
+<tr>
+<td><strong>EIP-7480</strong></td>
+<td>Data Section Access</td>
+<td>DATACOPY/DATALOAD/DATALOADN/DATASIZE — 字节码内独立 data 段</td>
+</tr>
+<tr>
+<td><strong>EIP-663</strong></td>
+<td>DUPN/SWAPN</td>
+<td>1-256 范围的 DUPn/SWAPn 替代固定 1-16</td>
+</tr>
+<tr>
+<td><strong>EIP-7620</strong></td>
+<td>EOFCREATE</td>
+<td>替代 CREATE/CREATE2，强制部署 EOF 容器</td>
+</tr>
+</tbody>
+</table>
+<h3 id="223-eof">22.3 EOF 的好处与代价</h3>
+<p><strong>好处</strong>：部署时一次校验，运行时去掉 JUMPDEST 与栈深检查（ZK 友好）；函数 ABI 化省 ~200 gas dispatcher；code/data 分段携带常量；静态 jump 提升反汇编准确率。</p>
+<p><strong>代价</strong>：与 EIP-7702 的 <code>0xef0100</code> designator 前缀冲突（均源自 <code>0xEF</code> 协议预留）；工具链全面迁移（Solidity、Yul、Foundry、reth/geth）；与 stateless 的交互需重新论证。</p>
+<h3 id="224-eip-7702">22.4 与 EIP-7702 的尴尬关系</h3>
+<p>EIP-7702 designator = <code>0xef0100 || address</code>（23 字节），<code>0xEF</code> 本是为 EOF 预留的非法 opcode 前缀。Pectra 抢先用了它，使 EOF 必须重选 magic 或显式区分两种语义——是 EOF 被剔除的次要原因之一。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="23-verkle-trees-eip-6800" id="ch24"><span class="chapter-num">Chapter 24</span><br>23 Verkle Trees 深入：原理、过渡与 EIP-6800</h2>
+
+<h3 id="231-vector-commitment">23.1 数学根基：vector commitment</h3>
+<p>核心：多项式承诺（Pedersen + IPA 在 Banderwagon 曲线上）。一个节点承诺 256 元素向量到一个 32 字节点：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>C = Σ (v_i × G_i)
+</code></pre></div>
+<p><code>G_i</code> 为 256 个独立曲线点。证"第 k 元素是 v_k"只需对数大小的 IPA 证明（~1 KB），且<strong>可多点聚合</strong>——1000 个 (key, value) 对的总证明 ~10 KB，而 Merkle 需 1000 KB（不可聚合）。</p>
+<h3 id="232-eip-6800-verkle">23.2 EIP-6800：统一 Verkle 树结构</h3>
+<p>单一 Verkle 树取代 MPT 的多 storage trie。键空间：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>key = pedersen_hash(address || treeIndex || subIndex)[31] || subIndex
+</code></pre></div>
+<p>所有字段（balance、nonce、codeHash、storage slot）映射到同一棵树的不同 (treeIndex, subIndex)。好处：单证明跨账户聚合；256 扇出，深 3-4；单证明 ~150 字节，全块 witness ~200 KB。</p>
+<p>来源：<a href="https://eips.ethereum.org/EIPS/eip-6800">EIP-6800</a>、<a href="https://ethereum.org/roadmap/verkle-trees/">ethereum.org/roadmap/verkle-trees</a>。</p>
+<h3 id="233-dual-tree">23.3 过渡机制：dual-tree</h3>
+<p>Hegota 升级时同时维护 MPT + Verkle：</p>
+<ol>
+<li>T₀：从 MPT 状态生成初始 Verkle root</li>
+<li>T₀ 后每块状态变更两边都写</li>
+<li>旧账户访问从 MPT 拉后写入 Verkle；新账户只在 Verkle</li>
+<li>约 6 个月后全量迁移，关闭 MPT</li>
+</ol>
+<p>过渡开销：+25% 写入成本，+15% 磁盘。</p>
+<h3 id="234-pectra-verkle">23.4 Pectra 已做的 Verkle 准备工作</h3>
+<ul>
+<li><strong>EIP-2935</strong>：8192 个区块哈希存进系统合约（Verkle 中取历史哈希用普通 SLOAD，非 BLOCKHASH opcode）</li>
+<li>EIP-7702 designator 用 <code>0xef01</code> 前缀（Verkle / EOF 预留前缀空间）</li>
+</ul>
+<h3 id="235-eip-7736leaf-level-state-expiry-verkle">23.5 EIP-7736：leaf-level state expiry（依赖 Verkle）</h3>
+<p>Verkle extension-and-suffix 子树加访问计数器，过期 = 删除该子树。只有 Verkle 上线后方可实施，详见 §24。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="24-state-expiry-history-expiry" id="ch25"><span class="chapter-num">Chapter 25</span><br>24 State expiry / History expiry / 弱无状态</h2>
+
+<h3 id="241">24.1 三个概念</h3>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>它要解决的问题</th>
+<th>实现复杂度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>History expiry</strong>（EIP-4444）</td>
+<td>节点不必永久保留过去所有块的 body</td>
+<td>低（已部分实施）</td>
+</tr>
+<tr>
+<td><strong>State expiry</strong></td>
+<td>节点不必保留长期没人访问的账户/槽</td>
+<td>高（需要 Verkle）</td>
+</tr>
+<tr>
+<td><strong>Weak statelessness</strong></td>
+<td>普通节点不必持有完整 state，只 builder 持有</td>
+<td>中（依赖 Verkle + ePBS）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="242-history-expiryeip-4444">24.2 History expiry：EIP-4444</h3>
+<p>节点只保留最近一年的块 body 与 receipts；早期数据靠 portal network / IPFS / Arweave。已部分上线：geth/reth 默认 snap sync 不下载远古状态；portal network（<a href="https://github.com/ethereum/trin">Trin</a>、<a href="https://github.com/status-im/nimbus-eth1">Fluffy</a>、<a href="https://github.com/ethereumjs/ultralight">Ultralight</a>）2025 起提供部分轻验证。</p>
+<h3 id="243-state-expiry">24.3 State expiry</h3>
+<p>每个 storage slot 有上次访问时间戳，超过一年未访问则"过期"，节点可删除；复活时需附 Verkle 证明 witness。EIP-7736（leaf-level）最简方案：只删 Verkle 树叶节点（extension-and-suffix），保留中间节点，粗估节省磁盘 50%+，不影响活跃合约。
+长期僵尸合约可由任何人附 witness 复活。</p>
+<h3 id="244-weak-statelessness">24.4 Weak statelessness</h3>
+<p>弱无状态：只 block builder 持完整 state，其他节点（attester / proposer / 用户全节点）拿 builder 提供的 witness 验证。依赖：Verkle Tree（witness ≤ ~200 KB）+ ePBS（builder 角色协议化）。两者分别在 Hegota 和 Glamsterdam 落地，<strong>2027-2028 期间可期</strong>。</p>
+<p>来源：<a href="https://ethereum.org/roadmap/statelessness/">ethereum.org/roadmap/statelessness</a>、<a href="https://notes.ethereum.org/@vbuterin/verkle_and_state_expiry_proposal">Vitalik: state expiry roadmap</a>、<a href="https://eips.ethereum.org/EIPS/eip-7736">EIP-7736</a>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="25-lean-ethereumbeam-chain" id="ch26"><span class="chapter-num">Chapter 26</span><br>25 Lean Ethereum：beam chain 与后量子安全</h2>
+
+<h3 id="251">25.1 路线图位置</h3>
+<p>2025-05 Vitalik <a href="https://vitalik.eth.limo/general/2025/05/03/simplel1.html">"Simplifying the L1"</a> 提出 Lean Ethereum——将 L1 简化至接近 Bitcoin 复杂度。三大组件：</p>
+<figure><img src="diagram-a419bacdfa.png" alt="mermaid diagram"></figure>
+
+<p>来源：<a href="https://blog.ethereum.org/2025/07/31/lean-ethereum">Ethereum Foundation: lean Ethereum</a>、<a href="https://leanroadmap.org/">leanroadmap.org</a>。</p>
+<h3 id="252-beam-chain-lean-consensus">25.2 beam chain = Lean Consensus</h3>
+<p>替代当前 beacon chain：3-slot finality（~36s，vs 当前 ~12.8min）、STARK 聚合签名替代 BLS attestation、Winternitz/XMSS hash-based 签名替代 BLS12-381（<strong>后量子安全</strong>），核心逻辑约 200 行 Rust。</p>
+<h3 id="253-lean-data-blobs-20">25.3 Lean Data = Blobs 2.0</h3>
+<ul>
+<li>粒度可调 blob：固定 128 KB → 允许 32/64 KB 小 blob</li>
+<li>后量子 KZG 替代：KZG 依赖椭圆曲线 trusted setup（量子可破），将来用 FRI/STARK 风格 hash-based 承诺</li>
+<li>PeerDAS 持续演进降低带宽</li>
+</ul>
+<h3 id="254-lean-execution-evm-20">25.4 Lean Execution = EVM 2.0</h3>
+<p>最激进：把 EVM 整体替换成 RISC-V 或 ZK-prover 友好的 VM。理由：ZK rollup 内部已在把 EVM 翻译成 RISC-V 再证明，为什么主网不直接跑 ZK 友好 VM？代价：Solidity / Yul / Foundry 生态全面重对齐；现有合约需 EVM-on-RISC-V 解释器（性能损失 1.5-3×）。时间表：<strong>最早 2028-2030</strong>。</p>
+<h3 id="255-pqc">25.5 PQC（后量子）核心</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>当前：     secp256k1（EOA 签名）+ BLS12-381（验证者签名）+ KZG（blob 承诺）
+后量子：   Winternitz/XMSS（hash-based）  +  STARK 聚合  +  FRI 多项式承诺
+</code></pre></div>
+<p>hash-based 签名代价：单签名 ~2-8 KB（vs ECDSA 64 字节），但可深度聚合——Lean Consensus 目标把 1000 个 attestation 聚合到 ~50 KB STARK proof。</p>
+<p>来源：<a href="https://cryptoslate.com/vitalik-proposes-lean-ethereum-to-achieve-quantum-security-simpler-validator-operations/">CryptoSlate: Vitalik's Lean Ethereum</a>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="26-reth-execution-extensions-exex" id="ch27"><span class="chapter-num">Chapter 27</span><br>26 Reth 内部架构与 Execution Extensions (ExEx)</h2>
+
+<h3 id="261-reth">26.1 Reth 的设计哲学</h3>
+<p>"模块化、生产级、库优先"——每个组件可作独立 Rust crate。典型场景：L2 sequencer（import reth EVM + 状态库做自定义 rollup）、高吞吐索引器、ZK prover（reth trace 直接喂 ZK 电路）。</p>
+<h3 id="262-reth-crate">26.2 Reth 主要 crate</h3>
+<table>
+<thead>
+<tr>
+<th>crate</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reth-evm</code></td>
+<td>EVM 解释器，wrapper over revm</td>
+</tr>
+<tr>
+<td><code>reth-db</code></td>
+<td>MDBX 封装，分 table 存账户/storage/header/body</td>
+</tr>
+<tr>
+<td><code>reth-trie</code></td>
+<td>MPT 实现（Verkle 在 <code>reth-trie-verkle</code> 里）</td>
+</tr>
+<tr>
+<td><code>reth-network</code></td>
+<td>devp2p / discv5 实现</td>
+</tr>
+<tr>
+<td><code>reth-rpc</code></td>
+<td>JSON-RPC + Engine API</td>
+</tr>
+<tr>
+<td><code>reth-stages</code></td>
+<td>staged sync 的每个阶段（headers / bodies / state / hash）</td>
+</tr>
+<tr>
+<td><code>reth-exex</code></td>
+<td>Execution Extensions 框架</td>
+</tr>
+</tbody>
+</table>
+<h3 id="263-storage-v2reth-20">26.3 Storage V2（Reth 2.0）</h3>
+<p>MDBX 完全重写：1.7 Gigagas/s，磁盘 ~240 GB（vs V1 ~340 GB），<code>reth db migrate-v2</code> 无须 resync。</p>
+<h3 id="264-staged-sync-erigon">26.4 Staged Sync（继承自 Erigon）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. Headers        — 下载所有块 header
+2. Bodies         — 下载所有块 body
+3. SenderRecovery — ECDSA 恢复每笔 tx sender
+4. Execution      — 顺序执行更新状态
+5. HashState      — 扁平状态哈希成 trie
+6. IntermediateHashes — 计算 stateRoot
+7. Index          — 构建查找索引
+</code></pre></div>
+<p>磁盘 IO 可预测，支持 batch，优雅断点续传。</p>
+<h3 id="265-execution-extensions-exex">26.5 Execution Extensions (ExEx)</h3>
+<p>编译进 reth 二进制的 plugin，每次状态提交时收到通知，无需 RPC poll。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">fn</span><span style="color: #F8F8F8"> </span><span style="color: #000">my_exex</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">mut</span><span style="color: #F8F8F8"> </span><span style="color: #000">ctx</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">ExExContext</span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #000">Node</span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">-&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">Result</span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #000; font-weight: bold">()</span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">while</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">let</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">Some</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">notification</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">ctx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">notifications</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">recv</span><span style="color: #000; font-weight: bold">().</span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">match</span><span style="color: #F8F8F8"> </span><span style="color: #000">notification</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">            </span><span style="color: #000">ExExNotification</span><span style="color: #000; font-weight: bold">::</span><span style="color: #000">ChainCommitted</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">new</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">                </span><span style="color: #8F5902; font-style: italic">// 处理新块：indexer 写库 / rollup builder 派发 / MEV 监控</span>
+<span style="color: #F8F8F8">            </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">            </span><span style="color: #000">ExExNotification</span><span style="color: #000; font-weight: bold">::</span><span style="color: #000">ChainReorged</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">old</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">new</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">/* undo */</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">            </span><span style="color: #000">ExExNotification</span><span style="color: #000; font-weight: bold">::</span><span style="color: #000">ChainReverted</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">old</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8">      </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">/* undo */</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">        </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87">Ok</span><span style="color: #000; font-weight: bold">(())</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>优势：共享 reth 状态内存（零延迟、零拷贝）；三种通知（ChainCommitted / ChainReorged / ChainReverted）保证 reorg 安全；编译时 type-checked。</p>
+<p>实战：<a href="https://github.com/paradigmxyz/reth-exex-examples">reth-exex-rollup</a>（&lt;1000 行实现 L2）、WeaveVM DA ExEx（Arweave 作 DA）、Subsquid/Goldsky 实时 indexer、Flashbots builder 模拟。</p>
+<p>来源：<a href="https://reth.rs/exex/overview/">reth.rs/exex/overview</a>、<a href="https://www.quicknode.com/guides/infrastructure/how-to-use-reth-exex">Quicknode: How to Build Reth ExEx</a>。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="27-engine-api" id="ch28"><span class="chapter-num">Chapter 28</span><br>27 Engine API：执行层与共识层之间的对话</h2>
+
+<h3 id="271">27.1 角色分工</h3>
+<p>CL 是"老板"（决定 head），EL 是"工人"（执行块、维护状态），通过 Engine API（HTTPS + JWT）通信。</p>
+<figure><img src="diagram-31129ad84e.png" alt="mermaid diagram"></figure>
+
+<h3 id="272">27.2 核心三方法</h3>
+<ul>
+<li><strong><code>engine_newPayloadV4</code></strong>（Pectra 后）：CL 推 block 给 EL 验证，返回 VALID / INVALID / SYNCING / ACCEPTED</li>
+<li><strong><code>engine_forkchoiceUpdatedV3</code></strong>：CL 告知 head/safe/finalized 三块；可选附 <code>payloadAttributes</code> 让 EL 开始构造下一块</li>
+<li><strong><code>engine_getPayloadV4</code></strong>：CL 取回 EL 构造的 payload + blobs</li>
+</ul>
+<h3 id="273-jwt">27.3 JWT 认证</h3>
+<p>EL 与 CL 共享 32 字节 JWT secret，防止外部进程冒充 CL。泄露 = 完全失控执行层。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>openssl<span style="color: #F8F8F8"> </span>rand<span style="color: #F8F8F8"> </span>-hex<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">32</span><span style="color: #F8F8F8"> </span>&gt;<span style="color: #F8F8F8"> </span>/etc/ethereum/jwt.hex
+chmod<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">600</span><span style="color: #F8F8F8"> </span>/etc/ethereum/jwt.hex
+<span style="color: #8F5902; font-style: italic"># reth 与 lighthouse 都指向这同一个文件</span>
+</code></pre></div>
+<h3 id="274-fork-v">27.4 不同 fork 对应的 V 版本</h3>
+<table>
+<thead>
+<tr>
+<th>Fork</th>
+<th>newPayload</th>
+<th>forkchoiceUpdated</th>
+<th>getPayload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Paris (Merge)</td>
+<td>V1</td>
+<td>V1</td>
+<td>V1</td>
+</tr>
+<tr>
+<td>Shanghai</td>
+<td>V2 (+withdrawals)</td>
+<td>V2</td>
+<td>V2</td>
+</tr>
+<tr>
+<td>Cancun</td>
+<td>V3 (+blobVersionedHashes, parentBeaconBlockRoot)</td>
+<td>V3</td>
+<td>V3</td>
+</tr>
+<tr>
+<td>Pectra</td>
+<td>V4 (+executionRequests for deposit/withdrawal/consolidation)</td>
+<td>V3</td>
+<td>V4</td>
+</tr>
+<tr>
+<td>Fusaka</td>
+<td>V4 + PeerDAS 字段</td>
+<td>V3</td>
+<td>V4 + data column sidecars</td>
+</tr>
+</tbody>
+</table>
+<p>来源：<a href="https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md">ethereum/execution-apis</a>、<a href="https://hackmd.io/@danielrachi/engine_api">Engine API: A Visual Guide</a>。</p>
+<h3 id="275">27.5 调试</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># reth 启动加 --debug.engine-api，lighthouse 加 --debug-level info</span>
+
+curl<span style="color: #F8F8F8"> </span>-X<span style="color: #F8F8F8"> </span>POST<span style="color: #F8F8F8"> </span>http://localhost:8551<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>-H<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;Authorization: Bearer </span><span style="color: #204A87; font-weight: bold">$(</span>jwt<span style="color: #F8F8F8"> </span>encode<span style="color: #F8F8F8"> </span>--secret<span style="color: #F8F8F8"> </span>@/etc/ethereum/jwt.hex<span style="color: #204A87; font-weight: bold">)</span><span style="color: #4E9A06">&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>-H<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;Content-Type: application/json&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>-d<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;engine_getClientVersionV1&quot;,&quot;params&quot;:[{}],&quot;id&quot;:1}&#39;</span>
+</code></pre></div>
+<hr />
+
+</section><section class="chapter">
+<h2 id="28-usdc-walkthroughfiattokenv2_2" id="ch29"><span class="chapter-num">Chapter 29</span><br>28 USDC 字节码 walkthrough（FiatTokenV2_2）</h2>
+
+<h3 id="281">28.1 链上结构</h3>
+<p>USDC 主网：<code>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48</code>（代理），当前 implementation：<code>0x43506849D7C04F9138D1A2050bbF3A0c054402dd</code>（FiatTokenV2_2，2026-04-27 实测）。</p>
+<p>使用 <strong>OZ Unstructured Storage</strong>（早于 EIP-1967 标准化），slot：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>ADMIN_SLOT          = keccak256(&quot;org.zeppelinos.proxy.admin&quot;)
+                    = 0x10d6a54a4754c8869d6886b5f5d7fbfa5b4522237ea5c60d11bc4e7a1ff9390b
+IMPLEMENTATION_SLOT = keccak256(&quot;org.zeppelinos.proxy.implementation&quot;)
+                    = 0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3
+</code></pre></div>
+<p>与 EIP-1967（<code>keccak256(...) - 1</code>）不同，USDC 部署在 EIP-1967 标准化之前。</p>
+<p>来源：<a href="https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48">Etherscan: USDC contract</a>、<a href="https://medium.com/centre-blog/designing-an-upgradeable-ethereum-contract-3d850f637794">Centre blog: Designing an upgradeable Ethereum contract</a>。</p>
+<h3 id="282-usdc-transfer">28.2 一笔 USDC transfer 的字节码路径</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. 进入 proxy fallback
+2. proxy SLOAD ADMIN_SLOT → 检查 caller 是否是 admin
+   - 是 admin：走 admin_only 函数（升级、转 admin）
+   - 不是：走 fallback → DELEGATECALL implementation
+3. DELEGATECALL → FiatTokenV2_2.transfer()
+   - 检查 paused（SLOAD slot 0x...）
+   - 检查 from / to 不在 blacklist（mapping SLOAD）
+   - SLOAD balances[msg.sender]
+   - 余额检查
+   - SSTORE balances[msg.sender] -= amount
+   - SSTORE balances[to] += amount
+   - LOG3 Transfer(from, to, amount)
+4. RETURN 到 proxy
+5. proxy RETURN 给用户
+</code></pre></div>
+<p>实测 USDC transfer ~63000 gas，比 OZ 简单 ERC-20（~46000）多 ~17000：2 个额外 SLOAD（paused + blacklist，4200 gas）+ proxy fallback/DELEGATECALL（~1500 gas）+ SignatureChecker helper 加载。</p>
+<h3 id="283-usdc">28.3 USDC 的管制特性</h3>
+<p>OFAC 合规稳定币，链上管制接口（字节码可见）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;pause()&quot;</span><span style="color: #F8F8F8">                        </span><span style="color: #8F5902; font-style: italic"># 0x8456cb59</span>
+cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;blacklist(address)&quot;</span><span style="color: #F8F8F8">             </span><span style="color: #8F5902; font-style: italic"># 0xf9f92be4</span>
+cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;destroyBlackFundsAtAddress(address)&quot;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># USDC FiatTokenV2_2 销毁 blacklisted 余额（注意：destroyBlackFunds 是 Tether USDT 的方法，USDC 用 destroyBlackFundsAtAddress）</span>
+</code></pre></div>
+<h3 id="284-usdc-eip-1967">28.4 为什么 USDC 不用 EIP-1967</h3>
+<p>USDC proxy 部署于 2018-09，早于 EIP-1967（2019-04 标准化）。升级 implementation 无法改 proxy storage 习惯，遂保留至今。<strong>新部署的 proxy 务必用 EIP-1967</strong>。读 USDC implementation 需用专属 slot：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>storage<span style="color: #F8F8F8"> </span>0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3
+<span style="color: #8F5902; font-style: italic"># 输出当前 implementation 地址</span>
+</code></pre></div>
+<h3 id="285-heimdall-fiattokenv2_2">28.5 用 heimdall 反编译 FiatTokenV2_2</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>heimdallup
+heimdall<span style="color: #F8F8F8"> </span>decompile<span style="color: #F8F8F8"> </span>0x43506849D7C04F9138D1A2050bbF3A0c054402dd<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--rpc-url<span style="color: #F8F8F8"> </span>https://ethereum-rpc.publicnode.com<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>--output<span style="color: #F8F8F8"> </span>./usdc-decompiled
+<span style="color: #8F5902; font-style: italic"># 输出：decompiled.sol / abi.json / cfg.dot（graphviz 渲染）</span>
+</code></pre></div>
+<p><code>--llm</code> 选项（0.8+）做变量重命名与函数注释。对照 <a href="https://github.com/circlefin/stablecoin-evm">circlefin/stablecoin-evm</a> 验证准确率。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="29-pectra" id="ch30"><span class="chapter-num">Chapter 30</span><br>29 Pectra 一年后的现场观察</h2>
+
+<p>写在 2026-04（Pectra 上线约 11 个月）。</p>
+<h3 id="291-eip-7702">29.1 EIP-7702 的现场情况</h3>
+<ul>
+<li>上线一周：约 11,000 个 authorization，主要来自 OKX、MetaMask、Ambire</li>
+<li>上线一个月：MetaMask 默认引导用户升级至"Smart Account"（7702 + Safe 模板）</li>
+<li>副作用：上线两周内出现钓鱼合约，诱导用户签向恶意 implementation；报告称 97% authorization 关联钓鱼</li>
+<li>MetaMask 对策：UI 强制对照 implementation 代码哈希白名单（OZ / Safe / Ambire 官方）</li>
+</ul>
+<p>来源：<a href="https://www.theblock.co/post/354414/smart-wallet-adoption-surges-after-pectra-upgrade">The Block: Smart wallet adoption surges</a>。</p>
+<h3 id="292-eip-7251maxeb">29.2 EIP-7251（MaxEB）的现场情况</h3>
+<ul>
+<li>上线时：~2% staked ETH 来自 consolidated validator（&gt;32 ETH Type-2）</li>
+<li>6 个月后：consolidated 占比涨至 11%+，约 7,000 个 Type-2 validator 持有 4M+ ETH</li>
+<li>运营方：管理数量从 1000+ validator 合并至 ~30 个，成本降一个数量级</li>
+<li>slashing：初始罚金从 1/32 降到 1/4096（2048 ETH validator 被 slash 仅损 ~0.5 ETH）</li>
+</ul>
+<p>来源：<a href="https://www.coinbase.com/en-au/developer-platform/discover/insights-analysis/understanding-maxeb">Coinbase: Understanding MaxEB</a>。</p>
+<h3 id="293-eip-7691blob-fusaka-bpo">29.3 EIP-7691（blob 上限）+ Fusaka BPO 的现场情况</h3>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>blob 目标</th>
+<th>blob 上限</th>
+<th>rollup 单 tx 成本（典型 swap）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cancun (2024-03)</td>
+<td>3</td>
+<td>6</td>
+<td>~$0.05</td>
+</tr>
+<tr>
+<td>Pectra (2025-05)</td>
+<td>6</td>
+<td>9</td>
+<td>~$0.025（-50%）</td>
+</tr>
+<tr>
+<td>Fusaka BPO1 (2025-12-09)</td>
+<td>10</td>
+<td>15</td>
+<td>~$0.012</td>
+</tr>
+<tr>
+<td>Fusaka BPO2 (2026-01-07)</td>
+<td>14</td>
+<td>21</td>
+<td>~$0.005</td>
+</tr>
+</tbody>
+</table>
+<p>L2 swap 费从几美分降至零点几美分；每天 rollup blob 数从 ~21,300（Cancun 末）涨到 28,000+（Pectra 后），主网 calldata 让出 90%。</p>
+<p>来源：<a href="https://www.panewslab.com/en/articles/squjgu4v">PANews: Blob Market After Pectra</a>。</p>
+<h3 id="294-eip-7549attestation-committee_index">29.4 EIP-7549（attestation 移 committee_index）</h3>
+<ul>
+<li>BLS 验证次数减少 ~64×（每 epoch 从 ~200 万次降至 ~30,000 次）</li>
+<li>finality 延迟降低 ~30%，nimbus 重新可在树莓派运行</li>
+</ul>
+<h3 id="295-prysm">29.5 Prysm 事件复盘</h3>
+<p>2025-12-10（Fusaka 后 7 天），Prysm v6.0.4 在 PeerDAS 数据列处理路径有 race condition，~38% validator attestation miss，finality 一度从 99.9% 降至 75%，但没有 fork——其他四 CL 合计份额 &gt; 33%，链没断。事件后 lighthouse / teku 份额各涨 ~5%。客户端多样性是协议层防线而非营销话术，正是这一节的实证。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="30" id="ch31"><span class="chapter-num">Chapter 31</span><br>30 延伸阅读</h2>
+
+<ul>
+<li><a href="https://ethereum.github.io/yellowpaper/paper.pdf">Ethereum Yellow Paper</a> — 形式化定义的根源</li>
+<li><a href="https://ethereum.org/developers/docs/">ethereum.org/developers/docs</a></li>
+<li><a href="https://www.evm.codes/">evm.codes</a> opcode 与 precompile 速查</li>
+<li><a href="https://www.evm.codes/about">evm.codes/about</a> — 一篇极好的 EVM 入门长文</li>
+<li><a href="https://geth.ethereum.org/docs">Geth Book</a></li>
+<li><a href="https://reth.rs/">Reth Book</a></li>
+<li><a href="https://www.alchemy.com/blog/ethereum-pectra-upgrade-dev-guide-to-11-eips">Pectra dev guide — Alchemy</a></li>
+<li><a href="https://eip7702.io/">EIP-7702 站点</a></li>
+<li><a href="https://eips.ethereum.org/assets/eip-2537/test-vectors">EIP-2537 测试向量</a></li>
+<li><a href="https://blog.stake.fish/the-state-of-ethereum-in-2026/">The State of Ethereum in 2026 — stake.fish</a></li>
+<li><a href="https://ethereum.org/developers/tutorials/yellow-paper-evm/">Understanding the Yellow Paper's EVM Specifications</a></li>
+<li><a href="https://github.com/ethereumbook/ethereumbook">Mastering Ethereum, Andreas M. Antonopoulos &amp; Gavin Wood</a> Chapter 13: The Ethereum Virtual Machine</li>
+<li><a href="https://learnevm.com/">LearnEVM.com</a> — Solidity Developer 进阶 EVM 课程</li>
+</ul>
+<p>下一步：<a href="../04-Solidity开发/README.md">模块 04 — Solidity 开发</a>。</p>
+</section>
+</body>
+</html>

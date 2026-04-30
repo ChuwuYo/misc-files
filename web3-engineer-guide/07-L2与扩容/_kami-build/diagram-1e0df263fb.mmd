@@ -1,0 +1,5 @@
+graph LR
+    A[Rollup] --> B[Celestia 全节点<br>publishBlob]
+    B --> C[Celestia 区块<br>2D Reed-Solomon 编码]
+    C --> D[Light Node<br>采样验证]
+    D --> E[DAS pass<br>=> rollup 可继续]

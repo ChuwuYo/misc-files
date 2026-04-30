@@ -1,0 +1,15 @@
+flowchart LR
+    L[1 ETH] --> S[stake → wstETH]
+    S --> A[Aave 抵押 wstETH]
+    A --> B[借出 USDC]
+    B --> C[swap 成 wstETH]
+    C --> A
+    Note1[循环 3-5 次<br/>e-mode 93% LTV]
+
+    S --> P[Pendle 切片]
+    P --> PT[PT-wstETH<br/>固定收益 5%]
+    P --> YT[YT-wstETH<br/>押注利率上涨]
+
+    S --> CV[Curve stETH/ETH LP]
+    CV --> CX[Convex stake]
+    CX --> CRV[CRV + CVX 收益]

@@ -1,0 +1,12 @@
+flowchart LR
+    Val[Validator<br/>stake BERA] -->|提议区块| Block[新区块]
+    Block -->|发 BGT 通胀| RV[Reward Vault<br/>白名单 ERC-20 staking pool]
+    LP[LP 在 RV 中存代币] -->|获得 BGT| LP
+    LP -->|boost 验证者| Val
+    Val -->|按 boost 比例获得更多 BGT| Val
+
+    BGT -.1:1 burn.-> BERA[换 BERA<br/>不可逆]
+    BGT --> Vote[治理投票]
+    BGT --> CoreFees[Berachain BEX/HONEY Swap fee 分红]
+
+    Bribes[项目方 incentive] -->|送给 Reward Vault| RV

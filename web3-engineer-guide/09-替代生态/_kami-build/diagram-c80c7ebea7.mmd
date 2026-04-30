@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph "Solana Token 模型"
+        TP[SPL Token Program<br>程序代码 共享]
+        M1[Mint A<br>USDC<br>supply, decimals]
+        M2[Mint B<br>USDT<br>supply, decimals]
+        TA1[Token Acct<br>owner=alice<br>mint=A<br>amt=100]
+        TA2[Token Acct<br>owner=alice<br>mint=B<br>amt=50]
+        TA3[Token Acct<br>owner=bob<br>mint=A<br>amt=200]
+        TP -.写权限.-> TA1
+        TP -.写权限.-> TA2
+        TP -.写权限.-> TA3
+    end

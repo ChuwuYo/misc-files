@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Dep as Deployer
+    participant Tk as MyGovToken
+    participant Tl as TimelockController
+    participant Gv as MyGovernor
+    participant Tr as Treasury
+    participant Alice as Alice（投票者）
+
+    Dep->>Tk: deploy(name, symbol)
+    Dep->>Tl: deploy(2 days, [], [0x0], deployer)
+    Dep->>Gv: deploy(token, timelock)
+    Dep->>Tl: grantRole(PROPOSER, governor)
+    Dep->>Tl: renounceRole(ADMIN, deployer)
+    Dep->>Tr: deploy(timelock)  ← Treasury owner = Timelock
+
+    Alice->>Tk: delegate(self)  ← 关键！必须 delegate 才有投票权
+    Dep->>Gv: propose(targets=[Tr], data=[transfer(...)], desc)
+    Note over Gv: votingDelay 1 day...
+    Alice->>Gv: castVote(proposalId, 1)
+    Note over Gv: votingPeriod 7 days...
+    Dep->>Gv: queue(targets, values, calldatas, descHash)
+    Note over Tl: timelock 2 days...
+    Dep->>Gv: execute(targets, values, calldatas, descHash)
+    Gv->>Tl: executeBatch(...)
+    Tl->>Tr: call transfer
+    Tr-->>Alice: 成功转账

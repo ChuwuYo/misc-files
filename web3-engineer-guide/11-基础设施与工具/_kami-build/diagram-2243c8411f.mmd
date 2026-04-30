@@ -1,0 +1,12 @@
+flowchart TD
+    Start[需要索引器] --> A{需要去中心化<br/>抗审查}
+    A -->|是| B{老 subgraph 迁移}
+    B -->|是| C[The Graph network]
+    B -->|否| D[Subsquid SQD]
+    A -->|否, 商业项目| E{速度需求}
+    E -->|极端高吞吐| F[Envio HyperIndex]
+    E -->|常规| G{需要流式 / BigQuery}
+    G -->|是| H[Goldsky Mirror]
+    G -->|否| I{TS 应用后端}
+    I -->|是| J[Ponder 0.x]
+    I -->|否, 多链优先| K[Goldsky / SQD]

@@ -1,0 +1,9 @@
+flowchart LR
+    OS[Off-chain Source 1<br/>Coinbase] --> AGG[Chainlink Aggregator<br/>median + heartbeat]
+    OS2[Off-chain Source 2<br/>Binance] --> AGG
+    OS3[Off-chain Source N] --> AGG
+    AGG -->|push tx| ORACLE[On-chain Feed Contract]
+    ORACLE -->|latestRoundData| CONSUMER[Lending Protocol]
+    CONSUMER -->|检查| CHK1[updatedAt vs heartbeat]
+    CONSUMER -->|检查| CHK2[answer > 0]
+    CONSUMER -->|检查| CHK3[answeredInRound >= roundId]

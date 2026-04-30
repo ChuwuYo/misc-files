@@ -1,0 +1,12 @@
+flowchart TB
+    subgraph Web2[位置寻址]
+        URL1[https://api.com/nft/1.json] -->|DNS| IP[1.2.3.4]
+        IP --> File1[1.json]
+        File1 -.可悄悄替换.-> File2[篡改后的 1.json]
+    end
+    subgraph Web3[内容寻址]
+        CID[bafybeig...xyz] -->|DHT| Node[任意持有节点]
+        Node --> Hash{hash == CID?}
+        Hash -->|否| Reject[拒收]
+        Hash -->|是| Accept[内容]
+    end

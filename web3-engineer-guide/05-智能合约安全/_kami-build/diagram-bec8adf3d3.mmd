@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    participant V as 受害者钱包
+    participant Phish as 钓鱼网站
+    participant A as 攻击者
+    participant T as ERC20 (with permit)
+    V->>Phish: 访问"领空投"页面
+    Phish->>V: 请求签 permit (owner=V, spender=A, value=2^256-1)
+    V-->>Phish: 签名 (r,s,v)
+    Note over V: 没有 tx 上链，钱包没警告
+    Phish->>A: 转发签名
+    A->>T: permit(V, A, 2^256-1, sig)
+    T-->>A: A 成为 V 的无限 spender
+    A->>T: transferFrom(V, A, allBalance)
+    T-->>A: 全部 token 到手

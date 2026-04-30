@@ -1,0 +1,9 @@
+graph TD
+    A[L1 吞吐瓶颈] --> B[区块 gas limit<br>~36M gas]
+    A --> C[出块时间<br>12 秒]
+    A --> D[全节点硬件<br>家用电脑要能跑]
+    B --> E[ERC20 转账 21k-65k gas<br>理论上限 50-130 TPS]
+    C --> E
+    D --> F[状态 600+ GB<br>磁盘 IO 是真实下限]
+    E --> G[实际平均 < 20 TPS]
+    F --> G

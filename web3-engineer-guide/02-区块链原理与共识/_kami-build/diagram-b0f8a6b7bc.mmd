@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant A as Alice
+    participant B as Bob (中间节点)
+    participant C as Charlie
+
+    Note over C: Charlie 生成 secret R<br/>给 Alice 发 hash(R)
+    A->>B: 锁定 1 BTC，条件：<br/>"知道 hash(R) 的原像才能解锁，48h 内"
+    B->>C: 锁定 1 BTC，条件：<br/>"知道 hash(R) 的原像才能解锁，24h 内"
+    C->>B: 揭示 R → 拿走 B 锁定的 1 BTC
+    B->>A: 用 R 拿走 A 锁定的 1 BTC

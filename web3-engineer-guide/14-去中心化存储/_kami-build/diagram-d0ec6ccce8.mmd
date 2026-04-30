@@ -1,0 +1,5 @@
+flowchart TB
+    Sol[Solidity 合约] -->|编译| EVM[FEVM<br/>EVM 兼容运行时]
+    EVM --> Wasm[Filecoin WASM Actor]
+    Wasm --> Storage[原生 Storage Actor<br/>调 PublishStorageDeals]
+    Storage --> SP[矿工]

@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph PublicMempool[公共 mempool]
+        TX1[普通 tx]
+    end
+    subgraph PrivateOFA[私有 order flow]
+        TX2[搜索器 bundle]
+        TX3[Flashbots Protect tx]
+        TX4[CowSwap solver]
+    end
+    PublicMempool --> Builders
+    PrivateOFA --> Builders
+    Builders[Builders<br/>beaver/rsync/titan/...]
+    Builders --> Block[最优 block]
+    Block --> Relay[Relay]
+    Relay --> Validator

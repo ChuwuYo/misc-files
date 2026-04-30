@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Asserter as Proposer (asserts root)
+    participant Challenger as Challenger
+    participant Cannon as Cannon (L1 MIPS interpreter)
+
+    Asserter->>L1: 提交 output root
+    Challenger->>L1: 挑战
+    loop O(log N) 二分
+        Asserter->>L1: 中间状态 hash
+        Challenger->>L1: 中间状态 hash
+        Note over L1: 不一致那段继续二分
+    end
+    L1->>Cannon: 把分到的一条 MIPS 指令交给 Cannon 执行
+    Cannon-->>L1: 仲裁谁对
+    L1->>L1: 错的那方被 slash 抵押金

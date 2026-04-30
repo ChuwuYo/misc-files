@@ -1,0 +1,6 @@
+flowchart TB
+    User[用户] --> Citrea[Citrea L2<br>Type-2 EVM zkEVM]
+    Citrea --> Proof[ZK proof + state root]
+    Proof --> BTC[Bitcoin Mainnet<br>Inscription 写入 proof]
+    BTC -. 验证 .- BitVM[BitVM-based Clementine bridge]
+    BitVM --> Withdraw[BTC 解锁回主链]

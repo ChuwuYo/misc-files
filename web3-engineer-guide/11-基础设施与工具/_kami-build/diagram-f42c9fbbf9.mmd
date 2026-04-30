@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant App as 你的 dApp
+    participant Helios as Helios (本地 8545)
+    participant UntrustedEL as Untrusted EL RPC<br/>(Alchemy 等)
+    participant TrustedCL as Beacon API
+    App->>Helios: eth_getBalance(0xVITALIK, latest)
+    Helios->>TrustedCL: 拿当前 finalized header
+    Helios->>UntrustedEL: eth_getProof(0xVITALIK, [], latest)
+    UntrustedEL->>Helios: 返回 account proof + state root
+    Helios->>Helios: 校验 proof 与 finalized state root 一致
+    Helios->>App: 返回经过密码学校验的 balance

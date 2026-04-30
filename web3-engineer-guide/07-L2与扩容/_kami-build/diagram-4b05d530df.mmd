@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant U as 用户
+    participant Z as zkSync sequencer
+    participant L1 as L1 verifier
+    participant DA as Validium DAC
+
+    U->>Z: 交易（数据 mode = Rollup）
+    Z->>L1: 提交 ZK proof + blob
+    L1-->>U: 安全等价 Ethereum
+
+    U->>Z: 交易（数据 mode = Validium）
+    Z->>L1: 提交 ZK proof
+    Z->>DA: 数据存 DAC
+    L1-->>U: 安全等价 ZK + DAC

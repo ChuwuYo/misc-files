@@ -1,0 +1,9 @@
+flowchart TB
+    Net[Internet Computer 全网]
+    Net --> SN1[Subnet 1<br>13-30 节点]
+    Net --> SN2[Subnet 2]
+    Net --> SN3[Subnet ...]
+    SN1 --> C1[Canister A<br>Motoko / Rust WASM]
+    SN1 --> C2[Canister B]
+    SN2 --> C3[Canister C]
+    C1 -. inter-canister call .-> C3

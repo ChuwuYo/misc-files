@@ -1,0 +1,4 @@
+flowchart LR
+    A[本地一堆文件] -->|car-block-tools 打包| B[xxx.car<br/>含 root CID + 所有块]
+    B -->|HTTP 上传到 pinning| C[Pinata / Filebase / Lighthouse]
+    C -->|网络分发| D[全网可寻址]

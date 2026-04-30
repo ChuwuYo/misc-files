@@ -1,0 +1,7 @@
+graph LR
+    A[Validium 用户] --> B[L2 sequencer]
+    B --> C[ZK 证明上 L1]
+    B --> D[数据存 DAC<br>或外部 DA 链]
+    C --> E[L1 验证<br>状态根有效]
+    D --> F[需要数据时<br>找 DAC 拿]
+    F -.->|DAC 不诚实| G[💀 用户无法<br>强制提款]

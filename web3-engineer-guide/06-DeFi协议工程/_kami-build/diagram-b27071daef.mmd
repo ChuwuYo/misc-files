@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant B as Borrower（HF<1.1）
+    participant L as Liquity Trove
+    participant SP as Stability Pool
+    participant LP as SP Depositor
+
+    L->>L: 检测 HF < 1.1
+    L->>SP: 查询 Pool 是否够还 borrower 全部债务
+    alt SP 够还
+        SP->>L: 销毁等量 LUSD
+        L->>SP: 把 borrower 的 ETH 抵押品转给 SP
+        L->>LP: SP 持有 ETH，按比例分给 depositor
+    else SP 不够还
+        L->>L: 把残余债务+抵押品按比例重分给所有其它 trove
+    end

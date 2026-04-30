@@ -1,0 +1,7 @@
+flowchart LR
+    U[用户] -->|签 UserOperation| B[Bundler]
+    B -->|打包多个 UserOp| EP[EntryPoint 合约]
+    EP -->|验证签名| SA[SmartAccount]
+    SA -->|执行 calldata| Target[目标合约]
+    EP -->|向 paymaster 收费| PM[Paymaster]
+    PM -.可代付 gas.-> EP

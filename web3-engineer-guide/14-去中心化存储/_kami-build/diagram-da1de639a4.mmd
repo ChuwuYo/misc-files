@@ -1,0 +1,14 @@
+flowchart TD
+    Start{什么数据?} -->|NFT 元数据/图片| NFT[路径 A]
+    Start -->|DAO 投票/治理记录| DAO[路径 B]
+    Start -->|协议长期日志/索引| LOG[路径 C]
+    Start -->|AI 训练数据/模型| AI[路径 D]
+    Start -->|大型媒体 4K 视频| MEDIA[路径 E]
+    Start -->|动态 dApp 后端数据| BE[路径 F]
+
+    NFT --> NFT1[图片 → Arweave/Irys 永久<br/>元数据 → IPFS pin 多平台<br/>合约 baseURI 不可变]
+    DAO --> DAO1[关键决议 → Arweave 永久<br/>讨论日志 → Filecoin via Lighthouse<br/>实时投票数据 → IPFS pin]
+    LOG --> LOG1[The Graph / Subsquid 索引<br/>历史归档 → Filecoin FIL+ datacap<br/>近期热数据 → 自建 archive node]
+    AI --> AI1[训练集 → Filecoin FIL+ 免费<br/>权重分发 → Walrus / 0G Storage<br/>推理日志 → 0G DA]
+    MEDIA --> MEDIA1[Walrus 4-5× 复制因子<br/>或 Filecoin 大 sector deal]
+    BE --> BE1[Aleph.im / Storj S3 兼容<br/>需 EVM 集成 → Greenfield]

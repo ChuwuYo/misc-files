@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph Old[传统范式]
+        U1[用户] --> T1[手写 tx<br/>选 DEX、滑点、gas]
+        T1 --> M1[mempool] --> EX1[执行]
+    end
+
+    subgraph New[Intent 范式]
+        U2[用户] --> I[只写意图<br/>用最低滑点<br/>1h 内换 1 ETH→USDC]
+        I --> SS[Solver 竞拍] --> M2[最优路径]
+        M2 --> EX2[原子执行]
+    end
+
+    style I fill:#d4edda,stroke:#155724
+    style SS fill:#cce5ff,stroke:#004085

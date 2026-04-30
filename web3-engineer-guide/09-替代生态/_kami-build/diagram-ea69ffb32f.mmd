@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant U as 用户
+    participant Wallet as NEAR 钱包
+    participant SolverNet as Solver 网络
+    participant Chain as 任意链 (BTC/ETH/SOL...)
+    U->>Wallet: 表达意图 "把 100 USDC 兑换为 BTC，发到 X 地址"
+    Wallet->>SolverNet: 拍卖 (broadcast intent)
+    SolverNet-->>Wallet: 多个 Solver 报价
+    Wallet->>SolverNet: 选最优 Solver
+    SolverNet->>Chain: 多链组合: swap + bridge + send
+    Chain-->>U: 完成

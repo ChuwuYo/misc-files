@@ -1,0 +1,8 @@
+flowchart LR
+    LP[USDC 贷方<br/>KYC 用户] -->|存款| P[Pool（托管在 PoolDelegate 下）]
+    P -->|放款给| B[借款机构<br/>KYC + 信用尽调]
+    PD[Pool Delegate<br/>专业资管公司] -->|尽调 + 风控| P
+    B -->|偿还本息| P
+    P -->|分红| LP
+
+    PD -->|收 management fee 1-2%| Fee[费用]

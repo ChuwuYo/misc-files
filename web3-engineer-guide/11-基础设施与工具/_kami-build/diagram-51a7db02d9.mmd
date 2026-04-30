@@ -1,0 +1,7 @@
+flowchart TD
+    Start[需要嵌入式钱包] --> A{核心诉求}
+    A -->|签名延迟 < 100ms<br/>AI agent 自动签名| B[Turnkey]
+    A -->|社交登录 + AA 集成| C[Privy / Openfort]
+    A -->|MetaMask 体系内复用| D[MetaMask Embedded / Web3Auth]
+    A -->|机构级 + 多签策略| E[Fireblocks / Dynamic]
+    A -->|Stripe 支付 + 钱包融合| F[Privy]

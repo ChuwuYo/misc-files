@@ -1,0 +1,25 @@
+sequenceDiagram
+    participant P as Proposer<br/>(轮值 leader)
+    participant V1 as Validator 1
+    participant V2 as Validator 2
+    participant V3 as Validator 3
+
+    Note over P,V3: PROPOSE 阶段
+    P->>V1: 提议 block
+    P->>V2: 提议 block
+    P->>V3: 提议 block
+
+    Note over P,V3: PREVOTE 阶段
+    V1->>V2: prevote(block)
+    V1->>V3: prevote(block)
+    V2->>V1: prevote(block)
+    V2->>V3: prevote(block)
+    V3->>V1: prevote(block)
+    V3->>V2: prevote(block)
+    Note over V1,V3: 收齐 2/3 prevote → "polka"
+
+    Note over P,V3: PRECOMMIT 阶段
+    V1->>V2: precommit
+    V2->>V1: precommit
+    V3->>V1: precommit
+    Note over V1,V3: 收齐 2/3 precommit → commit

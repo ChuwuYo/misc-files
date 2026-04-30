@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph BN["Beacon Node"]
+        Sync[sync 模块<br/>checkpoint / range / forward]
+        Fork[fork choice<br/>LMD-GHOST + Casper FFG]
+        DB[(beacon DB<br/>state + block + attestations)]
+        P2P[p2p libp2p<br/>gossipsub topics]
+        API[Beacon API HTTP<br/>port 5052]
+    end
+    subgraph VC["Validator Client"]
+        Keys[keystore + slashing protection DB]
+        Duties[duties scheduler]
+        Sign[signing<br/>BLS]
+    end
+    BN -->|attest / propose duties| VC
+    VC -->|signed message| BN
+    BN -->|engine API JWT 8551| EL[Execution Layer]
+    BN -->|builder API 18550| MevBoost[mev-boost]

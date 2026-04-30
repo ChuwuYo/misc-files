@@ -1,0 +1,17 @@
+flowchart TD
+    Q[链上合约怎么验证<br/>链下 ML 推理结果]
+
+    Q --> Z[zkML<br/>密码学证明]
+    Q --> O[opML<br/>挑战期 + 复算]
+    Q --> T[TEE<br/>硬件远程证明]
+    Q --> C[Crypto-economic<br/>质押 + 投票 + slashing]
+
+    Z --> Z1[强保证<br/>但慢/贵]
+    O --> O1[便宜<br/>但需 1+ 诚实复算者]
+    T --> T1[最快<br/>但信 Intel/AMD 制造商]
+    C --> C1[去中心化<br/>但有共谋风险]
+
+    style Z fill:#cce5ff,stroke:#004085
+    style O fill:#d4edda,stroke:#155724
+    style T fill:#fff3cd,stroke:#856404
+    style C fill:#f8d7da,stroke:#721c24

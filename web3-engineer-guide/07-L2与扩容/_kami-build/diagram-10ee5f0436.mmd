@@ -1,0 +1,7 @@
+graph LR
+    A[op-geth<br>L2 执行客户端] -- engine API --> B[op-node<br>rollup 节点]
+    B --> C[op-batcher<br>把 L2 区块<br>压成 frame/blob<br>提交到 L1]
+    B --> D[op-proposer<br>把 output root<br>提交到 L2OutputOracle]
+    E[L1] --> B
+    C --> E
+    D --> E

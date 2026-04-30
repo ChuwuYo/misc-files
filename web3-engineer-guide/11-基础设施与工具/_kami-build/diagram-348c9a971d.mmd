@@ -1,0 +1,8 @@
+flowchart LR
+    Dev[本地 graph-cli init] --> Build[graph build]
+    Build --> Test[graph test 单测]
+    Test --> Studio[graph deploy --studio<br/>到 Subgraph Studio]
+    Studio --> Sandbox[在 Studio 测试 GraphQL]
+    Sandbox --> Publish[Publish 按钮<br/>publish 到 decentralized network]
+    Publish --> Curate[curators 给 GRT signal<br/>indexer 决定是否 index]
+    Curate --> Query[query URL<br/>需 API key + GRT 抵扣]

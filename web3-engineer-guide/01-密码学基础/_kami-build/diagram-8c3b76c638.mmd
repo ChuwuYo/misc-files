@@ -1,0 +1,6 @@
+graph LR
+    V1[验证者 1 hash 签名] --> AGG[leanVM<br/>STARK 聚合]
+    V2[验证者 2 hash 签名] --> AGG
+    VN[... 验证者 N] --> AGG
+    AGG --> P[1 个 STARK 证明]
+    P --> CHAIN[链上验证]

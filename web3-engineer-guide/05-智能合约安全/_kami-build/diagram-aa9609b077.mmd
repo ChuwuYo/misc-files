@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant V as EOA Victim
+    participant F as Phish (假"加速 tx"页面)
+    participant A as Attacker
+    participant Net as Pectra Network
+    F->>V: signTypedData(SetCodeAuth{address: CrimeEnjoyor, chainId: 0, nonce: 0})
+    V-->>F: sig
+    F->>Net: type 4 tx with auth list
+    Net-->>V: 升级 EOA 代码 = CrimeEnjoyor.bytecode
+    Note over V: 此后 V 收到任何 ETH/ERC20 都立刻转给 A
+    A->>V: 监控 mempool / 触发动作
+    V-->>A: 自动 sweep

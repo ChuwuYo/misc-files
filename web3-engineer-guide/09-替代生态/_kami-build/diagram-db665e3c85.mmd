@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Alice
+    participant BTC as Bitcoin Mainnet
+    participant Bob
+    Alice->>BTC: open channel: 2-of-2 multisig commit
+    BTC-->>Alice: confirmed
+    Alice->>Bob: HTLC: 1000 sats
+    Bob-->>Alice: revoke old state
+    Alice->>Bob: HTLC: 500 sats more
+    Bob-->>Alice: revoke
+    Note over Alice,Bob: 数百万次链下交换 ...
+    Alice->>BTC: close channel: 最新 state
+    BTC-->>Alice: 各拿各的钱

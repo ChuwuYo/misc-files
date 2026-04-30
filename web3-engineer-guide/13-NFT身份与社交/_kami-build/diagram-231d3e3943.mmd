@@ -1,0 +1,8 @@
+flowchart LR
+    A[Identity Layer<br/>OP Mainnet] --> B[Hub Network<br/>~40 个节点]
+    B --> C[Apps<br/>Warpcast / Supercast / 各 client]
+
+    A -.fid 注册 .-> A1[ID Registry]
+    A -.key 管理.-> A2[Key Registry]
+    B -.gossip.-> B1[Hub Protocol]
+    B -.snapshot.-> B2[Postgres state]

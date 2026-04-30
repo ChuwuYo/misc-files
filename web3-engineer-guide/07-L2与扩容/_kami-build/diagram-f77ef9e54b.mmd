@@ -1,0 +1,22 @@
+flowchart TB
+    subgraph OP[Optimistic Rollup 乐观派]
+        OP1[Sequencer 提交状态根]
+        OP2[默认相信，进入 7 天挑战期]
+        OP3{有人质疑吗?}
+        OP4[过期，状态根生效]
+        OP5[fraud proof 二分博弈<br>L1 仲裁]
+        OP1-->OP2-->OP3
+        OP3 -->|无| OP4
+        OP3 -->|有| OP5
+    end
+
+    subgraph ZK[ZK Rollup 数学派]
+        ZK1[Sequencer 提交状态根<br>+ validity proof]
+        ZK2[L1 用 50–500k gas<br>验证 proof]
+        ZK3{proof 通过?}
+        ZK4[状态根生效<br>几小时内最终性]
+        ZK5[拒绝整个 batch]
+        ZK1-->ZK2-->ZK3
+        ZK3 -->|是| ZK4
+        ZK3 -->|否| ZK5
+    end

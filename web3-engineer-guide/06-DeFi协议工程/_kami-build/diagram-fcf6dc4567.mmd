@@ -1,0 +1,7 @@
+flowchart LR
+    U[Swapper] -->|付 fee| H[Hook Pool]
+    H -->|MEV 利润| MEV[MEV Bot]
+    H -->|动态调整 fee| LP[LP]
+    MEV -.如果是 detox hook.-> H
+    H -->|分回| LP
+    H -->|协议 fee 部分| Hook作者[Hook 作者]

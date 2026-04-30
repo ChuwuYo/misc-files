@@ -1,0 +1,8 @@
+flowchart LR
+    A[Node A] -- gossip<br>带 hash 链 --> B[Node B]
+    B -- gossip --> C[Node C]
+    C -- gossip --> A
+    A -. virtual voting<br>(无显式投票，从 gossip DAG 推导) .- B
+    B -. virtual voting .- C
+    C -. virtual voting .- A
+    A -- final order --> Block[Block]

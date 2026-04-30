@@ -1,0 +1,5 @@
+flowchart LR
+    Browser[浏览器] -->|HTTP GET| GW[网关 ipfs.io / dweb.link / Pinata / Cloudflare]
+    GW -->|libp2p / Bitswap| Net[IPFS 网络]
+    Net --> GW
+    GW -->|HTTP 200 + 字节| Browser

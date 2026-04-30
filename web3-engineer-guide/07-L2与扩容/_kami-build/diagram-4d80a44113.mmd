@@ -1,0 +1,5 @@
+graph LR
+    A[Cosmos Chain A] --> B[Light Client of B<br>跑在 A 上]
+    B --> C[IBC Relayer]
+    C --> D[Light Client of A<br>跑在 B 上]
+    D --> E[Cosmos Chain B]

@@ -1,0 +1,11 @@
+flowchart LR
+    U[用户存 1 ETH<br/>市价 $4000] --> E[Ethena 合约]
+    E -->|链上保管| C[Off-Exchange Custody<br/>Copper / Ceffu / Fireblocks]
+    E -->|开 ETH 永续空单 1 ETH 等量| CEX1[Bybit ETH-PERP]
+    E -->|开 ETH 永续空单部分| CEX2[Binance / OKX]
+    E -->|铸 4000 USDe 给用户| U2[用户拿 4000 USDe]
+
+    C -->|stETH staking yield 3%| Y1[现货收益]
+    CEX1 -->|funding rate +5%| Y2[funding 收益]
+    Y1 --> S[sUSDe 给 staker]
+    Y2 --> S

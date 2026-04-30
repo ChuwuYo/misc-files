@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant S as Sequencer
+    participant L1 as L1 inbox 合约
+    participant V as Validator (任何人)
+    participant FP as Fault Proof 流程
+
+    S->>L1: 提交 type-3 tx + blob<br>(blob = 压缩后的 batch 数据)
+    L1->>L1: 记录 versioned hash
+    V->>V: 从信标节点拿 blob 重放 batch
+    alt 重放结果 != sequencer 提交的状态根
+        V->>FP: 启动挑战
+        FP->>L1: 二分到一条指令
+        FP->>L1: 用 0x0a precompile<br>验证 blob 上某点的值
+        L1-->>FP: 仲裁
+    end

@@ -1,0 +1,16 @@
+flowchart LR
+    subgraph Geth["geth: trie 全保存"]
+        GA["state trie (Pebble)<br/>历史节点不删<br/>archive 18 TB"]
+        GS["snapshot<br/>flat addr->account<br/>加速 eth_call"]
+        GF["ancient freezer<br/>历史 block + receipts<br/>zstd 压缩"]
+    end
+    subgraph Reth["reth V2: hashed + static files"]
+        RH["MDBX hashed state only<br/>(plain state 已删)"]
+        RS["static append-only files<br/>historical changesets<br/>不进 MDBX 不 compact"]
+        RC["SparseTrieCacheTask<br/>trie 计算 200ms -> <50ms"]
+    end
+    subgraph Erigon["erigon: 平面 + 按需 trie"]
+        EP["plain state (addr -> RLP)"]
+        EH["history index"]
+        EO["按需重建 trie<br/>仅 eth_getProof 时"]
+    end

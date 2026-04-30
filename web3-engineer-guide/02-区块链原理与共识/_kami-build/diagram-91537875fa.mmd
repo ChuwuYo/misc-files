@@ -1,0 +1,5 @@
+graph LR
+    F[Follower] -->|election timeout| C[Candidate]
+    C -->|获多数票| L[Leader]
+    C -->|没获多数| F
+    L -->|发现更高 term| F

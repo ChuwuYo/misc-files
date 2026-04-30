@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    participant V as Victim
+    participant U as Uniswap UniversalRouter (历史合规使用)
+    participant T as USDC
+    participant P2 as Permit2 (0x000000000022D473030F116dDEE9F6B43aC78BA3)
+    participant F as Phishing site
+    participant A as Attacker
+    V->>T: approve(Permit2, MAX) (历史，合规 swap 留下的)
+    Note over T,P2: 之后所有 Permit2 签名都能动 V 的 USDC
+    F->>V: 假"领空投"页面 + signTypedData_v4(PermitSingle)
+    V-->>F: 签名 (sig)
+    F->>A: 转发 sig
+    A->>P2: permit(V, PermitSingle{spender=A, amt=MAX, exp=远期}, sig)
+    P2-->>A: A 成 V 的 spender
+    A->>P2: transferFrom(V, A, balance)
+    P2->>T: transferFrom (P2 是 Master Approver)
+    T-->>A: 全部 USDC

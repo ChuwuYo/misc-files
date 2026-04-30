@@ -1,0 +1,9 @@
+flowchart LR
+    U[用户] -->|锁 1.5 ETH<br/>ETH 价 $3000<br/>市值 $4500| V[CDP Vault]
+    V -->|铸 2000 USDS<br/>抵押率 225%| U
+    U -->|偿还 USDS + 利息| V
+    V -->|释放 1.5 ETH| U
+
+    M[市场] -->|ETH 跌到 $2500| V
+    V -->|抵押率 187% < 阈值 200%| Liq[清算人]
+    Liq -->|偿 2000 USDS<br/>拿走 ~1.45 ETH（含 5% 折扣）| V

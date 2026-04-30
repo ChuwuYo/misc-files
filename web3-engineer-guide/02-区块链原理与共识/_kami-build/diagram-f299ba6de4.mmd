@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Pool as ALGO 持有者池
+    participant C as 选中的 committee（约 1000 人）
+
+    Pool->>C: 用 VRF 抽签
+    Note over C: Reduction step：把多个候选块 → 选 1 个
+    Note over C: Binary BA：投票 commit
+    Note over C: 重要：每步换一批 committee

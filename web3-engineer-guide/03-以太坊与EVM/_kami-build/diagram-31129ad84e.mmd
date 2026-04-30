@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant CL as 共识层 (lighthouse)
+  participant EL as 执行层 (reth)
+  Note over CL,EL: 每 12 秒一个 slot
+  CL->>EL: engine_newPayloadV4(executionPayload)
+  EL->>EL: 执行所有 tx，验证 stateRoot
+  EL-->>CL: { status: VALID, latestValidHash }
+  CL->>EL: engine_forkchoiceUpdatedV3(state, payloadAttr)
+  Note right of EL: 如果带 payloadAttr，<br/>EL 开始构造下一块
+  EL-->>CL: { payloadId, status: VALID }
+  Note over CL,EL: ~ 4 秒后
+  CL->>EL: engine_getPayloadV4(payloadId)
+  EL-->>CL: { executionPayload, blobsBundle, blockValue }

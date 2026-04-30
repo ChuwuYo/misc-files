@@ -1,0 +1,18 @@
+graph TD
+    Project["新 Solidity 项目"] -->|默认| Foundry
+    Project -->|TS 团队 + 复杂前端| Hardhat3["Hardhat 3 (beta-prod)"]
+    Project -->|Curve/Lido 系生态| Ape["ApeWorX (Ape)"]
+
+    NeedExtremeGas["需要极致 gas"] --> HuffYul["Huff / Yul"]
+    NeedNonEVM["非 EVM 目标"] --> Solang["Solang (Polkadot/Solana)"]
+    NeedArbitrum["Arbitrum 重度计算"] --> Stylus["Rust + Stylus"]
+    NeedFuel["Fuel 网络"] --> Sway
+
+    Legacy["维护老项目"] -->|HH2| Hardhat2["Hardhat 2 (legacy)"]
+    Legacy -->|Brownie| Migrate["迁 Ape"]
+
+    style Foundry fill:#90EE90
+    style Hardhat3 fill:#90EE90
+    style Stylus fill:#FFE4B5
+    style HuffYul fill:#FFE4B5
+    style Hardhat2 fill:#FFB6C1

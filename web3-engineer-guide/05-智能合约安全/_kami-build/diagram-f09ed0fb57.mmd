@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant A as Attacker
+    participant L as Aave (闪电贷)
+    participant D as DEX (低流动)
+    participant V as Victim Lending
+    A->>L: flashLoan(1B USDC)
+    A->>D: swap → MNGO，spot price 10x
+    A->>V: deposit MNGO; borrow ALL（V 读 D spot）
+    A->>D: swap MNGO back; A->>L: repay

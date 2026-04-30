@@ -1,0 +1,6 @@
+flowchart TB
+    User[用户付一笔 AR] --> Pool[网络捐赠基金 Endowment]
+    Pool --> Compound[利息 + 矿工费分配]
+    Compound -->|每年提取一小部分| Miners[矿工奖励]
+    Miners --> Store[继续存]
+    Note[关键假设:<br/>存储成本下降速度 > 基金消耗速度] -.-> Pool

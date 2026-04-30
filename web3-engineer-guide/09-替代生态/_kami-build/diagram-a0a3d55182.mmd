@@ -1,0 +1,7 @@
+flowchart LR
+    User[Validator] -- 质押 BERA --> Stake[Stake Pool]
+    Stake -- 出块产生 --> BGT[BGT 奖励]
+    User -- 把 BGT 投票 --> Reward[Reward Vault<br>引导 BGT 流向<br>哪些 LP 池]
+    Reward --> LP[BERA/HONEY LP]
+    Reward --> LP2[其他生态 LP]
+    User -- burn BGT --> BERA2[换得 BERA 流动性]

@@ -1,0 +1,9 @@
+flowchart TB
+    subgraph 7702 之前
+        EOA1[EOA<br/>私钥签名] -->|只能调用| C1[合约]
+    end
+
+    subgraph 7702 之后
+        EOA2[EOA] -->|发 Type 4 tx<br/>设置 delegation| D[delegated contract<br/>SmartAccount 代码]
+        EOA2 -->|从此 EOA 也能 batch / session key / paymaster| Action[复杂操作]
+    end

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant A as Asserter (sequencer)
+    participant C as Challenger
+    participant L1 as L1 仲裁合约
+
+    A->>L1: 提交状态根 S' (claim batch 跑完是 S')
+    C->>L1: 提交挑战 (我说应该是 S'')
+    L1-->>A: 把整个 batch 一分为二
+    A->>L1: 提交中间状态 M_A
+    C->>L1: 提交中间状态 M_C
+    L1-->>L1: 比较 M_A vs M_C
+    Note over L1: 不一致的那半段继续二分
+    loop O(log n) 轮
+        L1->>A: 二分
+        L1->>C: 二分
+    end
+    L1->>L1: 最后分到一条 EVM/WAVM 指令
+    L1->>L1: 在 L1 解释器上执行该指令
+    L1-->>A: 错的那方被 slash

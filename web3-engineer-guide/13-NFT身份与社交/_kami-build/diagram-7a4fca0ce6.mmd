@@ -1,0 +1,6 @@
+flowchart LR
+    A[需求: 链上独一无二的猫] --> B{ERC-20 行不行?}
+    B -->|不行| C[ERC-20 每个 token 等价]
+    C --> D[必须给每个 token 单独 ID]
+    D --> E[mapping tokenId =&gt; owner]
+    E --> F[ERC-721]

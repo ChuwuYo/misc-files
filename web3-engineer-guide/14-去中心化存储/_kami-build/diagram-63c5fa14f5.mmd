@@ -1,0 +1,7 @@
+flowchart TD
+    A[需要可变入口] --> B[IPNS]
+    A --> C[DNSLink]
+    A --> D[ENS contenthash]
+    B --> B1[公钥哈希作为名字<br/>慢但去中心化]
+    C --> C1[DNS TXT 记录<br/>快但中心化]
+    D --> D1[ENS 链上记录<br/>EVM 原生 + 抗审查]

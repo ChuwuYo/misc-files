@@ -1,0 +1,6 @@
+flowchart TB
+    A[每个 round] --> B[VRF 抽签<br>挑出 ~1000 委员]
+    B --> C[committee propose 块]
+    C --> D[VRF 抽下个委员会做 vote]
+    D --> E[2/3 同意即 final]
+    E -.每轮抽人都不同.- A

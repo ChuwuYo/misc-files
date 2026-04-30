@@ -1,0 +1,7 @@
+flowchart LR
+    Searchers[Searchers<br/>套利/清算/三明治] -->|1 bundle| Builders[Builders]
+    Builders -->|2 sealed block + bid<br/>blinded header| Relays[Relays]
+    Relays -->|3 getHeader<br/>仅 header 不含 body| Validator[Validator + mev-boost]
+    Validator -->|4 signed header<br/>commit-阶段| Relays
+    Relays -->|5 reveal: 返回 full block body<br/>给已签名 header 的 validator| Validator
+    Validator -->|6 propose 完整 block| Beacon[Beacon Chain]

@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    participant A as Attacker
+    participant B as VulnerableBank
+    participant E as Attacker.receive()
+    A->>B: deposit{value:1 ETH}()
+    Note over B: balances[A] = 1 ETH
+    A->>B: withdraw()
+    Note over B: bal = 1 ETH (read state)
+    B->>E: call{value: 1 ETH}("")
+    E->>B: withdraw() (reentry)
+    Note over B: bal = 1 ETH (state still 1!)
+    B->>E: call{value: 1 ETH}("")
+    E->>B: withdraw() (reentry again)
+    Note over B: 持续到金库被掏空
+    E-->>B: return
+    B-->>B: balances[A] = 0 (太晚)

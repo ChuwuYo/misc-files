@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant DApp
+  participant W1 as MetaMask
+  participant W2 as Coinbase
+  DApp->>W1: dispatchEvent(eip6963:requestProvider)
+  DApp->>W2: dispatchEvent(eip6963:requestProvider)
+  W1-->>DApp: announceProvider (info, provider)
+  W2-->>DApp: announceProvider (info, provider)
+  DApp->>DApp: 列出钱包给用户选
+  DApp->>W1: provider.request({ method: 'eth_requestAccounts' })
+  W1-->>DApp: accounts[]

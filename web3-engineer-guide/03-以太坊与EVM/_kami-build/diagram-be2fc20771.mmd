@@ -1,0 +1,16 @@
+flowchart LR
+  subgraph 调用帧 [当前调用帧]
+    S[stack]
+    M[memory]
+    CD[calldata - 只读]
+  end
+  subgraph 合约自身 [当前合约状态]
+    ST[storage - 永久]
+    TS[transient storage - tx 内]
+    CODE[code - 永久]
+  end
+  S <--> M
+  CD --> S
+  M <--> ST
+  M <--> TS
+  CODE -- CODECOPY --> M

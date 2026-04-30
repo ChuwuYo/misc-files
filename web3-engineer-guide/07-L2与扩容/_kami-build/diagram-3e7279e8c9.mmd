@@ -1,0 +1,11 @@
+graph TB
+    subgraph Arbitrum[Arbitrum Nitro 架构]
+        A[ArbOS Go 代码<br>含修改版 Geth] --> B[编译到 native<br>正常执行]
+        A --> C[编译到 WASM/WAVM<br>fraud proof 用]
+        B --> D[Sequencer 出块]
+        D --> E[Batch 提交<br>到 L1 inbox]
+        E --> F[Validator 重放<br>检查正确性]
+        F --> G{有争议?}
+        G -->|是| H[BoLD 二分博弈<br>到一条 WAVM 指令]
+        G -->|否| I[7 天后终局]
+    end

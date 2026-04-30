@@ -1,0 +1,13 @@
+flowchart LR
+    U1[用户1<br/>卖 1 ETH 买 USDC] --> Batch[批次池]
+    U2[用户2<br/>卖 USDC 买 ETH] --> Batch
+    U3[用户3<br/>卖 USDT 买 ETH] --> Batch
+
+    Batch -->|拍卖| S1[Solver 1<br/>方案: P2P 撮合 U1↔U2 + U3 走 Curve]
+    Batch -->|拍卖| S2[Solver 2<br/>方案: 全部走 Uniswap]
+    Batch -->|拍卖| S3[Solver 3<br/>方案: 1inch + Balancer 混合]
+
+    S1 -->|surplus 最高，赢| Settle[结算合约执行]
+    Settle -->|按 intent 价或更好| U1
+    Settle --> U2
+    Settle --> U3

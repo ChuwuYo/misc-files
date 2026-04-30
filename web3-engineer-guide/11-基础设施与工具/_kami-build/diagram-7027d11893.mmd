@@ -1,0 +1,6 @@
+flowchart TD
+    Start[开始] --> Run[运行节点 §2-§7<br/>EL+CL · light client · sync · RPC]
+    Run --> Data[数据出口 §8-§10<br/>Indexer · 分析平台 · 监控告警]
+    Data --> MEV[MEV+Validator §11+§11A<br/>因果链: PBS → mev-boost → DVT → Pectra]
+    MEV --> Dev[开发流水线 §12-§14<br/>Foundry · CI · 密钥]
+    Dev --> Tail[§15-§18<br/>浏览器 · 实战 · 习题 · AI]

@@ -1,0 +1,12 @@
+graph TD
+    Lamport[Lamport BGP 1982<br/>3f+1 下界]
+    Lamport --> Paxos[Paxos 1989 crash-only]
+    Paxos --> Raft[Raft 2014]
+    Lamport --> PBFT[PBFT 1999 工程可用]
+    PBFT --> Tendermint[Tendermint 2014 gossip O(n)]
+    PBFT --> HotStuff[HotStuff 2019 O(n) responsive]
+    HotStuff --> LibraBFT[LibraBFT 2019]
+    LibraBFT --> DiemBFT[DiemBFT v4]
+    DiemBFT --> AptosBFT[AptosBFT v4 Jolteon]
+    AptosBFT --> Raptr[Raptr 2024]
+    HotStuff --> Mysticeti[Sui Mysticeti 2024]

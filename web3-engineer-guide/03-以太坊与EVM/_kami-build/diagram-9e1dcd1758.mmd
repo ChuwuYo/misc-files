@@ -1,0 +1,9 @@
+flowchart LR
+  subgraph 节点
+    EL["执行层 EL<br/>geth / reth / erigon / nethermind / besu"]
+    CL["共识层 CL<br/>lighthouse / prysm / teku / nimbus / lodestar"]
+    EL <-- "Engine API<br/>(JWT)" --> CL
+  end
+  EL <-- "devp2p / mempool" --> 其他EL[其他 EL 节点]
+  CL <-- "libp2p / gossipsub" --> 其他CL[其他 CL 节点]
+  CL --> 验证者[Validator client<br/>BLS 签名]

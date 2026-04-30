@@ -1,0 +1,6 @@
+flowchart LR
+    Multisig -.->|私钥钓鱼| Ronin/WazirX
+    MPC -.->|密钥失控| Multichain
+    LightClient -.->|reorg/51%| _
+    Optimistic -.->|fraud proof bug| Nomad
+    ZK -.->|circuit/verifier bug| _

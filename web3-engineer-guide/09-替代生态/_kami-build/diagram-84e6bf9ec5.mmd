@@ -1,0 +1,8 @@
+flowchart TB
+    A[block 进来 N 笔事务] --> B[分配到 K 个 worker thread]
+    B --> C[每个 worker 取一笔事务<br>乐观执行<br>记录 read set / write set]
+    C --> D[写到 multi-version<br>状态存储 MVStore]
+    D --> E{检查冲突<br>读到的 version 还是最新吗?}
+    E -- 是 --> F[commit]
+    E -- 否 --> G[回滚<br>重排进队列<br>等更高优先级 tx 完成后再跑]
+    G --> C

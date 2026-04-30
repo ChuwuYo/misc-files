@@ -1,0 +1,8 @@
+flowchart TB
+    AI[AI Agent / 大模型应用]
+    AI --> DA[0G DA<br/>数据可用性层]
+    AI --> Storage[0G Storage<br/>大块持久存储]
+    AI --> Compute[0G Compute<br/>GPU 推理 / 训练]
+    DA -.50000× faster than ETH DA.-> Note1
+    Storage -.up to 2 GB/s 吞吐.-> Note2
+    Compute -.Sealed Inference 2026-03.-> Note3

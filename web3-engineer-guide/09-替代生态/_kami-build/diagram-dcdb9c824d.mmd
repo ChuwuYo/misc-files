@@ -1,0 +1,5 @@
+flowchart LR
+    L1[Cardano 主链] -- 用户群 lock UTXO --> Head[Hydra Head<br>多方共建小链<br>n-of-n 共同签名]
+    Head -. 内部高频交易（无 L1 fee）.-> Head
+    Head -- 任意时刻 close --> L1
+    L1 -- 释放最终状态 --> Users[参与者]

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant V as 受害者
+    participant F as 钓鱼站
+    participant A as 攻击者
+    participant T as ERC20(permit)
+    F->>V: signTypedData(permit, owner=V, spender=A, value=MAX)
+    V-->>F: sig（无 tx 上链，钱包不警告）
+    F->>A: 转发 sig
+    A->>T: permit(V, A, MAX, sig); transferFrom(V, A, balance)

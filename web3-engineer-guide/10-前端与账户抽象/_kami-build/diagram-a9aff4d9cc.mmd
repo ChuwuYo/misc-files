@@ -1,0 +1,5 @@
+flowchart LR
+  UO[UserOp] --> V[Validator<br/>Type 1<br/>验签]
+  V -->|通过| E[Executor<br/>Type 2<br/>执行]
+  E --> H[Hook<br/>Type 4<br/>前后置]
+  E --> F[Fallback<br/>Type 3<br/>未知 selector]

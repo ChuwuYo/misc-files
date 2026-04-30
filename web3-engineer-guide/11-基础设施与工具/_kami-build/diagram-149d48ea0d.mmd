@@ -1,0 +1,9 @@
+flowchart LR
+    subgraph Geth["geth 数据布局"]
+        Ancient["ancient store<br/>(freezer .ldb)<br/>历史 block + receipts<br/>压缩二进制"]
+        State["state trie<br/>(LevelDB / Pebble)<br/>当前账户/storage 节点"]
+        Snap["snapshot<br/>flat (addr -> account)<br/>加速 eth_getProof / eth_call"]
+    end
+    Block[新区块] --> State
+    State -- 老于 N 块 --> Ancient
+    State -- diff --> Snap

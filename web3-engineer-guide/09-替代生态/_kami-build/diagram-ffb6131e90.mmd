@@ -1,0 +1,7 @@
+flowchart LR
+    User[用户 tx] --> Seq[Sequencer Node<br>100 CPU + 4 TB RAM<br>排序 + 执行]
+    Seq --> Block[每 10 ms 出块]
+    Block --> Prov[Prover Node<br>生成 ZK 证明]
+    Block --> Rep[Replica Node<br>4-8 cores, 16 GB RAM<br>读 proof，无需重执行]
+    Prov --> ETH[Ethereum L1 settle]
+    Rep --> Read[读节点为 dApp 提供 API]

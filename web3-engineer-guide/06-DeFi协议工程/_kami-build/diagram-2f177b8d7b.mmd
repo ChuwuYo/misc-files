@@ -1,0 +1,11 @@
+flowchart LR
+    A[1 stETH<br/>未来利息 3% APR] --> SY[Pendle SY<br/>1 SY-stETH<br/>Standardized Yield]
+    SY --> Split[切分到 maturity 2026-12]
+    Split --> PT[1 PT-stETH-2026-12<br/>到期换 1 stETH]
+    Split --> YT[1 YT-stETH-2026-12<br/>拿到期前所有利息]
+
+    F[固收用户] -->|买 PT 折价 0.97| PT
+    G[利率投机者] -->|买 YT 0.03| YT
+
+    PT -.到期 2026-12-31.-> H[1 stETH 给 PT 持有者]
+    YT -.到期前累积利息.-> I[利息给 YT 持有者]

@@ -1,0 +1,6 @@
+flowchart LR
+    Chat[用户打开 Telegram 群组] --> Bot[聊天里点 Mini App 链接]
+    Bot --> WebView[Telegram 内嵌 WebView]
+    WebView --> dApp[你的 React/Vue 前端]
+    dApp -- TON Connect --> Wallet[Tonkeeper / @wallet / Tonhub]
+    Wallet --> TON[TON 主网]

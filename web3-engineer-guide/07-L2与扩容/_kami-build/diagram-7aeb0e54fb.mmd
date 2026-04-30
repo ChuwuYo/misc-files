@@ -1,0 +1,11 @@
+graph LR
+    A[Rollup A] --> B[Hyperlane Mailbox A]
+    B --> C[validator 集（应用自定义）]
+    C --> D[Hyperlane Mailbox B]
+    D --> E[Rollup B]
+
+    F[ISM<br>Interchain Security Module] -.配置.-> C
+    F --> F1[Multisig ISM]
+    F --> F2[Aggregation ISM]
+    F --> F3[Routing ISM]
+    F --> F4[ZK ISM]

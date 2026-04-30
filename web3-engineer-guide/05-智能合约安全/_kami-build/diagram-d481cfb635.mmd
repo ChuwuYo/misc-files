@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant A as Attacker
+    participant C as Curve Pool
+    participant V as Victim Lending
+    A->>C: remove_liquidity()
+    Note over C: state mid-update
+    C->>A: ETH transfer (callback)
+    A->>V: borrow() during callback
+    V->>C: get_virtual_price() (READ ONLY)
+    Note over V: 读到脏价格 → LTV 计算错误
+    V-->>A: 借出过量资金
+    C-->>C: state finalized (太晚)

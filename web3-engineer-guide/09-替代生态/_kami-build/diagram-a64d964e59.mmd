@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph "传统 NFT"
+        N1[NFT 账户 1] -.账户 A1.- L1[Ledger]
+        N2[NFT 账户 2] -.账户 A2.- L1
+        N3[...]
+    end
+    subgraph "Compressed NFT"
+        T[ConcurrentMerkleTree 账户<br>root + buffer] --- L2[Ledger]
+        Leaves[10^6 叶子数据] -.indexer 持有.- DAS[Helius/Triton DAS]
+        T -.commitment.- Leaves
+    end

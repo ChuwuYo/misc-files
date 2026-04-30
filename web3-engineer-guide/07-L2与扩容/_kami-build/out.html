@@ -1,0 +1,3535 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>L2 与扩容</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  L2 与扩容";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">L2 与扩容</div>
+    <div class="cover-sub">Rollup、DA、桥、Stage 评级</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">0. 模块导览</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">第 1 章 历史与 L1 瓶颈：为什么必须 L2</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">第 2 章 Rollup 谱系：核心定义与分类</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">第 3 章 Optimistic 内核：fraud proof 工程</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">第 4 章 ZK 内核：validity proof 的数学</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">第 5 章 数据可用性（DA）：rollup 的命门</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">第 6 章 EIP-4844 与 KZG：blob 的内部结构</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">第 7 章 Pectra 与 Fusaka：blob 容量的爆炸</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">第 8 章 L2BEAT Stage 评级：rollup 的「安全成绩单」</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">第 9 章 Optimistic L2 全景</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">第 10 章 ZK L2 全景</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">第 11 章 Validium 与 Volition</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">第 12 章 Sequencer 架构演化</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">第 13 章 桥与跨链消息</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">第 14 章 桥事故复盘：必读的 5 起</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">第 15 章 L3 / app-rollup / RaaS</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">17</span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">第 16 章 Re-staking 与 AVS</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">第 17 章 L2 经济学</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">19</span>
+    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">第 18 章 实战代码</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">20</span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">第 19 章 练习与答案</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">21</span>
+    <span class="toc-title"><a href="#ch21" style="color:inherit;text-decoration:none">第 20 章 AI 影响</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">22</span>
+    <span class="toc-title"><a href="#ch22" style="color:inherit;text-decoration:none">附录 A：DA 层深度对比与选型公式</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">23</span>
+    <span class="toc-title"><a href="#ch23" style="color:inherit;text-decoration:none">附录 B：桥事故扩展清单（5 起主案的复盘见第 14 章）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">24</span>
+    <span class="toc-title"><a href="#ch24" style="color:inherit;text-decoration:none">附录 C：rollup 经济学公式手册（数字示例见 17.4）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">25</span>
+    <span class="toc-title"><a href="#ch25" style="color:inherit;text-decoration:none">附录 D：5 道实战习题（含完整答案）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">26</span>
+    <span class="toc-title"><a href="#ch26" style="color:inherit;text-decoration:none">附录 E：术语表</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">27</span>
+    <span class="toc-title"><a href="#ch27" style="color:inherit;text-decoration:none">附录 F：增量更新与遗漏补全（2026-04-28 校对版）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<p>本模块所有 stage 评级、TVL、协议参数均标注「截至 2026-04」。L2 生态变化极快，正式生产部署前请用 <a href="https://l2beat.com/">L2BEAT</a> 与各协议官方 docs 复核。</p>
+<p><strong>学习目标</strong>：理解 L2 必要性、Optimistic/ZK 机制差异、EIP-4844/Pectra/Fusaka 技术细节、DA 层设计、桥安全分析与 L2BEAT Stage 评级体系，能为具体应用给出有数字依据的 L2 选型建议。</p>
+<section class="chapter">
+<h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 模块导览</h2>
+
+<figure><img src="diagram-0f9589d515.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="1-l1-l2" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 历史与 L1 瓶颈：为什么必须 L2</h2>
+
+<p>2021-09 主网一笔 Uniswap swap gas $84；2026 年繁忙时段仍 $5–$30。模块 06 里 AMM、借贷、衍生品对高频低费的需求在 2021 把 L1 gas 推到三位数——L2 不是「锦上添花」，是 L1 物理上压不下来成本之后的唯一出路。</p>
+<h3 id="11-l1">1.1 L1 的三道物理墙</h3>
+<figure><img src="diagram-b43a4d5488.png" alt="mermaid diagram"></figure>
+
+<p>「家用电脑能跑全节点」是硬约束，L1 永远不走大区块路线。Vitalik 在《<a href="https://ethereum-magicians.org/t/a-rollup-centric-ethereum-roadmap/4698">rollup-centric ethereum roadmap</a>》(2020) 与《<a href="https://vitalik.eth.limo/general/2021/12/06/endgame.html">Endgame</a>》(2021) 把扩容外包给 L2，L1 只做 DA + 结算 + 共识。</p>
+<h3 id="12">1.2 历史上探索过的扩容路线</h3>
+<figure><img src="diagram-c785b4099a.png" alt="mermaid diagram"></figure>
+
+<p>Plasma 思想活在 fraud proof 与 Validium 里，但作为完整方案 2020 年后已被 Rollup 取代。</p>
+<h3 id="13-l2">1.3 L2 交易费用三段式</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>L2 fee = L2 execution gas + (L1 DA cost / batch size) + (proof cost / batch size)
+                ↓                       ↓                          ↓
+        sequencer 在 L2 上            分摊到每笔的            （仅 ZK 系，
+        跑你的合约消耗的 gas          L1 数据成本             分摊证明生成成本）
+</code></pre></div>
+<p>各项占比随时间变化：</p>
+<table>
+<thead>
+<tr>
+<th>时期</th>
+<th>execution</th>
+<th>L1 DA</th>
+<th>proof</th>
+<th>用户感知费用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4844 之前（2024-03 前）</td>
+<td>5–10%</td>
+<td>80–90%（calldata）</td>
+<td>0/5%</td>
+<td>$0.5–$3</td>
+</tr>
+<tr>
+<td>4844 之后（2024-03 至 2025-05）</td>
+<td>30–50%</td>
+<td>30–50%（blob）</td>
+<td>0–10%</td>
+<td>$0.05–$0.30</td>
+</tr>
+<tr>
+<td>Pectra 后（2025-05）</td>
+<td>50–70%</td>
+<td>10–20%（blob target 6）</td>
+<td>0–10%</td>
+<td>$0.01–$0.10</td>
+</tr>
+<tr>
+<td><strong>Fusaka + BPO2 后（2026-01 起）</strong></td>
+<td><strong>60–80%</strong></td>
+<td><strong>&lt;10%（blob target 14，单 blob 价 ≈ 1 wei）</strong></td>
+<td><strong>5–15%（ZK 系）</strong></td>
+<td><strong>$0.005–$0.05</strong></td>
+</tr>
+</tbody>
+</table>
+<p>这张表的关键转折点：blob 价格 2024 年起进入接近零的稳定区间，rollup 成本中心从 DA 整体转向 execution 与 prover——这一现象的机制由第 6/7 章拆解，本章只需记住「DA 不再是瓶颈」。</p>
+<h3 id="14-2026-04">1.4 关键数字（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1 区块 gas limit</td>
+<td>约 36M（Pectra 后）</td>
+</tr>
+<tr>
+<td>L1 出块时间</td>
+<td>12 秒</td>
+</tr>
+<tr>
+<td>Blob target / max（BPO2，2026-01-07 起）</td>
+<td>14 / 21</td>
+</tr>
+<tr>
+<td>单 blob 大小</td>
+<td>128 KiB（4096 个 BLS12-381 标量）</td>
+</tr>
+<tr>
+<td>Blob 在共识层保留期</td>
+<td>约 18 天</td>
+</tr>
+<tr>
+<td>主网平均 blob 利用率（2026-04）</td>
+<td>~28k blobs/天，~4 blobs/block，仍低于 14 target</td>
+</tr>
+<tr>
+<td>blob_base_fee</td>
+<td>长期接近 1 wei（即「免费」）</td>
+</tr>
+<tr>
+<td>L2 总 TVS（<a href="https://l2beat.com/scaling/tvs">L2BEAT</a>）</td>
+<td>约 $40B+，Arbitrum + Base 占 75%+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="15-l2">1.5 L2 解决了什么、没解决什么</h3>
+<figure><img src="diagram-f40c5b4db0.png" alt="mermaid diagram"></figure>
+
+<p><strong>注意</strong>：L2 不是免费午餐，用 sequencer 中心化、桥风险、流动性碎片换来了吞吐和低费用。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2-rollup" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章 Rollup 谱系：核心定义与分类</h2>
+
+<blockquote>
+<p>这一章是后续所有章节引用的「Optimistic vs ZK 对照」单一权威源。第 3、4、9、10、17 章只引用本章 2.3 的对比表，不再重复。</p>
+</blockquote>
+<h3 id="21">2.1 一句话定义</h3>
+<p><strong>Rollup = 执行在 L2，数据 + 结算在 L1</strong>。L1 上的<strong>验证逻辑</strong>不同把 rollup 分成两大派别。</p>
+<h3 id="22">2.2 两大派别：图解</h3>
+<figure><img src="diagram-f77ef9e54b.png" alt="mermaid diagram"></figure>
+
+<h3 id="23">2.3 工程取舍对比表</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Optimistic</th>
+<th>ZK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>提款延迟（最终性）</td>
+<td>7 天（挑战期）</td>
+<td>几小时（proof 上链后即终局）</td>
+</tr>
+<tr>
+<td>Prover 成本</td>
+<td>0（只在挑战时生成）</td>
+<td>每 batch 都要生成，硬件密集</td>
+</tr>
+<tr>
+<td>EVM 等价性</td>
+<td>几乎完美（Type-1 等价）</td>
+<td>Type-1 到 Type-4 不等</td>
+</tr>
+<tr>
+<td>安全模型</td>
+<td>1-of-N 诚实挑战者假设</td>
+<td>数学（电路 + 可信设置/STARK）</td>
+</tr>
+<tr>
+<td>L1 验证 gas</td>
+<td>低（提交状态根 + 偶尔挑战）</td>
+<td>中（每次 verify proof 50–500k gas）</td>
+</tr>
+<tr>
+<td>适合的应用</td>
+<td>通用、DeFi、链游</td>
+<td>高频结算、隐私、跨链桥</td>
+</tr>
+<tr>
+<td>代表</td>
+<td>Arbitrum / Optimism / Base / Blast / Mantle</td>
+<td>zkSync Era / Scroll / Linea / Starknet / Taiko</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24">2.4 常见误解</h3>
+<p><strong>常见误解</strong>：「ZK 比 Optimistic 安全」。两者安全前提不同：Optimistic 假设「至少 1 个诚实挑战者 + L1 抗审查」；ZK 假设「证明系统数学正确 + 可信设置（如有）安全 + 电路无 bug」。历史上 ZK 出过电路 under-constrained bug 和 verifier 合约升级权失控；Optimistic 事故主要是 sequencer 审查或 multisig 风险。两者都不是绝对安全。</p>
+<h3 id="25-rollup-vs-sidechain">2.5 Rollup vs Sidechain：必须区分</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Rollup</th>
+<th>Sidechain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>安全继承</td>
+<td>继承 L1</td>
+<td>自有共识</td>
+</tr>
+<tr>
+<td>数据可用性</td>
+<td>L1 / 外部 DA + 证据</td>
+<td>自己保证</td>
+</tr>
+<tr>
+<td>提款</td>
+<td>trust-minimized</td>
+<td>依赖侧链共识/桥</td>
+</tr>
+<tr>
+<td>例子</td>
+<td>Arbitrum / Optimism / Scroll</td>
+<td>Polygon PoS / Gnosis Chain / BNB Chain</td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>：Polygon PoS 不是 L2——它是一条独立 PoS 侧链，安全等价于 100 个 validator 的 PoS 共识，不继承以太坊安全。L2BEAT 不把它列在 L2 里。</p>
+<p>Vitalik 长期立场「最终愿景是 ZK Rollup」；但 Optimistic 先成熟（2020-2021），ZK 后追（2023-2024）。<strong>两派核心差异 = 争议解决时点</strong>：Optimistic 事后挑战，ZK 事前证明。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="3-optimistic-fraud-proof" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 Optimistic 内核：fraud proof 工程</h2>
+
+<blockquote>
+<p>本章只解决一个问题：<strong>怎么在 L1 上以可承受成本仲裁一笔错误的 L2 状态根</strong>。</p>
+</blockquote>
+<h3 id="31">3.1 核心机制：交互式二分博弈</h3>
+<p>直接在 L1 重放整个 batch 成本不可接受，解法是<strong>二分博弈</strong>（bisection game）：</p>
+<figure><img src="diagram-4d607dce9d.png" alt="mermaid diagram"></figure>
+
+<p><strong>复杂度</strong>：N 笔交易二分到一条指令需 O(log N) 轮，每轮在 L1 写一个 hash。不需要重放整个 batch，只需仲裁一条指令——这使 fraud proof 在 L1 上经济可行。</p>
+<h3 id="32-fraud-proof">3.2 三种 fraud proof 实现</h3>
+<table>
+<thead>
+<tr>
+<th>实现</th>
+<th>项目</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单轮（non-interactive）</td>
+<td>Cannon (OP)、ZK fault proof</td>
+<td>把整个 fault proof 用 ZK 一次证明</td>
+</tr>
+<tr>
+<td>多轮（interactive）</td>
+<td>Arbitrum Classic</td>
+<td>二分到一条指令，L1 仲裁</td>
+</tr>
+<tr>
+<td><strong>多轮 + permissionless</strong></td>
+<td><strong>Arbitrum BoLD</strong></td>
+<td>任何挑战者，bounded delay</td>
+</tr>
+</tbody>
+</table>
+<h3 id="33-boldarbitrum-permissionless-fraud-proof">3.3 BoLD：Arbitrum permissionless fraud proof</h3>
+<p><a href="https://docs.arbitrum.io/how-arbitrum-works/bold/gentle-introduction">BoLD（Bounded Liquidity Delay）</a> 2025 年上 Arbitrum One 主网：</p>
+<figure><img src="diagram-2da449baea.png" alt="mermaid diagram"></figure>
+
+<p>BoLD 是 Arbitrum 达到 Stage 1 的关键：当前最成熟的 permissionless fraud proof 实现，Arbitrum 因此成为最早达 Stage 1 的 EVM L2 之一。</p>
+<h3 id="34-cannonop-fault-proof">3.4 Cannon：OP fault proof</h3>
+<p><a href="https://github.com/ethereum-optimism/cannon">Cannon</a> 是 OP Stack fault proof 实现：Geth 编译成 MIPS 指令，L1 部署 MIPS 解释器合约，二分博弈最终仲裁一条 MIPS 指令。选 MIPS 而非 EVM 是因为 OP Stack 用 Geth 原版（Go），编 MIPS 比编 EVM 简单。</p>
+<p>2024-06 OP 主网启用 <a href="https://specs.optimism.io/fault-proof/stage-one/index.html">permissionless fault proof</a>，2024-10 Base 跟进（每提案 0.08 ETH 抵押）。</p>
+<h3 id="35-force-inclusion">3.5 Force inclusion：抗审查兜底</h3>
+<figure><img src="diagram-03eee20947.png" alt="mermaid diagram"></figure>
+
+<p>force-inclusion 是 Stage 1 硬要求。区分两个数字：L2BEAT Stage 1 协议级要求 force-inclusion 延迟上限 ≤ 7 天（与挑战期对齐，保证 sequencer 审查最坏情况下用户仍能在 7 天内强制提款）；Arbitrum / OP / Base 实际配置延迟选 <strong>12 小时</strong>（截至 2026-04），显著优于协议下限。</p>
+<h3 id="36-7">3.6 挑战期为什么是 7 天</h3>
+<p>三个考虑：1) watcher 发现错误状态根；2) 挑战交易在 L1 被打包（即使主网被攻击）；3) 社会层应对极端情况。代价是用户提款等 7 天——这正是 Across 等即时桥（流动性提供商垫付资金赚垫资成本）的市场原因。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="4-zk-validity-proof" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 ZK 内核：validity proof 的数学</h2>
+
+<blockquote>
+<p>Optimistic 用「可能发生的挑战」约束 sequencer；ZK 用「每次提交附数学证明」彻底消除争议窗口。本章只关心 rollup 层取舍——电路与曲线的密码学原理在模块 08 展开。</p>
+</blockquote>
+<h3 id="41-zk">4.1 ZK 三件套：完备性、可靠性、零知识</h3>
+<ul>
+<li><strong>Completeness（完备性）</strong>：命题真则诚实 prover 总能让 verifier 接受；</li>
+<li><strong>Soundness（可靠性）</strong>：命题假则恶意 prover 让 verifier 接受的概率可忽略；</li>
+<li><strong>Zero-knowledge（零知识）</strong>：verifier 除了「命题真」外学不到任何信息。</li>
+</ul>
+<p>Rollup 场景里零知识不是必需的——只需 succinctness（证明短，验证快）。zkRollup 严格说叫「validity rollup」更准确，但行业沿用了 zk 这个名字。</p>
+<h3 id="42-snark-vs-stark">4.2 SNARK vs STARK</h3>
+<figure><img src="diagram-5dd805f72f.png" alt="mermaid diagram"></figure>
+
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th>类型</th>
+<th>可信设置</th>
+<th>proof 大小</th>
+<th>verify 成本</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Groth16</td>
+<td>SNARK</td>
+<td>per-circuit</td>
+<td>200B</td>
+<td>~200k gas</td>
+<td>早期 zkSync Lite</td>
+</tr>
+<tr>
+<td>PLONK / Halo2</td>
+<td>SNARK</td>
+<td>universal / none</td>
+<td>1–10 KB</td>
+<td>200–500k gas</td>
+<td>Aztec、ZK 应用层</td>
+</tr>
+<tr>
+<td>STARK</td>
+<td>STARK</td>
+<td>none</td>
+<td>50–200 KB</td>
+<td>1–5M gas</td>
+<td>Starknet、zkSync Boojum 内层</td>
+</tr>
+<tr>
+<td>递归 SNARK</td>
+<td>SNARK</td>
+<td>universal</td>
+<td>200B–2KB</td>
+<td>200–500k gas</td>
+<td>几乎所有现代 zkEVM 落 L1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-trusted-setup">4.3 可信设置（Trusted Setup）</h3>
+<ul>
+<li><strong>Groth16 per-circuit setup</strong>：每个电路独立仪式，toxic waste 泄漏则可伪造任意证明。</li>
+<li><strong>PLONK universal setup</strong>：一次仪式（如 <a href="https://ceremony.ethereum.org/">KZG ceremony</a>，14 万人参加，1 人销毁 toxic waste 即安全），所有 PLONK 电路复用。</li>
+<li><strong>STARK no setup</strong>：基于哈希假设，无需信任仪式，代价是 proof 大、verify 慢。</li>
+</ul>
+<p>使用 ZK 系统前务必确认：是 per-circuit 还是 universal 可信设置？仪式有多少参与者？是否公开 transcript？</p>
+<h3 id="44-zkevm-vitalik">4.4 zkEVM 类型（<a href="https://vitalik.eth.limo/general/2022/08/04/zkevm.html">Vitalik 分类</a>）</h3>
+<figure><img src="diagram-520ad9e217.png" alt="mermaid diagram"></figure>
+
+<p><strong>实例</strong>：Type-2 Scroll、Linea（Linea 的 Type-1 audit 进行中、尚未正式上线，参见 <a href="https://docs.linea.build/changelog/release-notes">Linea changelog</a>）；Type-4 zkSync Era（EraVM）、Starknet（Cairo VM）。</p>
+<p>选型参考：复用主网工具链 → Type-2（Scroll、Linea）；最高 prover 性能 → Type-4（zkSync Era）或非 EVM（Starknet）。</p>
+<h3 id="45">4.5 现代证明系统</h3>
+<figure><img src="diagram-c32e286815.png" alt="mermaid diagram"></figure>
+
+<p><strong>趋势</strong>：zkVM 取代 zkEVM 直接证明——EVM 编译成 RISC-V，通用 zkVM 证明 RISC-V 指令，证明系统可复用。Scroll <a href="https://www.bitget.com/news/detail/12560604730425">Euclid 升级</a>（2025-04）走此路线。</p>
+<h3 id="46-prover-2026-04">4.6 硬件 prover（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>单 batch 证明时间</th>
+<th>典型硬件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zkSync Era（Boojum）</td>
+<td>5–15 分钟</td>
+<td>A100 / H100 集群</td>
+</tr>
+<tr>
+<td>Scroll（OpenVM）</td>
+<td>3–10 分钟</td>
+<td>H100 / B200 集群</td>
+</tr>
+<tr>
+<td>Polygon zkEVM（Plonky2）</td>
+<td>8–20 分钟</td>
+<td>A100 集群</td>
+</tr>
+<tr>
+<td>Linea（Vortex）</td>
+<td>5–12 分钟</td>
+<td>GPU 集群</td>
+</tr>
+<tr>
+<td>Starknet（Stone）</td>
+<td>10–30 分钟</td>
+<td>CPU 集群</td>
+</tr>
+<tr>
+<td>Aligned Layer / Lagrange（AVS）</td>
+<td>几分钟（外包）</td>
+<td>restaked GPU</td>
+</tr>
+</tbody>
+</table>
+<p>新生硬件：Cysic（FPGA，Scroll 集成）、Ingonyama（ICICLE GPU + ASIC）、Ulvetanna（Binius ASIC）、Fabric Cryptography（通用 ZK ASIC，2026 出货）。</p>
+<h3 id="47-zk-rollup">4.7 ZK Rollup 三大风险</h3>
+<p>ZK 系统三大风险：1) <strong>电路 bug</strong>（under-constrained）——最常见，导致伪造证明被接受，Vitalik 反复警告这是 zkEVM 最大风险点；2) <strong>可信设置泄漏</strong>（仅 Groth16/PLONK）——仪式参与者越多越接近不可能；3) <strong>prover liveness</strong>——所有 sequencer 共用一个 prover 集群，prover 故障 = 链停，Aligned Layer / Lagrange 这类 prover-as-AVS 是部分缓解。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5-darollup" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 数据可用性（DA）：rollup 的命门</h2>
+
+<blockquote>
+<p>不管 Optimistic 还是 ZK，安全底线只有一句话：<strong>原始交易数据必须可被任何人下载</strong>。本章拆解这句话的工程含义。</p>
+</blockquote>
+<h3 id="51-da">5.1 DA 是什么、为什么是命门</h3>
+<p><strong>DA 问题</strong>：sequencer 公布状态根但藏起原始数据——没人能重构 L2 状态、写 fraud proof、强制提款。</p>
+<h3 id="52-da">5.2 DA 与执行的解耦</h3>
+<p>模块化区块链核心思想：<strong>执行、结算、共识、DA 是四件独立的事</strong>。</p>
+<figure><img src="diagram-8f84359937.png" alt="mermaid diagram"></figure>
+
+<p>DA 层只保证「数据可被任何人下载」，不做执行。Celestia 没有智能合约，吞吐却比 L1 高一个数量级——DA 不是「便宜的 L1」。</p>
+<h3 id="53-da">5.3 四种 DA 方案</h3>
+<figure><img src="diagram-48431a5a87.png" alt="mermaid diagram"></figure>
+
+<h3 id="54-das">5.4 数据可用性采样（DAS）</h3>
+<p><strong>DAS 让轻节点能验证 DA</strong>。数据经 Reed-Solomon erasure coding 编码后，任意 50% 样本可达即可恢复完整数据。轻节点随机采样若干片段，能拿到则 DA 通过。这是 Celestia / PeerDAS 的核心机制。</p>
+<h3 id="55-rollup-vs-validium-vs-optimiumda">5.5 Rollup vs Validium vs Optimium：DA 决定的命名学</h3>
+<figure><img src="diagram-70cee5b667.png" alt="mermaid diagram"></figure>
+
+<p>Validium / Volition 的工程取舍单独在第 11 章展开（包括失败案例 Astar zkEVM）。这里只需记住：<strong>DA 不在 L1 上，就不能等同于 Rollup 安全</strong>。</p>
+<h3 id="56-da">5.6 DA 选型</h3>
+<p>DA 选型参考：DeFi 主资金 → Ethereum blob；链游/社交/低值 NFT → Validium / Optimium；用户自选 → Volition（zkSync Era）；极致吞吐 → EigenDA（100 MB/s）；Cosmos 生态 → Celestia；Polkadot / Polygon CDK → Avail。</p>
+<h3 id="57-da-2026-04">5.7 主要 DA 项目对比（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Ethereum blob</th>
+<th>Celestia</th>
+<th>EigenDA</th>
+<th>Avail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>信任模型</td>
+<td>Ethereum 共识</td>
+<td>TIA PoS</td>
+<td>restaked ETH（DAC + KZG）</td>
+<td>AVAIL PoS</td>
+</tr>
+<tr>
+<td>当前吞吐</td>
+<td>14 blob × 128KiB / 12s ≈ 150 KB/s</td>
+<td>8 MB / 6s ≈ 1.33 MB/s</td>
+<td>100 MB/s（DAC）</td>
+<td>4 MB / block</td>
+</tr>
+<tr>
+<td>DAS</td>
+<td>PeerDAS 1D 采样</td>
+<td>Light node DAS</td>
+<td>不做 DAS（DAC）</td>
+<td>KZG + DAS</td>
+</tr>
+<tr>
+<td>100MB/天年成本</td>
+<td>$1–$50（接近 0）</td>
+<td>~$12,775</td>
+<td>~$730</td>
+<td>$1500–3000</td>
+</tr>
+<tr>
+<td>客户</td>
+<td>几乎所有 L2</td>
+<td>Manta、Eclipse</td>
+<td>Mantle、Celo</td>
+<td>部分 Polygon CDK</td>
+</tr>
+</tbody>
+</table>
+<h3 id="58-ethereum-blob">5.8 Ethereum blob「免费午餐」</h3>
+<p>blob_base_fee 长期 ≈ 1 wei，外部 DA 成本优势骤减（<a href="https://www.bitget.com/news/detail/12560605100226">分析</a>）。外部 DA 仍有意义的三种场景：1) 极致吞吐（EigenDA 100 MB/s）；2) 生态对齐（Cosmos→Celestia，Polkadot→Avail）；3) blob 拥堵时的缓冲。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="6-eip-4844-kzgblob" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 EIP-4844 与 KZG：blob 的内部结构</h2>
+
+<blockquote>
+<p>本章回答「blob 价格为什么能逼近 1 wei」——这要把 type-3 交易、KZG 承诺、point evaluation precompile 三件事拆开来看。</p>
+</blockquote>
+<h3 id="61">6.1 时间线</h3>
+<p><a href="https://eips.ethereum.org/EIPS/eip-4844">EIP-4844</a>（Proto-Danksharding）2024-03-13 Dencun 升级上线，新增 <strong>type-3 blob-carrying transaction</strong>。</p>
+<figure><img src="diagram-79a99c5248.png" alt="mermaid diagram"></figure>
+
+<h3 id="62-blob">6.2 一笔 blob 交易长什么样</h3>
+<figure><img src="diagram-13bb672bc3.png" alt="mermaid diagram"></figure>
+
+<h3 id="63">6.3 关键数据结构</h3>
+<table>
+<thead>
+<tr>
+<th>结构</th>
+<th>大小</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Field element</td>
+<td>32 字节</td>
+<td>BLS12-381 子群 r 模数下的标量</td>
+</tr>
+<tr>
+<td>Blob</td>
+<td>128 KiB（4096 个 field element）</td>
+<td>一个数据块</td>
+</tr>
+<tr>
+<td>KZG commitment</td>
+<td>48 字节（G1 群元素）</td>
+<td>blob 的承诺</td>
+</tr>
+<tr>
+<td>Versioned hash</td>
+<td>32 字节</td>
+<td>第 0 字节是 version (0x01) + sha256(commitment)[1:]</td>
+</tr>
+<tr>
+<td>KZG proof</td>
+<td>48 字节</td>
+<td>「blob 在某点取某值」的证明</td>
+</tr>
+<tr>
+<td>Type-3 tx</td>
+<td>calldata + 多个 (commitment, blob, proof)</td>
+<td>完整交易</td>
+</tr>
+</tbody>
+</table>
+<h3 id="64-kzg">6.4 KZG 承诺</h3>
+<p>Blob = 多项式 P(x) 的 4096 个采样值，压缩成 48 字节 KZG commitment（多项式在秘密点 τ 的椭圆曲线取值）。关键性质：承诺不泄漏系数（τ 未知）；48 字节 proof + 一个 pairing 即可验证「某点取某值」。</p>
+<p>2D KZG 多项式承诺是 Danksharding 的核心——每个 blob 单独承诺，多个 blob 在另一维度承诺，方便采样和恢复。</p>
+<h3 id="65-0x0a-precompile">6.5 0x0a precompile</h3>
+<p>EVM 不能直接读 blob 内容，但可用 <a href="https://voltaire.tevm.sh/zig/evm/precompiles/point-evaluation">point evaluation precompile (0x0a)</a> 验证 KZG proof：「blob 在点 z 取值 y」——50000 gas。这是 rollup 连接链下证明系统与 blob 的关键接口。</p>
+<h3 id="66-optimistic-blob">6.6 Optimistic 怎么用 blob</h3>
+<figure><img src="diagram-92ba8cbd06.png" alt="mermaid diagram"></figure>
+
+<h3 id="67-zk-blob">6.7 ZK 怎么用 blob</h3>
+<figure><img src="diagram-64fbe4fb48.png" alt="mermaid diagram"></figure>
+
+<p>「Proof of equivalence」是 ZK Rollup 用 blob 的关键技巧——它把 blob 的 KZG 承诺和 ZK 内部承诺连起来。这样 ZK 系统不需要为 KZG 写电路，KZG 验证完全在 0x0a precompile 里做。</p>
+<h3 id="68-blob">6.8 单 blob 经济学</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>单笔 L2 tx DA 成本 ≈ (tx_calldata_size_bytes / blob_capacity_bytes) × blob_base_fee
+
+blob_capacity = 14 × 128 KiB = 1.75 MiB / 12s slot（BPO2）
+blob_base_fee ≈ 1 wei（截至 2026-04）
+一笔 DEX swap（压缩后 ~200B）→ DA 成本 &lt; 0.0001 美分
+</code></pre></div>
+<p>DA 已几乎免费。Rollup 真正成本中心已转移到 prover（ZK）和 sequencer infra。</p>
+<h3 id="69-eip-4844">6.9 EIP-4844 的工程影响</h3>
+<table>
+<thead>
+<tr>
+<th>影响维度</th>
+<th>4844 之前</th>
+<th>4844 之后</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rollup 月度 DA 支出（Top 5 总和）</td>
+<td>$50M+</td>
+<td>$1M-$5M</td>
+</tr>
+<tr>
+<td>单笔 L2 tx 费用</td>
+<td>$0.5–$2</td>
+<td>$0.005–$0.05</td>
+</tr>
+<tr>
+<td>L2 利润率</td>
+<td>5–20%</td>
+<td>80%+（OP）/ 50%+（ZK）</td>
+</tr>
+<tr>
+<td>用户体验</td>
+<td>高费用劝退</td>
+<td>接近 web2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7-pectra-fusakablob" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 Pectra 与 Fusaka：blob 容量的爆炸</h2>
+
+<h3 id="71-eip-7691-pectra-2025-05">7.1 EIP-7691 (Pectra, 2025-05)</h3>
+<p><a href="https://eips.ethereum.org/EIPS/eip-7691">EIP-7691</a> 把 blob target 3→6、max 6→9；<a href="https://eips.ethereum.org/EIPS/eip-7918">EIP-7918</a> 引入 reserve price。</p>
+<p>实测（<a href="https://ethpandaops.io/posts/eip7691-retrospective/">ethPandaOps</a>）：daily blobs 21,300→28,000、blob space 2.7→3.4 GB，<strong>供给已超过需求</strong>（rollup 需求未达 target 6）。</p>
+<h3 id="72-eip-7594-peerdas-da">7.2 EIP-7594 PeerDAS：分布式 DA 采样</h3>
+<p><a href="https://eips.ethereum.org/EIPS/eip-7594">EIP-7594 PeerDAS</a> 是 Fusaka 升级（2025-12-03）的核心，引入 1D Reed-Solomon 编码 + 列采样：</p>
+<figure><img src="diagram-a112e1e39b.png" alt="mermaid diagram"></figure>
+
+<p>PeerDAS 把单节点存储压力从「全部 blob」降到「采样若干列」——这是 blob 容量横向扩展的物理基础。BPO1 / BPO2 的提速正是基于 PeerDAS 上线后才敢做。</p>
+<h3 id="73-bpoblob-parameter-onlyforks">7.3 BPO（Blob Parameter Only）forks</h3>
+<p>Fusaka 还引入了<strong>轻量级 fork 机制</strong>——只调 blob 参数、不改其他规则的 fork：</p>
+<table>
+<thead>
+<tr>
+<th>Fork</th>
+<th>时间</th>
+<th>target / max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fusaka mainnet</td>
+<td>2025-12-03</td>
+<td>6 / 9（沿用 Pectra）</td>
+</tr>
+<tr>
+<td>BPO1</td>
+<td>2025-12-17</td>
+<td>10 / 15</td>
+</tr>
+<tr>
+<td>BPO2</td>
+<td>2026-01-07</td>
+<td>14 / 21</td>
+</tr>
+<tr>
+<td>BPO3?（计划中）</td>
+<td>2026-Q3?</td>
+<td>21 / 32（视采样验证健康）</td>
+</tr>
+</tbody>
+</table>
+<p>BPO 的好处：节点运营商有时间监控 PeerDAS 健康，参数提升不必绑大版本。这是以太坊治理「快慢双轨」的成功实践。</p>
+<h3 id="74-full-danksharding">7.4 Full Danksharding 路线</h3>
+<p>完整 Danksharding 目标：<strong>2D Reed-Solomon 编码 + 完整 DAS</strong>，每 slot 32 MB+ 数据可用容量。</p>
+<figure><img src="diagram-5c715435c5.png" alt="mermaid diagram"></figure>
+
+<p>Vitalik 在 2026 EthCC 演讲中给出非正式时间表「2D PeerDAS 不早于 2027」。BPO2 的 14 / 21 是 2026 年的稳定状态。</p>
+<h3 id="75-peerdas">7.5 PeerDAS 的工程影响</h3>
+<figure><img src="diagram-3a415e4eff.png" alt="mermaid diagram"></figure>
+
+<h3 id="76">7.6 升级时间表浏览</h3>
+<p><strong>2026-04 现状速记</strong>：Fusaka mainnet 2025-12-03 已上线；PeerDAS 1D 采样运行 4+ 个月，状态健康；Blob target 14（BPO2 后）；Blob 利用率约 4 blobs/block，远低于 14 target；blob_base_fee 长期接近 1 wei；下一步 2D PeerDAS 仍在研究。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-l2beat-stage-rollup" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 L2BEAT Stage 评级：rollup 的「安全成绩单」</h2>
+
+<blockquote>
+<p>「DA 已解决」之后剩下的问题是「这条 rollup 还有多少 training wheels」——L2BEAT 给出业界标准答案。</p>
+</blockquote>
+<h3 id="81-stage">8.1 三个 Stage 的定义</h3>
+<figure><img src="diagram-61b38ee407.png" alt="mermaid diagram"></figure>
+
+<h3 id="82-risk-rosette">8.2 五维风险图（Risk Rosette）</h3>
+<p>L2BEAT 给每条 L2 一张五维雷达图，每维四档颜色（绿/黄/橙/红）：</p>
+<figure><img src="diagram-c1491d213e.png" alt="mermaid diagram"></figure>
+
+<h3 id="83-stage-1">8.3 Stage 1 的硬性要求</h3>
+<p>按 <a href="https://specs.optimism.io/protocol/stage-1.html">OP Stack Stage 1 specification</a>，Stage 1 必须：</p>
+<ol>
+<li><strong>permissionless fault proof / validity proof</strong>：任何人能挑战 invalid output（OP）或任何 prover 能提交证明（ZK）；</li>
+<li><strong>Security Council 至少 8 人</strong>，至少 50% 是非 founding team 独立成员；</li>
+<li><strong>多签门槛 ≥ 75%</strong>；</li>
+<li><strong>upgrade delay ≥ 7 天</strong>（与提款挑战期对齐）；</li>
+<li>用户必须能在不依赖 sequencer 的情况下强制提款。</li>
+</ol>
+<h3 id="84-stage-2">8.4 Stage 2 的硬性要求</h3>
+<p>Stage 2 在 Stage 1 基础上：</p>
+<ol>
+<li><strong>Security Council 只能在「可证明的 on-chain bug」时介入</strong>——例如 prover 卡死、合约自我矛盾；</li>
+<li><strong>不能任意升级合约</strong>；</li>
+<li><strong>proof system 完全自治</strong>。</li>
+</ol>
+<p>截至 2026-04 没有任何主流 EVM L2 达到 Stage 2。最接近的候选是 Arbitrum（BoLD 已上）和 DeGate（应用 rollup），但都因 Security Council 仍保留 instant upgrade 权限而卡在 Stage 1。</p>
+<h3 id="85-l2-stage">8.5 怎么读一个 L2 的 stage 评级</h3>
+<p>5 步读法：1) 看 stage 数字（0/1/2）；2) 看 Risk Rosette 五维有几个不是绿的；3) 看 Permissions 标签：Security Council 几人？多签门槛？是否包含外部独立成员？4) 看 Contracts 升级 timelock 长度；5) 看 Stage 升级条件清单（还差哪几条到下一阶段）。</p>
+<h3 id="86-2026-04-stage">8.6 截至 2026-04 的 Stage 全景</h3>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>EVM 主流 L2（截至 2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Stage 2</strong></td>
+<td><strong>暂无主流 EVM L2</strong> ← 注意这一行</td>
+</tr>
+<tr>
+<td><strong>Stage 1</strong></td>
+<td>Arbitrum One（BoLD 已上）、OP Mainnet（2024-06 fault proof）、Base（2024-10 fault proof + 0.08 ETH 抵押）、Scroll（2025-04 Euclid 升级后达成）、Ink、Unichain</td>
+</tr>
+<tr>
+<td><strong>Stage 0</strong></td>
+<td>zkSync Era、Linea、Starknet、Polygon zkEVM（即将退役）、Taiko、Blast、Mantle、Manta Pacific、Mode 等</td>
+</tr>
+</tbody>
+</table>
+<h3 id="87-stage-2">8.7 为什么 Stage 2 这么难</h3>
+<figure><img src="diagram-520bcee06c.png" alt="mermaid diagram"></figure>
+
+<h3 id="88-stage">8.8 Stage 不是唯一指标</h3>
+<p>Stage 评级 ≠ 安全评级。实际安全还需评估：sequencer 抗审查（force inclusion）、升级 timelock 长度、合约审计与 bug bounty。例：Blast 和 zkSync Era 同为 Stage 0，但 Blast 因 fraud proof 未上线风险更高。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9-optimistic-l2" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 Optimistic L2 全景</h2>
+
+<blockquote>
+<p>本章不为每条链铺垫「Stage / DA / TVL」——这些信息都在 9.8 的对照表里查；正文只讲<strong>这条链与其他 OP/Arbitrum 派系的差异点</strong>。所有数据用 <a href="https://l2beat.com/scaling/summary">L2BEAT</a> 实时复核。</p>
+</blockquote>
+<h3 id="91-arbitrum-one-op">9.1 Arbitrum One：技术领先但生态不如 OP</h3>
+<p>Arbitrum 的差异化在「自研栈彻底不同」：</p>
+<figure><img src="diagram-3e7279e8c9.png" alt="mermaid diagram"></figure>
+
+<p>三件事让 Arbitrum 长期 TVL #1：<a href="https://docs.arbitrum.io/how-arbitrum-works/inside-arbitrum-nitro">Nitro</a>（Geth 编进 ArbOS、双轨执行 native + WAVM）、Stylus（Rust/C++ WASM 合约，详见 F.14）、<a href="https://docs.arbitrum.io/how-arbitrum-works/bold/gentle-introduction">BoLD</a>（首个生产级 permissionless 挑战）。代价是 Orbit 派生链增长不如 Superchain。</p>
+<h3 id="92-op-mainnet-superchain">9.2 OP Mainnet：靠 Superchain 飞轮押注「链联邦」</h3>
+<figure><img src="diagram-10ee5f0436.png" alt="mermaid diagram"></figure>
+
+<p>四个组件（<a href="https://specs.optimism.io/">OP Stack 文档</a>）：<strong>op-geth</strong>（L2 执行）、<strong>op-node</strong>（derivation，从 L1 数据派生 L2 区块）、<strong>op-batcher</strong>（压 L2 区块成 frame/blob，提交 L1）、<strong>op-proposer</strong>（提交 output root 到 L2OutputOracle）。</p>
+<h4 id="superchain">特色：Superchain</h4>
+<p><a href="https://docs.optimism.io/">Superchain</a>：OP Stack 派生链共享 sequencer 集、桥、治理（OP token）。截至 2026-04 已含 Base、Mode、Mantle、Worldchain、Soneium、Ink、Unichain 等数十条链。</p>
+<h3 id="93-basecoinbase">9.3 Base：Coinbase 把渠道当护城河</h3>
+<p>差异点不在技术（Base 就是 OP Stack），在分发：Coinbase App store 推送 + USDC 直接打入交易所，让 Base 上线即 TVL #2，与 Arbitrum 合计占 L2 TVS 75%+（<a href="https://blockeden.xyz/blog/2026/02/11/layer-2-consolidation-war-base-arbitrum/">BlockEden 2026-02</a>）。Stage 1 的实现也最严：每个错误提案 slash 0.08 ETH 抵押。Base 也是「中心化运营商持续输送用户」最强样本——其 sequencer 的两次停机详见 F.15。</p>
+<h3 id="94-blast-stage">9.4 Blast：以收益换 stage</h3>
+<p>差异点是「魔改 OP Stack 让存款自动赚 L1 staking + RWA 收益」，2024 年 TVL 一度超 $2B；代价是 <a href="https://l2beat.com/scaling/projects/blast">L2BEAT</a> 至今仍标注「fraud proof under development」——sequencer 错时用户无法挑战、无法强制提款，安全几乎完全依赖团队多签。<strong>Blast = 同 Stage 0 中风险最高的一类</strong>。</p>
+<h3 id="95-mantle-eigenda">9.5 Mantle：唯一押 EigenDA 的旗舰客户</h3>
+<p>Mantle 是少数不走 Ethereum blob 的主流 L2（DA 在 EigenDA），同时 2026 走 <a href="https://blog.succinct.xyz/op-succinct/">OP Succinct</a> 把 OP Stack 升级成 ZK 验证。TVL ~$1B+，自营 mETH LST，是观察「Optimistic → ZK 迁移路径」与「外部 DA 在 Fusaka 后能否守住」的两个独特实验场。</p>
+<h3 id="96-arbitrum-nova-anytrust">9.6 Arbitrum Nova：社交/链游专用 AnyTrust</h3>
+<p>差异点是 DA：用 Data Availability Committee（DAC，少数 KYC 委员）替代 L1 blob，TVL ~$49M。<strong>适合</strong>：社交、链游、低值高频（Reddit Community Points 早期用过）；<strong>不适合</strong>：DeFi 主资金（DAC 信任假设不可绕过）。</p>
+<h3 id="97-op-stack-superchain">9.7 OP Stack Superchain 兄弟链</h3>
+<table>
+<thead>
+<tr>
+<th>链</th>
+<th>主营</th>
+<th>DA</th>
+<th>Stage（2026-04）</th>
+<th>TVL 估</th>
+<th>运营</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mode</td>
+<td>DeFi</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>中</td>
+<td>Mode Foundation</td>
+</tr>
+<tr>
+<td><a href="https://l2beat.com/scaling/projects/mantapacific">Manta Pacific</a></td>
+<td>ZK 应用 + 通用</td>
+<td>Celestia</td>
+<td>Stage 0</td>
+<td>中</td>
+<td>Manta Network</td>
+</tr>
+<tr>
+<td>opBNB</td>
+<td>BSC 系扩容</td>
+<td>BNB</td>
+<td>非以太坊 L2</td>
+<td>中</td>
+<td>BNB Chain</td>
+</tr>
+<tr>
+<td>Lisk</td>
+<td>通用</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>小</td>
+<td>Lisk</td>
+</tr>
+<tr>
+<td><a href="https://l2beat.com/scaling/projects/soneium">Soneium</a></td>
+<td>媒体 / 游戏</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>小-中</td>
+<td>Sony Block Solutions Labs</td>
+</tr>
+<tr>
+<td>World Chain</td>
+<td>身份 / 应用</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>中</td>
+<td>Tools for Humanity（Worldcoin）</td>
+</tr>
+<tr>
+<td><a href="https://l2beat.com/scaling/projects/fraxtal">Fraxtal</a></td>
+<td>DeFi</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>~$17.6M</td>
+<td>Frax Finance</td>
+</tr>
+<tr>
+<td><a href="https://l2beat.com/scaling/projects/cyber">Cyber</a></td>
+<td>SocialFi</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>小</td>
+<td>Cyber Connect</td>
+</tr>
+<tr>
+<td>Unichain</td>
+<td>DeFi</td>
+<td>Ethereum blob</td>
+<td><strong>Stage 1</strong></td>
+<td>~$43.5M</td>
+<td>Uniswap Labs</td>
+</tr>
+<tr>
+<td>Ink</td>
+<td>通用</td>
+<td>Ethereum blob</td>
+<td><strong>Stage 1</strong></td>
+<td>~$478M</td>
+<td>Kraken</td>
+</tr>
+<tr>
+<td>DeBank Chain</td>
+<td>钱包/聚合</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>中</td>
+<td>DeBank</td>
+</tr>
+<tr>
+<td>Zora</td>
+<td>NFT</td>
+<td>Ethereum blob</td>
+<td>Stage 0</td>
+<td>小</td>
+<td>Zora</td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>：opBNB 不是 Ethereum L2——它 settle 到 BNB Smart Chain，不到 Ethereum，安全性等价于 BNB 链，不在 L2BEAT 里。</p>
+<h3 id="98-optimistic-l2">9.8 Optimistic L2 完整对照表</h3>
+<table>
+<thead>
+<tr>
+<th>L2</th>
+<th>框架</th>
+<th>Stage</th>
+<th>DA</th>
+<th>信任假设额外项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arbitrum One</td>
+<td>Nitro</td>
+<td><strong>Stage 1</strong></td>
+<td>Ethereum blob</td>
+<td>BoLD permissionless</td>
+</tr>
+<tr>
+<td>Arbitrum Nova</td>
+<td>Nitro AnyTrust</td>
+<td>Stage 0</td>
+<td>DAC</td>
+<td>2-of-N DAC 诚实</td>
+</tr>
+<tr>
+<td>OP Mainnet</td>
+<td>OP Stack</td>
+<td><strong>Stage 1</strong></td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Base</td>
+<td>OP Stack</td>
+<td><strong>Stage 1</strong></td>
+<td>Ethereum blob</td>
+<td>OP fault proof + 0.08 ETH stake</td>
+</tr>
+<tr>
+<td>Blast</td>
+<td>OP Stack（魔改）</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td><strong>fraud proof 未上线</strong></td>
+</tr>
+<tr>
+<td>opBNB</td>
+<td>OP Stack</td>
+<td>非 ETH L2</td>
+<td>BNB</td>
+<td>BNB 链信任</td>
+</tr>
+<tr>
+<td>Mode</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Mantle</td>
+<td>自研 + Module</td>
+<td>Stage 0</td>
+<td>EigenDA</td>
+<td>EigenDA committee</td>
+</tr>
+<tr>
+<td>Manta Pacific</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Celestia</td>
+<td>Celestia PoS</td>
+</tr>
+<tr>
+<td>Lisk</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Soneium</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>World Chain</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Fraxtal</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Cyber</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Unichain</td>
+<td>OP Stack</td>
+<td><strong>Stage 1</strong></td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Ink</td>
+<td>OP Stack</td>
+<td><strong>Stage 1</strong></td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+<tr>
+<td>Zora</td>
+<td>OP Stack</td>
+<td>Stage 0</td>
+<td>Ethereum blob</td>
+<td>OP fault proof</td>
+</tr>
+</tbody>
+</table>
+<h3 id="99-optimistic-l2-op-stack">9.9 Optimistic L2 共识：OP Stack 一统</h3>
+<p>几乎所有新生 Optimistic L2 基于 OP Stack。Arbitrum Nitro 技术领先（BoLD 唯一），但 Orbit 派生链增长不如 Superchain。Conduit、Caldera、Alchemy 三大 RaaS 都以 OP Stack 为默认。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10-zk-l2" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 ZK L2 全景</h2>
+
+<blockquote>
+<p>同样的体例：Stage / DA / TVL 看 10.11 表，正文只讲差异点。</p>
+</blockquote>
+<h3 id="101-zksync-era-zk-stack">10.1 zkSync Era：唯一可独立部署的 ZK Stack</h3>
+<p>差异点：<strong>ZK 系唯一独立的 rollup stack</strong>——Matter Labs 把 ZK Stack 完全开源给 Hyperchain（ZK 版 Superchain），加上原生账户抽象（所有账户即合约）和 Volition（每笔交易自选 Rollup 或 Validium）。代价是底层 EraVM 不是 EVM，工具链需 zkSolc 编译。</p>
+<h3 id="102-scroll-stage-1-zk-rollup">10.2 Scroll：第一个达 Stage 1 的 ZK Rollup</h3>
+<p>差异点：<a href="https://www.bitget.com/news/detail/12560604730425">Bitget 2025-04</a> 报道 Euclid 升级把 halo2 换成 OpenVM RISC-V zkVM——吞吐 5×、成本 -50%、sequencer permissionless，一举越过 Stage 1。Type-2 等价度让主网工具链开箱即用，是「想要 EVM 完全兼容 + ZK 提款」的默认选择。</p>
+<h3 id="103-lineametamask">10.3 Linea：MetaMask 的亲儿子</h3>
+<p>差异点：Consensys 自营，MetaMask 集成最深，LXP 积分制带动 TVL。技术上从 Type-2 向 Type-1 推进——截至 2026-04 audit 仍未结束、<strong>主网未正式切换 Type-1</strong>（<a href="https://docs.linea.build/changelog/release-notes">Linea changelog</a>）。两次 sequencer 停机（详见 F.15）暴露其中心化是 Stage 1 的核心阻碍。</p>
+<h3 id="104-starknet-evm">10.4 Starknet：押注非 EVM 路线</h3>
+<p>差异点：Cairo VM + 纯 STARK（无可信设置，proof 大但可证明性高）。性能在 ZK 阵营领先，但 Solidity 生态绑定弱。2026 完成「全 validator 自跑 sequencer」是其去中心化里程碑（<a href="https://www.starknet.io/blog/starknet-2025-year-in-review/">Starknet 2025 retro</a>）。</p>
+<h3 id="105-polygon-zkevm">10.5 Polygon zkEVM：先发不一定赢</h3>
+<p><strong>2026-07-01 Mainnet Beta 退役</strong>（<a href="https://forum.polygon.technology/t/sunsetting-polygon-zkevm-mainnet-beta-in-2026/21020">Polygon 公告</a>），年损 $1M+。教训三点：blob 后没及时跟上、Type-2/3 等价度不够、生态投入被 CDK 稀释。ZK 部分分拆为 <a href="https://coinfomania.com/sandeep-nailwal-becomes-polygon-ceo-deprecates-zkevm-refocuses-roadmap-on-agglayer-pos-chain-and-100k-tps-goal/">Polygon ZisK</a> 子公司，Polygon 主线转向 AggLayer + PoS。</p>
+<h3 id="106-taiko-alethiabased">10.6 Taiko Alethia：based + 多证明的两个赌注</h3>
+<p>差异点是两种独立设计同时押：<strong>based sequencing</strong>（直接用 L1 proposer，天然抗审查）+ <strong>多证明</strong>（SP1 + RISC0 + TEE 三套独立 prover，任一通过即可，避免单证明系统 bug 致全链伪造，<a href="https://www.openzeppelin.com/news/taiko-shasta-protocol-re-audit">OpenZeppelin Shasta audit</a>）。</p>
+<h3 id="107-aztec-zk-rollup">10.7 Aztec：唯一主网级隐私 ZK Rollup</h3>
+<p><a href="https://aztec.network/blog/road-to-mainnet">Ignition Mainnet 2025-11-19 启动</a>，前期 sequencer 出空块；token 2026-02-12 TGE；2026-03-17 发现 critical 漏洞，v5 修复版 2026-07 计划上线。差异点：Noir DSL（接近 Rust 的隐私 DSL）+ Ultra Honk 证明系统。<strong>当前唯一活的隐私 L2</strong>。</p>
+<h3 id="108-polygon-miden">10.8 Polygon Miden：客户端证明 = 设备私有状态</h3>
+<p>差异点：<strong>证明在用户自己设备上生成</strong>，状态由用户保管，隐私默认；委托证明在低端设备 1-2 秒。<a href="https://polygon.technology/blog/polygon-miden-alpha-testnet-v3-is-live">Alpha testnet v6</a> 在跑，主网多次延期到 2026。<a href="https://polygon.technology/blog/miden-raises-25m-from-a16z-crypto-1kx-and-hackvc-to-build-the-edge-blockchain">a16z + 1kx + HackVC $25M 投资</a> 让它独立成「Miden」公司。</p>
+<h3 id="109-mina-zeko22kb-rollup">10.9 Mina (Zeko)：22KB 链上的微 rollup</h3>
+<p>差异点：基于 Mina（22KB 全链）的 <a href="https://minaprotocol.com/blog/bringing-the-mina-stack-to-life-with-zeko">Zeko</a> ZK rollup 框架。Boom Testnet 已结束（500K tx），主网准备中，Berkeley 升级（Q2 2026）启用可编程 zkApps，Kimchi prover 升级 Q3 2026。</p>
+<h3 id="1010-astar-zkevmpolygon-cdk">10.10 Astar zkEVM：Polygon CDK 早期客户的退场</h3>
+<p><a href="https://forum.astar.network/t/astar-zkevm-sunsetting-migration-plan/7780">2025-03-31 退役</a>，用户迁移到 Soneium。和 Polygon zkEVM 一样的教训：CDK 早期 Validium 在 blob 时代失去成本优势。</p>
+<h3 id="1011-zk-l2">10.11 ZK L2 完整对照表</h3>
+<table>
+<thead>
+<tr>
+<th>L2</th>
+<th>zkEVM 类型</th>
+<th>Stage（2026-04）</th>
+<th>证明系统</th>
+<th>DA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zkSync Era</td>
+<td>Type-4</td>
+<td>Stage 0</td>
+<td>Boojum (STARK+SNARK)</td>
+<td>Ethereum blob / Validium</td>
+</tr>
+<tr>
+<td>Scroll</td>
+<td>Type-2</td>
+<td><strong>Stage 1</strong></td>
+<td>OpenVM (RISC-V zkVM)</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Linea</td>
+<td>Type-2 (→ Type-1 Q1 2026)</td>
+<td>Stage 0</td>
+<td>Vortex / PLONK</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Polygon zkEVM</td>
+<td>Type-2/3</td>
+<td>Stage 0（<strong>2026-07 退役</strong>）</td>
+<td>PIL / Plonky2</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Starknet</td>
+<td>non-EVM (Cairo)</td>
+<td>Stage 0</td>
+<td>Stone / S-two STARK</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Taiko Alethia</td>
+<td>Type-1 (based)</td>
+<td>Stage 0</td>
+<td>SP1 + RISC0 + TEE 多证明</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Aztec</td>
+<td>non-EVM (Noir)</td>
+<td>pre-stage</td>
+<td>Ultra Honk</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Polygon Miden</td>
+<td>non-EVM (MASM)</td>
+<td>testnet</td>
+<td>客户端 STARK</td>
+<td>Ethereum blob</td>
+</tr>
+<tr>
+<td>Mina (Zeko)</td>
+<td>non-EVM</td>
+<td>testnet</td>
+<td>Pickles / Kimchi</td>
+<td>Mina L1</td>
+</tr>
+<tr>
+<td>Astar zkEVM</td>
+<td>Type-2</td>
+<td><strong>退役</strong></td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1012-zk-l2">10.12 ZK L2 整体观察</h3>
+<p>2026-04 ZK L2 现状：zkSync TVL 高、Scroll Stage 最先进、Linea 工具链最易用、Starknet 性能最强——<strong>没有绝对第一</strong>。Polygon zkEVM 退役说明 ZK L2 不是「先发就赢」；差异化已不是「能不能跑 EVM」，而是 prover 性能 + 生态飞轮 + 治理透明度。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11-validium-volition" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章 Validium 与 Volition</h2>
+
+<h3 id="111-validium">11.1 Validium 是什么</h3>
+<p><strong>Validium = ZK 证明 + 链下 DA</strong>。安全模型：ZK 数学正确 + DA 提供方诚实。</p>
+<figure><img src="diagram-0225adbbcd.png" alt="mermaid diagram"></figure>
+
+<p><strong>Validium 的核心风险</strong>：sequencer + DAC 同时不诚实时，用户无法构造提款证明——资金被冻在 L1 合约里。这就是 Validium 一直没成为主流的原因。</p>
+<h3 id="112-volition">11.2 Volition：用户自选</h3>
+<p><strong>Volition = 每笔交易自选 Rollup 模式或 Validium 模式</strong>。</p>
+<figure><img src="diagram-4b05d530df.png" alt="mermaid diagram"></figure>
+
+<p>zkSync Era 是典型实现：同一合约里为不同交易选不同 mode。</p>
+<h3 id="113-validium-volition">11.3 主流 Validium / Volition 项目</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>类型</th>
+<th>状态（2026-04）</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Immutable X</strong></td>
+<td>StarkEx Validium</td>
+<td><strong>2026 初已合并到 Immutable Chain（zkEVM L2）</strong>，X 桥已合到主桥（<a href="https://docs.immutable.com/docs/products/immutable-chain/immutable-x-deprecation">Immutable docs</a>）</td>
+<td>NFT 链游</td>
+</tr>
+<tr>
+<td><strong>Sorare</strong></td>
+<td>StarkEx Validium</td>
+<td>运行中</td>
+<td>体育 NFT</td>
+</tr>
+<tr>
+<td><strong>dYdX v3</strong></td>
+<td>StarkEx ZK Rollup</td>
+<td><strong>已退役</strong>，迁移到 dYdX Chain (v4)</td>
+<td>永续合约</td>
+</tr>
+<tr>
+<td><strong>Polygon Miden Validium 模式</strong></td>
+<td>自研</td>
+<td>testnet</td>
+<td>Miden 主网未上线</td>
+</tr>
+<tr>
+<td><strong>rhino.fi</strong></td>
+<td>StarkEx Validium</td>
+<td>运行中</td>
+<td>DeFi 桥</td>
+</tr>
+</tbody>
+</table>
+<h3 id="114-validium">11.4 大趋势：Validium 在转型</h3>
+<p>纯 Validium 项目陆续转型：Immutable X 转 zkEVM L2、dYdX 转应用链、StarkEx 减少新客户。Volition（用户自选）正在取代纯 Validium，zkSync 设计成为新范式。</p>
+<h3 id="115-volition">11.5 Volition 何时划得来</h3>
+<p>Volition 适合：应用既有「主资金」（高价值，要 Rollup 安全），又有「日常微交易」（低价值，要省钱）；链游发售 / 大额交易用 Rollup，日常 PvP / 道具交易用 Validium；DEX 大单走 Rollup 留下完整审计轨，小单走 Validium。</p>
+<h3 id="116-validium-astar-zkevm">11.6 Validium 的失败教训：Astar zkEVM</h3>
+<p>Astar zkEVM（Polygon CDK Validium，2024-03 上线，2025-03 退役）：用户增长慢、流动性碎片化、运营成本高于收入。<strong>结论</strong>：Fusaka 后 blob 几乎免费，外部 DA 成本优势削弱，纯 Validium 已难成好产品定位——除非吞吐 / 隐私 / 治理需求让 L1 DA 不够用。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12-sequencer" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 Sequencer 架构演化</h2>
+
+<h3 id="121-sequencer-l2">12.1 Sequencer 是 L2 的中央心脏</h3>
+<p>Sequencer 决定 L2 交易排序、出块、batch 提交——<strong>绝大多数 L2 的 sequencer 是单一公司运行的单实例</strong>，是当前 L2 中心化的最大来源。</p>
+<h3 id="122">12.2 演化路径：三步走</h3>
+<figure><img src="diagram-5448665088.png" alt="mermaid diagram"></figure>
+
+<h3 id="123-centralized-sequencer">12.3 为什么 Centralized Sequencer 是问题</h3>
+<p><strong>优点</strong>：低延迟（几十 ms 软确认）、MEV 简单、运营便宜。<strong>缺点</strong>：</p>
+<figure><img src="diagram-ce7bb46711.png" alt="mermaid diagram"></figure>
+
+<h3 id="124-force-inclusion">12.4 Force-inclusion 兜底</h3>
+<p>机制和 7-day 上限见 3.5；本章只需记住它是 Stage 1 硬要求、是 sequencer 中心化的最后一道安全阀。</p>
+<h3 id="125-shared-sequencer">12.5 Shared Sequencer：图解</h3>
+<figure><img src="diagram-803aef0b44.png" alt="mermaid diagram"></figure>
+
+<h3 id="126-shared-sequencer-2026-04">12.6 主要 Shared Sequencer 项目（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>状态</th>
+<th>架构</th>
+<th>客户</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://hackmd.io/@EspressoSystems/EspressoSequencer">Espresso</a></td>
+<td><strong>2026-02-12 主网启动</strong></td>
+<td>HotShot + Tiramisu DA</td>
+<td>Arbitrum Orbit、Cartesi、若干 OP Stack 链</td>
+</tr>
+<tr>
+<td><a href="https://www.astria.org/">Astria</a></td>
+<td><strong>2026 停运</strong>（[需作者核实]，单一来源 <a href="https://www.mexc.co/news/218229">MEXC 报道</a>；审稿时点未在 <a href="https://www.astria.org/">astria.org</a> 官方渠道独立确认）</td>
+<td>基于 Celestia</td>
+<td>报道称原客户迁移到 Espresso 或 native</td>
+</tr>
+<tr>
+<td><a href="https://medium.com/@radius_xyz/radius-trustless-shared-sequencing-layer-b293dfa75db">Radius</a></td>
+<td>testnet 运行中</td>
+<td>trustless 排序，PVDE</td>
+<td>待客户上</td>
+</tr>
+<tr>
+<td><a href="https://www.rome.builders/rome-protocol-the-shared-sequencer-using-solana">Rome</a></td>
+<td>公测</td>
+<td><strong>基于 Solana 做 sequencer</strong>，Rhea + Hercules</td>
+<td>实验性</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Astria 关闭 → Espresso 存活的差异</strong>：shared sequencer 在技术上可行，但商业飞轮难启动（客户 L2 不愿放弃 sequencer 利润）。详见 F.11 / F.12 完整时间线与经济模型。</p>
+<h3 id="127-l2-sequencer-2026-04">12.7 各 L2 去中心化 Sequencer 进度（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>L2</th>
+<th>进度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Arbitrum</td>
+<td>BoLD（validator 端去中心化）完成，sequencer 仍 Offchain Labs 单实例，BoLD-sequencer 在研究</td>
+</tr>
+<tr>
+<td>Optimism</td>
+<td>Superchain sequencer 选举 + ETH stake 在测试网</td>
+</tr>
+<tr>
+<td>Base</td>
+<td>跟 Optimism 路线</td>
+</tr>
+<tr>
+<td>zkSync</td>
+<td>自有 PoS sequencer 集，路线图未上线</td>
+</tr>
+<tr>
+<td>Starknet</td>
+<td>全 validator 自跑 sequencer 目标 2026 完成（<a href="https://www.starknet.io/blog/starknet-2025-year-in-review/">Starknet 2025 retro</a>）</td>
+</tr>
+<tr>
+<td>Scroll</td>
+<td><strong>Euclid 升级已 permissionless sequencer</strong>（2025-04）</td>
+</tr>
+<tr>
+<td>Taiko</td>
+<td>based sequencing（直接用 L1 proposer），天然去中心化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="128-based-sequencing">12.8 Based Sequencing：另一条路</h3>
+<p><strong>Based sequencing</strong> 直接用 L1 proposer 当 L2 sequencer——你的 L2 sequencer 就是当前 L1 出块者。优点：天然继承 L1 抗审查、无 sequencer 集中化问题、与 L1 同步出块。缺点：软确认延迟 = L1 出块时间（12 秒）、不能自定义 priority fee 策略、L1 拥堵时 L2 也卡。Taiko 是当前最大 based rollup 实现。</p>
+<h3 id="129">12.9 为什么去中心化推进慢：经济激励</h3>
+<p>Sequencer 利润完整数字模型在第 17 章。这里只点核心：放弃 sequencer 利润 ≈ 放弃主要现金流，所有「计划中」推进缓慢都源于此。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="13" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 桥与跨链消息</h2>
+
+<h3 id="131">13.1 一图概览</h3>
+<figure><img src="diagram-948292692d.png" alt="mermaid diagram"></figure>
+
+<h3 id="132-native-bridge">13.2 Native Bridge：原理</h3>
+<figure><img src="diagram-f96c47cc4a.png" alt="mermaid diagram"></figure>
+
+<h3 id="133-2026-04">13.3 主流跨链消息协议（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>验证模型</th>
+<th>安全</th>
+<th>强项</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.layerzero.network/">LayerZero v2</a></td>
+<td>应用可配置 DVN（Decentralized Verifier Network）+ executor</td>
+<td>由应用自选 DVN 集</td>
+<td>OFT 标准、覆盖最广（70+ 链）、市场占 ~75% 跨链消息量</td>
+<td>DVN 配置不当 = 单点</td>
+</tr>
+<tr>
+<td><a href="https://wormhole.com/">Wormhole</a></td>
+<td>19 个 Guardian 多签 + 部分 zk-light-client</td>
+<td>13/19 多签</td>
+<td>Solana / 非 EVM 覆盖最强、<a href="https://wormhole.com/products/native-token-transfers">NTT</a> 原生 token 转账</td>
+<td>历史有过 $326M 事故</td>
+</tr>
+<tr>
+<td><a href="https://docs.hyperlane.xyz/">Hyperlane</a></td>
+<td>应用可部署自己的 ISM（Interchain Security Module）</td>
+<td>应用自选 validator 集</td>
+<td><strong>permissionless 部署</strong>（任何 rollup 自己接入）</td>
+<td>安全自负</td>
+</tr>
+<tr>
+<td><a href="https://docs.chain.link/ccip">Chainlink CCIP</a></td>
+<td>DON + Risk Management Network 双层</td>
+<td>Chainlink Labs 信任 + RMN 保险</td>
+<td>银行 / 合规客户、<a href="https://docs.chain.link/ccip/concepts/cross-chain-tokens">CCT</a> 跨链 token 标准</td>
+<td>受限 token 集</td>
+</tr>
+<tr>
+<td><a href="https://www.circle.com/cross-chain-transfer-protocol">Circle CCTP</a></td>
+<td>原生 USDC burn-mint</td>
+<td>Circle 主权</td>
+<td>唯一的 native USDC 跨链</td>
+<td>仅 USDC</td>
+</tr>
+<tr>
+<td><a href="https://www.axelar.network/">Axelar</a></td>
+<td>PoS validator 集 + GMP</td>
+<td>60 chains，2026-02 单日 $4.5M 转账</td>
+<td>Cosmos 系 + GMP</td>
+<td>中等流动性</td>
+</tr>
+<tr>
+<td><a href="https://docs.across.to/">Across</a></td>
+<td>Intent + UMA 乐观验证</td>
+<td>中继商前置垫付，UMA 后置仲裁</td>
+<td>EVM 间用户体验 &lt; 1 分钟（中继商垫付），但<strong>协议级 settlement 走 UMA OO，仍有 ~14400s（4 小时）默认挑战期</strong>；relayer 跑路时用户实际拿到资金时间依赖 OO 裁决</td>
+<td>仅 EVM</td>
+</tr>
+<tr>
+<td><a href="https://stargateprotocol.gitbook.io/stargate">Stargate</a></td>
+<td>LayerZero + 流动性池</td>
+<td>LZ DVN</td>
+<td>EVM 间 native token 转账</td>
+<td>滑点</td>
+</tr>
+<tr>
+<td><a href="https://www.synapseprotocol.com/">Synapse</a></td>
+<td>自有 multichain + AMM</td>
+<td>桥多签</td>
+<td>跨 EVM/非 EVM 资产</td>
+<td>中等流动性</td>
+</tr>
+<tr>
+<td><a href="https://www.connext.network/">Connext</a></td>
+<td>xCall 模型</td>
+<td>多 router</td>
+<td>可编程跨链 action</td>
+<td>dApp 开发友好</td>
+</tr>
+<tr>
+<td><a href="https://debridge.com/">deBridge</a></td>
+<td>DLN 流动性网络</td>
+<td>validator 集</td>
+<td>速度快、价格稳</td>
+<td>有限链对</td>
+</tr>
+<tr>
+<td><a href="https://www.squidrouter.com/">Squid Router</a></td>
+<td>基于 Axelar</td>
+<td>Axelar 验证集</td>
+<td>bridge aggregator + DEX</td>
+<td>路由 + 滑点</td>
+</tr>
+<tr>
+<td><a href="https://ibcprotocol.org/">IBC</a></td>
+<td>light client 验证</td>
+<td>链双方共识</td>
+<td>trust-minimized 标杆</td>
+<td>两端都需轻客户端</td>
+</tr>
+</tbody>
+</table>
+<h3 id="134-layerzero-v2">13.4 LayerZero v2 详解</h3>
+<figure><img src="diagram-193da4f5fc.png" alt="mermaid diagram"></figure>
+
+<p>LayerZero v2 的关键创新：DVN 可由应用自选。例如选「Google Cloud + Polyhedra + LayerZero Labs」三个 DVN，需要 3-of-3 都签名才执行——比单一桥安全模型可定制得多。</p>
+<h3 id="135-hyperlane-v3permissionless-interop">13.5 Hyperlane v3：permissionless interop</h3>
+<figure><img src="diagram-7aeb0e54fb.png" alt="mermaid diagram"></figure>
+
+<p>Hyperlane 适合自建 rollup：你的 L2 不需要等 LayerZero / Wormhole 「批准」接入——直接 fork Hyperlane 部署 Mailbox 就能与所有 Hyperlane 链互通。这是 OP Stack / Orbit 之外的「permissionless interop」。</p>
+<h3 id="136-ccip-cctp">13.6 CCIP 与 CCTP：合规系的双子星</h3>
+<ul>
+<li><strong>CCIP</strong>：Chainlink 桥 + 消息平台，DON + Risk Management Network 双层验证，强项是机构客户和 CCT 标准；</li>
+<li><strong>CCTP</strong>：Circle USDC 原生跨链，burn on chain A / mint on chain B，<strong>唯一不通过桥的 USDC 跨链方式</strong>。</li>
+</ul>
+<p>2026 实战：合规资产 / 银行客户走 CCIP；USDC 走 CCTP；DeFi 用户最优价用 Across；自建 rollup 互操作用 Hyperlane。没有「一桥统天下」。</p>
+<h3 id="137-ibc">13.7 IBC：去信任化的金标准</h3>
+<p><a href="https://ibcprotocol.org/">IBC</a>：两端各跑对方的 light client，消息靠 light client 验证 + Merkle proof。</p>
+<figure><img src="diagram-4d80a44113.png" alt="mermaid diagram"></figure>
+
+<p>IBC 不需要多签或 staker，但两端都需跑对方轻客户端，主要限于 Cosmos 系（Tendermint 共识）。Polymer Labs 在做 EVM ↔ IBC 适配。</p>
+<h3 id="138">13.8 实战决策表</h3>
+<p>2026 实战决策：监管资产 / 银行客户 → CCIP 或 CCTP；自有 token 想 omnichain → LayerZero OFT 或 Wormhole NTT；自建 rollup interop → Hyperlane（permissionless）；Solana 桥 → Wormhole；同 OP Superchain → 用 OP interop；同 Arbitrum Orbit → 用 AnyTrust message；Cosmos 系 → IBC（trust-minimized 黄金标准）；DeFi 用户最优价格 → Across / deBridge / Squid。</p>
+<h3 id="139">13.9 桥安全检查清单</h3>
+<p>用任何第三方桥前需要确认：1) 桥的安全模型（多签 N/M？light client？ZK？）；2) 验证者集是否分散（同一组织？同一国家？）；3) 桥合约升级权在谁手里，timelock 多长；4) 历史有没有事故、事故后如何处理；5) 桥 TVL / 24h volume 比例（流动性是否足够你的金额）；6) 单笔上限是否够你的转账。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="14-5" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 桥事故复盘：必读的 5 起</h2>
+
+<blockquote>
+<p>桥是 Web3 最高风险板块：TVL 不到 DeFi 10%，但占被盗资金 50%+（<a href="https://www.zealynx.io/blogs/cross-chain-bridge-security-checklist">Zealynx</a>）。</p>
+</blockquote>
+<h3 id="141">14.1 时间线总览</h3>
+<figure><img src="diagram-e708d36b18.png" alt="mermaid diagram"></figure>
+
+<h3 id="142-wormhole2022-02-02326m">14.2 Wormhole（2022-02-02，$326M）</h3>
+<p>攻击者在 Solana 端铸造 120,000 wETH（约 $326M），抽空 ETH 储备。</p>
+<h4 id="_1">根因</h4>
+<p>signature verification 函数未校验 guardian set 是否真正签名——攻击者用 fake account 替换 system program，bridge 直接 mint wETH（<a href="https://www.halborn.com/blog/post/explained-the-wormhole-hack-february-2022">Halborn post-mortem</a>）。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 漏洞简化版：未校验 sysvar 是真 sysvar</span>
+<span style="color: #204A87; font-weight: bold">let</span><span style="color: #F8F8F8"> </span><span style="color: #000">sysvar</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">next_account_info</span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">..</span><span style="color: #000; font-weight: bold">.)</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #8F5902; font-style: italic">// 直接信任 sysvar 内容，没检查 sysvar.key == &amp;sysvar::instructions::id()</span>
+<span style="color: #204A87; font-weight: bold">let</span><span style="color: #F8F8F8"> </span><span style="color: #000">signers</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">parse_sysvar</span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">&amp;</span><span style="color: #000">sysvar</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">data</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #000">verify_signatures</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">signers</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">message</span><span style="color: #000; font-weight: bold">);</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 攻击者控制 signers</span>
+</code></pre></div>
+<p>修复：补上 <code>sysvar.key == &amp;solana_program::sysvar::instructions::id()</code> 校验。Jump Crypto 注资 $326M 填上窟窿，桥继续运行。</p>
+<p><strong>教训</strong>：跨链消息必须严格校验 sender / signer / message format。Solana account model 比 EVM 复杂，更易出 account 混淆 bug。</p>
+<h3 id="143-ronin2022-03-23625m">14.3 Ronin（2022-03-23，$625M）</h3>
+<p>攻击者偷走 173,600 ETH + 25.5M USDC（约 $625M，Web3 历史第二大单笔损失）。</p>
+<h4 id="_2">根因</h4>
+<p>9 个 validator 多签，签 5 即可。攻击者社工钓鱼员工拿 4 个私钥；第 5 个签名来自 <strong>Axie DAO 临时授权 Sky Mavis 代签——未及时撤销</strong>；5/9 达成，调用 <code>withdrawERC20For</code> 提走资产。</p>
+<p>Sky Mavis 增发 RON 还款（6 个月还清），Ronin 桥重启后改 9/12 多签 + 更严格运维。</p>
+<p><strong>教训</strong>：multisig 不是 trust-minimized——同一组织/服务器的 N 个 validator 安全等于 1。临时授权必须有强制过期机制。</p>
+<h3 id="144-nomad2022-08-01190m">14.4 Nomad（2022-08-01，$190M）</h3>
+<p>几小时内被掏空 $190M，上百地址复制粘贴交易提款——史诗级「众包抢劫」。</p>
+<h4 id="_3">根因</h4>
+<p>Nomad 在升级合约时，把一个 <code>acceptableRoot</code> 映射初始化成 <code>0x00</code>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 漏洞：升级时 _setAcceptableRoot(0x00, true);</span>
+<span style="color: #8F5902; font-style: italic">// 结果：所有空 messageProof（默认是 0x00）都被接受</span>
+<span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">process</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">memory</span><span style="color: #F8F8F8"> </span>_message<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">messageHash</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>_message<span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">require</span><span style="color: #000; font-weight: bold">(</span>acceptableRoot<span style="color: #000; font-weight: bold">[</span>messages<span style="color: #000; font-weight: bold">[</span>messageHash<span style="color: #000; font-weight: bold">]],</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;!proven&quot;</span><span style="color: #000; font-weight: bold">);</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// bypass!</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// ... 执行任意 message</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>第一个攻击者构造提款交易，其他人<strong>复制 calldata 只改 to 字段</strong>即可通过。Nomad 团队呼吁 white hat 归还，约 $36M 返还；桥停摆数月后用新架构重启。</p>
+<p><strong>教训</strong>：1) 升级合约要有完整 invariant 测试；2) <code>mapping(bytes32 =&gt; bool)</code> 零值（false）配合「0x00 被接受」是大坑；3) 公开 mempool 让单个 root cause 被数百人跟风放大。</p>
+<h3 id="145-multichain2023-07130m">14.5 Multichain（2023-07，$130M+）</h3>
+<p>多个链同时被掏空约 $130M+，链上数据显示是<strong>桥自己的私钥发起的合法交易</strong>——不是 hack，是「内鬼」。</p>
+<h4 id="_4">根因</h4>
+<p><a href="https://blocksec.com/blog/multichain-incident-analysis">BlockSec 分析</a>：2023-05 CEO Zhaojun He 疑似被中国监管机构带走；CEO 是唯一掌握桥多签私钥的人（其他多签人形同虚设）；失联后私钥被某方使用分批提走资产。</p>
+<p>Multichain 团队解散，部分资金未追回，桥永久关闭。</p>
+<p><strong>教训</strong>：桥的运营连续性 = 桥的安全。「跑路风险」是真实存在的桥风险，不是理论上的。永远要看「私钥实际由谁控制」，不只是看「multisig 是几个人」。</p>
+<h3 id="146-orbit-bridge2024-01-0180m">14.6 Orbit Bridge（2024-01-01，$80M）</h3>
+<p>攻击者调用 <code>withdraw</code>，多签验证通过，掏空 $80M。根因：7 个 validator 私钥失陷（疑似私钥管理基础设施被入侵）。Orbit Chain 仍运营，但用户信任受损。</p>
+<p><strong>教训</strong>：KYC 多签 ≠ 安全——即使 validator 都是机构，私钥管理仍是单点。</p>
+<h3 id="147">14.7 共同模式：桥漏洞分类</h3>
+<figure><img src="diagram-e48f21a27f.png" alt="mermaid diagram"></figure>
+
+<h3 id="148">14.8 怎么避免成为下一个事故</h3>
+<p>桥的硬规则：1) 永远不要把超过你能承受损失的钱跨过非 native bridge；2) 如果必须跨链，优先 native bridge（即使要等 7 天）；3) 第三方桥用之前看 <a href="https://defillama.com/bridges">DefiLlama Bridges</a> 的 TVL / 24h volume 比；4) 看桥合约升级权（timelock 长度、Security Council）；5) 大额跨链分批，每笔金额低于桥单笔上限 50%；6) 关注桥的 <a href="https://hypernative.io/">Hypernative</a>、<a href="https://forta.org/">Forta</a> 实时告警。</p>
+<h3 id="149">14.9 桥安全的演化方向</h3>
+<figure><img src="diagram-a2485de0ea.png" alt="mermaid diagram"></figure>
+
+<p>行业从 multisig 桥转向 light client 桥（Polymer、zkLink）和 restaking 桥（Renzo bridge AVS），但 LayerZero 等多签桥仍占 <a href="https://yellow.com/research/cross-chain-messaging-comparing-ibc-wormhole-layerzero-ccip-and-more">~75%</a> 市场份额。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="15-l3-app-rollup-raas" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 L3 / app-rollup / RaaS</h2>
+
+<h3 id="151-l3">15.1 L3 是什么</h3>
+<p><strong>L3 = 在 L2 上再起一条 rollup，settlement 用 L2 而非 L1。</strong></p>
+<figure><img src="diagram-d903c02e63.png" alt="mermaid diagram"></figure>
+
+<p><strong>意义</strong>：应用专属吞吐 + 定制（gas token、私有交易、垂直优化）；DA 成本再降约 10×；但安全继承自 L2，多一层信任假设。</p>
+<h3 id="152-rollup-2026-04">15.2 主流 Rollup 框架对照（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>维护方</th>
+<th>DA 选项</th>
+<th>卖点</th>
+<th>实例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.optimism.io/">OP Stack</a></td>
+<td>Optimism Foundation</td>
+<td>Ethereum blob、Celestia、EigenDA、Alt-DA</td>
+<td>Superchain 互操作、生态最大</td>
+<td>Base、Mantle、Mode、Worldchain、Zora、Soneium、Ink、Unichain...</td>
+</tr>
+<tr>
+<td><a href="https://docs.arbitrum.io/launch-orbit-chain">Arbitrum Orbit</a></td>
+<td>Offchain Labs</td>
+<td>Ethereum blob (Rollup 模式)、AnyTrust DAC (便宜模式)</td>
+<td>Nitro 性能、Stylus (Rust/C++)、自定义 gas token</td>
+<td>xAI 系列、若干链游</td>
+</tr>
+<tr>
+<td><a href="https://docs.zksync.io/zk-stack">ZK Stack</a></td>
+<td>Matter Labs</td>
+<td>Ethereum blob、Validium、Volition</td>
+<td>ZK 安全、Hyperchain 互操作、原生 AA</td>
+<td>Cronos zkEVM、Sophon</td>
+</tr>
+<tr>
+<td><a href="https://www.agglayer.dev/cdk">Polygon CDK + AggLayer</a></td>
+<td>Polygon Labs</td>
+<td>Ethereum blob、AggLayer、Validium</td>
+<td>AggLayer 统一流动性、ZK 或 OP 双栈（<a href="https://polygon.technology/blog/cdk-goes-multistack-aggregate-everything-starting-with-op-stack">CDK Multistack</a>）</td>
+<td>40+ 链在用</td>
+</tr>
+<tr>
+<td><a href="https://docs.madara.zone/">Starknet (Madara)</a></td>
+<td>StarkWare 系</td>
+<td>Ethereum blob</td>
+<td>Cairo VM、最高 prover 效率</td>
+<td>Pragma、Kakarot</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Sovereign-Labs/sovereign-sdk">Sovereign SDK</a></td>
+<td>Sovereign Labs</td>
+<td>任意（Bitcoin / Celestia / Ethereum）</td>
+<td>无 settlement 层、p99 &lt; 10ms 软确认</td>
+<td>Rollkit 系</td>
+</tr>
+<tr>
+<td><a href="https://www.alchemy.com/dapps/stackr">Stackr</a></td>
+<td>Stackr</td>
+<td>任意</td>
+<td><strong>micro-rollups</strong>（应用每个函数独立 rollup）</td>
+<td>实验性</td>
+</tr>
+</tbody>
+</table>
+<h3 id="153-op-stack-vs-orbit">15.3 OP Stack vs Orbit：选哪个</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>OP Stack</th>
+<th>Arbitrum Orbit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生态</td>
+<td>Superchain（数十条链）</td>
+<td>Orbit（数十条 L2/L3）</td>
+</tr>
+<tr>
+<td>互操作</td>
+<td>OP interop（统一 messaging）</td>
+<td>AnyTrust message</td>
+</tr>
+<tr>
+<td>编程语言</td>
+<td>Solidity</td>
+<td>Solidity + Stylus (Rust/C++)</td>
+</tr>
+<tr>
+<td>DA 选项</td>
+<td>多（blob/Celestia/EigenDA）</td>
+<td>多（blob/AnyTrust DAC）</td>
+</tr>
+<tr>
+<td>治理参与</td>
+<td>OP Token Houses</td>
+<td>Arbitrum DAO</td>
+</tr>
+<tr>
+<td>sequencer 利润</td>
+<td>自留 + 部分回流 OP</td>
+<td>自留</td>
+</tr>
+<tr>
+<td>适合</td>
+<td>想加入 Superchain 流量</td>
+<td>想最大自主权 + Stylus</td>
+</tr>
+</tbody>
+</table>
+<h3 id="154-raasrollup-as-a-service">15.4 RaaS（Rollup-as-a-Service）</h3>
+<table>
+<thead>
+<tr>
+<th>RaaS</th>
+<th>支持栈</th>
+<th>代表客户</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.conduit.xyz/">Conduit</a></td>
+<td>OP Stack、Arbitrum Orbit、Polygon CDK</td>
+<td>Codex、Plume、Katana、Zora、Aevo、Proof of Play</td>
+</tr>
+<tr>
+<td><a href="https://www.alchemy.com/dapps/caldera">Caldera</a></td>
+<td>OP Stack、Arbitrum Orbit</td>
+<td>Manta Pacific、Treasure</td>
+</tr>
+<tr>
+<td><a href="https://www.alchemy.com/dapps/top/raas-tools">Alchemy Rollups</a></td>
+<td>OP Stack</td>
+<td>Alchemy 自营</td>
+</tr>
+<tr>
+<td><a href="https://www.diadata.org/rollup-as-a-service-raas-map/gelato/">Gelato RaaS</a></td>
+<td>OP Stack、ZK Stack、Polygon CDK 多栈</td>
+<td>多家</td>
+</tr>
+</tbody>
+</table>
+<p>市场预期（截至 2026-04）：RaaS 会收敛到 3–4 家头部（Conduit、Caldera、Gelato、Alchemy），中小厂面临洗牌（<a href="https://blockeden.xyz/blog/2026/03/13/rollup-deployment-simplification-raas-chain-as-easy-as-smart-contract/">BlockEden 2026-03</a>）。</p>
+<h3 id="155-vs-raas">15.5 自建 vs RaaS 决策表</h3>
+<table>
+<thead>
+<tr>
+<th>因素</th>
+<th>自建</th>
+<th>RaaS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>启动时间</td>
+<td>3–6 月</td>
+<td>1–2 周（<a href="https://blockeden.xyz/forum/t/i-deployed-a-custom-op-stack-rollup-in-23-minutes-with-zero-infrastructure-experience-heres-my-step-by-step-raas-comparison-of-conduit-caldera-and-gelato/473">实测 23 分钟</a>）</td>
+</tr>
+<tr>
+<td>月成本</td>
+<td>$10k–$50k</td>
+<td>$5k–$30k</td>
+</tr>
+<tr>
+<td>定制深度</td>
+<td>任意</td>
+<td>受栈支持</td>
+</tr>
+<tr>
+<td>升级跟进</td>
+<td>自己跟 OP Stack release</td>
+<td>RaaS 包办</td>
+</tr>
+<tr>
+<td>退出门槛</td>
+<td>完全自主</td>
+<td>数据迁移成本中等</td>
+</tr>
+</tbody>
+</table>
+<p>决策建议：第一条 rollup → RaaS 上线；规模到亿美金 TVL → 评估自建 sequencer 把利润内化。</p>
+<h3 id="156-app-rollup-aevo">15.6 一个真实的 app-rollup 案例：Aevo</h3>
+<p><a href="https://aevo.xyz/">Aevo</a>（衍生品 dApp）：订单簿离链撮合 + OP Stack L2 结算到 Optimism，高频交易场景下的最佳「去中心化 + 性能」平衡点。</p>
+<figure><img src="diagram-2f1d791907.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="16-re-staking-avs" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 Re-staking 与 AVS</h2>
+
+<h3 id="161-re-staking">16.1 Re-staking 是什么（核心思想）</h3>
+<figure><img src="diagram-97e658fa53.png" alt="mermaid diagram"></figure>
+
+<p>让已质押 ETH <strong>再次质押</strong>到 AVS（主动验证服务），赚额外收益同时承担额外 slash 风险。</p>
+<h3 id="162-eigenlayer">16.2 EigenLayer 关键时间线</h3>
+<figure><img src="diagram-f42d12ba90.png" alt="mermaid diagram"></figure>
+
+<p>数据来源：<a href="https://blockeden.xyz/blog/2026/03/20/eigenlayer-18b-tvl-vertical-avs-specialization-restaking-evolution/">BlockEden 2026-03</a>、<a href="https://www.blockdaemon.com/blog/eigenlayer-mainnet-slashing-now-live">Blockdaemon Slashing Guide</a>。</p>
+<h3 id="163-re-staking-2026-04">16.3 主要 Re-staking 项目（截至 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>TVL</th>
+<th>特色</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.eigencloud.xyz/">EigenLayer</a></td>
+<td>~$15.3-19.5B（93.9% 市占）</td>
+<td>龙头，先发优势</td>
+</tr>
+<tr>
+<td><a href="https://llamarisk.com/research/current-state-of-symbiotic">Symbiotic</a></td>
+<td>~$1.7B+</td>
+<td><strong>2025-01-28 主网启动即支持 slashing</strong>，最高定制（任何 ERC20 可作 collateral）</td>
+</tr>
+<tr>
+<td><a href="https://karak.network/">Karak</a></td>
+<td>~$102M</td>
+<td>资产多样（LP、stable、WBTC）</td>
+</tr>
+<tr>
+<td><a href="https://babylonchain.io/">Babylon</a></td>
+<td>独立赛道</td>
+<td><strong>Bitcoin restaking</strong>，BTC 不用桥就给 PoS 链做安全</td>
+</tr>
+<tr>
+<td><a href="https://www.picasso.network/">Picasso</a></td>
+<td>独立赛道</td>
+<td><strong>Solana 上 restaking + IBC</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="164-slashing">16.4 Slashing：从纸老虎到真老虎</h3>
+<p>2025-04-17 EigenLayer slashing 主网上线：之前 TVL 来自 point farming（赌空投）；之后 operator 对 AVS slashing condition 负责，TVL 从高峰 $28B 滑至 $7B 后回升至 $18-19.5B——市场为真实风险重新定价。</p>
+<h3 id="165-avs-4">16.5 设计一个 AVS 的 4 个问题</h3>
+<figure><img src="diagram-ec5dc0acee.png" alt="mermaid diagram"></figure>
+
+<p><strong>参考实现</strong>：EigenDA、<a href="https://www.lagrange.dev/">Lagrange ZK Prover Network</a>、<a href="https://alignedlayer.com/">Aligned Layer</a>、AltLayer MACH 是当前最成熟的 AVS。</p>
+<h3 id="166-eigenlayer-vs-symbiotic-vs-karak">16.6 EigenLayer vs Symbiotic vs Karak 对比</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>EigenLayer</th>
+<th>Symbiotic</th>
+<th>Karak</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主网时间</td>
+<td>2024-04</td>
+<td>2025-01-28</td>
+<td>2024</td>
+</tr>
+<tr>
+<td>Slashing 主网</td>
+<td>2025-04-17</td>
+<td>上线即支持</td>
+<td>待上线</td>
+</tr>
+<tr>
+<td>TVL（2026-04）</td>
+<td>$15.3-19.5B</td>
+<td>$1.7B+</td>
+<td>$102M</td>
+</tr>
+<tr>
+<td>抵押资产</td>
+<td>ETH/LST</td>
+<td>任何 ERC20</td>
+<td>LP/stable/WBTC/LST</td>
+</tr>
+<tr>
+<td>AVS 数量</td>
+<td>数十个</td>
+<td>数个</td>
+<td>数个</td>
+</tr>
+<tr>
+<td>治理 token</td>
+<td>EIGEN</td>
+<td>SYMB（计划）</td>
+<td>KSP</td>
+</tr>
+</tbody>
+</table>
+<p>选型参考：想 minimize 风险跟主流 → EigenLayer；想灵活组合自定义 collateral → Symbiotic；多元资产敞口 → Karak；BTC 持有者 → Babylon。</p>
+<h3 id="167-restaking">16.7 Restaking 的真正用例</h3>
+<figure><img src="diagram-8b5ab640bb.png" alt="mermaid diagram"></figure>
+
+<h3 id="168">16.8 风险与争议</h3>
+<p>Vitalik 警告 restaking 三大风险：1) 过度复用 ETH 安全，AVS 集体出问题可能拖累 L1；2) LRT（ezETH、weETH）高度互嵌，单点失败传染；3) AVS 准入低，缺乏严格审计。真实事件：2024-04 Renzo ezETH 短暂脱锚至 $0.3，引发 LRT 市场恐慌。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="17-l2" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 L2 经济学</h2>
+
+<h3 id="171">17.1 单笔交易成本拆解：完整公式</h3>
+<p><strong>L2 单笔交易费 = execution_gas × L2_gas_price + DA_cost + proof_cost_per_tx</strong></p>
+<ul>
+<li><code>execution_gas × L2_gas_price</code>：L2 上跑合约的 gas（与 L1 EVM gas 几乎相同）</li>
+<li><code>DA_cost = (tx_calldata_size_bytes ÷ batch_size) × per_byte_DA_price</code></li>
+<li><code>proof_cost_per_tx = proof_generation_cost_per_batch ÷ tx_count_per_batch</code>（仅 ZK 系）</li>
+</ul>
+<h3 id="172-dex-swap">17.2 实际数字代入（一笔典型 DEX swap）</h3>
+<p><strong>输入参数</strong>：</p>
+<ul>
+<li>swap 占 calldata 约 400 bytes，经 brotli 压缩到 ~200 bytes</li>
+<li>L2 execution gas：~150k gas</li>
+<li>L2 gas price：0.001 gwei（典型 Optimism / Base）</li>
+<li>Blob target（截至 2026-04）：14 blobs / block</li>
+<li>Blob 容量：14 × 128 KiB = 1.75 MiB / 12s slot</li>
+<li>Blob base fee（截至 2026-04）：约 1 wei</li>
+<li>ZK proof cost：约 $0.0005–0.005 / tx</li>
+</ul>
+<p><strong>计算</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>公式</th>
+<th>数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>execution</td>
+<td>150,000 × 0.001 × 1e-9 ETH</td>
+<td>1.5e-7 ETH ≈ $0.0005</td>
+</tr>
+<tr>
+<td>DA（4844 后）</td>
+<td>200 / 1,792,000 × blob_price</td>
+<td>~$2e-7（≈ 0）</td>
+</tr>
+<tr>
+<td>proof（ZK 仅）</td>
+<td>$0.0005–0.005</td>
+<td>$0.0005–0.005</td>
+</tr>
+<tr>
+<td><strong>Optimistic 总计</strong></td>
+<td>exec + DA</td>
+<td><strong>$0.0005–0.001</strong></td>
+</tr>
+<tr>
+<td><strong>ZK 总计</strong></td>
+<td>exec + DA + proof</td>
+<td><strong>$0.001–0.006</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="173-swap-l1optimisticzk">17.3 同一笔 swap 在 L1/Optimistic/ZK 的对比</h3>
+<figure><img src="diagram-946f53ffaf.png" alt="mermaid diagram"></figure>
+
+<p><strong>2026-04 现实</strong>：blob 几乎免费，rollup 成本中心已从 DA 转移到 execution + prover。优化 calldata 大小已不是 L2 工程师的首要目标；优化 prover 性能（ZK 系）和提升 sequencer infra 利用率才是。</p>
+<h3 id="174-sequencer">17.4 Sequencer 利润模型</h3>
+<p>假设：每天 100k 笔交易、平均 gas 100k、L2 gas price 0.001 gwei。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>收入：
+  L2 gas 收入                       = 100,000 × 100,000 × 0.001 gwei
+                                   = 1e10 gwei = 10 ETH/天
+  L2 priority fee + MEV             ≈ 1–3 ETH/天
+  ───────────────────────────────────────────────────
+  合计                              ≈ 11–13 ETH/天
+
+成本（Optimistic）：
+  L1 blob 提交（~50 个 blob/天）     ≈ 0.01–0.1 ETH/天（PeerDAS 后接近 0）
+  L1 状态根 + system tx              ≈ 0.3–0.8 ETH/天
+  Sequencer infra（云）               ≈ $5k–$15k/月 ≈ 1–2 ETH/月
+  ───────────────────────────────────────────────────
+  净利率（Optimistic，理论上限）：~85–95%
+
+成本（ZK 系还要加）：
+  Prover GPU 集群                    ≈ 2–5 ETH/天
+  ───────────────────────────────────────────────────
+  净利率（ZK，理论上限）：~50–70%
+</code></pre></div>
+<p>注意：上方 85–95% / 50–70% 是只算 onchain L1 成本的乐观情景。Base / OP / Arbitrum 2024-2025 的公开财务数据显示，把 infra、token incentive、研发摊销、补贴退款、grant 计入后，实际净利率约 30–60%，2024 年 blob 价格波动期单月一度下探到 &lt; 20%。</p>
+<p>Coinbase（Base）、Consensys（Linea）、Sony（Soneium）、Kraken（Ink）、Uniswap（Unichain）争相自营 L2 的原因在此。去中心化 sequencer 上线后，这块利润将分散到 operator + 协议金库。</p>
+<h3 id="175-da-100mb">17.5 DA 成本横向对比（每 100MB / 天，年化）</h3>
+<table>
+<thead>
+<tr>
+<th>DA 方案</th>
+<th>100MB/天年成本（截至 2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ethereum blob（PeerDAS 后）</td>
+<td>$1–$50（接近 0）</td>
+</tr>
+<tr>
+<td>EigenDA</td>
+<td>~$730</td>
+</tr>
+<tr>
+<td>Avail</td>
+<td>$1500–3000</td>
+</tr>
+<tr>
+<td>Celestia</td>
+<td>~$12,775</td>
+</tr>
+<tr>
+<td>Ethereum calldata（pre-4844 等价）</td>
+<td>~$300,000+</td>
+</tr>
+</tbody>
+</table>
+<p>数据来源：<a href="https://blockeden.xyz/blog/2026/02/24/modular-blockchain-wars-data-availability/">BlockEden 2026-02</a>。</p>
+<h3 id="176-zk-proof">17.6 ZK Proof 成本下降曲线</h3>
+<figure><img src="diagram-b09d6c6f04.png" alt="mermaid diagram"></figure>
+
+<p><strong>驱动力</strong>：更优电路（Plonky3、Halo2、custom gates）、GPU 升级（A100→H100→B200）、prover marketplace（Aligned Layer、Lagrange）、FPGA/ASIC（Cysic、Ingonyama）。</p>
+<h3 id="177-l2">17.7 L2 之间的「公地悲剧」</h3>
+<p>blob 几乎免费 → L2 数量爆炸（数百条）→ 每条 L2 用户少 → <strong>流动性碎片化</strong>。解药：Superchain / AggLayer / Hyperchain 栈内统一流动性；共享 sequencer 跨 rollup 原子交易；CCIP / LayerZero v2 统一桥；Across / CowSwap 意图系统让用户不关心链。</p>
+<h3 id="178-base">17.8 案例：Base 的盈利模型</h3>
+<p><a href="https://www.coinbase.com/blog">Coinbase 公开数据</a>：Base sequencer 月收入从 2023 初期 $100k 增长到 2025 高峰 $5M+；Pectra 后因交易量增长仍稳定在 $1–3M。<strong>品牌渠道获客 + 低费用 + sequencer 利润</strong>是当前最可持续的 L2 商业模型。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="18" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 18 章 实战代码</h2>
+
+<blockquote>
+<p>所有示例位于 <code>code/</code>（含 README）。本章给出每个 demo 的目标、原理图与关键代码片段。</p>
+</blockquote>
+<h3 id="181-demo-1-gas">18.1 Demo 1：多链部署 + gas 对比</h3>
+<p><strong>位置</strong>：<code>code/multichain-deploy/</code>。用 Foundry 把 <code>Counter.sol</code> 部署到 5 条测试网（Sepolia / Base / OP / zkSync / Scroll Sepolia），自动产出 gas 对比表。</p>
+<figure><img src="diagram-4f484e367a.png" alt="mermaid diagram"></figure>
+
+<p><strong>关键观察</strong>：L2 部署 gas 与 L1 几乎相同（EVM 等价）；zkSync gas 略高（EraVM pubdata 计费不同）；真实成本差距 1000×+——L2 不是「L1 打折」。</p>
+<h3 id="182-demo-2op-stack">18.2 Demo 2：OP Stack 原生桥消息</h3>
+<p><strong>位置</strong>：<code>code/op-bridge-message/</code>。用 OP Stack <code>L1CrossDomainMessenger</code> / <code>L2CrossDomainMessenger</code> 跑 L1→L2 与 L2→L1 消息。</p>
+<figure><img src="diagram-738c83717e.png" alt="mermaid diagram"></figure>
+
+<p><strong>关键代码片段</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// L1 → L2</span>
+ICrossDomainMessenger<span style="color: #F8F8F8"> </span>l1Messenger<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>ICrossDomainMessenger<span style="color: #000; font-weight: bold">(</span><span style="color: #A40000; border: 1px solid #EF2929">0</span>x<span style="color: #000; font-weight: bold">...);</span>
+l1Messenger<span style="color: #000; font-weight: bold">.</span>sendMessage<span style="color: #000; font-weight: bold">(</span>
+<span style="color: #F8F8F8">    </span>l2CounterAddress<span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">    </span>abi<span style="color: #000; font-weight: bold">.</span>encodeWithSignature<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;increment()&quot;</span><span style="color: #000; font-weight: bold">),</span>
+<span style="color: #F8F8F8">    </span><span style="color: #A40000; border: 1px solid #EF2929">100</span>_000<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// L2 gas limit</span>
+<span style="color: #000; font-weight: bold">);</span>
+</code></pre></div>
+<h3 id="183-demo-3hyperlane-warp-route">18.3 Demo 3：Hyperlane Warp Route</h3>
+<p><strong>位置</strong>：<code>code/hyperlane-warp-route/</code>。Hyperlane CLI 部署跨 Sepolia ↔ Base Sepolia 的 ERC20。</p>
+<figure><img src="diagram-63f663983c.png" alt="mermaid diagram"></figure>
+
+<p><strong>关键命令</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 安装 CLI</span>
+npm<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>-g<span style="color: #F8F8F8"> </span>@hyperlane-xyz/cli
+<span style="color: #8F5902; font-style: italic"># 配置 warp route</span>
+hyperlane<span style="color: #F8F8F8"> </span>core<span style="color: #F8F8F8"> </span>init<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>hyperlane<span style="color: #F8F8F8"> </span>warp<span style="color: #F8F8F8"> </span>init
+<span style="color: #8F5902; font-style: italic"># 部署</span>
+hyperlane<span style="color: #F8F8F8"> </span>warp<span style="color: #F8F8F8"> </span>deploy<span style="color: #F8F8F8"> </span>--config<span style="color: #F8F8F8"> </span>warp-route-config.yaml
+<span style="color: #8F5902; font-style: italic"># 跨链发币</span>
+hyperlane<span style="color: #F8F8F8"> </span>warp<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </span>--from<span style="color: #F8F8F8"> </span>sepolia<span style="color: #F8F8F8"> </span>--to<span style="color: #F8F8F8"> </span>basesepolia<span style="color: #F8F8F8"> </span>--amount<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span>
+</code></pre></div>
+<h3 id="184-demo-4-4844-blob">18.4 Demo 4：监听 4844 Blob 交易</h3>
+<p><strong>位置</strong>：<code>code/blob-watcher/</code>。viem 订阅主网最新区块，过滤 type-3 blob tx，解析 KZG commitment。</p>
+<div class="highlight" style="background: #f8f8f8"><span class="filename">blob-watcher/index.ts</span><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createPublicClient</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">http</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;viem&#39;</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">mainnet</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;viem/chains&#39;</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">client</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">createPublicClient</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">chain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">mainnet</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">transport</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">http</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">process</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">env</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">MAINNET_RPC</span><span style="color: #000; font-weight: bold">),</span>
+<span style="color: #000; font-weight: bold">});</span>
+
+<span style="color: #8F5902; font-style: italic">// 订阅新区块</span>
+<span style="color: #000">client</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">watchBlocks</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">onBlock</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">block</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">fullBlock</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">client</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">getBlock</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">blockNumber</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">block.number</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">includeTransactions</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">});</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 过滤 type-3 (0x03) blob tx</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">blobTxs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">fullBlock</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">transactions</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">filter</span><span style="color: #000; font-weight: bold">(</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">tx</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">any</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #204A87; font-weight: bold">type</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;eip4844&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">typeHex</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;0x3&#39;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">);</span>
+
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">for</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">of</span><span style="color: #F8F8F8"> </span><span style="color: #000">blobTxs</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`Blob TX: ${</span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">hash</span><span style="color: #4E9A06">}`</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`  blobVersionedHashes:`</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">blobVersionedHashes</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`  maxFeePerBlobGas:`</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">maxFeePerBlobGas</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">      </span><span style="color: #8F5902; font-style: italic">// 哪些 rollup 提交的？看 to 地址</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`  to (rollup batcher inbox):`</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">tx</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #000; font-weight: bold">});</span>
+</code></pre></div>
+<p>完整代码含 batcher 地址映射表（识别 Base/OP/Arbitrum batcher）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="19" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 19 章 练习与答案</h2>
+
+<h3 id="191">19.1 练习总览</h3>
+<table>
+<thead>
+<tr>
+<th>练习</th>
+<th>目标</th>
+<th>文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>计算同一笔交易在 L1/Optimistic/ZK 下的真实成本</td>
+<td><code>exercises/01-tx-cost-breakdown.md</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>阅读一个 L2 的 stage 评级，找出 trust assumption</td>
+<td><code>exercises/02-l2-stage-audit.md</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>设计一条 app-rollup（OP Stack 或 Orbit）部署到测试环境</td>
+<td><code>exercises/03-app-rollup-design.md</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="192-1">19.2 练习 1：单笔交易成本拆解（参考答案）</h3>
+<p>同一笔 Uniswap v3 swap（150k gas，calldata 400B 压缩后 200B）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>场景 1: L1
+  total = 150,000 gas × 20 gwei = 3e6 gwei = 0.003 ETH ≈ $9（按 ETH=$3000）
+
+场景 2: Base (Optimistic)
+  execution = 150,000 × 0.001 gwei = 150 gwei = 1.5e-7 ETH ≈ $0.00045（按 ETH=$3000）
+
+  注意：实际 L2 gas price 通常 0.001-0.01 gwei
+  DA = 200 bytes × 1 wei (blob_base_fee) ≈ 几乎 0
+  total ≈ $0.0005-0.001
+
+场景 3: Scroll (ZK)
+  execution = 同上 ≈ $0.0005
+  DA = 同上 ≈ 0
+  proof 摊销 ≈ $0.0005-0.005（看 prover 集群）
+  total ≈ $0.001-0.006
+</code></pre></div>
+<p>关键见解：L1 vs L2 差距 ~1000×；Optimistic 与 ZK 当前差距 ~3-10×（来自 prover 摊销）；数字只是数量级，具体看当时 gas price / blob price / prover 队列。</p>
+<h3 id="193-2l2-stage">19.3 练习 2：L2 Stage 评级解读（指引）</h3>
+<p>选一条 L2（推荐 Arbitrum / Linea / zkSync Era / Blast），用以下模板写完整 stage audit：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #800080; font-weight: bold">## L2 Stage Audit: &lt;L2 名称&gt;</span>
+
+<span style="color: #800080; font-weight: bold">### 1. 基本信息</span>
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Stage（截至 2026-04）：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>类型（Optimistic / ZK / Validium）：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>DA：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>TVL（来自 L2BEAT）：
+
+<span style="color: #800080; font-weight: bold">### 2. Risk Rosette 五维</span>
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>State Validation：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Data Availability：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Exit Window：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Sequencer Failure：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Proposer Failure：
+
+<span style="color: #800080; font-weight: bold">### 3. Permissions</span>
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>Security Council 人数：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>多签门槛：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>是否包含外部独立成员：
+
+<span style="color: #800080; font-weight: bold">### 4. Contracts</span>
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>升级 timelock：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>紧急升级权：
+<span style="color: #204A87; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>proxy admin：
+
+<span style="color: #800080; font-weight: bold">### 5. 距离下一 Stage 还差什么</span>
+
+<span style="color: #800080; font-weight: bold">### 6. Trust Assumption 一句话总结</span>
+「相信 ___，相信 ___ 数学」
+</code></pre></div>
+<h3 id="194-3app-rollup">19.4 练习 3：app-rollup 设计（指引）</h3>
+<p>为虚构应用设计一条 L3，给出：栈选型（OP Stack / Orbit / ZK Stack）、DA 选型、sequencer（自营 / shared / RaaS）、跨链消息协议、一段安全模型总结。参考决策框架：</p>
+<figure><img src="diagram-6d1d5cf350.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="20-ai" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 20 章 AI 影响</h2>
+
+<h3 id="201-ai-l2">20.1 AI 在 L2 工程中已落地</h3>
+<figure><img src="diagram-c8eedaf0ac.png" alt="mermaid diagram"></figure>
+
+<h3 id="202-ai">20.2 AI 的局限</h3>
+<p>AI 做不了：协议设计（rollup 经济学、DAS 编码、新 EIP）、ZK 电路 under-constrained bug 检测（误报率高）、跨链消息形式化验证（仍依赖 Certora / K Framework 手工 spec）。L2 工程师的 AI 用法：监控 + 审计辅助 + 代码生成，不是让 LLM 设计 rollup。</p>
+<h3 id="203-ai-l2">20.3 一个真实的 AI × L2 案例</h3>
+<p>L2BEAT 2025 年集成 ML 异常检测：sequencer batch 延迟超基线、proof 上链频率异常、TVL 异常波动（脱锚前兆）、升级提案前代币流动异常。类似工具：<a href="https://chaoslabs.xyz/edge">Chaos Labs Edge</a>、<a href="https://hypernative.io/">Hypernative</a>、<a href="https://forta.org/">Forta</a>。</p>
+<h3 id="204">20.4 延伸阅读与权威源</h3>
+<h4 id="_5">必读论文与博客</h4>
+<ul>
+<li>Vitalik「<a href="https://ethereum-magicians.org/t/a-rollup-centric-ethereum-roadmap/4698">A rollup-centric ethereum roadmap</a>」(2020)</li>
+<li>Vitalik「<a href="https://vitalik.eth.limo/general/2021/12/06/endgame.html">Endgame</a>」(2021)</li>
+<li>Vitalik「<a href="https://vitalik.eth.limo/general/2022/08/04/zkevm.html">The different types of zkEVMs</a>」(2022)</li>
+<li><a href="https://docs.arbitrum.io/how-arbitrum-works/inside-arbitrum-nitro">Inside Arbitrum Nitro</a></li>
+<li><a href="https://specs.optimism.io/">Optimism Bedrock Spec</a></li>
+<li><a href="https://docs.arbitrum.io/how-arbitrum-works/bold/bold-technical-deep-dive">BoLD Technical Deep Dive</a></li>
+</ul>
+<h4 id="_6">协议规范</h4>
+<ul>
+<li><a href="https://eips.ethereum.org/EIPS/eip-4844">EIP-4844: Shard Blob Transactions</a></li>
+<li><a href="https://eips.ethereum.org/EIPS/eip-7691">EIP-7691: Blob Throughput Increase</a></li>
+<li><a href="https://eips.ethereum.org/EIPS/eip-7594">EIP-7594: PeerDAS</a></li>
+<li><a href="https://blog.ethereum.org/2025/11/06/fusaka-mainnet-announcement">Fusaka Mainnet Announcement</a></li>
+<li><a href="https://specs.optimism.io/protocol/stage-1.html">OP Stack Stage 1 Specification</a></li>
+</ul>
+<h4 id="_7">仪表板与实时数据</h4>
+<ul>
+<li><a href="https://l2beat.com/scaling/summary">L2BEAT - 全 L2 stage 与 TVS</a></li>
+<li><a href="https://l2beat.com/scaling/risk">L2BEAT Risk Analysis</a></li>
+<li><a href="https://www.growthepie.xyz/">growthepie - L2 用户与活跃数据</a></li>
+<li><a href="https://defillama.com/bridges">DefiLlama Bridges</a></li>
+<li><a href="https://dune.com/hildobby/blobs">Dune Ethereum Blob Dashboard</a></li>
+<li><a href="https://app.eigenlayer.xyz/">EigenLayer Stats</a></li>
+</ul>
+<h4 id="da">DA 文档</h4>
+<ul>
+<li><a href="https://docs.celestia.org/">Celestia 文档</a></li>
+<li><a href="https://docs.eigenda.xyz/">EigenDA 文档</a></li>
+<li><a href="https://docs.availproject.org/">Avail 文档</a></li>
+<li><a href="https://www.ankr.com/docs/scaling-services-rollups/data-availability/nearda/">NEAR DA via Ankr</a></li>
+<li><a href="https://0g.ai/">0G Labs</a></li>
+</ul>
+<h4 id="_8">桥与跨链消息</h4>
+<ul>
+<li><a href="https://docs.layerzero.network/">LayerZero v2 Docs</a></li>
+<li><a href="https://docs.wormhole.com/">Wormhole Docs</a></li>
+<li><a href="https://docs.hyperlane.xyz/">Hyperlane v3 Docs</a></li>
+<li><a href="https://docs.chain.link/ccip">Chainlink CCIP Docs</a></li>
+<li><a href="https://www.circle.com/cross-chain-transfer-protocol">Circle CCTP Docs</a></li>
+<li><a href="https://docs.across.to/">Across Docs</a></li>
+</ul>
+<h4 id="raas-rollup">RaaS 与 Rollup 框架</h4>
+<ul>
+<li><a href="https://www.conduit.xyz/">Conduit</a></li>
+<li><a href="https://caldera.xyz/">Caldera</a></li>
+<li><a href="https://www.agglayer.dev/cdk">Polygon CDK / AggLayer</a></li>
+<li><a href="https://docs.zksync.io/zk-stack">ZK Stack</a></li>
+<li><a href="https://github.com/Sovereign-Labs/sovereign-sdk">Sovereign SDK</a></li>
+</ul>
+<h4 id="re-staking">Re-staking</h4>
+<ul>
+<li><a href="https://docs.eigencloud.xyz/">EigenLayer Docs</a></li>
+<li><a href="https://docs.symbiotic.fi/">Symbiotic Docs</a></li>
+<li><a href="https://karak.network/">Karak</a></li>
+<li><a href="https://docs.babylonchain.io/">Babylon Docs</a></li>
+<li><a href="https://www.picasso.network/">Picasso Network</a></li>
+</ul>
+<p>本模块写于 2026-04，所有 stage 评级、TVL、协议时间线均来自官方源（L2BEAT、各协议 docs、EF 公告）；事故复盘参考公开 post-mortem。具体数字请以 L2BEAT、growthepie、Dune、各协议 docs 实时数据为准。</p>
+<p>下一模块：<strong>模块 08「零知识证明」</strong>——深挖 ZK 电路、SNARK/STARK 数学、Halo2/Plonky3/SP1。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="ada" id="ch22"><span class="chapter-num">Chapter 22</span><br>附录 A：DA 层深度对比与选型公式</h2>
+
+<h3 id="a1-da">A.1 五大 DA 候选并列对照表</h3>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Ethereum blob</th>
+<th>Celestia</th>
+<th>EigenDA</th>
+<th>Avail</th>
+<th>NEAR DA</th>
+<th>0G</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>信任根</td>
+<td>Ethereum 共识</td>
+<td>TIA PoS</td>
+<td>restaked ETH（DAC + KZG）</td>
+<td>AVAIL PoS</td>
+<td>NEAR PoS（分片）</td>
+<td>0G PoS + 自主 staking</td>
+</tr>
+<tr>
+<td>当前主网吞吐（2026-04）</td>
+<td>14 blob × 128KiB / 12s ≈ 150 KB/s（target）</td>
+<td>8 MB / 6s ≈ 1.33 MB/s（Q1 升级 128 MB）</td>
+<td>100 MB/s</td>
+<td>4 MB / block</td>
+<td>16 MB / 600ms shard</td>
+<td>2 GB/s storage 层（DA 层 50000× ETH）</td>
+</tr>
+<tr>
+<td>DAS</td>
+<td>1D PeerDAS 已上</td>
+<td>Light node DAS</td>
+<td>不做 DAS（DAC）</td>
+<td>KZG + DAS</td>
+<td>shard data</td>
+<td>自有协议</td>
+</tr>
+<tr>
+<td>数据保留</td>
+<td>~18 天</td>
+<td>永久（archival nodes）</td>
+<td>DAC commit 即可</td>
+<td>~17 天默认</td>
+<td>长期</td>
+<td>长期</td>
+</tr>
+<tr>
+<td>100 MB / 天年成本</td>
+<td>$1–$50</td>
+<td>~$12,775</td>
+<td>~$730</td>
+<td>$1500–3000</td>
+<td>中</td>
+<td>接近 0</td>
+</tr>
+<tr>
+<td>客户实例</td>
+<td>全部主流 L2</td>
+<td>Manta、Eclipse</td>
+<td>Mantle、Celo（部分）、若干 OP Stack</td>
+<td>Polygon CDK 选项</td>
+<td>实验性</td>
+<td>AI 链</td>
+</tr>
+<tr>
+<td>与 Ethereum 安全对齐</td>
+<td>等价</td>
+<td>独立 PoS</td>
+<td>restaking 间接</td>
+<td>独立 PoS</td>
+<td>独立 PoS</td>
+<td>独立 PoS</td>
+</tr>
+</tbody>
+</table>
+<p>数据来源：<a href="https://blockeden.xyz/blog/2026/02/24/modular-blockchain-wars-data-availability/">BlockEden 2026-02 DA 战争</a>、<a href="https://dalayers.com/2026/03/14/celestia-vs-eigenda-choosing-the-best-modular-data-availability-layer-for-rollups-2026/">DA Layers 2026-03 对比</a>。</p>
+<h3 id="a2-celestia">A.2 Celestia 详解</h3>
+<h4 id="_9">架构</h4>
+<figure><img src="diagram-1e0df263fb.png" alt="mermaid diagram"></figure>
+
+<h4 id="2026-04">经济参数（截至 2026-04）</h4>
+<ul>
+<li>区块大小：8 MB（Q1 2026 Matcha 升级目标 128 MB）；</li>
+<li>出块时间：~6 秒；</li>
+<li>单 KB 价格：~0.001 TIA（动态）；</li>
+<li>TIA 价格（参考）：~$3.5–$5；</li>
+<li>100 MB/天：约 $35/天 = $12,775/年。</li>
+</ul>
+<h4 id="celestia">何时选 Celestia</h4>
+<p>Celestia 适合：Cosmos 生态原生（IBC 互通）；想要彻底独立于 Ethereum 经济；应用愿意接受 TIA 作为 DA gas token；主流案例：Manta Pacific、Eclipse、Movement、Lightlink。</p>
+<h3 id="a3-eigenda">A.3 EigenDA 详解</h3>
+<h4 id="_10">架构</h4>
+<figure><img src="diagram-e613105212.png" alt="mermaid diagram"></figure>
+
+<h4 id="_11">经济参数</h4>
+<ul>
+<li>吞吐：100 MB/s（基于 DAC 模型，不做轻节点 DAS）；</li>
+<li>100 MB/天：~$2/天 = ~$730/年（<a href="https://blockeden.xyz/blog/2026/01/16/celestia-blob-economics-data-availability-rollup-costs/">EigenDA pricing 估算</a>）；</li>
+<li>restaked ETH 安全：取决于 EigenLayer TVL 与 operator 集中度。</li>
+</ul>
+<h4 id="eigenda">何时选 EigenDA</h4>
+<p>EigenDA 适合：高吞吐要求（100 MB/s）；想要 ETH 安全对齐（restaking）；Mantle 是旗舰客户。</p>
+<h3 id="a4-avail">A.4 Avail 详解</h3>
+<h4 id="_12">架构特色</h4>
+<p>Avail 同时做 <strong>DA + light client validation + nexus 桥</strong>——它定位是「跨 rollup 的 DA + 互操作枢纽」。</p>
+<figure><img src="diagram-a4745d9f00.png" alt="mermaid diagram"></figure>
+
+<h3 id="a5">A.5 完整成本公式</h3>
+<p><strong>DA 成本公式</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>DA_cost_per_tx = (compressed_calldata_bytes / DA_capacity_bytes_per_unit) × DA_unit_price
+</code></pre></div>
+<p>其中：<code>compressed_calldata_bytes</code> 是 tx 经 brotli 压缩后的字节数（一般是原 calldata 的 30–60%）；<code>DA_capacity_bytes_per_unit</code> 是单个 DA 单元（blob / Celestia block / EigenDA chunk）的字节数；<code>DA_unit_price</code> 是单个 DA 单元的当前价格。</p>
+<h4 id="2026-04_1">实测数字代入（2026-04）</h4>
+<table>
+<thead>
+<tr>
+<th>DA</th>
+<th>单位</th>
+<th>单位容量</th>
+<th>单位价格</th>
+<th>单笔（200B 压缩）成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ethereum blob</td>
+<td>1 blob</td>
+<td>128 KiB</td>
+<td>~1 wei × 131072 ≈ 0</td>
+<td>~0</td>
+</tr>
+<tr>
+<td>Celestia</td>
+<td>单 KB</td>
+<td>1 KB</td>
+<td>~0.001 TIA ≈ $0.0035</td>
+<td>$0.0007</td>
+</tr>
+<tr>
+<td>EigenDA</td>
+<td>单 chunk</td>
+<td>32 KB</td>
+<td>~$0.00006</td>
+<td>$0.00000037</td>
+</tr>
+<tr>
+<td>Avail</td>
+<td>单 KB</td>
+<td>1 KB</td>
+<td>~0.0001 AVAIL ≈ $0.0001</td>
+<td>$0.00002</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2026-04 关键观察</strong>：blob 已经几乎免费，外部 DA 的成本优势严重削弱。如果你的 rollup 不是极致吞吐场景，直接用 Ethereum blob 通常是最佳决策。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="b5-14" id="ch23"><span class="chapter-num">Chapter 23</span><br>附录 B：桥事故扩展清单（5 起主案的复盘见第 14 章）</h2>
+
+<h3 id="b1-1080m">B.1 中型事故（$10–80M 区间）</h3>
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>时间</th>
+<th>损失</th>
+<th>根因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Harmony Horizon</td>
+<td>2022-06</td>
+<td>$100M</td>
+<td>2/5 多签被盗</td>
+</tr>
+<tr>
+<td>Qubit Bridge (BSC)</td>
+<td>2022-01</td>
+<td>$80M</td>
+<td>合约逻辑漏洞</td>
+</tr>
+<tr>
+<td>Meter</td>
+<td>2022-02</td>
+<td>$4.4M</td>
+<td>桥合约逻辑漏洞</td>
+</tr>
+<tr>
+<td>Poly Network</td>
+<td>2021-08</td>
+<td>$611M</td>
+<td>跨链调用权限漏洞（白帽返还）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="b2">B.2 经验法则的量化</h3>
+<p>桥风险量化（截至 2026-04，<a href="https://www.zealynx.io/blogs/cross-chain-bridge-security-checklist">Zealynx</a>）：桥占 DeFi TVL &lt; 10%；桥占被盗资金 &gt; 50%；平均桥事故周期约 3 个月；多签桥比 light client 桥事故概率高约 10×。</p>
+<h3 id="b3">B.3 桥事故的统计模式</h3>
+<figure><img src="diagram-9010d8741e.png" alt="mermaid diagram"></figure>
+
+<hr />
+
+</section><section class="chapter">
+<h2 id="crollup-174" id="ch24"><span class="chapter-num">Chapter 24</span><br>附录 C：rollup 经济学公式手册（数字示例见 17.4）</h2>
+
+<h3 id="c1">C.1 收入 / 成本完整公式</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>收入 = L2_gas_revenue + priority_fee + MEV
+  L2_gas_revenue = Σ (gas_used × L2_base_fee)
+  priority_fee  = Σ (gas_used × tip)
+  MEV           = sequencer 内部 / private order flow / 共享 MEV 协议
+
+成本 = L1_DA_cost + L1_settlement_cost + sequencer_infra + prover_cost (ZK only)
+  L1_DA_cost          = blob_count × blob_base_fee × 131072
+                         + (calldata_bytes × calldata_gas_per_byte × L1_gas_price)
+  L1_settlement_cost  = output_root_submission_gas × L1_gas_price
+  sequencer_infra     = cloud / on-prem 月成本
+  prover_cost         = GPU 集群 + 电费（仅 ZK）
+</code></pre></div>
+<p>代入数字、净利率上下限、blob 拥堵下的盈利分析见正文 17.4–17.8 与习题 D.1。</p>
+<h3 id="c2-web2-saas">C.2 与 web2 SaaS 的利润率比较</h3>
+<p>Sequencer 业务理论 70-90% 净利率（实际 30-60%），与一流 SaaS（Snowflake、Datadog 等 60-80%）相当甚至更高——这正是 Coinbase / Consensys / Sony / Kraken / Uniswap 都自营 L2 的根源。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="d5" id="ch25"><span class="chapter-num">Chapter 25</span><br>附录 D：5 道实战习题（含完整答案）</h2>
+
+<h3 id="d1-1-blob-rollup">D.1 习题 1：算 blob 价格如何影响 rollup 利润</h3>
+<p><strong>题目</strong>：某 OP Stack rollup 日均 100k 交易，每笔压缩后 calldata 平均 200 字节。问：</p>
+<ol>
+<li>截至 2026-04（blob 接近 1 wei）每天的 DA 成本？</li>
+<li>如果 blob_base_fee 飙升到 1000 gwei（极端拥堵），每天 DA 成本？</li>
+<li>拥堵下 sequencer 是否还盈利（假设收入 11 ETH/天）？</li>
+</ol>
+<p><strong>答案</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>日数据量 = 100k × 200 bytes = 20 MB
+
+1. blob = 1 wei × 131072 gas = 0.000131 gwei
+   每个 blob 包 128 KB，需要 20 MB / 128 KB ≈ 156 blobs
+   日 DA 成本 = 156 × 0.000131 gwei ≈ 0.02 gwei ≈ 几乎 0
+
+2. blob_base_fee = 1000 gwei，单 blob 数据费 = 1000 gwei × 131072 ≈ 1.31e8 gwei ≈ 0.131 ETH（极不切实际，但作为练习）
+   日 DA 成本 = 156 blobs × 0.131 ETH ≈ 20 ETH/天（严重）
+   实际操作：blob_base_fee 不会飙到 1000 gwei，PeerDAS 后供给充裕
+
+3. 拥堵下 sequencer 仍盈利的关键：动态调整 L2 gas price 或 batch frequency。
+</code></pre></div>
+<h3 id="d2-2-gamefi-rollup">D.2 习题 2：为 GameFi 项目设计 rollup</h3>
+<p><strong>题目</strong>：你为一款 MMO 链游设计 rollup，需求：</p>
+<ul>
+<li>日活 10 万玩家，每人日均 100 次链上交易；</li>
+<li>平均每笔涉及小额道具或 NFT 操作；</li>
+<li>用户无 web3 经验，要 web2 体验；</li>
+<li>不接受 7 天提款延迟。</li>
+</ul>
+<p><strong>给出完整设计</strong>。</p>
+<p><strong>参考答案</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>框架：OP Stack（生态成熟，RaaS 友好） + 自定义 gas token
+DA：Celestia 或 EigenDA（链游低值高频，极致吞吐）
+Sequencer：先用 Conduit 托管，达到 1M DAU 后自营
+桥：CCIP 或 Wormhole NTT（不接受 7 天 → 用第三方桥即时提款）
+Account：内嵌账户抽象（用户用邮箱注册）
+特殊：游戏服务器作为 sequencer 一部分，预签名常见操作
+
+经济模型：
+  日 tx = 10M
+  L2 gas price ≈ 0 gwei（gas-less，由游戏厂商赞助）
+  收入：来自 NFT mint fee、游戏内购、L1 提款手续费
+  成本：DA + sequencer infra + prover（如选 ZK）
+
+注意：链游在 fraud proof 期间被攻击的影响有限，Validium 模式可考虑。
+</code></pre></div>
+<h3 id="d3-3-l2-rollup-sidechain">D.3 习题 3：识别一条 L2 是真 rollup 还是 sidechain</h3>
+<p><strong>题目</strong>：以下「L2」中，哪些是真 rollup，哪些是 sidechain？</p>
+<ol>
+<li>Polygon PoS</li>
+<li>Arbitrum One</li>
+<li>opBNB</li>
+<li>Base</li>
+<li>Gnosis Chain</li>
+<li>Scroll</li>
+<li>Linea</li>
+</ol>
+<p><strong>答案</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>真 Ethereum L2（数据 + 结算到 ETH L1）：
+  - Arbitrum One（Optimistic Rollup）
+  - Base（Optimistic Rollup）
+  - Scroll（ZK Rollup）
+  - Linea（ZK Rollup）
+
+不是 Ethereum L2：
+  - Polygon PoS：独立 PoS 侧链，不继承 ETH 安全
+  - opBNB：是 BSC 的 L2（数据到 BNB Chain），不到 ETH
+  - Gnosis Chain：独立 PoS 侧链
+</code></pre></div>
+<h3 id="d4-4-l2-l2">D.4 习题 4：设计一笔 L2 → L2 资金转移路径</h3>
+<p><strong>题目</strong>：用户有 1000 USDC 在 Base 上，想转到 Arbitrum One，目标：&lt; 10 分钟、&lt; $5 手续费。</p>
+<p><strong>给出 3 种方案对比</strong>。</p>
+<p><strong>参考答案</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>方案 A：Native Bridge 路径
+  Base → L1（OP fault proof，7 天）
+  L1 → Arbitrum（即时但 gas 高）
+  时间：7 天+
+  成本：~$5（L1 gas）
+  ❌ 时间不达标
+
+方案 B：CCTP（Circle）
+  Base USDC burn → L1 mint → Arbitrum mint
+  时间：~15 分钟（取决 attestation）
+  成本：~$3-5
+  ✅ 满足要求
+
+方案 C：Across Protocol
+  Intent → 中继商前置垫付 → 1-2 分钟到账
+  时间：~1-2 分钟
+  成本：~$1-2 + 0.1% 服务费
+  ✅ 最快最便宜（推荐）
+
+最优：Across（速度+成本）
+合规优先：CCTP（Circle 原生）
+</code></pre></div>
+<h3 id="d5-5-l2beat">D.5 习题 5：解读一段 L2BEAT 风险图</h3>
+<p><strong>题目</strong>：L2BEAT 上某 L2 显示：</p>
+<ul>
+<li>State Validation：橙色（concerning）</li>
+<li>Data Availability：绿色（safe）</li>
+<li>Exit Window：红色（critical）</li>
+<li>Sequencer Failure：黄色（warning）</li>
+<li>Proposer Failure：橙色（concerning）</li>
+</ul>
+<p><strong>这条 L2 的风险特征是什么？给买家的警示？</strong></p>
+<p><strong>参考答案</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>风险特征：
+  - State Validation 橙：fraud/validity proof 系统未完全 permissionless 或正在过渡；
+  - DA 绿：用了 Ethereum blob 或同等安全 DA，无 DA 风险；
+  - Exit Window 红：用户提款窗口太短，紧急合约升级时可能困住资金；
+  - Sequencer Failure 黄：force-inclusion 已启用但延迟较长；
+  - Proposer Failure 橙：proposer 单点，宕机会卡住 state finalization。
+
+给买家警示：
+  1. 不要把超过短期使用的资金放在该 L2 上；
+  2. 关注合约升级提案（Exit Window 红 = 升级到生效时间太短）；
+  3. 等到 State Validation 转绿（permissionless proof）再考虑大资金；
+  4. Proposer 单点意味着「对手能让链卡死」。
+</code></pre></div>
+<hr />
+
+</section><section class="chapter">
+<h2 id="e" id="ch26"><span class="chapter-num">Chapter 26</span><br>附录 E：术语表</h2>
+
+<table>
+<thead>
+<tr>
+<th>术语</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rollup</td>
+<td>执行在 L2，数据 + 结算在 L1</td>
+</tr>
+<tr>
+<td>Optimistic Rollup</td>
+<td>默认相信 sequencer，错了再罚</td>
+</tr>
+<tr>
+<td>ZK Rollup</td>
+<td>每笔批次附数学证明</td>
+</tr>
+<tr>
+<td>Validium</td>
+<td>ZK 证明 + 链下 DA</td>
+</tr>
+<tr>
+<td>Optimium</td>
+<td>Optimistic + 链下 DA</td>
+</tr>
+<tr>
+<td>Volition</td>
+<td>用户每笔交易自选 Rollup or Validium</td>
+</tr>
+<tr>
+<td>DA</td>
+<td>Data Availability，数据可用性</td>
+</tr>
+<tr>
+<td>DAC</td>
+<td>Data Availability Committee，DA 委员会</td>
+</tr>
+<tr>
+<td>DAS</td>
+<td>Data Availability Sampling，DA 采样</td>
+</tr>
+<tr>
+<td>KZG</td>
+<td>Kate-Zaverucha-Goldberg 多项式承诺</td>
+</tr>
+<tr>
+<td>Blob</td>
+<td>4844 引入的 128 KiB 数据块</td>
+</tr>
+<tr>
+<td>BPO</td>
+<td>Blob Parameter Only fork</td>
+</tr>
+<tr>
+<td>PeerDAS</td>
+<td>EIP-7594 的分布式 DA 采样</td>
+</tr>
+<tr>
+<td>Fraud Proof</td>
+<td>错误状态根的证据</td>
+</tr>
+<tr>
+<td>Validity Proof</td>
+<td>状态根正确的证据</td>
+</tr>
+<tr>
+<td>Sequencer</td>
+<td>L2 出块者</td>
+</tr>
+<tr>
+<td>Proposer</td>
+<td>把状态根提交到 L1 的角色</td>
+</tr>
+<tr>
+<td>Force Inclusion</td>
+<td>用户绕过 sequencer 直接发交易到 L1 inbox</td>
+</tr>
+<tr>
+<td>Stage 0/1/2</td>
+<td>L2BEAT 安全成熟度评级</td>
+</tr>
+<tr>
+<td>AVS</td>
+<td>Actively Validated Service（EigenLayer 概念）</td>
+</tr>
+<tr>
+<td>Re-staking</td>
+<td>把已质押 ETH 再质押给 AVS</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>Settle 到 L2 的 rollup</td>
+</tr>
+<tr>
+<td>RaaS</td>
+<td>Rollup-as-a-Service</td>
+</tr>
+<tr>
+<td>Superchain</td>
+<td>OP Stack 派生链联邦</td>
+</tr>
+<tr>
+<td>Orbit</td>
+<td>Arbitrum 派生链生态</td>
+</tr>
+<tr>
+<td>Hyperchain</td>
+<td>ZK Stack 派生链生态</td>
+</tr>
+<tr>
+<td>Type-1/2/3/4 zkEVM</td>
+<td>EVM 等价度分级</td>
+</tr>
+<tr>
+<td>Based Sequencing</td>
+<td>用 L1 proposer 当 L2 sequencer</td>
+</tr>
+<tr>
+<td>Shared Sequencer</td>
+<td>多个 rollup 共用一个 sequencer 网络</td>
+</tr>
+<tr>
+<td>OFT</td>
+<td>LayerZero 的 Omnichain Fungible Token 标准</td>
+</tr>
+<tr>
+<td>NTT</td>
+<td>Wormhole 的 Native Token Transfer</td>
+</tr>
+<tr>
+<td>ISM</td>
+<td>Hyperlane 的 Interchain Security Module</td>
+</tr>
+<tr>
+<td>CCT</td>
+<td>Chainlink 的 Cross-Chain Token</td>
+</tr>
+<tr>
+<td>CCTP</td>
+<td>Circle 的 Cross-Chain Transfer Protocol</td>
+</tr>
+<tr>
+<td>IBC</td>
+<td>Cosmos 的 Inter-Blockchain Communication</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="f2026-04-28" id="ch27"><span class="chapter-num">Chapter 27</span><br>附录 F：增量更新与遗漏补全（2026-04-28 校对版）</h2>
+
+<blockquote>
+<p>本附录对正文未充分展开的若干主题做补全。所有数据均经 2026-04 二次搜索确认。</p>
+</blockquote>
+<h3 id="f1-l1-l2">F.1 「是 L1 还是 L2」边界争议</h3>
+<p>L2 圈 2025-2026 的一个高频问题：什么不算 L2？</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>真实定位</th>
+<th>关键证据</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hyperliquid</strong></td>
+<td><strong>L1</strong>（不是 L2）</td>
+<td>HyperBFT 自己跑共识；HyperEVM (chainId 999) 是 L1 内的执行环境，与 HyperCore 共享 HyperBFT 但状态独立（<a href="https://cleansky.io/blog/hyperliquid-architecture-hypercore-hyperevm-2026/">CleanSky 2026</a>、<a href="https://www.zealynx.io/blogs/Understanding-Hyperliquid-Architecture-HyperBFT-HyperCore-HyperEVM-Part1">Zealynx 架构解读</a>）</td>
+</tr>
+<tr>
+<td><strong>MegaETH</strong></td>
+<td><strong>L2</strong>（real-time L2）</td>
+<td>2026-02-09 主网（<a href="https://www.outlookindia.com/xhub/blockchain-insights/megaeth-the-real-time-l2-revolution-can-100000-tps-redefine-ethereum">Outlook India</a>、<a href="https://cointelegraph.com/news/ethereum-l2-megaeth-peaks-47k-tps-testnet">Cointelegraph</a>），目标 100k TPS、~10ms 区块时间，testnet 已达 47k TPS</td>
+</tr>
+<tr>
+<td><strong>dYdX v3</strong></td>
+<td>已退役的 ZK Rollup（StarkEx）</td>
+<td>v4 是独立 Cosmos 应用链（<a href="https://www.dydx.xyz/blog/v3-product-sunset">v3 sunset</a>）</td>
+</tr>
+<tr>
+<td><strong>Polygon PoS</strong></td>
+<td>独立 PoS 侧链</td>
+<td>不在 L2BEAT</td>
+</tr>
+<tr>
+<td><strong>opBNB</strong></td>
+<td>BSC 的 L2</td>
+<td>settle 到 BNB Smart Chain，<strong>不是 Ethereum L2</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>判断「是不是 Ethereum L2」的硬标准</strong>：执行结果 + 数据有无完整可被 Ethereum L1 验证的路径。Hyperliquid 没有；MegaETH 有；opBNB 走 BSC 共识所以不算。</p>
+<h3 id="f2-megaeth-2026-04">F.2 MegaETH 详解（截至 2026-04）</h3>
+<ul>
+<li><strong>类型</strong>：Optimistic L2（real-time，亚秒级软确认目标 ~10ms 区块时间）；</li>
+<li><strong>Stage（2026-04）</strong>：Stage 0（主网刚启动）；</li>
+<li><strong>特色</strong>：sequencer 与 prover 高度专业化分工——sequencer 全功能高性能机器（96 cores、1-4 TB RAM），其他节点轻量验证；JIT 编译 + 单 sequencer 实时排序；</li>
+<li><strong>资金</strong>：<a href="https://www.megaeth.com">$450M oversubscribed token sale</a>，Vitalik、Joe Lubin 站台；</li>
+<li><strong>测试网纪录</strong>：47k TPS 实测、压测目标 11B txs。</li>
+</ul>
+<p>MegaETH 与 Optimism 的差别：MegaETH 故意采用专业化 sequencer（不是去中心化目标），用「performance-first L2」定位差异化竞争。</p>
+<h3 id="f3-plume-network-rwa-l2">F.3 Plume Network：第一条 RWA 主题 L2</h3>
+<ul>
+<li><strong>类型</strong>：EVM 兼容 L2，专做 RWA（Real-World Assets）代币化；</li>
+<li><strong>Stage（2026-04）</strong>：Stage 0（<a href="https://l2beat.com/scaling/projects/plumenetwork">L2BEAT Plume</a>）；</li>
+<li><strong>2025-06-05 主网启动</strong>：<a href="https://99bitcoins.com/news/presales/plume-crypto-network-launched-its-mainnet-future-of-rwa/">$150M RWA on-chain at launch</a>；</li>
+<li><strong>2026-04 用户</strong>：~259,000 用户，超过同期 Ethereum / Solana 在 RWA 资产数；</li>
+<li><strong>2026 路线</strong>：NEST 协议（Q1 2026 上线）允许基金经理在合规账户结构下创建 vault；与 EU/UK/UAE/Singapore 监管对齐；</li>
+<li><strong>特色</strong>：原生 SEC transfer agent 资质 + KYC/AML 合规接口。</li>
+</ul>
+<h3 id="f4-polygon-agglayer">F.4 Polygon AggLayer 与「悲观证明」</h3>
+<p><a href="https://docs.polygon.technology/interoperability/agglayer/core-concepts/what-is-agglayer/">AggLayer</a> 是 Polygon 的跨链聚合层，2025-02 主网启动 pessimistic proof，目标是「让多条 chain 共享一个统一桥 + 统一流动性」。</p>
+<h4 id="f41">F.4.1 架构</h4>
+<figure><img src="diagram-12ee9a7700.png" alt="mermaid diagram"></figure>
+
+<h4 id="f42-pessimistic-proof">F.4.2 「悲观证明（Pessimistic Proof）」是什么</h4>
+<p><strong>悲观证明</strong>：每条接入 AggLayer 的链必须用 ZK 证明「我所有的 withdraw 累计 ≤ 我所有 deposit 累计」——一个会计 invariant。这就杜绝了一条恶意 / 被攻陷的 chain 通过桥提走「不属于它」的钱。实现：用 <strong>Plonky3 + SP1 zkVM</strong> 跑 Rust 写的 invariant 检查，主网 2025-02 上线（<a href="https://polygon.technology/blog/major-development-upgrade-for-a-multistack-future-pessimistic-proofs-live-on-agglayer-mainnet">Polygon 公告</a>）。</p>
+<h4 id="f43-op-superchain-interop">F.4.3 与 OP Superchain Interop 对比</h4>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Polygon AggLayer</th>
+<th>OP Superchain Interop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>跨栈兼容</td>
+<td>OP Stack + CDK + ZK Stack 多栈</td>
+<td>仅 OP Stack</td>
+</tr>
+<tr>
+<td>安全模型</td>
+<td>悲观证明 ZK + 各链自身</td>
+<td>OP cross-chain message + Stage 1 fault proof</td>
+</tr>
+<tr>
+<td>主网上线</td>
+<td>2025-02（pessimistic proof live）</td>
+<td>2025 H2 上线，2026 持续完善</td>
+</tr>
+</tbody>
+</table>
+<h3 id="f5-optimism-superchain-interop">F.5 Optimism Superchain Interop 完整架构</h3>
+<p><strong>Superchain Interop 与「桥」的本质区别</strong>：interop 是同栈、同 Stage、同区块共识内的原子跨链调用，不是跨栈桥。</p>
+<h4 id="f51">F.5.1 两段式跨链消息</h4>
+<figure><img src="diagram-16e26e7331.png" alt="mermaid diagram"></figure>
+
+<h4 id="f52-superchainerc20">F.5.2 SuperchainERC20 标准</h4>
+<p><a href="https://docs.optimism.io/stack/interop">SuperchainERC20</a> 是 OP Stack 给跨链 token 的 minimal extension，让任何 token 自动获得「在所有 Superchain 链上同地址、同语义、跨链可转」能力，不需要桥合约介入。</p>
+<h4 id="f53">F.5.3 主网时间线</h4>
+<ul>
+<li>2024 H2：测试网；</li>
+<li>2025 H2：主网启动（<a href="https://www.optimism.io/blog/solving-interoperability-for-the-superchain-and-beyond">Optimism 公告</a>）；</li>
+<li>2026 持续完善（截至 2026-04 已与 Conduit / Caldera 集成，多条 OP Stack 链互通）。</li>
+</ul>
+<h3 id="f6-cannon-vs-bold-fault-proof">F.6 Cannon vs BoLD：两套 fault proof 工程对比</h3>
+<p>正文 3.3 / 3.4 已介绍机制，本节只补「为何选这条路」与「Stage 2 还差一道」。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Cannon (OP)</th>
+<th>BoLD (Arbitrum)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>二分目标</td>
+<td>一条 MIPS 指令</td>
+<td>一条 WAVM 指令</td>
+</tr>
+<tr>
+<td>选 ISA 原因</td>
+<td>Geth (Go) 编 MIPS 简单</td>
+<td>ArbOS 双轨 native + WAVM</td>
+</tr>
+<tr>
+<td>抵押</td>
+<td>8 ETH（OP 设置）</td>
+<td>配置化 ETH</td>
+</tr>
+<tr>
+<td>permissionless</td>
+<td>有限白名单 → 移除</td>
+<td><strong>完全无许可（先达成）</strong></td>
+</tr>
+<tr>
+<td>bounded delay</td>
+<td>7 天</td>
+<td>bounded（设计不无限延长）</td>
+</tr>
+<tr>
+<td>主网时间线</td>
+<td>2024-06 OP Mainnet、2024-10 Base（+0.08 ETH 抵押）</td>
+<td>2024 Sepolia → 2025 Arbitrum One，2026-04 已稳定 1 年+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Stage 2 还差什么</strong>：Arbitrum 已最接近 Stage 2，但 Security Council 仍可 instant upgrade——这是最后一道未通过的硬门槛（<a href="https://l2beat.com/scaling/projects/arbitrum">L2BEAT Arbitrum</a>）。OP 系也卡在同一道。</p>
+<h3 id="f8-eigenda-avs">F.8 EigenDA 主网与 AVS 实战</h3>
+<h4 id="f81-2026-04">F.8.1 当前数据（截至 2026-04）</h4>
+<ul>
+<li><strong>吞吐</strong>：mainnet 100 MiB/s（写入），450× Ethereum native；</li>
+<li><strong>路线</strong>：路径目标「数百 MB/s」+ 延迟从 ~10s 降至 &lt; 1s；</li>
+<li><strong>AVS 数量</strong>：<a href="https://blockeden.xyz/blog/2026/03/20/eigenlayer-18b-tvl-vertical-avs-specialization-restaking-evolution/">40+ active AVSs，150+ in development</a>；</li>
+<li><strong>operator</strong>：2,000+ 注册 operator；</li>
+<li><strong>EigenLayer TVL</strong>：~$15.3-19.5B；</li>
+<li><strong>Slashing</strong>：协议层 slashing 2025-04-17 已上线，<strong>但 EigenDA 自身的 slashing 条件尚未启用</strong>（仍需 AVS migrate 到 Operator Sets + 定义 slashing condition）。</li>
+</ul>
+<p><strong>注意</strong>：「slashing 上线了」不等于「所有 AVS 都启用了 slashing」。EigenDA 截至 2026-04 仍处于 enabled but not enforced 状态——operator 风险仍以协议层 slashing 为主。</p>
+<h4 id="f82">F.8.2 旗舰客户与失败教训</h4>
+<ul>
+<li><strong>旗舰客户</strong>：Mantle（已迁完）、Celo（部分采用）、若干 OP Stack 链；</li>
+<li><strong>教训</strong>：早期 AVS（如某些 oracle / coprocessor）在 slashing 上线前 farming TVL，slashing 真上线后骤跌——市场为「真实风险」重新定价（高峰 $28B → 低点 $7B → 回升 $18-19.5B）。</li>
+</ul>
+<h3 id="f9-avail-nexus">F.9 Avail 主网与 Nexus</h3>
+<h4 id="f91">F.9.1 三大产品线</h4>
+<figure><img src="diagram-0e3862f0fb.png" alt="mermaid diagram"></figure>
+
+<h4 id="f92-nexus-mainnet2025-11-28">F.9.2 Nexus Mainnet（2025-11-28 上线）</h4>
+<ul>
+<li>13+ 链已接入（Ethereum、Tron、Polygon、Base、Arbitrum、Optimism、BNB Chain、Monad、Kaia、HyperEVM、Scroll，Solana 即将加入）（<a href="https://www.theblock.co/post/380548/avail-nexus-mainnet-live">Avail Nexus 主网</a>）；</li>
+<li>25+ 应用集成；</li>
+<li>intent-solver 架构，统一跨链流动性。</li>
+</ul>
+<h4 id="f93-light-client">F.9.3 Light Client：消费级</h4>
+<p>Avail Light Client 可以在手机和笔记本上跑，而不是要全节点存储。这让「轻钱包验证 DA」第一次成为现实。</p>
+<h3 id="f10-celestialemongrass">F.10 Celestia：Lemongrass 之后的演进</h3>
+<h4 id="f101">F.10.1 升级路径</h4>
+<ul>
+<li><strong>Lemongrass</strong>（2024-09）：第一次主网升级，引入 CIP-10 hardfork 信号机制（5/6 stake 通过即升级）；</li>
+<li><strong>Q1 2026 Matcha 升级</strong>：区块大小 8 MB → 128 MB（理论吞吐 16×）；</li>
+<li><strong>Fibre 实验</strong>：实验性「1 Tb/s」目标，仍在研究。</li>
+</ul>
+<h4 id="f102-dymensioncelestia">F.10.2 Dymension：Celestia 最大客户生态</h4>
+<p><a href="https://github.com/dymensionxyz/rollapp-evm">Dymension</a> 是 Celestia 上的 RollApp 平台——每个 dApp 是一条 Cosmos SDK rollup，settle 到 Dymension Hub、DA 到 Celestia。截至 2026-04 已有数十条 RollApp 上线，是 Celestia 生态最重要的飞轮。</p>
+<p>Celestia 主网吞吐仍低于 Fusaka 后的 Ethereum blob target——「Celestia 比 ETH 便宜 50×」论调在 2026 已不再成立（<a href="https://www.bitget.com/news/detail/12560605100226">Bitget DA Dawn 分析</a>）。Celestia 现在的护城河是 Cosmos 生态对齐 + Dymension RollApp 飞轮。</p>
+<h3 id="f11-espresso-astria">F.11 Espresso 主网与 Astria 关停</h3>
+<h4 id="f111-espresso">F.11.1 Espresso</h4>
+<ul>
+<li><strong>2024-11</strong>：Mainnet "Confirmation Layer" 早期上线（<a href="https://www.coindesk.com/tech/2024/11/11/espressos-mainnet-confirmation-layer-goes-live">CoinDesk 2024-11</a>）；</li>
+<li><strong>2025-04</strong>：Mainnet 1（permissionless 节点）；</li>
+<li><strong>2026-02-12</strong>：完整主网启动（<a href="https://www.mexc.com/news/753926">2026 ESP 公告</a>）；</li>
+<li><strong>集成进度</strong>：Arbitrum、Polygon、Optimism 集成中；</li>
+<li><strong>性能</strong>：~6 秒最终性 vs Ethereum 12+ 分钟。</li>
+</ul>
+<h4 id="f112-astria">F.11.2 Astria：失败案例</h4>
+<ul>
+<li><strong>资金</strong>：累计 $18M；</li>
+<li><strong>2025-08</strong>：Celestia validator 停止运营预警；</li>
+<li><strong>2025-11</strong>：开发公司正式关停（<a href="https://phemex.com/news/article/celestiabased-sequencer-astria-ceases-operations-amid-modular-blockchain-challenges-41723">Phemex 2025-11</a>）；</li>
+<li><strong>关停原因</strong>：商业飞轮难启动——客户 L2 不愿放弃 sequencer 利润，新 L2 数量也在收缩。</li>
+</ul>
+<p><strong>两个 shared sequencer 项目（Astria、Espresso）的共同教训</strong>：技术不是唯一难题——「让客户 L2 放弃 sequencer 利润」是最大商业障碍。Espresso 靠先发优势 + 与 Arbitrum 紧密集成存活；Astria 失败。</p>
+<h3 id="f12-shared-sequencer">F.12 Shared Sequencer 经济学</h3>
+<figure><img src="diagram-af8d6152be.png" alt="mermaid diagram"></figure>
+
+<p><strong>核心问题</strong>：shared sequencer 把 L2 的「单实例垄断利润」拆给多方，L2 团队的预期净利率下降 10-20 个百分点。这就是为什么 Espresso 客户增长慢——L2 公司宁愿自己中心化、慢慢去中心化，也不愿马上让利。</p>
+<h3 id="f13-raas">F.13 RaaS 商业模型与实测体验</h3>
+<p>正文 15.4 已列代表客户与栈支持。本节补付费模式与实测速度（<a href="https://blockeden.xyz/forum/t/i-deployed-a-custom-op-stack-rollup-in-23-minutes-with-zero-infrastructure-experience-heres-my-step-by-step-comparison-of-conduit-caldera-and-gelato/473">BlockEden 23 分钟实测</a>）：</p>
+<table>
+<thead>
+<tr>
+<th>RaaS</th>
+<th>付费模式</th>
+<th>实测部署时间</th>
+<th>定位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conduit</td>
+<td>包月 $5k–$30k SLA + tx 抽成</td>
+<td>23 分钟</td>
+<td>自助 GUI，production-grade</td>
+</tr>
+<tr>
+<td>Caldera</td>
+<td>白手套，全人工托管</td>
+<td>销售对接 + 1-2 天</td>
+<td>极致稳定，适合大客户</td>
+</tr>
+<tr>
+<td>Gelato</td>
+<td>自助 + 包月</td>
+<td>~30 分钟</td>
+<td>多栈最广（OP/ZK/CDK）</td>
+</tr>
+<tr>
+<td>Alchemy Rollups</td>
+<td>与 Alchemy RPC 服务捆绑</td>
+<td>与销售约</td>
+<td>OP Stack 单栈</td>
+</tr>
+</tbody>
+</table>
+<h3 id="f14-stylusarbitrum-rustc">F.14 Stylus：Arbitrum 的 Rust/C++ 智能合约</h3>
+<p><a href="https://docs.arbitrum.io/stylus/gentle-introduction">Stylus</a> 是 Arbitrum Nitro 的扩展（ArbOS 32+），让你用 Rust / C / C++ 写 WASM 合约，与 Solidity 合约<strong>完全互操作</strong>。</p>
+<h4 id="f141-2026-04">F.14.1 主网状态（截至 2026-04）</h4>
+<ul>
+<li><strong>Arbitrum One mainnet</strong>：已启用；</li>
+<li><strong>Arbitrum Nova</strong>：已启用；</li>
+<li><strong>Stylus 编译</strong>：Rust → WASM → 在 Nitro WAVM 内执行；</li>
+<li><strong>2026-02</strong>：Move-to-Stylus 编译器（Rather Labs 官方发布），Aptos / Sui 风格 Move 也能上 Arbitrum。</li>
+</ul>
+<h4 id="f142">F.14.2 性能</h4>
+<p><a href="https://blockeden.xyz/blog/2026/02/01/arbitrum-2026-roadmap-arbos-dia-gaming-catalyst-stylus/">RedStone 2025-11 benchmark</a>：</p>
+<ul>
+<li>加密哈希 / 大整数运算：<strong>10–100× 比 EVM 快</strong>；</li>
+<li>30%+ gas 节省（重度优化 EVM 代码对比下）；</li>
+<li>内存密集场景显著降本。</li>
+</ul>
+<h4 id="f143">F.14.3 适合什么</h4>
+<p>Stylus 适合：ZK 验证器（大整数、有限域算术）、链游服务器逻辑（性能敏感）、跨链 light client、AI agent on-chain inference（受限场景）。不适合纯 ERC20 / 简单 DeFi（Solidity 本来就够用）。</p>
+<h3 id="f15-sequencer-linea-base">F.15 真实 sequencer 故障：Linea 与 Base</h3>
+<h4 id="f151-linea2024-06-velocore">F.15.1 Linea：2024-06 主动暂停（Velocore 黑客）</h4>
+<ul>
+<li><strong>事件</strong>：Velocore DEX 被攻击 ~$2.6M，Linea 团队 <strong>手动暂停 sequencer</strong>（block 5081800–5081801），阻止资金桥出（<a href="https://www.theblock.co/post/298062/linea-decentralization-velocore-hack">The Block 2024-06</a>）；</li>
+<li><strong>争议</strong>：社区批评「中心化 sequencer 单方面暂停整链」与 Linea 宣称的去中心化路线相违；</li>
+<li><strong>教训</strong>：截至 2026-04 Linea 仍 Stage 0，sequencer 单实例 + 单方面权限——这是 Linea 不能升 Stage 1 的关键原因。</li>
+</ul>
+<h4 id="f152-linea2025-09">F.15.2 Linea：2025-09 自动停机</h4>
+<ul>
+<li><strong>事件</strong>：Linea 主网停止出块 40+ 分钟（<a href="https://www.cryptopolitan.com/linea-network-stopped-producing-blocks/">Cryptopolitan 2025-09</a>）；</li>
+<li><strong>根因</strong>：sequencer 卡死，仍依赖中心化批准；</li>
+<li><strong>教训</strong>：sequencer 的 liveness 是 L2 的另一面，去中心化 sequencer 是 Stage 1 的硬要求。</li>
+</ul>
+<h4 id="f153-base2025-08-33">F.15.3 Base：2025-08 33 分钟停机</h4>
+<ul>
+<li><strong>事件</strong>：2025-08-05 06:07 UTC 起，Base 停止出块 33 分钟（<a href="https://www.coindesk.com/tech/2025/08/06/base-says-sequencer-failure-caused-block-production-halt-of-33-minutes">CoinDesk 2025-08</a>）；</li>
+<li><strong>根因</strong>：active sequencer 因拥堵落后，Conductor 模块尝试切换到 standby sequencer——但 standby 未完成 provisioning，无法出块；</li>
+<li><strong>修复</strong>：Base 团队承诺所有 cluster 内 sequencer 必须 Conductor-ready；</li>
+<li><strong>历史</strong>：Base 的第二次重大停机（第一次是 2023-09 上线初 43 分钟），意味着 ~2 年只 1 次重大故障——已属业界顶尖水平。</li>
+</ul>
+<p><strong>Stage 1 不能消除 sequencer 单点风险</strong>——Base 已 Stage 1，但 sequencer 仍是单一 cluster。Stage 1 解决「sequencer 作恶」不解决「sequencer 宕机」。force-inclusion 是兜底，但 12 小时延迟意味着普通用户体验仍受影响。</p>
+<h3 id="f16-dal2-95-97">F.16 三条「另类 DA」L2 的历史背景（与正文 9.5 / 9.7 互参）</h3>
+<ul>
+<li><strong>Mantle</strong>：BitDAO → Mantle 2023 上线；自有 MantleDA → <strong>2024 迁到 EigenDA</strong>（首批客户）；2026 用 <a href="https://blog.succinct.xyz/op-succinct/">OP Succinct</a> 加 ZK 验证；mETH 自营 LST；EigenDA 上 TVL 最大的 L2。</li>
+<li><strong>Manta Pacific</strong>：OP Stack + Celestia 是 2024-2025 「不走 blob」最大规模实验；Manta Atlantic（Polkadot 平行链）2026-08 退役，资源集中 Pacific。Fusaka 后该路线优势减弱。</li>
+<li><strong>opBNB</strong>：OP Stack on BSC，settle 到 BNB Smart Chain，<strong>不是 Ethereum L2</strong>，<a href="https://l2beat.com/">L2BEAT 不收录</a>；适合本就锁定 BSC 用户的产品。</li>
+</ul>
+<h3 id="f17-chain-abstraction-l2">F.17 Chain Abstraction：让 L2 数量无关紧要</h3>
+<p><strong>Chain Abstraction 的目标</strong>：用户感受不到链的存在——一个账户、一份余额、跨链原子操作。这是 L2 数量爆炸（数百条）后的必然解药。</p>
+<h4 id="f171-near-chain-signatures">F.17.1 NEAR Chain Signatures</h4>
+<ul>
+<li><strong>核心机制</strong>：MPC（多方计算）网络让 NEAR 账户能签<strong>任何链</strong>的交易；</li>
+<li><strong>支持签名方案</strong>：Secp256k1（BTC、ETH、BSC、TON）、Ed25519（Solana、Stellar 等）；</li>
+<li><strong>2024-08 主网</strong>：<a href="https://www.coindesk.com/tech/2024/08/08/near-pushes-signatures-on-mainnet-in-growing-trend-of-chain-abstraction">CoinDesk 2024-08</a>；</li>
+<li><strong>2026 路线</strong>：扩展 MPC 网络、sharded RPC、用 TEE 加私钥保护（<a href="https://bitcoinethereumnews.com/tech/near-infrastructure-committee-reviews-2025-progress-sets-2026-roadmap-for-scaling-chain-abstraction/">NEAR 2026 路线图</a>）。</li>
+</ul>
+<h4 id="f172-particle-network-universal-account">F.17.2 Particle Network Universal Account</h4>
+<ul>
+<li><strong>机制</strong>：单一账户在多链上有同地址同余额（用 4337 + 跨链结算）；</li>
+<li><strong>2026-Q1 大事件</strong>：<a href="https://blog.particle.network/eip-7702/">完整 EIP-7702 支持</a>——任何 EOA 一键升级成 Universal Account，无需资产迁移；</li>
+<li><strong>集成链</strong>：Mantle、Plasma、Monad、Avalanche 等；</li>
+<li><strong>UniversalX Pro</strong>：2026-Q1 上线，第一个 chain-agnostic 应用层产品。</li>
+</ul>
+<h4 id="f173">F.17.3 其他相关项目</h4>
+<ul>
+<li><strong>Connext xCall</strong>：跨链可编程消息；</li>
+<li><strong>Across</strong>：intent-based 桥；</li>
+<li><strong>CowSwap</strong>：基于 intent 的跨 EVM 撮合；</li>
+<li><strong>OneBalance</strong>：账户层抽象的金融产品。</li>
+</ul>
+<h4 id="f174">F.17.4 工程师视角：用还是不用</h4>
+<p>2026 决策：给散户 dApp → 强烈推荐用 chain abstraction（Particle / OneBalance / Squid），用户不在乎链；给机构 / 合规 → 仍要清晰展示链与桥（合规要求）；自建 L2 → 把 chain abstraction SDK 默认接入是新标配。</p>
+<h3 id="f18-2026-04">F.18 截至 2026-04 核心事实速查</h3>
+<ol>
+<li><strong>Stage 1 已升 6 条</strong>：Arbitrum One、OP Mainnet、Base、Scroll、Unichain、Ink；</li>
+<li><strong>Stage 2 仍空缺</strong>：所有主流 EVM L2 都还有 instant upgrade 后门；</li>
+<li><strong>DA 革命</strong>：Fusaka + BPO2 后 blob target 14、blob 价 ≈ 1 wei，外部 DA 价格优势严重削弱；</li>
+<li><strong>MegaETH</strong> 主网 2026-02-09 上线（real-time L2 新物种）；</li>
+<li><strong>Plume</strong> 主网运行 1 年，RWA L2 标杆；</li>
+<li><strong>Polygon zkEVM</strong> 2026-07-01 退役；</li>
+<li><strong>Espresso</strong> 主网 2026-02-12 启动，<strong>Astria</strong> 2025-11 关停；</li>
+<li><strong>EigenDA</strong> 100 MiB/s 主网，但 EigenDA 自身 slashing 仍未启用；</li>
+<li><strong>Avail Nexus</strong> 2025-11 上线，13+ 链跨链；</li>
+<li><strong>AggLayer</strong> 悲观证明 2025-02 上线；</li>
+<li><strong>Superchain Interop</strong> 2025 H2 上线，2026 持续扩链；</li>
+<li><strong>Stylus</strong> 主网，Move-to-Stylus 已发布；</li>
+<li><strong>Linea / Base 各自有过 sequencer 停机事件</strong>——sequencer 中心化是真实 liveness 风险；</li>
+<li><strong>Chain Abstraction</strong> 通过 NEAR Chain Signatures、Particle Universal Account 等正在改变 L2 UX；</li>
+<li><strong>opBNB / Hyperliquid 不是 Ethereum L2</strong>；</li>
+<li><strong>EigenLayer slashing</strong> 2025-04-17 协议层上线，但具体 AVS 启用 slashing 仍是少数；</li>
+<li><strong>Conduit / Caldera 是 RaaS 双雄</strong>，与 Gelato、Alchemy 形成 4 强格局。</li>
+</ol>
+</section>
+</body>
+</html>

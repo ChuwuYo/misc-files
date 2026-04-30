@@ -1,0 +1,14 @@
+graph LR
+    subgraph BABE
+    B1[block 1] --> B2[block 2]
+    B2 --> B3[block 3]
+    B3 --> B4[block 4]
+    B4 --> B5[block 5]
+    end
+
+    subgraph GRANDPA
+    G1[finalize 1] --> G2[finalize 2-4]
+    end
+
+    B1 -.-> G1
+    B4 -.-> G2

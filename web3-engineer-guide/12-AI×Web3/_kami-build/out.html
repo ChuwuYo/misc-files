@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AI × Web3</title>
+<meta name="author" content="">
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="generator" content="Kami">
+<style>
+  /* Regular weight */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* Bold weight - W05 for all bold variants */
+  @font-face {
+    font-family: "TsangerJinKai02";
+    src: url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  AI × Web3";
+      font-family: "TsangerJinKai02", "Source Han Serif SC",
+                   "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "TsangerJinKai02", "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", Georgia, serif;
+    --sans: var(--serif);
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: 14pt;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: 14pt;
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* ========== CODE ========== */
+  /* Mono first for English glyphs, then CJK fallback so Chinese comments
+     inside code/pre render correctly. A mono-only chain causes missing
+     glyphs rendered as "?" or missing-glyph boxes in WeasyPrint when the system lacks
+     a mono font with CJK coverage. */
+  code {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+  }
+  pre {
+    font-family: "Sarasa Mono SC", "Menlo", "Courier New", "PT Mono",
+                 "JetBrains Mono", "SF Mono", Consolas,
+                 "Source Han Mono SC", monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code { background: transparent; padding: 0; font-size: inherit; }
+
+  /* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">Web3 工程师学习指南</div>
+    <div class="cover-title">AI × Web3</div>
+    <div class="cover-sub">Agent、zkML、AI Token、MCP、链上推理</div>
+  </div>
+  <div class="cover-meta">
+    <strong>Web3 Engineer Guide</strong><br>
+    版本 V1.0  ·  2026.04<br>
+    供个人学习使用 · MIT License
+  </div>
+</section>
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">目录</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title"><a href="#ch02" style="color:inherit;text-decoration:none">0.5 时间轴：AI 编程工具与链上 AI 的两条平行历史</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title"><a href="#ch03" style="color:inherit;text-decoration:none">0. 公共讨论的两端为何都不可信</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title"><a href="#ch04" style="color:inherit;text-decoration:none">1. 已经在帮工程师的 AI 应用（生产化）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title"><a href="#ch05" style="color:inherit;text-decoration:none">2. 正在涌现但不可全信的 AI 应用</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title"><a href="#ch06" style="color:inherit;text-decoration:none">3. 链上 AI 基础设施</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title"><a href="#ch07" style="color:inherit;text-decoration:none">4. 链上 AI Agent 与代币经济</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">08</span>
+    <span class="toc-title"><a href="#ch08" style="color:inherit;text-decoration:none">5. 给工程师的现实警示</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">09</span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">6. 实战 Demo：Claude Code 搭建 ERC-4626 Vault</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">10</span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">7. 实战 Demo：LLM + viem 链上数据分析 agent</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">11</span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">8. 实战 Demo：EZKL 把 Logistic 回归塞进 ZK 证明</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">12</span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">9. 实战 Demo：ORA opML SDK 调用链上推理</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">13</span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">10. 练习</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">14</span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">11. 与其他模块的双向引用</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">15</span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">12. 推荐阅读与持续追踪</a></span>
+    <span class="toc-page">·</span>
+  </div>
+</section>
+<p>本模块回答三个问题：2026 年的 AI 工具能帮工程师做哪些 Web3 工作、哪些不能；"链上 AI"（zkML、opML、去中心化推理、链上 agent）哪些已经跑起来、哪些还在 demo；工程师应如何升级工作流、警惕哪些被高估的方向。</p>
+<p>所有性能、行情、资本动作均附 URL；区分"已生产化 / 刚刚涌现 / 仍是 hype"三档。</p>
+<p><strong>前置</strong>：模块 11（基础设施与工具）——RPC、索引、存储、DePIN compute 是本模块"链下推理 + 链上验证"的运行底座。<strong>后续</strong>：模块 13（NFT 身份与社交）——AI agent 经济需要可验证身份，KYA（Know Your Agent）、Soulbound、信誉系统在那里展开。</p>
+<h3 id="trust-model-l0-l3">阅读纲领：Trust Model + L0-L3 成熟度</h3>
+<p>整本模块用两把尺子衡量任何"AI × Web3"原语：</p>
+<ol>
+<li><strong>Trust Model（信任谁、信任什么）</strong>：每个原语开篇必须能一句话回答"链上合约 / 用户 / 协议方在信任谁的哪个假设"。zkML 信权重 commitment + 椭圆曲线假设；opML 信"挑战期内至少 1 个诚实复算者"；TEE 信硬件厂商；agent 框架信"谁持私钥、谁能改 prompt"。Trust 没说清的方案，benchmark 再亮也别接。</li>
+<li><strong>L0-L3 成熟度</strong>：
+   - <strong>L0 Vibe / 营销</strong>——只有 demo / 推文 / "扔给 AI 出报告"，无静态分析锚、无第三方验证。
+   - <strong>L1 工具锚定</strong>——LLM 在确定性工具（Slither / Aderyn / Foundry）输出上做解释、串联、PoC。
+   - <strong>L2 微调 / 专用 pipeline</strong>——领域 RL / 专用语料 + 工具集成，有第三方对照数据（Code4rena/Sherlock）。
+   - <strong>L3 增强人类工作流</strong>——一线团队（Trail of Bits、Cyfrin、OZ）把 AI 嵌入既有审计 / 开发 / 运营流，目标是放大而非替代专业人员。</li>
+</ol>
+<p>L0 是营销重灾区。<strong>L1 起才有工程价值，L3 是 2026-04 当前最先进实践</strong>。文中对每个原语标注其 L 等级与 Trust Model 列。</p>
+<hr />
+<section class="chapter">
+<h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
+
+<ul>
+<li><a href="#05-时间轴ai-编程工具与链上-ai-的两条平行历史">0.5 时间轴：AI 编程工具与链上 AI 的两条平行历史</a></li>
+<li><a href="#0-为什么这一模块要单独存在">0. 为什么这一模块要单独存在</a></li>
+<li><a href="#1-已经在帮工程师的-ai-应用生产化">1. 已经在帮工程师的 AI 应用（生产化）</a></li>
+<li><a href="#2-正在涌现但不可全信的-ai-应用">2. 正在涌现但不可全信的 AI 应用</a></li>
+<li><a href="#3-链上-ai-基础设施">3. 链上 AI 基础设施</a></li>
+<li><a href="#4-链上-ai-agent-与代币经济">4. 链上 AI Agent 与代币经济（含 §4.4 a16z/Paradigm、§4.5 攻击者的 AI、§4.6 MEV、§4.7 Agent 框架活跃度）</a></li>
+<li><a href="#5-给工程师的现实警示">5. 给工程师的现实警示</a></li>
+<li><a href="#6-实战-democlaude-code-搭建-erc-4626-vault">6. 实战 Demo：Claude Code 搭建 ERC-4626 Vault</a></li>
+<li><a href="#7-实战-demollm--viem-链上数据分析-agent">7. 实战 Demo：LLM + viem 链上数据分析 agent</a></li>
+<li><a href="#8-实战-demoezkl-把-logistic-回归塞进-zk-证明">8. 实战 Demo：EZKL 把 Logistic 回归塞进 ZK 证明</a></li>
+<li><a href="#9-实战-demoora-opml-sdk-调用链上推理">9. 实战 Demo：ORA opML SDK 调用链上推理</a></li>
+<li><a href="#10-练习">10. 练习</a></li>
+<li><a href="#11-与其他模块的双向引用">11. 与其他模块的双向引用</a></li>
+<li><a href="#12-推荐阅读与持续追踪">12. 推荐阅读与持续追踪</a></li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="05-ai-ai" id="ch02"><span class="chapter-num">Chapter 02</span><br>0.5 时间轴：AI 编程工具与链上 AI 的两条平行历史</h2>
+
+<figure><img src="diagram-c8b8d1abc3.png" alt="mermaid diagram"></figure>
+
+<p>2024 是分水岭：Claude/GPT-4 让"AI 写 Solidity"从 demo 变工作流；主流安全公司体系化嵌入 AI 审计；AI agent + 代币 + intent 合流成为大资金叙事，但投机远多于真实使用。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="0" id="ch03"><span class="chapter-num">Chapter 03</span><br>0. 公共讨论的两端为何都不可信</h2>
+
+<p>一端是"AI agent 颠覆 Web3"的代币营销（多数项目链上活动近零），另一端是"AI 写出无漏洞合约"的乐观推文（与安全公司实测不符）。客观数据：</p>
+<ul>
+<li><a href="https://www.soliditylang.org/blog/2026/04/15/solidity-developer-survey-2025-results/">Solidity Developer Survey 2025</a>（1,095 开发者，87 国，检索 2026-04）：<strong>88% 月用、58% 日用，45% 不信任 AI 输出</strong>。</li>
+<li><a href="https://survey.stackoverflow.co/2025/ai">Stack Overflow 2025</a>（检索 2026-04）：84% 全行业用 AI，"高度信任"历年新低。</li>
+<li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR 2025-07</a>（检索 2026-04）：16 位资深开发者做 246 个真实任务，<strong>用 AI 平均慢 19%</strong>，主观却感觉"快 20%"——主观与客观的偏差是本模块所有判断的起点。</li>
+</ul>
+<p>本模块目标：用 Trust Model + L0-L3 框架画清"能用、应用、不应过度依赖"的边界。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="1-ai" id="ch04"><span class="chapter-num">Chapter 04</span><br>1. 已经在帮工程师的 AI 应用（生产化）</h2>
+
+<p><strong>Trust Model（本节）</strong>：信任 AI 输出 = 信任"人类工程师在每个 diff / PR 上做了 review"——AI 的 trust 全部来自人类把关者，与下面 §3 的"链上 trust"是两回事。本节工具被纳入"生产化"的标准是：主流团队默认装入工作流、有公开 ROI 数据。</p>
+<h3 id="11-ai">1.1 代码补全与生成：主流 AI 工具全景</h3>
+<h4 id="111">1.1.1 四种交互模式（按自主程度递增）</h4>
+<p>对应 METR "time-horizon" 度量（<a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">2025-03 论文</a>）：当前模型在人类 4 分钟以内的任务上接近 100% 成功，超过 4 小时跌到 &lt;10%。模式 A→D 自主程度递增，对应越长 time-horizon，<strong>人类 review 强度必须同步增加</strong>。</p>
+<figure><img src="diagram-0d33be27c3.png" alt="mermaid diagram"></figure>
+
+<ul>
+<li><strong>Tab 补全（A）</strong>：低风险高频，节省击键。</li>
+<li><strong>Chat 协作（B）</strong>：你提问，AI 给 diff，你逐行 review。Solidity 工程师 80% 的真实工作流。</li>
+<li><strong>Agent 执行（C）</strong>：AI 自己读多文件、改、跑 <code>forge test</code>、看输出再改。</li>
+<li><strong>Autonomous（D）</strong>：一句话生成整个 dApp，Web3 工程上<strong>仍是 demo 级</strong>。</li>
+</ul>
+<h4 id="112-solidity">1.1.2 数据：Solidity 生态用什么</h4>
+<p><a href="https://www.soliditylang.org/blog/2026/04/15/solidity-developer-survey-2025-results/">Solidity Developer Survey 2025</a>（1,095 位开发者、87 国，2025-12 调研、2026-04 检索）：</p>
+<ul>
+<li><strong>编辑器/Agent</strong>：VSCode 60%、Cursor 32%、Antigravity 16%</li>
+<li><strong>AI 助手</strong>：Claude Code 61%（首选）、Codex/ChatGPT 16%、Gemini 10%</li>
+<li><strong>使用场景</strong>：测试 61%、写文档 59%、阅读代码 58%、写代码 49%、Code Review 49%</li>
+<li><strong>信任度</strong>：高度信任 6%，somewhat trust 49%，somewhat distrust 30%，highly distrust 15%</li>
+</ul>
+<h4 id="113-ai">1.1.3 主流 AI 编码工具实测对比</h4>
+<h5 id="cursor">Cursor</h5>
+<ul>
+<li><strong>定位</strong>：VSCode fork + 内置 LLM agent（"AI-first 编辑器"）。Tab 补全、Cmd+K 行内编辑、侧栏 Chat、Composer/Agent 多文件改动，可挂任意 LLM。</li>
+<li><strong>实测</strong>：Solidity 调研 32% 选它做编辑器，仅次于 VSCode。但 METR 实验里 <strong>Cursor Pro + Claude 3.5/3.7 被实测"慢 19%"</strong>（<a href="https://devgraphiq.com/cursor-statistics/">Cursor 统计</a>，检索 2026-04）——工具不是银弹。</li>
+<li><strong>局限</strong>：Pro 订阅偏贵，完全闭源。</li>
+<li><strong>建议</strong>：值得投入，日常 Solidity 编辑器首选。</li>
+</ul>
+<h5 id="claude-code">Claude Code</h5>
+<ul>
+<li><strong>定位</strong>：Anthropic 官方终端 Agent，原生 MCP 支持。读 git 仓库、调 Slither/Aderyn/OZ Contracts MCP，连续编辑-运行-修复。<code>CLAUDE.md</code> 作项目级 prompt。</li>
+<li><strong>实测</strong>：Trail of Bits、Cyfrin 最常用的 AI-native audit 宿主。Solidity Survey <strong>61% 选它为首选 AI 助手</strong>。</li>
+<li><strong>局限</strong>：终端体验上手稍陡；token 成本比 Cursor 高。</li>
+<li><strong>建议</strong>：合约/审计<strong>强烈投入</strong>；纯前端选 Cursor。</li>
+</ul>
+<h5 id="aider">Aider</h5>
+<ul>
+<li><strong>定位</strong>：开源终端 AI 配对编程。Tree-sitter 构建 repo map，逐次 git commit。Architect/Editor 双模型设计。</li>
+<li><strong>实测</strong>：<a href="https://aider.chat/docs/benchmarks.html">benchmark</a>（检索 2026-04）多语言基准 SOTA。Solidity 无专项数据，社区反馈小型项目（&lt;10 合约）够用。</li>
+<li><strong>局限</strong>：项目大了 repo map 容易爆 context。</li>
+<li><strong>建议</strong>：开源 + 可挂本地模型（<a href="https://voipnuggets.com/2025/03/25/aider-your-open-source-fully-local-and-100-free-ai-pair-programmer-with-ollama/">Ollama 集成</a>）。预算敏感/合规团队值得用。</li>
+</ul>
+<h5 id="github-copilot">GitHub Copilot</h5>
+<ul>
+<li><strong>定位</strong>：行业标杆。Codex（2021）→ GPT-4o（2024）→ GPT-5-Codex 公测（2025-09，<a href="https://github.blog/changelog/2025-09-23-openai-gpt-5-codex-is-rolling-out-in-public-preview-for-github-copilot/">GitHub Changelog</a>）。Solidity 原生支持（<a href="https://medium.com/@pensora.iq.team/github-copilot-vs-tabnine-vs-codeium-2025-the-ultimate-showdown-of-ai-coding-assistants-e88c925ed5df">Pensora IQ</a>，检索 2026-04）。</li>
+<li><strong>实测</strong>：Tab 补全仍是默认选择，企业版集成成熟。</li>
+<li><strong>局限</strong>：Agent 模式追赶 Cursor 较慢，Solidity 专项不如 Claude/Cursor。</li>
+<li><strong>建议</strong>：公司只让用 GitHub 生态时够用；个人选型不必默认它。</li>
+</ul>
+<h5 id="openai-codex2025">OpenAI Codex（2025 重生版）</h5>
+<ul>
+<li><strong>定位</strong>：Codex 名字复活为 autonomous agent（与 2021 版只共享名字）。Copilot 内置，可接管 issue 自开 PR（<a href="https://docs.github.com/en/copilot/concepts/agents/openai-codex">GitHub Docs</a>，检索 2026-04）。</li>
+<li><strong>实测</strong>：通用代码任务接近 Claude Code，Solidity 无公开 benchmark。</li>
+<li><strong>局限</strong>：Web3 ecosystem-fit 不如 Claude Code（MCP 生态）。</li>
+<li><strong>建议</strong>：观望，等 Solidity 用例。</li>
+</ul>
+<h5 id="codeium-windsurf">Codeium / Windsurf</h5>
+<ul>
+<li><strong>定位</strong>：Codeium 2024 改名 Windsurf，Cascade Agent 模式深度集成（<a href="https://windsurf.com/blog/code-assistant-comparison-copilot-tabnine-ghostwriter-codeium">官方对比</a>，检索 2026-04）。2025 年增长最快的 AI 编程助手（<a href="https://www.educative.io/blog/ai-coding-copilots">Educative</a>，检索 2026-04）。</li>
+<li><strong>局限</strong>：模型层不及 Claude/GPT 旗舰，复杂多文件改动有时丢上下文。Solidity 上是次选。</li>
+<li><strong>建议</strong>：免费层好，预算紧时备用。</li>
+</ul>
+<h5 id="continue">Continue</h5>
+<ul>
+<li><strong>定位</strong>：开源 VSCode/JetBrains 插件，可挂任意模型。轻量 Cursor 替代，Tab + Chat + 简单 Agent。</li>
+<li><strong>局限</strong>：Agent 能力远不如 Cursor / Claude Code。Solidity 用户少。</li>
+<li><strong>建议</strong>：仅在必须开源 + 自托管的合规场景下选用。</li>
+</ul>
+<h5 id="sourcegraph-cody">Sourcegraph Cody</h5>
+<ul>
+<li><strong>定位</strong>：Sourcegraph 代码搜索 + LLM，索引整个组织代码。大型多 repo 组织强，单 Solidity 项目少用。</li>
+<li><strong>局限</strong>：贵，企业向。</li>
+<li><strong>建议</strong>：除非公司已用 Sourcegraph，否则不必。</li>
+</ul>
+<h5 id="tabnine">Tabnine</h5>
+<ul>
+<li><strong>定位</strong>：Privacy-first，可在客户 VPC 部署。补全 OK，agent 弱。</li>
+<li><strong>局限</strong>：模型代差大，不如 Codeium 免费层。</li>
+<li><strong>建议</strong>：仅在"代码不出 VPC"合规场景下选用。</li>
+</ul>
+<h5 id="replit-agent-3">Replit Agent 3</h5>
+<ul>
+<li><strong>定位</strong>：浏览器 AI 全栈，2025-09 上线。内置 DB、auth、hosting、30+ 集成（<a href="https://medium.com/@aftab001x/the-2026-ai-coding-platform-wars-replit-vs-windsurf-vs-bolt-new-f908b9f76325">介绍</a>，检索 2026-04）。极适合"前端 + DB"原型。</li>
+<li><strong>局限</strong>：Web3 后端（合约 + RPC + indexer）支持有限，Solidity/审计薄弱。</li>
+<li><strong>建议</strong>：链下部分可用；合约部分用 Foundry + Cursor/Claude Code。</li>
+</ul>
+<h5 id="boltnew">Bolt.new</h5>
+<ul>
+<li><strong>定位</strong>：StackBlitz 出品，浏览器 Node + 一键部署（<a href="https://getmocha.com/blog/best-ai-app-builder-2026/">Mocha 2026</a>，检索 2026-04）。前端原型秒级出活。</li>
+<li><strong>局限</strong>：合约工程支持薄弱，Web3 靠社区模板。</li>
+<li><strong>建议</strong>：Hackathon MVP 可以；生产用 Next.js + CI/CD。</li>
+</ul>
+<h5 id="v0dev-vercel">v0.dev (Vercel)</h5>
+<ul>
+<li><strong>定位</strong>：一句话/图片 → React + Tailwind shadcn/ui 代码（GPT-4 系列）。dApp UI 草图秒级出活，wagmi/viem 集成顺畅。</li>
+<li><strong>局限</strong>：只生成 UI，不写合约/indexer。</li>
+<li><strong>建议</strong>：dApp 前端值得用。详见模块 10。</li>
+</ul>
+<h5 id="lovable">Lovable</h5>
+<ul>
+<li><strong>定位</strong>：自然语言 → React + Supabase 全栈应用。8 个月 100M ARR（<a href="https://lovable.dev/guides/best-ai-app-builders">官方</a>，检索 2026-04）。</li>
+<li><strong>局限</strong>：Web3 是边缘场景，集成靠用户粘合。</li>
+<li><strong>建议</strong>：链下产品可选；dApp 不必。</li>
+</ul>
+<figure><img src="diagram-922665c279.png" alt="mermaid diagram"></figure>
+
+<h4 id="114">1.1.4 实测生产力数据</h4>
+<ul>
+<li><a href="https://blog.trailofbits.com/2026/03/31/how-we-made-trail-of-bits-ai-native-so-far/">Trail of Bits 2026-03</a>（检索 2026-04）：某些客户端工程从每周 ~15 bug → ~200 bug；依赖"代码库形态适合 LLM + 人审核不变"，不可一概而论。</li>
+<li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR 2025-07</a>（Cursor Pro + Claude 3.5/3.7，检索 2026-04）：熟悉大型 OSS 代码库上慢 19%，主观感觉快 20%。<a href="https://metr.org/blog/2026-02-24-uplift-update/">2026-02 更新</a>承认样本偏差变大。</li>
+<li><a href="https://www.faros.ai/blog/how-to-measure-claude-code-roi-developer-productivity-insights-with-faros-ai">Faros AI</a>（检索 2026-04）：行业真实提升 10-30%，与宣传的 2-10x 差距大。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>任务类型</th>
+<th>AI 工具的真实加速比</th>
+<th>推荐工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>写第一版 ERC-20 / 721 / 4626 骨架</td>
+<td>5-10×（节约模板拷贝时间）</td>
+<td>OZ Contracts MCP + Claude Code</td>
+</tr>
+<tr>
+<td>补充 NatSpec、写 README、画 mermaid</td>
+<td>3-5×</td>
+<td>Claude Code 或 Cursor Chat</td>
+</tr>
+<tr>
+<td>在不熟悉的代码库上做小 bug fix</td>
+<td>1-2×</td>
+<td>Cursor + Slither MCP</td>
+</tr>
+<tr>
+<td>在<strong>非常熟悉</strong>的代码库上做小 bug fix</td>
+<td>可能 -20%（METR 数据）</td>
+<td>不必用 AI</td>
+</tr>
+<tr>
+<td>写 Foundry 测试 + invariant 草稿</td>
+<td>3-5×（草稿）</td>
+<td>Claude Code</td>
+</tr>
+<tr>
+<td>设计新协议、新经济机制、新密码学</td>
+<td>0-1×（AI 是讨论伙伴）</td>
+<td>LLM 当读论文助理而非设计者</td>
+</tr>
+<tr>
+<td>前端 dApp UI 原型</td>
+<td>5-10×</td>
+<td>v0.dev / Bolt.new + wagmi</td>
+</tr>
+<tr>
+<td>Subgraph schema 草稿</td>
+<td>3-5×</td>
+<td>Claude / Cursor</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12">1.2 文档与审计报告辅助</h3>
+<p>低风险高重复任务，AI 加速明显：Foundry/Hardhat 输出 → Markdown；git diff → 变更摘要；校对、术语统一、多语言。</p>
+<p><strong>草稿让 AI 写、结论自己下</strong>。常见失误：把 AI 总结当 finding 提交 Code4rena/Sherlock，被判 invalid 后算入个人 false positive 比例。</p>
+<h3 id="13-calldata">1.3 漏洞解释与 calldata / 交易解码</h3>
+<p>AI 最稳的方向（"读"而非"写"）：</p>
+<ul>
+<li><a href="https://tenderly.co/">Tenderly</a>（检索 2026-04）：trace/event/state diff 标准化 + LLM → 黑客交易自然语言摘要；</li>
+<li><a href="https://blocksec.com/explorer">BlockSec Phalcon</a>（检索 2026-04）：攻击交易回放与资金流分析；</li>
+<li><a href="https://arxiv.org/html/2512.06933">TxSum / MATEX 论文</a>（检索 2026-04）：500 笔以太坊交易抽样显示，现有工具能解 token transfer 和 calldata，但解释"经济意义"仍弱——LLM 的靶点。</li>
+</ul>
+<p>工程师工作流：可疑交易 raw input + decoded calls 喂 Claude/Cursor，要求"正常路径 vs 异常路径"对比。</p>
+<h3 id="14-llm-zk-eip">1.4 学习路径辅导：LLM 解释 ZK 论文与新 EIP</h3>
+<ul>
+<li><a href="https://eprint.iacr.org/2019/953">Plonk</a> / <a href="https://eprint.iacr.org/2022/1355">HyperPlonk</a> / <a href="https://eprint.iacr.org/2023/1217">Jolt</a> 论文丢给 Claude → 解释 commitment scheme；</li>
+<li>新 EIP 草案 → LLM → "对当前代码库的影响清单"。</li>
+</ul>
+<p><strong>概念解释可信，数学推导不可信</strong>。具体常数（约束数、proof size）必须回论文核对。</p>
+<h3 id="15-subgraph-schema-graphql">1.5 Subgraph schema 与 GraphQL 查询生成</h3>
+<ul>
+<li>合约 ABI + 协议描述 → LLM → <code>schema.graphql</code> 草稿；</li>
+<li>自然语言查询 → LLM → GraphQL query。</li>
+</ul>
+<p>mapping 函数（事件 → entity）的字段更新顺序与 tx-level 去重逻辑<strong>必须人审</strong>。</p>
+<h3 id="16-openzeppelin-contracts-mcp-ai">1.6 OpenZeppelin Contracts MCP：把"安全合约模板"做成 AI 工具调用</h3>
+<p><a href="https://www.openzeppelin.com/news/introducing-contracts-mcp">OpenZeppelin 2025-07-30 发布</a>（检索 2026-04）。关键设计：MCP <strong>替换</strong> AI 输出——返回经 OZ 规则验证的可生产代码。支持 Solidity（ERC-20/721/1155/Stablecoin/RWA/Governor/Account）、Cairo、Stellar；适配 Cursor/Claude/Gemini/Windsurf/VS Code。</p>
+<ul>
+<li><strong>ERC-20/721/4626 骨架</strong>：用 MCP，比 LLM 自由发挥安全；</li>
+<li><strong>业务逻辑（清算、做市、限价单）</strong>：MCP 帮不了，自己写、自己审。</li>
+</ul>
+<h3 id="17-web3-mcp">1.7 Web3 MCP 服务器全景</h3>
+<p>MCP（Model Context Protocol，Anthropic 2024-11，<a href="https://modelcontextprotocol.io">文档</a>）在 Web3 生态 2025-2026 快速扩展。把 LLM 的不确定性输出绑定到确定性工具调用——Anthropic Constitutional AI / tool use 工程文档定义了 tool 输出在 trust 链上的位置：tool 调用结果属于"非 principal" 输入，必须二次校验，不允许直接驱动决策。这是本模块 §1.6 / §2.1.2 / §3.x 通用基础。</p>
+<h4 id="171-solidity-evm">1.7.1 Solidity / EVM 侧</h4>
+<table>
+<thead>
+<tr>
+<th>MCP 服务器</th>
+<th>直觉</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenZeppelin Contracts MCP</strong></td>
+<td>用 OZ 规则替换 LLM 输出（见 §1.6）</td>
+<td><a href="https://www.openzeppelin.com/news/introducing-contracts-mcp">openzeppelin.com</a></td>
+</tr>
+<tr>
+<td><strong>Aderyn MCP</strong></td>
+<td>Cyfrin Rust 静态分析器 → LLM</td>
+<td><a href="https://docs.cyfrin.io/">Cyfrin docs</a></td>
+</tr>
+<tr>
+<td><strong>Slither MCP</strong></td>
+<td>Trail of Bits Slither → LLM（2025-11-15）</td>
+<td><a href="https://github.com/trailofbits/slither-mcp">trailofbits/slither-mcp</a></td>
+</tr>
+<tr>
+<td><strong>Foundry MCP server</strong></td>
+<td>LLM 直接跑 forge / cast / anvil</td>
+<td><a href="https://github.com/PraneshASP/foundry-mcp-server">PraneshASP/foundry-mcp-server</a></td>
+</tr>
+<tr>
+<td><strong>Microsoft Foundry MCP</strong></td>
+<td>Azure 云托管 MCP，Ignite 2025 公测</td>
+<td><a href="https://visualstudiomagazine.com/articles/2025/12/04/microsoft-previews-cloud-hosted-foundry-mcp-server-for-ai-agent-development.aspx">Visual Studio Magazine</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="172-solana">1.7.2 Solana 侧</h4>
+<table>
+<thead>
+<tr>
+<th>MCP 服务器</th>
+<th>直觉</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>QuickNode Solana MCP</strong></td>
+<td>让 Claude 检查钱包余额、token 账户、tx 详情</td>
+<td><a href="https://www.quicknode.com/guides/ai/solana-mcp-server">QuickNode 教程</a></td>
+</tr>
+<tr>
+<td><strong>solana-web3js-mcp-server</strong></td>
+<td>Solana web3.js 全套开发 + 智能合约部署</td>
+<td><a href="https://github.com/FrankGenGo/solana-web3js-mcp-server">FrankGenGo/solana-web3js-mcp-server</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="173">1.7.3 跨链 / 数据侧</h4>
+<ul>
+<li><strong>SkyAI</strong>：BNB Chain + Solana 上的 Web3 数据 MCP，号称聚合 100 亿+ 数据行；</li>
+<li><strong>更多 MCP 服务器</strong>：参考 <a href="https://sureprompts.com/blog/model-context-protocol-mcp-complete-guide-2026">SurePrompts MCP 2026 Guide</a>（检索 2026-04），到 2026-04 已有公开 MCP 注册表 + Claude Desktop / Cursor / VS Code 一级支持。</li>
+</ul>
+<p>工程师基础四件套：OpenZeppelin Contracts MCP（生成）+ Aderyn MCP（静态分析）+ Slither MCP（静态分析）+ Foundry MCP（执行测试）——覆盖"AI 写 Solidity"的 80% 工作流。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="2-ai" id="ch05"><span class="chapter-num">Chapter 05</span><br>2. 正在涌现但不可全信的 AI 应用</h2>
+
+<p><strong>Trust Model（本节）</strong>：AI 输出的 trust 取决于"是否用确定性工具锚定 + 是否有人类二次审"。把 §0 的 L0-L3 投射到审计场景：</p>
+<h3 id="20-ai-l0-l3">2.0 AI 审计的四个等级（L0-L3 投射）</h3>
+<figure><img src="diagram-02ae6c1105.png" alt="mermaid diagram"></figure>
+
+<ul>
+<li><strong>L0</strong>：信任 = 0。营销重灾区（"5 分钟出报告"），不付费、不引用、不基于其结论 submit。</li>
+<li><strong>L1</strong>：信任 = 静态分析的可证明输出 + LLM 的解释层。Slither/Aderyn detector 命中是"地基真相"。</li>
+<li><strong>L2</strong>：信任 = L1 + 专用语料微调的统计召回。需第三方 benchmark（Code4rena/Sherlock）佐证。</li>
+<li><strong>L3</strong>：信任 = 人类审计师 + 数十个细粒度 skill 互锁，AI 是"放大镜+实习生"。Trail of Bits 公开案例（§2.1.11）。</li>
+</ul>
+<h3 id="21-ai">2.1 AI 审计工具完整清单</h3>
+<h4 id="211-aderyncyfrin-aderyn-mcp-server">2.1.1 Aderyn（Cyfrin） + Aderyn MCP Server</h4>
+<ul>
+<li><strong>定位</strong>：开源 Rust 静态分析器 + LLM 上下文桥。100+ 检测器（reentrancy、precision loss、access control），读 Solidity AST。2025 发布 VS Code Extension + Aderyn MCP Server（<a href="https://www.cyfrin.io/blog/cyfrin-2025-wrap-up-advancing-web3-security-audits-and-blockchain-education">Cyfrin 年报</a>，检索 2026-04）。起源于 <a href="https://github.com/Picodes/4naly3er">4naly3er</a>，Cyfrin Rust 化产品化。</li>
+<li><strong>局限</strong>：规则检测器，跨合约逻辑漏洞漏报率高。</li>
+<li><strong>建议</strong>：免费开源，审计工程师必装。</li>
+</ul>
+<h4 id="212-slither-slither-mcptrail-of-bits">2.1.2 Slither + Slither-MCP（Trail of Bits）</h4>
+<ul>
+<li><strong>定位</strong>：行业标杆静态分析器 + 2025-11 MCP 桥（<a href="https://blog.trailofbits.com/2025/11/15/level-up-your-solidity-llm-tooling-with-slither-mcp/">公告</a>，检索 2026-04）。把 detectors、call graph、inheritance hierarchy、function metadata 通过 MCP 暴露。</li>
+<li>安装：<code>claude mcp add --transport stdio slither -- uvx --from git+https://github.com/trailofbits/slither-mcp slither-mcp</code></li>
+<li><strong>实测</strong>：Trail of Bits 内部 audit 默认开。Slither 精确分析作为 LLM "地基真相"，显著降低幻觉。</li>
+<li><strong>局限</strong>：受限于 Slither 检测器范围。</li>
+<li><strong>建议</strong>：与 Aderyn 同装，互补。</li>
+</ul>
+<h4 id="213-nethermind-auditagent">2.1.3 Nethermind AuditAgent</h4>
+<ul>
+<li><strong>定位</strong>：微调 LLM + Slither + 网搜 + 自定义工具（<a href="https://docs.auditagent.nethermind.io/overview/">文档</a>、<a href="https://www.nethermind.io/blog/how-nethermind-security-uses-auditagent-alongside-manual-audits">博客</a>，检索 2026-04）。v1 召回 15% → <strong>v2 召回 50%</strong>（内部 29 场审计样本）。公开案例：ResupplyFi 9.8M 黑客前已标出"汇率逻辑可疑"；LUKSO Hyperlane 桥审计有 case study。</li>
+<li><strong>局限</strong>：闭源；50% 召回 = 另 50% 仍需人。</li>
+<li><strong>建议</strong>：审计公司/大型协议值得付费试用；个人用 Aderyn + Slither MCP 够。</li>
+</ul>
+<h4 id="214-quillshieldquillaudits">2.1.4 QuillShield（QuillAudits）</h4>
+<ul>
+<li>RL 训练审计专用 LLM，闭源，缺第三方验证。<strong>建议</strong>：观望。</li>
+</ul>
+<h4 id="215-olympix">2.1.5 Olympix</h4>
+<ul>
+<li><strong>定位</strong>：IDE 内 shift-left 安全工具（VSCode + 自家 engine + LLM）。<a href="https://olympix.security/blog/best-slither-alternative-for-2025-why-developers-choose-olympix">自家 benchmark</a>（检索 2026-04）声称 Slither 召回 ~15%、Olympix ~75%（5x）——<strong>需独立复现</strong>。</li>
+<li><strong>局限</strong>：闭源，benchmark 无第三方验证，企业定价。</li>
+<li><strong>建议</strong>：商业团队可试用并用 Code4rena 历史 finding 自行验证；个人用 Aderyn + Slither MCP 够。</li>
+</ul>
+<p>Olympix 博客 <a href="https://olympix.security/blog/the-state-of-web3-security-in-2025-why-most-exploits-come-from-audited-contracts">State of Web3 Security 2025</a>（检索 2026-04）统计<strong>大多数 2025 年大型黑客合约都已审计过</strong>（Euler $197M、BonqDAO $120M 等），佐证 AI 审计价值在于"审完后再过一遍"。</p>
+<h4 id="216-openzeppelin-ai">2.1.6 OpenZeppelin AI 工作流</h4>
+<ul>
+<li><a href="https://www.openzeppelin.com/news/openai-evmbench-audit">OZ 审计 OpenAI EVMBench</a>（检索 2026-04）：找到 <strong>4+ 被错标为高危</strong>的样例 + 训练数据污染；</li>
+<li>OZ 走"AI 加速生成（Contracts MCP）+ 人审"路径，<strong>未发布 AI 审计产品</strong>。</li>
+</ul>
+<p>OZ 是最有动力做"AI 审计"赚钱的玩家之一，他们都没出——<strong>当前 AI 撑不起这个产品形态</strong>。</p>
+<h4 id="217-llmdeepseek-llama-qwen-solidity">2.1.7 开源 LLM（DeepSeek / Llama / Qwen）在 Solidity 上的实测</h4>
+<ul>
+<li><strong>DeepSeek V3 vs R1</strong>（<a href="https://www.sciencedirect.com/science/article/pii/S0950584925002563">IST 期刊 2025</a>，检索 2026-04）：R1 高复杂度更准，V3 简单任务更稳；两者都有幻觉 + 漏洞覆盖有限 + prompt 敏感，<strong>均不能自主生成无问题合约</strong>。</li>
+<li><strong>GPT-3.5 / DeepSeek R1 / LLaMA-3 对照</strong>（<a href="https://ojs.istp-press.com/jait/article/download/811/633/7341">JAIT 期刊</a>，检索 2026-04）：三者各有强项，但都没显著超过 Slither + 人审组合。</li>
+<li><strong>DMind Web3 LLM Benchmark</strong>（<a href="https://arxiv.org/html/2504.16116v1">arXiv 2504.16116</a>，检索 2026-04）：R1 与 V3 在 Fundamentals/Contracts/Security 相近，Token Economics/Meme Concepts 偏弱。</li>
+<li><strong>DeepSeek V3.2</strong>（<a href="https://api-docs.deepseek.com/news/news250929">API Docs 2025-09/12</a>，检索 2026-04）：Sparse Attention 提升长上下文 + 工具调用，无 Solidity 专项 benchmark。</li>
+</ul>
+<h4 id="218-llm">2.1.8 通用 LLM 审计评测综合</h4>
+<ul>
+<li><a href="https://www.helpnetsecurity.com/2025/12/19/llmbugscanner-llm-smart-contract-auditing/">LLMBugScanner</a>（Georgia Tech，检索 2026-04）：多 LLM 投票提升精确率。</li>
+<li><a href="https://www.scirp.org/journal/paperinformation?paperid=140225">多 agent 协作论文</a>（检索 2026-04）：比单 LLM 高 10-15% 精确率，召回受训练数据限制。</li>
+</ul>
+<p>工程师选型：闭源旗舰（Claude Opus/Sonnet 4.x、GPT-5）综合质量领先；开源（DeepSeek R1、Llama-3.x、Qwen-2.5）合规/自托管场景值得用，但<strong>召回率低 10-25%</strong>。所有研究一致结论：<strong>必须人审</strong>。</p>
+<h4 id="219-zellic-v12">2.1.9 Zellic V12 在真实竞赛上的表现</h4>
+<p><a href="https://www.zellic.io/blog/introducing-v12/">Zellic V12</a>（检索 2026-04）——独立参赛、独立评判：6 场比赛 submit 25 个漏洞（2 H、2 M、4 L、9 info，其余 invalid/重复）。排除 Code4rena（利益冲突 + 训练数据污染）。</p>
+<p>AI 能在竞赛捞到 high，但<strong>人类 top-5 watson 同场通常找 5-10 个 high</strong>。当前 AI 是 entry-level 选手。</p>
+<h5 id="code4rena-sherlock-ai-2026-04">Code4rena / Sherlock 上 AI 参赛的真实漏报率与误报率（数据均检索 2026-04）</h5>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>数据点</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Zellic V12 在公开竞赛</strong></td>
+<td>6 场（Cantina/Sherlock/HackenProof）共 submit 25 finding：2 H、2 M、4 L、9 info、其余 invalid/重复。<strong>Valid 率约 17/25 ≈ 68%</strong>，但折算到"H+M / total"只有 4/25 = <strong>16%</strong></td>
+<td><a href="https://www.zellic.io/blog/introducing-v12/">Zellic V12</a></td>
+</tr>
+<tr>
+<td><strong>Nethermind AuditAgent v2</strong></td>
+<td>内部 29 场审计样本上对真实 H/M finding <strong>召回率 50%</strong>（v1 仅 15%）</td>
+<td><a href="https://www.nethermind.io/blog/how-nethermind-security-uses-auditagent-alongside-manual-audits">Nethermind 博客</a></td>
+</tr>
+<tr>
+<td><strong>学术 LLMBugScanner</strong></td>
+<td>在 SmartBugs 数据集上多 LLM 投票后比单 LLM <strong>精确率高 10-15%</strong>，召回受训练分布限制</td>
+<td><a href="https://www.helpnetsecurity.com/2025/12/19/llmbugscanner-llm-smart-contract-auditing/">Help Net Security</a></td>
+</tr>
+<tr>
+<td><strong>Anthropic SCONE-bench（攻击侧）</strong></td>
+<td>405 个真实被黑合约：51.11% 自动可攻；2,849 个未公开漏洞合约里发现 2 个 zero-day；单 agent 平均成本 1.22 美元</td>
+<td><a href="https://red.anthropic.com/2025/smart-contracts/">Anthropic Red Team</a></td>
+</tr>
+<tr>
+<td><strong>人类 Top Watson 对照</strong></td>
+<td>Sherlock 顶级 watson 2025 全年在榜单 top-2，单年收入约 <strong>44.2 万美元</strong>，远超任何 AI 工具的"竞赛获奖额"</td>
+<td><a href="https://www.0xsimao.com/blog/introducing-the-contest-academy">0xSimao - Contest Academy</a></td>
+</tr>
+<tr>
+<td><strong>Code4rena/Sherlock 平台</strong></td>
+<td>Code4rena 公开 leaderboard 显示，每场比赛通常有 50-200 watson 参赛、报告 100-500 个 finding；AI 工具如果只能 submit 4-5 个 H+M，相当于挤进 <strong>top 10-30</strong>，离 top-3 仍差一个数量级</td>
+<td><a href="https://code4rena.com/leaderboard">Code4rena Leaderboard</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>漏报率</strong>：综合 Zellic V12 / Nethermind v2 / 学术工具，<strong>当前 AI 对 H+M recall 约 30-50%</strong>，卡在：(1) 训练数据污染使 benchmark 偏乐观；(2) 跨合约语义漏洞 LLM 不擅长。</p>
+<p><strong>误报率</strong>：无静态分析锚点时 <strong>70-90% finding 是 invalid</strong>；加 Slither/Aderyn 后降至 <strong>30-50% noise</strong>。进 final report 前<strong>人类必须复核每条 finding</strong>。</p>
+<p>AI 审计 = "放大镜 + 实习生"。能让高级审计师覆盖更多合约，不能减少高级审计师数量。</p>
+<h4 id="2110-anthropic-scone-benchai">2.1.10 Anthropic SCONE-bench：AI 攻击者也在变强</h4>
+<p><a href="https://red.anthropic.com/2025/smart-contracts/">Anthropic Red Team 2025-12 公布的 SCONE-bench</a>（检索 2026-04）：</p>
+<ul>
+<li>405 个真实被黑合约（2020-2025 年从 Ethereum/BSC/Base 抓取）；</li>
+<li>Claude Opus 4.5 / Sonnet 4.5 / GPT-5 联合在 cutoff 之后的合约上模拟盗取 <strong>460 万美元</strong>；</li>
+<li>全 405 个样本的总模拟盗取额 <strong>5.5 亿美元</strong>，51.11% 的合约可被自动 exploit；</li>
+<li>在 2,849 个最近部署的"未公开漏洞"合约上，Sonnet 4.5 / GPT-5 找到 <strong>2 个 zero-day</strong>，模拟盗取 3,694 美元；</li>
+<li>测试 2,849 个合约的成本只有 3,476 美元（每次 agent run 1.22 美元）。</li>
+</ul>
+<p>攻击侧 AI 比防御侧更便宜、更快。安全审计<strong>必须</strong>把 AI 加进流程。</p>
+<h4 id="2111-trail-of-bits-ai-native">2.1.11 Trail of Bits 的 AI-native 内部基础设施</h4>
+<p><a href="https://blog.trailofbits.com/2026/03/31/how-we-made-trail-of-bits-ai-native-so-far/">Trail of Bits 2026-03</a>（检索 2026-04）：</p>
+<ul>
+<li>内外部 <strong>94 个插件、201 个 skills、84 个专门 agent、29 个命令、125 个脚本、414+ 引用文件</strong>；</li>
+<li>内部 20+ 插件针对 ERC-4337、Merkle 树、精度损失、滑点、状态机、CUDA/Rust review、Go 整数溢出；</li>
+<li>在合适的客户端工程上，从"每周 15 个 bug"提升到"每周 200 个"。</li>
+</ul>
+<p>目前<strong>最体系化</strong>的"AI-augmented audit"案例。开源部分见 <a href="https://github.com/trailofbits/skills">trailofbits/skills</a>。</p>
+<h4 id="2112-vibe-audit">2.1.12 "Vibe Audit" 反例</h4>
+<p>2025 年出现的"扔合约给 AI 打分"工具（统称 vibe audit）：不调任何静态分析，输出 "consider adding access control" 这种<strong>正确但与漏洞无关</strong>的建议，拉低客户预期。</p>
+<p>不要为"只用 LLM 不调静态分析"的产品付费。</p>
+<h4 id="2113">2.1.13 一张表横向对比</h4>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>类型</th>
+<th>是否开源</th>
+<th>关键数据</th>
+<th>投入建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Slither + Slither-MCP</td>
+<td>L1</td>
+<td>开源</td>
+<td>Trail of Bits 内部默认配置</td>
+<td>必装</td>
+</tr>
+<tr>
+<td>Aderyn + Aderyn-MCP</td>
+<td>L1</td>
+<td>GPL-3.0</td>
+<td>100+ detectors、VS Code Extension</td>
+<td>必装</td>
+</tr>
+<tr>
+<td>4naly3er</td>
+<td>L0/L1</td>
+<td>开源</td>
+<td>Aderyn 的灵感来源、社区项目</td>
+<td>装上备用</td>
+</tr>
+<tr>
+<td>Nethermind AuditAgent</td>
+<td>L2</td>
+<td>闭源</td>
+<td>内部 29 场审计、50% 召回率</td>
+<td>团队评估付费</td>
+</tr>
+<tr>
+<td>QuillShield (QuillAudits)</td>
+<td>L2</td>
+<td>闭源</td>
+<td>RL 微调、第三方数据少</td>
+<td>观望</td>
+</tr>
+<tr>
+<td>Olympix</td>
+<td>L1/L2</td>
+<td>闭源</td>
+<td>IDE 内实时拦截</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>OpenZeppelin AI（Contracts MCP）</td>
+<td>L1</td>
+<td>部分开源</td>
+<td>用于"生成"，不做"审计"</td>
+<td>配合 Claude Code 使用</td>
+</tr>
+<tr>
+<td>Vibe Audit 类</td>
+<td>L0</td>
+<td>闭源</td>
+<td>无</td>
+<td><strong>不推荐</strong></td>
+</tr>
+<tr>
+<td>Trail of Bits skills</td>
+<td>L3</td>
+<td>部分开源</td>
+<td>200+ skills、200 bug/周</td>
+<td>学习其设计哲学</td>
+</tr>
+<tr>
+<td>Zellic V12</td>
+<td>L2</td>
+<td>闭源</td>
+<td>6 场竞赛、25 finding</td>
+<td>关注其方法论</td>
+</tr>
+<tr>
+<td>LLMBugScanner（学术）</td>
+<td>L2</td>
+<td>论文</td>
+<td>多 agent 投票提升精确率</td>
+<td>阅读</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-ai-fuzz-seed">2.2 AI 测试用例与 Fuzz Seed 生成</h3>
+<p>可工作不可裸跑：</p>
+<ul>
+<li>Claude 写 Foundry invariant 测试草稿——比从空白快 3-5×；</li>
+<li>给 LLM 被攻击合约 → 倒推 PoC，<strong>比直接问"哪里有漏洞"靠谱</strong>；</li>
+<li>Echidna/Medusa 的 fuzz harness 可让 LLM 生成初版，invariant property 必须自己写。</li>
+</ul>
+<p>流程：被黑 commit + 攻击 tx → LLM 生成 Foundry test → <code>forge test</code> 复现 → 证明 LLM 抓住关键路径。</p>
+<p><strong>"LLM 跑了 100 轮没找到反例" ≠ "协议安全"</strong>。</p>
+<h3 id="23-ai-zk">2.3 AI 协助 ZK 电路调试</h3>
+<p>常见做法：Circom/Noir/Halo2 报错丢 Claude 解释 constraint mismatch；电路代码 + 期望行为 → LLM 定位"哪一行约束少了"。</p>
+<p><strong>风险</strong>：约束<strong>少</strong>一行（unsound）与约束<strong>多</strong>一行（complete 但电路错）报错形态不同，LLM 容易混淆。LLM 给的"修好了"必须用 <a href="https://github.com/Veridise/Picus">Picus</a> 或 <a href="https://github.com/zksecurity">ZKSecurity</a> 重新验证。</p>
+<p>ZK 漏洞代价极高（unsound = 证明系统失效）——AI <strong>推断</strong>最危险的地方，必须工具化验证。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="3-ai" id="ch06"><span class="chapter-num">Chapter 06</span><br>3. 链上 AI 基础设施</h2>
+
+<p>名词最多、生产化最低的一层。本节把每个原语先归到它的 trust 锚——<strong>trust 没说清的方案不要接</strong>。</p>
+<h3 id="30-ai">3.0 链上 AI 的四种"信任锚"</h3>
+<p><strong>核心问题</strong>：链上合约怎么知道链下推理没作弊？四个可行答案，每个对应不同的 Trust Model：</p>
+<figure><img src="diagram-c13d7fc8aa.png" alt="mermaid diagram"></figure>
+
+<table>
+<thead>
+<tr>
+<th>原语</th>
+<th>信任谁</th>
+<th>信任什么</th>
+<th>成熟度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zkML</td>
+<td>椭圆曲线 / 哈希假设</td>
+<td>给定权重 commitment，forward pass 算术正确</td>
+<td>L1-L2（小模型生产、GPT-2 级实验）</td>
+</tr>
+<tr>
+<td>opML</td>
+<td>"至少 1 个诚实复算者 + 经济激励"</td>
+<td>在 ~10 分钟挑战期内有节点会复算并发起争议</td>
+<td>L2（13B 参数 demo 上线）</td>
+</tr>
+<tr>
+<td>TEE</td>
+<td>硬件厂商（Intel/AMD/NVIDIA）+ 远程 attestation 流程</td>
+<td>enclave 里代码与数据未被外部读取 / 篡改</td>
+<td>L2-L3（Phala / Oasis 主网）</td>
+</tr>
+<tr>
+<td>Crypto-economic（Bittensor）</td>
+<td>加权 stake 投票 + slashing</td>
+<td>多数 stake 不会共谋造假</td>
+<td>L1-L2（subnet 收入真，但有共谋风险）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>先问"我能否用集中式预言机 + 公开权重 + hash"——够用就别拉 zkML/opML 进来</strong>。</p>
+<h3 id="31-zkml">3.1 zkML：原理、性能瓶颈、当前可证明模型规模</h3>
+<p><strong>Trust Model</strong>：信任椭圆曲线/哈希假设 + 权重 commitment 的发布渠道。链上合约不知道权重 W，也不知道输入 x，但能信任 y = f(W, x) 的算术过程。<strong>zkML 不证明</strong>：W 是"对齐过 / 诚实训练"的模型；y 是"正确答案"或"无偏见"；W 没被替换为后门权重。trust 从"信链下推理"换成"信权重 commitment + 模型治理"——commitment 之外的 alignment / 数据集仍是 oracle 问题。</p>
+<p><strong>适用 L 等级</strong>：L1（小模型生产）到 L2（GPT-2 级实验）。</p>
+<h4 id="311">3.1.1 原理图</h4>
+<figure><img src="diagram-922cf45806.png" alt="mermaid diagram"></figure>
+
+<p>zkML 把推理结果编码成 zk-SNARK/STARK 证明，链上合约只验证证明、不重新跑模型。链上不知道模型权重 + 不知道输入 x，但能信任输出 y 来自合法计算。</p>
+<h4 id="312-2026-04">3.1.2 主流框架对比（数据均检索 2026-04）</h4>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>团队</th>
+<th>当前能力</th>
+<th>数据来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EZKL</strong> (zkonduit)</td>
+<td>zkonduit</td>
+<td>平均比 RISC Zero 快 65.88×、比 Orion 快 2.92×；内存占用比 Orion 少 63.95%、比 RISC Zero 少 98.13%；XGBoost 例子 1 年快 15×</td>
+<td><a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL Benchmarks</a>、<a href="https://blog.ezkl.xyz/post/state_of_ezkl/">State of EZKL 2025</a></td>
+</tr>
+<tr>
+<td><strong>JOLT Atlas</strong></td>
+<td>a16z crypto</td>
+<td>基于 lookup + sumcheck，2025 秋部分模型<strong>秒级</strong>证明、无 GPU；论文称对 ML 比 zkVM 快 3-7×</td>
+<td><a href="https://arxiv.org/abs/2602.17452">Jolt Atlas paper</a>、<a href="https://www.kinic.io/blog/joltx-reaching-for-sota-in-zero-knowledge-machine-learning-zkml">Kinic</a></td>
+</tr>
+<tr>
+<td><strong>Lagrange DeepProve-1</strong></td>
+<td>Lagrange Labs</td>
+<td>2025-07 完成 GPT-2 完整推理证明；宣称比 EZKL 快 54-158×；MLP 验证 671×、CNN 验证 521×</td>
+<td><a href="https://lagrange.dev/blog/deepprove-1">DeepProve-1 公告</a>、<a href="https://github.com/Lagrange-Labs/deep-prove">DeepProve repo</a></td>
+</tr>
+<tr>
+<td><strong>RISC Zero (zkVM)</strong></td>
+<td>RISC Zero Inc.</td>
+<td>通用 zkVM，灵活；但 ML 路径偏慢，2025 年仍是"什么都能证、但慢"</td>
+<td>同上 EZKL 对比项</td>
+</tr>
+<tr>
+<td><strong>zkPyTorch (ICME)</strong></td>
+<td>学术 + ICME</td>
+<td>2025-03 demo VGG-16 证明 2.2s</td>
+<td><a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">ICME zkML 2025 综述</a></td>
+</tr>
+<tr>
+<td><strong>Modulus Labs</strong></td>
+<td>Modulus Labs</td>
+<td>2022 发布 "The Cost of Intelligence" 第一篇 zkML 系统 benchmark；曾跑通 18M 参数模型链上推理</td>
+<td><a href="https://moduluslabs.ai/blog">Modulus Labs Blog</a>、<a href="https://www.theblock.co/post/260335/modulus-raises-6-3-million-to-bring-crypto-security-to-ai">The Block 募资公告</a></td>
+</tr>
+<tr>
+<td><strong>Giza (LuminAIR)</strong></td>
+<td>Giza</td>
+<td>2025-09 发布 LuminAIR，基于 Circle STARK；与 Yearn Finance 等 DeFi 收益聚合器集成</td>
+<td><a href="https://github.com/gizatechxyz">Giza GitHub</a></td>
+</tr>
+<tr>
+<td><strong>ORA zkML</strong></td>
+<td>ORA</td>
+<td>与 opML 是同一团队的双产品线，zkML 用于"高价值低频"场景</td>
+<td><a href="https://docs.ora.io/">ORA Docs</a></td>
+</tr>
+<tr>
+<td><strong>Aztec ML / Noir 上的 zkML</strong></td>
+<td>Aztec</td>
+<td>在 Noir 电路 DSL 上写 ML，目标是隐私 DeFi + ML 组合</td>
+<td>Aztec docs</td>
+</tr>
+</tbody>
+</table>
+<h4 id="313-ram">3.1.3 实测数据：能证多大模型、要多久、多少 RAM</h4>
+<p>所有数据均检索 2026-04，来源以官方 benchmark 与第三方独立 benchmark 为准。</p>
+<table>
+<thead>
+<tr>
+<th>模型规模</th>
+<th>代表模型</th>
+<th>EZKL</th>
+<th>RISC Zero zkVM</th>
+<th>Modulus Labs</th>
+<th>Lagrange DeepProve</th>
+<th>JOLT Atlas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>线性回归</strong></td>
+<td>logistic regression</td>
+<td>~1ms 证明（<a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL bench</a>）</td>
+<td>~10ms</td>
+<td>已支持</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>树模型</strong></td>
+<td>XGBoost (~1k 节点)</td>
+<td>秒级；2024 年内快 15×</td>
+<td>数十秒</td>
+<td>已支持</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>小 CNN</strong></td>
+<td>MNIST 分类（数十万参数）</td>
+<td>几秒-几十秒</td>
+<td>分钟级</td>
+<td>已支持</td>
+<td>MLP 验证 671×、CNN 验证 521× 加速</td>
+<td>部分模型秒级</td>
+</tr>
+<tr>
+<td><strong>中 CNN</strong></td>
+<td>VGG-16（~138M 参数）</td>
+<td>分钟级（含 setup）</td>
+<td>分钟到小时级</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>中 CNN（zkPyTorch）</strong></td>
+<td>VGG-16</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>zkPyTorch 2025-03 跑出 <strong>2.2s</strong>（<a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">ICME 综述</a>）</td>
+</tr>
+<tr>
+<td><strong>大模型上限</strong></td>
+<td>Modulus Labs 18M 参数模型</td>
+<td>—</td>
+<td>—</td>
+<td><strong>18M 参数链上推理 benchmark</strong></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>GPT-2 级 LLM</strong></td>
+<td>GPT-2 (~124M 参数)</td>
+<td>不支持完整推理</td>
+<td>不支持完整推理</td>
+<td>不支持完整推理</td>
+<td><strong>2025-07 完成完整推理证明</strong>（<a href="https://lagrange.dev/blog/deepprove-1">DeepProve-1</a>）</td>
+<td>部分层支持</td>
+</tr>
+<tr>
+<td><strong>Llama-2-7B+</strong></td>
+<td>7B-70B 参数 LLM</td>
+<td>不支持</td>
+<td>不支持</td>
+<td>不支持</td>
+<td>仅部分层 demo</td>
+<td>仅部分层 demo</td>
+</tr>
+</tbody>
+</table>
+<p>三组口诀数据：</p>
+<ul>
+<li><strong>EZKL vs RISC Zero</strong>：proof 速度 <strong>65.88×</strong>、内存少 <strong>98.13%</strong>（<a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL Benchmarks</a>）；</li>
+<li><strong>DeepProve-1 vs EZKL</strong>：proof 速度 <strong>54-158×</strong>（<a href="https://lagrange.dev/blog/deepprove-1">Lagrange</a>）；</li>
+<li><strong>完整 LLM 上限</strong>：GPT-2（~124M 参数），DeepProve-1 在 2025-07 首次实现。</li>
+</ul>
+<h4 id="314">3.1.4 现实判断</h4>
+<ul>
+<li>截至 2026-04，<strong>生产可用</strong>的 zkML 停留在小模型（线性/树模型、小 CNN、最多 GPT-2 级 LLM）。Llama-3-70B 成 ZK 证明的成本仍在小时-天量级；</li>
+<li>zkML 合适场景：<strong>高价值低频</strong>——KYC/反欺诈分类、链上信用评分、Worldcoin 类生物识别、AMM 价格喂数；</li>
+<li>大多数应用 opML 或 TEE 已足够。</li>
+</ul>
+<p><strong>"可验证推理"营销的三个反问</strong>：当 zkML 项目宣传"我们能证明 GPT-4"，先问：(1) 是<em>完整模型</em>还是<em>某层</em>？(2) 什么硬件？(3) 单次 proof 多少时间 + RAM？多数营销贴答不出。DeepProve-1 完成 GPT-2 推理证明只证明算术正确，不证明 GPT-2 输出"有用"——回到本节开头 Trust Model。</p>
+<h3 id="32-opml">3.2 opML：信任模型与挑战期</h3>
+<p><strong>Trust Model</strong>：信任"在挑战期（~10 分钟）内至少有 1 个节点会复算并发起争议"。任何错误结果只要有 1 个诚实复算者就能被 slash。<strong>opML 不保证</strong>：实时 finality（必须等挑战期）、模型权重隐私（权重通常公开或 hash 公开）、抗 100% 多数共谋（假设至少 1 个诚实节点）。</p>
+<p><strong>适用 L 等级</strong>：L2（ORA 13B demo 已跑通），适合"高频小额、容忍 10 分钟延迟"的链上 AI 调用。</p>
+<h4 id="321">3.2.1 原理图：交互式争议博弈</h4>
+<figure><img src="diagram-8e5a71acc3.png" alt="mermaid diagram"></figure>
+
+<h4 id="322-opml-op-rollup">3.2.2 为什么 opML 挑战期比 OP Rollup 短</h4>
+<p><a href="https://arxiv.org/abs/2401.17555">ORA opML 论文（arXiv 2401.17555）</a>（检索 2026-04）：OP Rollup 7 天源于复算所有 L2 交易的时间冗余；opML 复算单元是"一次推理"，独立、并行性强，实际挑战期压到 <strong>10 分钟级别</strong>（<a href="https://docs.ora.io/doc/onchain-ai-oracle-oao/fraud-proof-virtual-machine-fpvm-and-frameworks/opml">ORA 文档</a>，检索 2026-04）。</p>
+<p>ORA <a href="https://mirror.xyz/orablog.eth/Z__Ui5I9gFOy7-da_jI1lgEqtnzSIKcwuBIrk-6YM0Y">Mirror 文</a>（检索 2026-04）展示了 <strong>13B 参数模型</strong>跑在 opML 上的 demo——2026-04 时唯一公开运行 13B+ 模型的去信任推理方案。</p>
+<h4 id="323">3.2.3 工程师选择决策树</h4>
+<figure><img src="diagram-a00f7c68ae.png" alt="mermaid diagram"></figure>
+
+<h3 id="33-tee-based-ai-enclave">3.3 TEE-based AI：用硬件 enclave 做"可验证推理"</h3>
+<p><strong>Trust Model</strong>：信任 Intel/AMD/NVIDIA 的硬件设计 + 厂商签发的 remote attestation 证书 + enclave 固件没有侧信道漏洞。<strong>TEE 不保证</strong>：抗硬件厂商（Intel 历史上有 SGAxe/Plundervolt）；抗物理拆解攻击；100% 抗侧信道。trust 是"密码学 + 硬件经济"——攻破 enclave 的成本通常远高于受保护资产。</p>
+<p><strong>适用 L 等级</strong>：L2-L3（Phala 日处理 13.4 亿 token、Oasis ROFL 主网）。适合"保护用户数据 + 不愿付 zk 成本"，是大模型推理的现实选项。</p>
+<p>TEE（Intel TDX/SGX、AMD SEV-SNP、NVIDIA H100 confidential computing）：硬件保证 enclave 内代码 + 数据不被外部读取/篡改，厂商签发 remote attestation。</p>
+<h4 id="331-2026-04">3.3.1 主要项目（数据检索 2026-04）</h4>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>类型</th>
+<th>数据点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phala Network</strong></td>
+<td>TEE 云 + Confidential AI</td>
+<td>2025 重定位为"Confidential AI 平台"。年底 Phala Cloud 10,000+ 用户、近 400 付费客户、日处理 1.34B LLM token（<a href="https://medium.com/@jamessoulman69/phalas-2025-from-blockchain-project-to-confidential-ai-infrastructure-b80bca70686c">Phala 2025 总结</a>）</td>
+</tr>
+<tr>
+<td><strong>Oasis ROFL</strong></td>
+<td>Verifiable off-chain compute</td>
+<td>2025-07-02 ROFL 主网上线（<a href="https://oasis.net/blog/verifiable-ai-with-tees">Oasis 公告</a>），Talos 自治财库、Zeph 隐私 AI 是公开案例</td>
+</tr>
+<tr>
+<td><strong>iExec</strong></td>
+<td>TEE + 数据市场</td>
+<td>与医疗机构合作过 PoC，用 Intel TDX 在 enclave 内分析患者数据（<a href="https://messari.io/report/tee-building-trust-for-the-ai-era">Messari TEE 报告</a>）</td>
+</tr>
+<tr>
+<td><strong>Marlin</strong></td>
+<td>TEE 中继 + GPU enclave</td>
+<td>主打"低延迟 TEE 推理"，与 EigenLayer 集成做共享安全</td>
+</tr>
+<tr>
+<td><strong>Ten Protocol</strong></td>
+<td>TEE-based L2</td>
+<td>整链跑在 enclave 内，状态对外加密；目标是"私有合约 + 私有 AI"</td>
+</tr>
+<tr>
+<td><strong>Atoma Network</strong></td>
+<td>Sui 上的 TEE 推理网络</td>
+<td>live on Sui mainnet，TEE + 隐私推理（<a href="https://www.gate.com/learn/articles/the-6-emerging-ai-verification-solutions-in-2025/8399">Gate Learn 2025 综述</a>）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="332-tee">3.3.2 TEE 的优劣</h4>
+<ul>
+<li><strong>优点</strong>：性能接近原生（H100 confidential computing 性能损失 &lt; 5%）；适合大模型推理，不受 zkML 电路规模限制。</li>
+<li><strong>缺点</strong>：信任根在硬件厂商。Intel SGX 历史上有 <a href="https://en.wikipedia.org/wiki/Software_Guard_Extensions">SGAxe、Plundervolt 等漏洞</a>；NVIDIA H100 confidential computing 未经长期攻击考验。</li>
+<li><strong>建议</strong>："保护用户数据 + 不愿付 zk 成本"的场景（医疗、私钱包 AI），TEE 是最现实选择。</li>
+</ul>
+<h3 id="34-bittensor-akash-aethir-ionet-hyperbolic-ritual-allora-sentient-atoma-6079">3.4 去中心化推理：Bittensor / Akash / Aethir / io.net / Hyperbolic / Ritual / Allora / Sentient / Atoma / 6079</h3>
+<p><strong>Trust Model</strong>：因子类而异——
+- <strong>GPU 市场（Akash/io.net/Aethir）</strong>：信任"我自己跑的容器，结果我自己验"——计算正确性责任在租用方，链只做支付与撮合。
+- <strong>推理网络（Bittensor/Ritual/Allora/Atoma）</strong>：信任 stake 加权投票（Yuma 共识）+ slashing。共谋风险随 stake 集中度上升。
+- <strong>训练网络（Bittensor SN3 / Vana / Nous）</strong>：信任分布式训练协议 + 验证 + 复现实验。</p>
+<p><strong>适用 L 等级</strong>：GPU 市场 L2-L3（真实付费客户），推理/训练网络 L1-L2（subnet 级别有真实收入，但跨 subnet 的"trust 普适性"未验证）。</p>
+<h4 id="341-ai">3.4.1 三类"去中心化 AI 计算"</h4>
+<figure><img src="diagram-2ae8ebeb2b.png" alt="mermaid diagram"></figure>
+
+<p>99% 的 dApp 用 OpenAI/Anthropic/本地模型就够了。如果你不卖 GPU，多数项目可以观望。</p>
+<h4 id="342-bittensorsubnet-yuma">3.4.2 Bittensor：subnet 经济与 Yuma 共识</h4>
+<ul>
+<li><strong>定位</strong>：ML 任务拆成 subnet，每个 subnet 是微型市场（miner 跑模型、validator 评分），TAO 代币按 Yuma 共识分配。</li>
+<li><strong>工作机制</strong>：<a href="https://docs.learnbittensor.org/yuma-consensus/">Bittensor Yuma Consensus 文档</a>（检索 2026-04）：</li>
+<li>validator 提交对 miner 的 weight 向量；</li>
+<li>链上 Yuma 算法用 stake 加权融合，给出"trusted ranking"；</li>
+<li>每块铸 TAO，41% 给 miner、41% 给 validator、18% 给 subnet 创建者；</li>
+<li>2025-02 dTAO 升级让 subnet 数量从 ~32 飙到 100+，2026-04 共 <strong>128 active subnet</strong>（<a href="https://www.tao.media/the-ultimate-guide-to-bittensor-2026/">Tao Media 2026 指南</a>）；</li>
+<li>2025-12 首次减半，每日发行从 7,200 降到 3,600 TAO。</li>
+<li><strong>真实业务数据</strong>：</li>
+<li><strong>Targon (SN4)</strong> 推理服务年化收入约 1,040 万美元；</li>
+<li><strong>Score (SN44)</strong> 体育视频分析达到传统服务 1/10–1/100 成本；</li>
+<li><strong>Chutes (SN64)</strong> 主打 serverless 推理；</li>
+<li><strong>Nineteen (SN19)</strong> 主打超低延迟；</li>
+<li><strong>Templar (SN3)</strong> 协作训练；</li>
+<li>学术研究 <a href="https://arxiv.org/html/2507.02951v1">Bittensor: A Critical and Empirical Analysis</a>（检索 2026-04）对生态做了独立分析。</li>
+<li><strong>局限</strong>：subnet 之间高度异构、文档质量参差；TAO 价格波动大，矿工/验证者激励不稳定。</li>
+<li><strong>建议</strong>：接"去中心化推理 API"用 Bittensor OpenAI-compatible gateway 最方便；"投资"视角把它当算力市场而非 SaaS。</li>
+</ul>
+<h4 id="343-gpu-2026-04">3.4.3 GPU 市场详解（含 2026-04 美元小时单价）</h4>
+<p>工程师视角看 GPU 市场，最重要是单价。把头部去中心化 GPU 与中心化云对比（数据均检索 2026-04）：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>H100 单价/小时</th>
+<th>A100 80GB 单价/小时</th>
+<th>业务规模</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Akash</strong></td>
+<td><strong>$1.49</strong>（<a href="https://akash.network/pricing/gpus/">Akash GPU 价格页</a>）</td>
+<td><strong>$0.79</strong></td>
+<td>2025-Q1 季度 lease 收入破 100 万美元，年化 ARR ~420 万美元（<a href="https://messari.io/report/state-of-akash-q1-2025">Messari</a>）</td>
+</tr>
+<tr>
+<td><strong>Hyperbolic</strong></td>
+<td><strong>$3.20</strong> SXM（<a href="https://docs.hyperbolic.xyz/docs/hyperbolic-pricing">Hyperbolic Docs Pricing</a>）</td>
+<td><strong>$1.60</strong></td>
+<td>融资 1,200 万美元；Proof of Sampling 验证；Llama-3.x / Qwen-2.5 系列开放调用</td>
+</tr>
+<tr>
+<td><strong>io.net</strong></td>
+<td>浮动（spot 模式）</td>
+<td>浮动</td>
+<td>链上累计可验证收入 &gt;2,000 万美元，300K+ GPU 跨 55+ 国，比 AWS/GCP 便宜 70%</td>
+</tr>
+<tr>
+<td><strong>Aethir</strong></td>
+<td>企业询价为主</td>
+<td>—</td>
+<td>2025 年总收入 1.278 亿美元，Q3 ARR ~1.66 亿美元，1.5B+ 计算小时，435K+ GPU 容器跨 93 国</td>
+</tr>
+<tr>
+<td><strong>Render</strong></td>
+<td>不直接卖 H100/A100</td>
+<td>—</td>
+<td>Solana 上的 GPU 渲染网络，主打 3D 渲染 + 部分 AI 推理</td>
+</tr>
+<tr>
+<td><strong>AWS / GCP（对照）</strong></td>
+<td>$4-6（按需）</td>
+<td>$2-4</td>
+<td>中心化云的"参考价"——大多数去中心化 GPU 卖点是"比这便宜 30-70%"</td>
+</tr>
+<tr>
+<td><strong>市场平均</strong></td>
+<td><strong>$2.98</strong> 跨 42 个云提供商（<a href="https://getdeploying.com/gpus/nvidia-h100">getdeploying H100 比价</a>）</td>
+<td>—</td>
+<td>最低 spot 已经压到 $0.47/h</td>
+</tr>
+</tbody>
+</table>
+<h4 id="344">3.4.4 工程师视角下的取舍</h4>
+<ul>
+<li><strong>最便宜 H100</strong>：Akash $1.49/h；</li>
+<li><strong>OpenAI-compatible 推理 API</strong>：Hyperbolic（Llama-3.x / Qwen 兼容接口）；</li>
+<li><strong>企业稳定合规</strong>：Aethir / io.net 走 enterprise contract；</li>
+<li><strong>选型原则</strong>：先看 SLA + 区域 + 网络延迟，代币价格不是选型依据。</li>
+</ul>
+<p>这一层本质是 <strong>DePIN + AI</strong>，商业模式比 agent 代币健康，但跟"链上 dApp 用户体验"几乎无关——除非你在卖 GPU。</p>
+<h4 id="345-ritual-allora-atoma-sentient-6079">3.4.5 推理网络：Ritual / Allora / Atoma / Sentient / 6079</h4>
+<ul>
+<li><strong>Ritual</strong>：以太坊上合约调用模型推理，2025 与 <a href="https://www.allora.network/blog/allora-x-ritual-powering-crowdsourced-models-e590b">Allora 合作</a>做众包模型。</li>
+<li><strong>Allora</strong>：去中心化 context-aware AI 网络，worker 投稿 + validator 评分汇总。</li>
+<li><strong>Atoma</strong>：Sui 主网 TEE 推理网络，主打私有 + 可验证。</li>
+<li><strong>Sentient AGI</strong>：开源 + 社区拥有的模型，在去中心化 AI 验证赛道有声量。</li>
+<li><strong>6079</strong>：去中心化 AI 推理基础设施，2025 年活跃度上升。</li>
+</ul>
+<p>这一层 2024-2025 集中爆发，绝大多数仍在"测试网 + 小规模真实用户"阶段，不是"明天就能接的 SaaS"。</p>
+<h3 id="35-dao">3.5 数据 DAO 与训练数据市场</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>直觉</th>
+<th>关键数据（2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vana</strong></td>
+<td>"用户拥有的数据用来训 AI"</td>
+<td>100 万+ 用户、20+ live data DAO、与 Flower Labs 合作 COLLECTIVE-1（<a href="https://news.mit.edu/2025/vana-lets-users-own-piece-ai-models-trained-on-their-data-0403">MIT News 2025-04</a>）</td>
+</tr>
+<tr>
+<td><strong>Ocean Protocol</strong></td>
+<td>Compute-to-data 数据市场</td>
+<td>2024 加入 ASI Alliance；学术/医疗有真实用例</td>
+</tr>
+<tr>
+<td><strong>Numerai</strong></td>
+<td>加密 + 众包对冲基金</td>
+<td>2025-11 D 轮融 3,000 万美元、估值 5 亿（<a href="https://fintech.global/2025/11/24/numerai-lands-30m-to-scale-ai-powered-hedge-fund/">FintechGlobal</a>）；JPMorgan 承诺最多 5 亿美元资金（<a href="https://www.bloomberg.com/news/articles/2025-08-26/crowdsourcing-hedge-fund-gets-500-million-jpmorgan-commitment">Bloomberg 2025-08</a>）</td>
+</tr>
+<tr>
+<td><strong>Nous Research</strong></td>
+<td>去中心化 AI 研究 + 训练</td>
+<td>2025-04 Paradigm 领投 5,000 万美元 A 轮（<a href="https://fortune.com/crypto/2025/04/25/paradigm-nous-research-crypto-ai-venture-capital-deepseek-openai-blockchain/">Fortune</a>）</td>
+</tr>
+</tbody>
+</table>
+<p>Numerai 是 crypto + AI 里最"反 hype"的成功案例：10 年专注，代币激励数据科学家提交模型而非投机。</p>
+<h3 id="36-agent-eliza-ai16z-virtuals-olas-wayfinder-fetchai">3.6 链上 Agent 框架：Eliza / ai16z / Virtuals / Olas / Wayfinder / Fetch.ai</h3>
+<p><strong>Trust Model（关键）</strong>：每个框架本质区别 = "agent 持私钥吗？谁能改 prompt？tx 谁签？"§4.7 给出按 Trust Model 分类的对照表。本节先提取核心：</p>
+<ul>
+<li><strong>链下守护进程，运营方签 tx</strong>（elizaOS、uAgents）：信任 = 信运营方钱包 / 多签。</li>
+<li><strong>m-of-n 多签 service marketplace</strong>（Olas/Autonolas）：信任 = N 个 operator 的 m-of-n 共识。</li>
+<li><strong>平台托管签 tx</strong>（Virtuals）：信任 = Virtuals 团队 + 平台 wallet。</li>
+<li><strong>TBA 自持身份</strong>（GAME / ERC-6551）：信任 = 链上 NFT 持有者 + agent 进程 prompt 完整性。</li>
+</ul>
+<p>aixbt 黑客（§4.1）就是 Trust Model 失败：dashboard 权限被攻破 → prompt 注入 → 自然语言指令"transfer 55.5 ETH"被执行。任何"agent 持 EOA 私钥 + dashboard 通过密码登入"都是 anti-pattern。</p>
+<h4 id="361">3.6.1 框架对比</h4>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>直觉</th>
+<th>关键数据（2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Eliza / ai16z (elizaOS)</strong></td>
+<td>TypeScript 开源 agent 框架，社交媒体 + DeFi 集成</td>
+<td><a href="https://thedefiant.io/news/nfts-and-web3/eliza-labs-ai16z-launches-ai-agent-platform">Eliza V2 + auto.fun</a> 2025 推出；ai16z 代币市值 ~20 亿美元高峰，meme 占比高</td>
+</tr>
+<tr>
+<td><strong>Virtuals Protocol</strong></td>
+<td>Base 上的"AI agent L1"概念</td>
+<td>VIRTUAL 代币 2024-12 上 Binance，市值最高破 40 亿美元；GAME（agent meta token）跟随</td>
+</tr>
+<tr>
+<td><strong>Olas (Autonolas)</strong></td>
+<td>"Co-own AI"，agent app store 模式</td>
+<td>融资 1,380 万美元发布 Pearl agent app store（<a href="https://www.gate.com/learn/articles/what-is-autonolas-olas/7162">Gate Learn</a>）</td>
+</tr>
+<tr>
+<td><strong>Wayfinder</strong></td>
+<td>给 agent 用的"地图"——把链上操作模板化</td>
+<td>用 PROMPT 代币激励社区贡献 path</td>
+</tr>
+<tr>
+<td><strong>Fetch.ai (ASI Alliance)</strong></td>
+<td>uAgents 框架；2024 与 SingularityNET、Ocean、CUDOS 合并为 ASI</td>
+<td><a href="https://crypto.com/en/university/what-is-the-artificial-superintelligence-alliance">ASI Alliance 介绍</a>；FET 代币转换为 ASI</td>
+</tr>
+<tr>
+<td><strong>Story Protocol Agents</strong></td>
+<td>IP-on-chain，agent 持有/交易 IP</td>
+<td>在 Story 主网上的早期生态</td>
+</tr>
+</tbody>
+</table>
+<h4 id="362">3.6.2 诚实评估</h4>
+<ul>
+<li><strong>框架本身有用</strong>（Eliza、uAgents），适合 Twitter 机器人、Discord 机器人、链上自动化；</li>
+<li><strong>代币层面投机远大于真实使用</strong>——大多数 launch 的 agent 链上交易屈指可数；</li>
+<li>生产中的"agent 工程"不需要代币，普通 Node 服务 + ethers/viem + Anthropic/OpenAI API 就够；</li>
+<li>aixbt 案例（§4.1）显示"agent 持私钥"的运营安全模型仍不成熟。</li>
+</ul>
+<h3 id="37-intent-based-defi-solver">3.7 Intent-based DeFi 与 Solver 模式</h3>
+<p><strong>Trust Model</strong>：用户信任的是"validity predicate"——签的不是具体 tx，而是"约束条件"（最低输出、最大滑点、过期时间）。Solver 拍卖路径，但只有满足约束的路径能上链结算。<strong>信任谁</strong>：(1) 钱包签名工具正确解析 intent；(2) solver 市场有竞争（不被单一 solver 垄断 MEV）；(3) ERC-7521/7683 标准实现无 bug。</p>
+<h4 id="371-transaction-intent">3.7.1 从 transaction 到 intent</h4>
+<figure><img src="diagram-d2bd05d2b5.png" alt="mermaid diagram"></figure>
+
+<h4 id="372-intent">3.7.2 主要 Intent 协议</h4>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>关键事实（2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CoW Swap</strong></td>
+<td>先驱，月成交 ~18.6 亿美元（vs Uniswap 24h 30 亿+），自 2021 累计 330 亿+；第二大 solver Barter 累计执行 180 亿+，每周 9 亿（<a href="https://blockworks.co/news/barter-buys-rival-solver-codebase">Blockworks</a>）</td>
+</tr>
+<tr>
+<td><strong>UniswapX</strong></td>
+<td>Uniswap 的 solver 版；roadmap 含跨链</td>
+</tr>
+<tr>
+<td><strong>1inch Fusion</strong></td>
+<td>同型，主打 MEV 保护</td>
+</tr>
+<tr>
+<td><strong>Anoma</strong></td>
+<td>Intent-centric L1，定义 intent 为一等公民；ERC-7521 由 Anoma 团队主导</td>
+</tr>
+<tr>
+<td><strong>Khalani</strong></td>
+<td>"collaborative solving" 模型，让 solver 协作而非单一竞拍（<a href="https://khalani.network/">Khalani 官网</a>）</td>
+</tr>
+<tr>
+<td><strong>SUAVE (Flashbots)</strong></td>
+<td>加密 mempool + 私有 intent 提交</td>
+</tr>
+<tr>
+<td><strong>Bungee/Socket</strong></td>
+<td>跨链 intent 路由聚合器</td>
+</tr>
+<tr>
+<td><strong>Across</strong></td>
+<td>支持 ERC-7683 跨链 intent 标准</td>
+</tr>
+<tr>
+<td><strong>ERC-7521</strong></td>
+<td>Anoma 团队主导，<a href="https://eips.ethereum.org/EIPS/eip-7521">EIP</a>，智能合约钱包通用 intent 格式，validity predicate 在签名时锁定边界</td>
+</tr>
+<tr>
+<td><strong>ERC-7683</strong></td>
+<td>跨链 intent 标准，<a href="https://www.archetype.fund/media/erc7683-the-cross-chain-intents-standard">Archetype 介绍</a>（检索 2026-04）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="373-ai-intent">3.7.3 AI 在 Intent 里的位置</h4>
+<ul>
+<li><strong>写 intent</strong>：LLM 把自然语言翻译成 ERC-7521 + ERC-7683 格式；</li>
+<li><strong>写 solver</strong>：LLM 优化 routing 算法，但 solver 决定 MEV 流向，<strong>安全模型不能让 LLM 自己拍</strong>；</li>
+<li><strong>AI agent 用 intent 操作链</strong>：agent 签 intent 让 solver 执行，不持私钥——§4.1 aixbt 事件后的业界共识"安全 agent 模式"。</li>
+</ul>
+<p>ERC-7521 intent + ERC-4337 账户抽象 = AI agent 安全操作链上的标准范式。详见模块 10 §账户抽象。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="4-ai-agent" id="ch07"><span class="chapter-num">Chapter 07</span><br>4. 链上 AI Agent 与代币经济</h2>
+
+<p><strong>Trust Model（本节）</strong>：评估任何 agent 代币 = 拆解 (a) 协议层 trust（用 §3 框架）+ (b) 代币层 trust（代币是否被业务收入对冲、是否仅靠 meme/解锁）。两者独立。框架本身可以 L2，代币层仍可能是纯 hype。</p>
+<h3 id="41-fetchai-ocean-bittensor-ai16z-aixbt">4.1 现状：FetchAI / Ocean / Bittensor / ai16z / aixbt</h3>
+<p>数据检索 2026-04：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>类型</th>
+<th>真实使用 vs 投机比例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FetchAI / ASI</strong></td>
+<td>Agent 经济老牌</td>
+<td>主要用例 SDK + uAgents 框架，链上 agent 实际付费交互稀薄</td>
+</tr>
+<tr>
+<td><strong>Ocean Protocol</strong></td>
+<td>数据市场</td>
+<td>Compute-to-data 有真实学术/医疗用例，但跟"AI agent"关联度弱</td>
+</tr>
+<tr>
+<td><strong>Bittensor</strong></td>
+<td>网络</td>
+<td>见 §3.4，subnet 层有真实收入</td>
+</tr>
+<tr>
+<td><strong>ai16z / Eliza</strong></td>
+<td>框架 + 代币</td>
+<td>框架活跃，代币 ~20 亿美元市值的大多数来自 meme，agent-to-agent 经济 Q1 2025 起规划但落地慢</td>
+</tr>
+<tr>
+<td><strong>aixbt</strong></td>
+<td>单 agent 代币</td>
+<td>2024-11 launch、2025-01 上 Binance、ATH $0.95；据 BeInCrypto 报道平均 shill 收益 19%、共 416 个代币，但 2025-03 dashboard 被入侵转走 55.5 ETH（<a href="https://beincrypto.com/ai-agent-aixbt-crypto-shilling-performance/">BeInCrypto</a>、<a href="https://ecoinimist.com/2025/03/19/aixbt-bot-suffers-major-hack/">Ecoinimist</a>）</td>
+</tr>
+</tbody>
+</table>
+<p>aixbt 黑客事件：<strong>攻击者拿到 dashboard 权限，直接在自然语言里发"transfer 55.5 ETH"指令</strong>——LLM agent 安全模型的典型失败。模块 05 应把 prompt-injection-via-agent-frontend 写成新章节。</p>
+<h4 id="411-2026-04">4.1.1 代币行情快照（2026-04 检索）</h4>
+<p><strong>快照，不是投资建议</strong>。关注点是"市值规模 + 收入相关性"：</p>
+<table>
+<thead>
+<tr>
+<th>代币</th>
+<th>价格（2026-04 检索）</th>
+<th>市值</th>
+<th>真实业务支撑</th>
+<th>数据来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TAO</strong> (Bittensor)</td>
+<td>~$251.22</td>
+<td>~$2.5B</td>
+<td>真实子网收入：Targon (SN4) 年化 ~1,040 万美元、Score (SN44) 真实付费客户</td>
+<td><a href="https://www.coindesk.com/price/tao">CoinDesk TAO</a>、<a href="https://coinmarketcap.com/currencies/bittensor/">CMC TAO</a></td>
+</tr>
+<tr>
+<td><strong>RNDR/RENDER</strong></td>
+<td>~$1.81</td>
+<td>~$939M</td>
+<td>Solana 上 GPU 渲染 + AI 推理付费；与 OctaneRender 等专业渲染软件深度集成</td>
+<td><a href="https://metamask.io/price/render-token">MetaMask Render Price</a></td>
+</tr>
+<tr>
+<td><strong>AKT</strong> (Akash)</td>
+<td>由 Messari 数据驱动</td>
+<td>—</td>
+<td>2025-Q1 lease 收入破 100 万美元，年化 ARR ~420 万美元；H100 公开价 $1.49/h、A100 $0.79/h</td>
+<td><a href="https://messari.io/report/state-of-akash-q1-2025">Messari Akash Q1 2025</a>、<a href="https://akash.network/pricing/gpus/">Akash 价格页</a></td>
+</tr>
+<tr>
+<td><strong>WLD</strong> (Worldcoin)</td>
+<td>数据见各交易所</td>
+<td>—</td>
+<td>真实"Proof of Personhood" Orb 注册数 + AI agent 时代的人格证明</td>
+<td><a href="https://world.org/">Worldcoin 官网</a></td>
+</tr>
+<tr>
+<td><strong>FET</strong> (ASI Alliance)</td>
+<td><strong>~$0.21</strong></td>
+<td><strong>~$471M</strong></td>
+<td>uAgents 框架真实下载量；ASI Alliance 由 Fetch.ai/SingularityNET/Ocean/CUDOS 合并而来</td>
+<td><a href="https://www.bybit.com/en/price/fetch-ai/">Bybit FET 价格</a></td>
+</tr>
+<tr>
+<td><strong>VIRTUAL</strong></td>
+<td>2024-12 ATH 后回落</td>
+<td>600-800M 区间</td>
+<td>Virtuals Protocol 平台费 + agent launch 费；按 <a href="https://www.theblock.co/post/344635/research-ai-agent-sector-overview">The Block 研究</a>（检索 2026-04）</td>
+<td><a href="https://www.theblock.co/post/344635/research-ai-agent-sector-overview">The Block 综述</a></td>
+</tr>
+<tr>
+<td><strong>GAME</strong></td>
+<td>Virtuals 生态 meta token</td>
+<td>—</td>
+<td>跟随 VIRTUAL 生态</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><strong>AI16Z</strong></td>
+<td>meme + 框架收入</td>
+<td>150-250M（从 2.5B 高峰跌 80%+）</td>
+<td>Eliza 框架在 GitHub 上 ~15K star、TypeScript 全开源；代币市值 80%+ 来自 meme 投机</td>
+<td><a href="https://thedefiant.io/news/nfts-and-web3/eliza-labs-ai16z-launches-ai-agent-platform">The Defiant</a>、<a href="https://www.theblock.co/post/344635/research-ai-agent-sector-overview">The Block 研究</a></td>
+</tr>
+<tr>
+<td><strong>AIXBT</strong></td>
+<td><strong>~$0.020</strong></td>
+<td><strong>~$20.24M</strong></td>
+<td>2024-11 launch、2025-01 ATH $0.95，2026-04 已<strong>回落到 ATH 的 ~2.1%</strong>；2025-03 dashboard 被入侵转走 55.5 ETH</td>
+<td><a href="https://coinmarketcap.com/currencies/aixbt/">CoinMarketCap AIXBT</a>、<a href="https://www.themarketsdaily.com/2026/04/04/aixbt-by-virtuals-self-reported-market-cap-achieves-19-25-million-aixbt.html">The Markets Daily</a></td>
+</tr>
+<tr>
+<td><strong>PROMPT</strong> (Wayfinder)</td>
+<td>meme 性质强</td>
+<td>—</td>
+<td>Wayfinder path 贡献激励；agent 通过自然语言+wayfinding path 操作 DeFi</td>
+<td>Wayfinder 官网</td>
+</tr>
+<tr>
+<td><strong>OLAS</strong> (Autonolas)</td>
+<td>1,380 万美元融资支撑</td>
+<td>—</td>
+<td>Pearl agent app store 真实付费</td>
+<td><a href="https://www.gate.com/learn/articles/what-is-autonolas-olas/7162">Gate Learn Olas</a></td>
+</tr>
+<tr>
+<td><strong>TURBO</strong></td>
+<td>2024 起的 AI-meme 类</td>
+<td>起伏大</td>
+<td>"AI 原生 meme"实验，无业务支撑</td>
+<td>CoinGecko / CMC</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>真实业务最强</strong>：TAO（subnet 有收入）、RNDR（GPU 渲染有用户）、WLD（Orb 注册可查）、AKT（DePIN 有付费客户）；</li>
+<li><strong>真实业务中等</strong>：FET/ASI（框架有人用，但代币溢价远高于业务）；</li>
+<li><strong>真实业务最弱</strong>：AIXBT（ATH 回落 97.6%）、绝大多数小 agent 代币（链上活跃 &lt; 100 用户/天）。</li>
+</ul>
+<p>为<strong>用工具</strong>而接 TAO/RNDR/AKT，价格波动与你无关；为<strong>投资</strong>则注意金融表现独立于业务表现。</p>
+<h3 id="42-x402ai-agent">4.2 x402：AI agent 支付协议</h3>
+<p><strong>Trust Model</strong>：信任 USDC/USDT 发行方（Circle/Tether）+ 底层链结算 + HTTP 402 实现的钱包签名工具链。无新增 trust 假设，是把 Web2 支付路径直接映射到链上稳定币。</p>
+<p><a href="https://docs.cdp.coinbase.com/x402/welcome">Coinbase + Cloudflare 2025-09 成立的 x402 Foundation</a>（检索 2026-04）：</p>
+<ul>
+<li>复活 HTTP 402 状态码，让 agent 通过 HTTP 直发 USDC/USDT 微支付；</li>
+<li>截至 2026-03：<strong>Base 1.19 亿笔交易、Solana 3500 万笔，年化 ~6 亿美元</strong>（<a href="https://www.theblock.co/learn/391983/what-is-coinbases-x402-protocol">The Block</a>）；</li>
+<li>基金会含 Google、Visa；</li>
+<li>2025-12 V2 增加 reusable session、multi-chain、自动服务发现。</li>
+</ul>
+<p>x402 = <strong>不靠代币炒作、靠真实集成铺开</strong>的 AI + crypto 基础设施。SaaS 后端 2026 起把 x402 列为可选支付方式不算过早。</p>
+<h3 id="43-vitalik-ai-crypto-2024-2026">4.3 Vitalik 关于 AI + crypto 的演进观点（2024 → 2026）</h3>
+<p>主线是 trust：从"AI 在 crypto 系统里扮演什么角色 + 如何防被操纵"演进到"用 ZK + 客户端验证保留人类对 AI 的控制权"。Splurge 路线（<a href="https://vitalik.eth.limo/general/2024/10/29/futures6.html">2024-10 Part 6</a>）把后量子签名、AA、EVM 终态打包，与本模块 zkML / agent intent 同处底层基建议程。</p>
+<h4 id="431-2024-01">4.3.1 2024-01：四类应用框架</h4>
+<p><a href="https://vitalik.eth.limo/general/2024/01/30/cryptoaiintersection.html">Vitalik 2024-01 原文</a> 提出四种应用形态（<a href="https://www.theblock.co/post/275089/vitalik-buterin-cryptocurrency-ai-use-cases">The Block 综述</a>，检索 2026-04）：</p>
+<ol>
+<li><strong>AI as a player（玩家）</strong>：trading bot、prediction market 出价、套利——<em>最有前景，已有大量真实用例</em>；</li>
+<li><strong>AI as an interface（界面）</strong>：交易前 scam detection、合约语义解释——<em>高潜力高风险</em>；</li>
+<li><strong>AI as the rules（规则）</strong>：AI 作为 DAO 的 judge——<em>需极度小心，有 oracle/manipulability 风险</em>；</li>
+<li><strong>AI as the objective（目标）</strong>：用 blockchain 做更好的 AI 训练/推理基础设施——<em>长期路线</em>。</li>
+</ol>
+<h4 id="432-2025-dacc">4.3.2 2025：嵌入 d/acc 框架</h4>
+<p><a href="https://www.theblock.co/post/389179/vitalik-buterin-sketches-near-term-vision-for-ethereums-role-in-an-ai-driven-future">Vitalik 2025 更新</a>（检索 2026-04）把四类思路嵌入"<strong>d/acc</strong>"（defensive acceleration）：以太坊不参与 AGI 竞赛，做 <strong>AI 系统之间互动、协调、治理的可信基底</strong>（本地 LLM、客户端验证、agent reputation deposit）。</p>
+<h4 id="433-2026-02ethereum-ai">4.3.3 2026-02：Ethereum 与 AI 必须合并以保护人类自由</h4>
+<p>2026-02-10 <a href="https://www.coindesk.com/business/2026/02/10/vitalik-buterin-outlines-how-ethereum-could-play-a-key-role-in-the-future-of-ai">CoinDesk 综述</a>（检索 2026-04）和 <a href="https://www.thecoinrepublic.com/2026/02/10/vitalik-buterin-ethereum-and-ai-must-merge-to-protect-human-freedom/">The Coin Republic</a> 报道，Vitalik 在 X 上发文重新组织其 AI 观点为四个支柱：</p>
+<ol>
+<li><strong>隐私 + 可信 AI 访问</strong>：本地 LLM、为 AI 服务付费的密码学机制、客户端验证——降低对中心化中介的依赖；</li>
+<li><strong>经济协调</strong>：链上机制让 AI agent 互相交易、缴纳安全押金、积累信誉历史；</li>
+<li><strong>验证与信任</strong>：让 LLM 处理"人类难以规模化做的事"——独立验证合约、tx 提议、协议信任假设；</li>
+<li><strong>治理创新</strong>：预测市场 + 去中心化治理 + 复杂投票机制 + AI 工具 = 放大人类判断而非替代。</li>
+</ol>
+<p>Vitalik 原话：<strong>"To me, Ethereum, and my own view of how our civilization should do AGI, are precisely about choosing a positive direction rather than embracing undifferentiated acceleration of the arrow."</strong>（"以太坊和我对人类该如何做 AGI 的看法，关键在于<em>选择一个积极方向</em>，而不是无差别地加速。"）</p>
+<h4 id="434-2026-02ai-stewards-dao">4.3.4 2026-02：AI Stewards 治理 DAO</h4>
+<p>2026-02-21 <a href="https://www.coindesk.com/web3/2026/02/21/ethereum-s-vitalik-buterin-proposes-ai-stewards-to-help-reinvent-dao-governance">CoinDesk 报道</a>（检索 2026-04），Vitalik 提议用"<strong>AI Stewards</strong>"——为每个用户训练一个反映其价值观的 AI 模型，让该模型代用户在 DAO 上自动投数千次票，解决"低参与度 + 投票权过度集中到大持币人"的痛点。</p>
+<p>工程师视角：这是 §4.3.1 第 3 类（AI as the rules）的进化——不是"用一个 AI 当法官"，而是"用每个人自己的 AI 当代理人"，避免单点失败。</p>
+<h4 id="435-2026-03ai-ethereum-2030">4.3.5 2026-03：AI 加速 Ethereum 发展，2030 路线图两周搞定</h4>
+<p>2026-03 <a href="https://www.thecoinrepublic.com/2026/03/01/vitalik-buterin-says-ai-could-supercharge-ethereum-development-toward-2030/">The Coin Republic 报道</a>（检索 2026-04）：Ethereum 2030 路线图草稿借助 AI <strong>两周完成</strong>，没有 AI 通常要花数年。</p>
+<p><strong>注意</strong>：两周完成的是草稿，共识、PBS、SSF、DAS 这些技术决策仍需真人讨论。</p>
+<h4 id="436-vitalik">4.3.6 工程师从 Vitalik 演进里能学到的</h4>
+<ul>
+<li>2024 → 2026：从应用分类学到 d/acc 价值观，核心立场不变：以太坊不做 AGI、做 AI 时代的协调底座；</li>
+<li>拒绝"AI 替代人"，所有方案改写为"<strong>AI 放大人</strong>"；</li>
+<li>强调本地 LLM + 客户端验证，让 AI 推理在用户侧跑、由用户验证。</li>
+</ul>
+<p>前两类（player / interface）安全易做、有大量真实需求；第三类（rules）需要模块 05 视角反复审视；第四类（objective）是研究方向。</p>
+<h4 id="437-2025-11trustless-manifesto-yoav-weiss-marissa-posner">4.3.7 2025-11：Trustless Manifesto（与 Yoav Weiss / Marissa Posner 联署）</h4>
+<p><a href="https://medium.com/@DeepSafe_Official/what-exactly-is-vitaliks-newly-signed-trustless-manifesto-how-can-it-be-engineered-in-practice-de8d722779fa">2025-11-13 Trustless Manifesto</a>（检索 2026-04）：长期可扩展 + 可信安全要靠 ZK 技术，不靠"临时补丁"——把<strong>模块 08（ZK）+ 模块 12（AI）</strong>的交叉点定义为以太坊未来的核心。</p>
+<h4 id="438-zk-ai">4.3.8 ZK + AI：用零知识投票防贿赂、防胁迫</h4>
+<p><a href="https://www.panewslab.com/en/articledetails/7z6lboco.html">Vitalik 提议用 ZKP 做匿名投票</a>（检索 2026-04）：证明"我是合法持有人 + 我投了某票"，不暴露钱包地址——防胁迫、防贿赂、防鲸鱼监视。</p>
+<p><a href="https://sindri.app/blog/2025/01/24/agents-zk/">Sindri "Why ZKP are essential for AI Agents"</a>（2025-01，检索 2026-04）：AI agent 互相交易时，ZKP 保证"是合法 agent + 行为符合规则"，不暴露内部状态。</p>
+<h3 id="44-a16z-paradigm-ai-crypto">4.4 a16z 与 Paradigm 在 AI × crypto 的资本动作</h3>
+<p>a16z <a href="https://a16zcrypto.com/posts/article/ai-crypto-crossovers/">11 AI × Crypto Crossovers</a> 把方向归到四桶：身份、AI 去中心化基础设施、新经济激励、未来 AI 所有权——本质都在回答"信任谁"。<strong>KYA（Know Your Agent）= agent 的 trust 凭证 = 把模块 13 的身份系统对接到 §3/§4 的 agent 框架</strong>。两家头部动作（检索 2026-04）：</p>
+<ul>
+<li><strong>a16z crypto Big Ideas 2026</strong>（<a href="https://a16zcrypto.com/posts/article/big-ideas-things-excited-about-crypto-2026/">官方</a>）列出 17 个方向，核心三条：
+  1. <strong>Agent-native 基础设施</strong>：现有系统会把"agent-speed 工作负载"误判为攻击，需要重新架构控制平面；
+  2. <strong>从 KYC 到 KYA</strong>（Know Your Agent）：非人实体需要可验证凭证才能交易；
+  3. <strong>Stablecoin 年化 46 万亿美元</strong>交易量、20× PayPal、~3× Visa 的体量，是 agent 经济的支付层基底。</li>
+<li><strong>a16z portfolio 收缩</strong>（<a href="https://fortune.com/2026/04/16/top-crypto-vcs-paradigm-pantera-a16z-multicoin-haun-dragonfly/">Fortune 2026-04-16</a>）：四只 crypto 基金 AUM 从 2024 到 2025 跌 ~40% 至 95 亿美元，但首期基金 net DPI 5.4× 仍是头部水平；</li>
+<li><strong>Paradigm 1.5B 新基金扩展到 AI/Robotics</strong>（<a href="https://fortune.com/crypto/2025/04/25/paradigm-nous-research-crypto-ai-venture-capital-deepseek-openai-blockchain/">The Block 2026 综述</a>）：</li>
+<li>旗舰 bet：<strong>Nous Research 5,000 万美元 A 轮</strong>，估值 10 亿美元，做"去中心化 AI 研究 + 训练"；</li>
+<li>上一年的 Vana 投资（数据 DAO）也属于 AI × crypto 范畴；</li>
+<li>与 OpenAI 共建 EVMBench（被 OZ 公开找出 4+ 错标 high）。</li>
+<li><strong>2025 AI × crypto 资本流向</strong>（<a href="https://www.panewslab.com/en/articles/ski92qqx">PANews 综述</a>）：约 <strong>7 亿美元</strong> 投资进入 AI × crypto 项目；a16z / Paradigm / Pantera / Galaxy / Sequoia 占据 ~40% 高估值轮次。</li>
+</ul>
+<p>"agent-native 基础设施 + KYA"是未来 2-3 年明确方向；Paradigm 押 Nous Research 说明去中心化 AI 训练不是 hype；VC AUM 收缩意味着进入门槛更看真实业务。</p>
+<h3 id="45-ai-drainer">4.5 攻击者的 AI：钓鱼合约与 Drainer 量产</h3>
+<h4 id="451-scone-bench">4.5.1 SCONE-bench 之外的攻击实例</h4>
+<ul>
+<li><a href="https://research.checkpoint.com/2025/inferno-drainer-reloaded-deep-dive-into-the-return-of-the-most-sophisticated-crypto-drainer/">Inferno Drainer 回归</a>（Check Point 2025，检索 2026-04）：2024-09 至 2025-03，<strong>3 万+ 新受害钱包</strong>；</li>
+<li><a href="https://www.sentinelone.com/labs/smart-contract-scams-ethereum-drainers-pose-as-trading-bots-to-steal-crypto/">SentinelOne：以太坊 drainer 伪装成交易机器人</a>（检索 2026-04）：把 drainer 包装成"AI trading bot"，诱导用户授权；</li>
+<li><a href="https://www.cryptocoverage.co/news/crypto-scams-2025-ai-wallet-drainers">CryptoCoverage 综述</a>（检索 2026-04）：2025 年美国用户因 crypto 诈骗损失 <strong>93 亿+ 美元</strong>，AI 生成 deepfake + 钓鱼是主要工具；</li>
+<li><a href="https://www.nadcab.com/blog/ai-powered-hackers-attacking-old-smart-contracts">AI 量产攻击工具</a>（检索 2026-04）：呼应 SCONE-bench 的"扫描成本 1.22 美元"——攻击者用 AI 批量扫老合约。</li>
+</ul>
+<h4 id="452">4.5.2 防御侧工程师必做清单</h4>
+<ul>
+<li>钱包侧引入 <a href="https://www.blockaid.io/">Blockaid</a> / Wallet Guard / Pocket Universe 类 transaction simulator；</li>
+<li>前端 dApp 集成"transaction preview"（用 Tenderly Simulation API），让用户在签之前看到"会被扣多少钱、给谁"；</li>
+<li>团队内部演练"如何识别 AI 生成的钓鱼合约"，特别是包装成 trading bot / yield aggregator 的形态；</li>
+<li>任何"AI 帮你写好的 trading bot 合约"在主网部署前都要走完整模块 05 流程。</li>
+</ul>
+<h3 id="46-ai-mev">4.6 AI × MEV：实测与现状</h3>
+<p><a href="https://academy.extropy.io/pages/articles/mev-crosschain-analysis-2025.html">Extropy Academy 2025 跨链 MEV 分析</a>（检索 2026-04）+ <a href="https://arxiv.org/html/2507.13023v1">arXiv 2507.13023</a>（CEX-DEX MEV 测量，检索 2026-04）：</p>
+<ul>
+<li><strong>2023-08 至 2025-03</strong>：CEX-DEX 套利累计提取 <strong>2.34 亿美元</strong>（720 万+ 笔），三个 searcher 拿走 <strong>75%</strong> 的体积与价值；</li>
+<li><strong>2025-Q2</strong>：Solana MEV 收入 <strong>2.71 亿美元</strong>（占主要链 MEV 的 ~40%），以太坊 1.29 亿美元；</li>
+<li><strong>延迟门槛</strong>：低于 200ms 才有竞争力，超过的 bot 抓取的机会大幅下降；</li>
+<li><strong>基础设施成本</strong>：专用 RPC 节点 1,800-3,800 美元/月（Solana），写一行套利逻辑前先烧 500-2,000 美元/月基础设施。</li>
+</ul>
+<p><a href="https://arxiv.org/html/2510.14642v1">arXiv 2510.14642 RL for MEV</a>（检索 2026-04）：Polygon 上 RL 做 MEV 抓取在 long-tail 有效；<strong>主流 vanilla 套利 ML 已卷不过老牌 searcher</strong>。</p>
+<p>不要用 ML 做主流套利（延迟/基础设施/IOI 关系是壁垒）。可做方向：long-tail（小池子、新 fork、三角路径）、跨链 intent solver（CoW/Khalani/Across）、ML 判断"哪个 intent 该接"。</p>
+<h3 id="47-agent-trust-model-2026-04">4.7 Agent 框架活跃度对照（按 Trust Model 分类，检索 2026-04）</h3>
+<p>按"agent 持私钥? 谁签 tx? 链上身份是什么?"分四类。<strong>Trust Model 不一致的框架不能直接对比性能/费用</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>GitHub Stars</th>
+<th>TypeScript / Python</th>
+<th>真实活跃度信号</th>
+<th>Trust Model（agent 持私钥? 链上身份? 如何执行 tx?）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>elizaOS / ai16z eliza</strong></td>
+<td>~15K stars</td>
+<td>TypeScript</td>
+<td>文档完整、定期发布，<a href="https://docs.elizaosai.org/">官方 docs</a> 与 <a href="https://github.com/elizaOS/eliza">GitHub</a> 都活跃</td>
+<td><strong>链下守护进程</strong>：agent 是 Node 进程，<strong>不持私钥</strong>（默认）；tx 通过运营方持有的 EOA/多签/MPC 签发，agent 仅产生 intent。链上身份 = 运营方钱包。</td>
+</tr>
+<tr>
+<td><strong>uAgents (Fetch.ai)</strong></td>
+<td>几百到 1K+</td>
+<td>Python</td>
+<td>ASI Alliance 合并后存活，企业 case 多于社区</td>
+<td>链下 Python agent + Fetch.ai Almanac 注册，agent 有去中心化身份但 tx 仍由后台 wallet 签。</td>
+</tr>
+<tr>
+<td><strong>Olas / Autonolas SDK</strong></td>
+<td>几百</td>
+<td>Python</td>
+<td>Pearl app store 真实付费用户</td>
+<td><strong>Service marketplace</strong>：agent service 由 N 个 operator 节点共同运营，用 Safe 多签作为 service 链上身份，tx 走 m-of-n 多签共识。</td>
+</tr>
+<tr>
+<td><strong>Virtuals (launchpad+meme)</strong></td>
+<td>闭源</td>
+<td>mixed</td>
+<td>平台闭源，agent 通过 launchpad 部署，VIRTUAL 代币 + bonding curve</td>
+<td><strong>代币 launchpad 平台</strong>：agent 是平台托管的链下进程，每个 agent 绑一个 ERC-20，tx 由 Virtuals 平台 wallet 代签；trust = 信任 Virtuals 团队。</td>
+</tr>
+<tr>
+<td><strong>GAME (Virtuals 系)</strong></td>
+<td>部分开源</td>
+<td>mixed</td>
+<td>Virtuals 生态 meta agent 框架</td>
+<td><strong>TBA-based 链上身份</strong>：每个 agent = 一个 ERC-6551 Token Bound Account（NFT 持有的合约钱包），agent 直接以 TBA 名义签 tx，链上原生身份最干净。</td>
+</tr>
+<tr>
+<td><strong>Wayfinder paths</strong></td>
+<td>社区贡献</td>
+<td>mixed</td>
+<td>主要靠 PROMPT 代币激励</td>
+<td>路径/工作流编排，trust 取决于具体 path 实现，框架本身不规定 key 模型。</td>
+</tr>
+</tbody>
+</table>
+<p>做"agent 工程"而非"代币投机"：首选 <strong>elizaOS</strong>（生态最大、TypeScript 友好）或 <strong>uAgents</strong>（Python 生态、企业向）。代币层和工程层分开决策。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="5" id="ch08"><span class="chapter-num">Chapter 08</span><br>5. 给工程师的现实警示</h2>
+
+<h3 id="51-ai-web3">5.1 AI 已大幅压缩工时的 Web3 工作</h3>
+<p>L1 工具锚定可放心外包：</p>
+<ul>
+<li><strong>Boilerplate 合约</strong>：ERC 系列、多签、Vesting、Vault 骨架——OZ Contracts MCP 几分钟；</li>
+<li><strong>前端 scaffolding</strong>：dApp 模板、wagmi hooks、shadcn/ui——Cursor + v0；</li>
+<li><strong>简单数据脚本</strong>：subgraph schema 草稿、Dune 查询、链上活跃度报表；</li>
+<li><strong>运营内容</strong>：白皮书翻译、文档润色、release note。</li>
+</ul>
+<p>工作 80% 在以上类别 → 学 Cursor + Claude Code 把时间转去 §5.2。</p>
+<h3 id="52-ai-web3">5.2 AI 短期不会替代的 Web3 工作</h3>
+<p>零容错或前沿研究领域，AI 当读论文助手，不当决策者：</p>
+<ul>
+<li><strong>协议设计</strong>：清算曲线、利率模型、AMM invariant、跨链桥安全模型；</li>
+<li><strong>新颖密码学</strong>：Plonk-style、Folding Schemes、后量子 Lattice——AI 帮读论文，不证 soundness；</li>
+<li><strong>复杂 DeFi 经济建模</strong>：永续 funding rate、Stablecoin 抵押、CLOB 微结构；</li>
+<li><strong>共识研究</strong>：Casper FFG/CFT、PBS、SSF、DAS；</li>
+<li><strong>激励机制设计</strong>：tokenomics、staking、slashing 边界——错一个常数 = 8 位数损失。</li>
+</ul>
+<h3 id="53-hype">5.3 被高估的方向（hype 清单）</h3>
+<ul>
+<li><strong>"AI 完全自动审计"</strong>：2026-04 当前 AI = 加速人类审计师的工具。"5 分钟出报告"的 L0 vibe audit 直接无视；</li>
+<li><strong>"AI 自主写新协议"</strong>：LLM 可写 ERC-20 骨架；<strong>设计</strong>新协议是另一回事。"AI 从白皮书生成可上线代码"的 demo 没有一个经过对抗性安全验证；</li>
+<li><strong>"AI agent 代币就是新经济"</strong>：2024-2025 大量代币 launch，多数 DAU 个位数，流动性靠投机；</li>
+<li><strong>"链上跑大模型"</strong>：截至 2026-04 没有任何 EVM 链上跑 7B+ 推理。所有"on-chain AI"都是链下推理 + 链上验证/结算。</li>
+</ul>
+<h3 id="54">5.4 工程师如何升级技能</h3>
+<ol>
+<li><strong>保留不能让 AI 替你做的肌肉</strong>：手写至少 1 个完整 ERC-4626 不查文档；手算 1 个 zk constraint；从 0 写一遍 Foundry invariant test；</li>
+<li><strong>把重复劳动外包给 AI</strong>：所有 boilerplate、文档、mermaid 图、第一版测试草稿；</li>
+<li><strong>用 AI 学，但每个结论对照原始资料</strong>：LLM 解释 Plonk → 回 <a href="https://eprint.iacr.org/2019/953">论文</a> 校对常数；LLM 解释 EIP → 回 EIP 原文校对；</li>
+<li><strong>建自己的 Claude Code skills 库</strong>：参考 <a href="https://github.com/trailofbits/skills">trailofbits/skills</a>，把重复 prompt + 检查点编码成 markdown skill 跨项目复用；</li>
+<li><strong>重点投入 AI 不会替代的方向</strong>：协议设计、密码学、安全审计、经济建模、共识研究——其中任一深入都是 5-10 年红利。</li>
+</ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="6-democlaude-code-erc-4626-vault" id="ch09"><span class="chapter-num">Chapter 09</span><br>6. 实战 Demo：Claude Code 搭建 ERC-4626 Vault</h2>
+
+<p>完整演示在 <a href="./code/04626-vault-with-claude/"><code>code/04626-vault-with-claude/</code></a>。</p>
+<h3 id="61">6.1 流程</h3>
+<ol>
+<li><code>forge init vault-demo &amp;&amp; cd vault-demo</code>；</li>
+<li>仓库根目录放 <code>CLAUDE.md</code>，约定：<code>solc 0.8.26</code>、Foundry、OZ contracts v5；全用 <code>safeTransferFrom</code>；所有 external 函数必须有 NatSpec；测试覆盖率目标 95%。</li>
+<li>用 Claude Code 跑下面的 prompt 模板。</li>
+</ol>
+<h3 id="62-prompt">6.2 Prompt 模板</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>You are a senior Solidity engineer. Generate a minimal but production-quality
+ERC-4626 vault that:
+
+- Wraps a single underlying ERC-20 (set in constructor)
+- Charges a 0.5% performance fee on positive yield (no fee on principal)
+- Uses checks-effects-interactions, no reentrancy via OZ ReentrancyGuard
+- Uses SafeERC20 everywhere
+- Implements the full ERC-4626 interface as specified in EIP-4626
+- Uses solc 0.8.26 (no unnecessary unchecked blocks)
+
+Then write Foundry tests covering:
+1. deposit / mint / withdraw / redeem happy path
+2. deposit when totalAssets() == 0 (first depositor)
+3. fee accounting after a simulated yield
+4. share inflation attack scenario (donate to vault, ensure first depositor not griefed)
+5. zero-address / zero-amount reverts
+
+Output two files: src/Vault.sol and test/Vault.t.sol.
+</code></pre></div>
+<h3 id="63">6.3 实测时间对比</h3>
+<p>不查文档手写通过基础测试的 Vault：资深工程师约 2-3 小时；上面流程 + Claude Code 约 30-45 分钟（其中一半花在审查 + 修补）。与 §1.1 表格加速比一致。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="7-demollm-viem-agent" id="ch10"><span class="chapter-num">Chapter 10</span><br>7. 实战 Demo：LLM + viem 链上数据分析 agent</h2>
+
+<p>完整代码在 <a href="./code/onchain-analyst-agent/"><code>code/onchain-analyst-agent/</code></a>。用户自然语言问"过去 24 小时 vitalik.eth 转出了多少 USDC"，agent 解析 → RPC 查询 → 返回结果。</p>
+<h3 id="71">7.1 架构</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>用户 prompt
+   ↓
+LLM (Claude/Anthropic SDK)
+   ↓ tool calling
+工具集（用 viem 实现）：
+  - resolveENS(name) → address
+  - getERC20Transfers(address, token, fromBlock, toBlock)
+  - getBlockByTimestamp(unix)
+  - getTokenInfo(address)
+   ↓
+LLM 整合结果 → 自然语言回答
+</code></pre></div>
+<h3 id="72-36-trust-model">7.2 关键安全约束（呼应 §3.6 Trust Model）</h3>
+<ul>
+<li><strong>agent 不持私钥并发 tx</strong>——写操作必须人工签名；</li>
+<li>agent 的 RPC endpoint 设速率限制；</li>
+<li>工具返回数据带 block number + tx hash，便于人工核对。</li>
+</ul>
+<h3 id="73">7.3 演进路径</h3>
+<p>正确做法：(1) agent 生成 calldata → (2) 走 ERC-7521 / ERC-4337 intent 提交 wallet → (3) 用户/钱包侧最终授权。</p>
+<p><strong>"agent 直接持 EOA 私钥" = anti-pattern</strong>——aixbt 失误的根源。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="8-demoezkl-logistic-zk" id="ch11"><span class="chapter-num">Chapter 11</span><br>8. 实战 Demo：EZKL 把 Logistic 回归塞进 ZK 证明</h2>
+
+<p>完整代码在 <a href="./code/ezkl-logistic-regression/"><code>code/ezkl-logistic-regression/</code></a>。</p>
+<h3 id="81">8.1 流程</h3>
+<ol>
+<li>Python + scikit-learn 训练二分类逻辑回归（4 维输入，1 维输出）→ 导出 ONNX；</li>
+<li><code>ezkl gen-settings</code> → <code>ezkl calibrate-settings</code> → <code>ezkl compile-circuit</code>；</li>
+<li><code>ezkl setup</code> 生成 PK/VK；</li>
+<li><code>ezkl prove</code> 生成 proof；</li>
+<li><code>ezkl create-evm-verifier</code> 生成 Solidity verifier；</li>
+<li>Foundry 部署 verifier，链上验证 proof。</li>
+</ol>
+<h3 id="82">8.2 注意事项</h3>
+<ul>
+<li>输入须离散化到 fixed-point，ONNX float 不能直接进电路；</li>
+<li>第一次 setup 需下载几十 MB SRS；</li>
+<li>proof 几 KB，链上验证 gas 百万级，适合<strong>低频高价值</strong>场景；</li>
+<li>跟 <a href="https://docs.ezkl.xyz/">EZKL 官方文档</a>（检索 2026-04）走可避免大多数环境坑。</li>
+</ul>
+<h3 id="83-ezkl">8.3 何时选 EZKL</h3>
+<ul>
+<li><strong>选</strong>：链上信用评分、KYC 分数、私有特征模型、Worldcoin 类身份证明；</li>
+<li><strong>不选</strong>：高吞吐推荐系统、实时行情预测。</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="9-demoora-opml-sdk" id="ch12"><span class="chapter-num">Chapter 12</span><br>9. 实战 Demo：ORA opML SDK 调用链上推理</h2>
+
+<p>完整代码在 <a href="./code/ora-opml-demo/"><code>code/ora-opml-demo/</code></a>。</p>
+<h3 id="91">9.1 流程</h3>
+<ol>
+<li>部署继承 <code>AIOracleCallbackReceiver</code> 的合约（<a href="https://github.com/ora-io/OAO">ORA OAO 仓库</a>，检索 2026-04）；</li>
+<li>Sepolia 上调用 OAO <code>requestCallback</code>，传入 modelId + 输入；</li>
+<li>ORA 网络链下推理，进入挑战期；</li>
+<li>挑战期结束后回调合约，结果写链；</li>
+<li>合约基于结果做后续逻辑（mint NFT、解锁存款等）。</li>
+</ol>
+<h3 id="92-opml-vs-zkml-30-trust-model">9.2 opML vs zkML 选型（呼应 §3.0 Trust Model）</h3>
+<p><strong>opML</strong>：高频小额（每次价值 $1-100）+ 容忍 10 分钟挑战期 + 权重无需隐藏。trust = "至少 1 个诚实复算者"。</p>
+<p><strong>zkML</strong>：要求即时 finality + 强不可伪造证明 + 模型规模 ≤ GPT-2。trust = 椭圆曲线/哈希假设 + 权重 commitment。</p>
+<p>两者都不够时退回中心化预言机 + 多签 + hash。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="10" id="ch13"><span class="chapter-num">Chapter 13</span><br>10. 练习</h2>
+
+<p>详见 <a href="./exercises/"><code>exercises/</code></a>，建议全部做完：</p>
+<h3 id="101-ai">10.1 评估 AI 审计工具：漏报率统计</h3>
+<ul>
+<li>选 3 个<strong>已修复且公开漏洞详情</strong>的合约（推荐 <a href="https://blog.sushi.com/posts/routeprocessor2-exploit-post-mortem">SushiSwap RouteProcessor2 2023-04</a>、Euler V1 2023-03、<a href="https://rekt.news/">Bedrock DeFi 2024-09</a>）；</li>
+<li>用同一份 prompt，分别给 Claude Code、Cursor、Aderyn、Slither、vibe audit 类工具；</li>
+<li>统计：召回率、误报率、平均耗时；写 markdown 报告（模板在 <code>exercises/01-ai-audit-eval/</code>）。</li>
+</ul>
+<p>预期：单 LLM 召回率 30-50%，加静态分析后拉到 60-70%，但<strong>误报率激增</strong>。</p>
+<h3 id="102-on-chain-llm-agent">10.2 实现事件驱动的 on-chain LLM agent</h3>
+<ul>
+<li>监听 Sepolia <code>Question(string)</code> 事件；调用 Claude/Anthropic API 翻译为答案；写回 <code>submitAnswer(bytes32,string)</code>；</li>
+<li>添加签名校验、rate limit、最大问题长度三个安全约束；</li>
+<li>模板：<code>exercises/02-onchain-llm-agent/</code>。</li>
+</ul>
+<h3 id="103-ezkl-mnist">10.3 用 EZKL 证明一个 MNIST 推理</h3>
+<ul>
+<li>训练小 CNN（&lt; 1M 参数）做 MNIST 分类 → ONNX → EZKL 流水线 → EVM verifier；</li>
+<li>Foundry 测试验证 proof；记录每步耗时、proof size、verifier gas；</li>
+<li>模板：<code>exercises/03-ezkl-mnist/</code>。</li>
+</ul>
+<p>预期（参考 EZKL benchmark 与 ICME 2025 报告）：setup 数十秒到几分钟；单次 proof 几秒到几十秒；verifier gas 100 万-200 万。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="11" id="ch14"><span class="chapter-num">Chapter 14</span><br>11. 与其他模块的双向引用</h2>
+
+<table>
+<thead>
+<tr>
+<th>本模块章节</th>
+<th>关联模块</th>
+<th>关联点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§1.6 OpenZeppelin Contracts MCP</td>
+<td><strong>04 Solidity 开发</strong></td>
+<td>反向：04 的"标准合约骨架"章节加一节"用 MCP 而非纯 LLM 生成"</td>
+</tr>
+<tr>
+<td>§2.1 AI 审计工具 + §5.3 vibe audit 反例</td>
+<td><strong>05 智能合约安全</strong></td>
+<td>双向：05 增"AI-augmented audit 工作流 + Trail of Bits skills 案例"；本模块 §2.1 反向引 05 漏洞分类</td>
+</tr>
+<tr>
+<td>§4.1 aixbt 黑客事件</td>
+<td><strong>05 智能合约安全</strong></td>
+<td>在 05 的"输入校验 / Operational security"章新增"prompt-injection-via-agent-frontend"小节</td>
+</tr>
+<tr>
+<td>§3.1 zkML / §3.2 opML / §8 EZKL demo</td>
+<td><strong>08 零知识证明</strong></td>
+<td>双向：08 在"应用案例"补"zkML 三大框架对比"；本模块 §3.1 反向引 08 的 SNARK/STARK 章节</td>
+</tr>
+<tr>
+<td>§3.7 Intent / ERC-7521 / Solver</td>
+<td><strong>06 DeFi 协议工程</strong></td>
+<td>06 增"intent-based DEX 章节"，引用本模块 §3.7；本模块反向引 06 的 AMM 与做市商章节</td>
+</tr>
+<tr>
+<td>§3.7 Intent + §7 LLM agent</td>
+<td><strong>10 前端与账户抽象</strong></td>
+<td>10 在"账户抽象 / ERC-4337"章节加一节 ERC-7521 与 intent flow，引用本模块；本模块 §7 反向引 10 的 wallet UX</td>
+</tr>
+<tr>
+<td>§3.4 去中心化推理</td>
+<td><strong>11 基础设施与工具</strong></td>
+<td>11 增"DePIN compute（Akash/io.net/Aethir）"小节，本模块 §3.4 反向引 11 的 RPC/索引/存储链路</td>
+</tr>
+<tr>
+<td>§1.4 用 LLM 学新知识</td>
+<td><strong>00 导论与学习路径</strong></td>
+<td>00 的"如何高效阅读"章节补一段"用 LLM 辅助阅读论文/EIP 的纪律"</td>
+</tr>
+<tr>
+<td>§5.4 工程师技能升级</td>
+<td><strong>00 导论 + 09 替代生态</strong></td>
+<td>00 在"职业方向"补一节"AI 时代的 Web3 工程师"；09（替代生态）补"非 EVM 链上 AI 现状"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="12_1" id="ch15"><span class="chapter-num">Chapter 15</span><br>12. 推荐阅读与持续追踪</h2>
+
+<p>所有链接均检索 2026-04。</p>
+<p><strong>研究 / 报告</strong></p>
+<ul>
+<li>a16z crypto - <a href="https://a16zcrypto.com/posts/article/state-of-crypto-report-2025/">State of Crypto 2025</a></li>
+<li>a16z crypto - <a href="https://a16zcrypto.com/posts/article/big-ideas-crypto-2025/">Big Ideas in Crypto 2025</a></li>
+<li>ICME - <a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">The Definitive Guide to ZKML 2025</a></li>
+<li>METR - <a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">Measuring the Impact of Early-2025 AI on OSS Devs</a></li>
+<li>Solidity Lang - <a href="https://www.soliditylang.org/blog/2026/04/15/solidity-developer-survey-2025-results/">Developer Survey 2025</a></li>
+<li>Stack Overflow - <a href="https://survey.stackoverflow.co/2025/ai">2025 Developer Survey: AI</a></li>
+</ul>
+<p><strong>安全公司公开博客</strong></p>
+<ul>
+<li><a href="https://blog.trailofbits.com/2026/03/31/how-we-made-trail-of-bits-ai-native-so-far/">Trail of Bits - How we made Trail of Bits AI-native</a></li>
+<li><a href="https://github.com/trailofbits/skills">Trail of Bits / skills 仓库</a></li>
+<li><a href="https://www.openzeppelin.com/news/openai-evmbench-audit">OpenZeppelin - Audit of OpenAI EVMBench</a></li>
+<li><a href="https://www.openzeppelin.com/news/introducing-contracts-mcp">OpenZeppelin - Contracts MCP</a></li>
+<li><a href="https://www.cyfrin.io/blog/cyfrin-2025-wrap-up-advancing-web3-security-audits-and-blockchain-education">Cyfrin - 2025 Wrap-Up</a></li>
+<li><a href="https://www.zellic.io/blog/introducing-v12/">Zellic - Introducing V12</a></li>
+</ul>
+<p><strong>链上 AI 基础设施官方文档</strong></p>
+<ul>
+<li><a href="https://docs.ezkl.xyz/">EZKL 文档</a>、<a href="https://blog.ezkl.xyz/post/state_of_ezkl/">State of EZKL 2025</a></li>
+<li><a href="https://lagrange.dev/blog/deepprove-1">Lagrange DeepProve-1</a></li>
+<li><a href="https://arxiv.org/abs/2602.17452">JOLT Atlas paper</a></li>
+<li><a href="https://docs.ora.io/doc/onchain-ai-oracle-oao/fraud-proof-virtual-machine-fpvm-and-frameworks/opml">ORA opML 文档</a>、<a href="https://github.com/ora-io/OAO">OAO 仓库</a></li>
+<li><a href="https://docs.learnbittensor.org/">Bittensor 学习文档</a></li>
+<li><a href="https://eips.ethereum.org/EIPS/eip-7521">ERC-7521 EIP</a>、<a href="https://blog.essential.builders/introducing-erc-7521-generalized-intents/">Essential 团队博客</a></li>
+<li><a href="https://docs.cdp.coinbase.com/x402/welcome">x402 Coinbase 文档</a></li>
+</ul>
+<p><strong>Vitalik 原始博客</strong></p>
+<ul>
+<li><a href="https://vitalik.eth.limo/general/2024/01/30/cryptoaiintersection.html">The promise and challenges of crypto + AI applications (2024-01)</a></li>
+<li>2025 Updated Vision 综述：<a href="https://www.theblock.co/post/389179/vitalik-buterin-sketches-near-term-vision-for-ethereums-role-in-an-ai-driven-future">The Block</a></li>
+</ul>
+<p><strong>追踪渠道</strong></p>
+<ul>
+<li>周更：a16z crypto newsletter、Paradigm research；</li>
+<li>月更：Messari State of report（Akash、Bittensor 等）；</li>
+<li>实时：Trail of Bits Blog、OpenZeppelin News、Cyfrin Blog、Lagrange Blog。</li>
+</ul>
+<hr />
+<p><strong>核心结论：</strong></p>
+<ol>
+<li><strong>L 等级</strong>：L0 vibe 工具与 L1+ 工具锚定的差距不是程度差距，是性质差距。永远先问"这个 AI 输出由哪个确定性工具锚定"。</li>
+<li><strong>Trust Model 优先</strong>：每接入一个 AI × Web3 原语，先用一句话回答"信任谁、信任什么"。回答不出 → 别接。</li>
+<li><strong>AI 让 boilerplate 快 5-10×</strong>，在最熟悉的代码库上可能慢 19%（METR）。主观感觉永远比客观度量乐观——以仓库度量为准。</li>
+<li><strong>主流安全公司一致把 AI 当"放大镜+实习生"</strong>：OZ、Trail of Bits、Cyfrin、Zellic 没有一家声称 AI 替代审计师。</li>
+<li><strong>zkML 上限是 GPT-2 级</strong>（DeepProve-1，2025-07）；Llama-70B 仍在天/小时量级。多数应用 opML / TEE 更现实。</li>
+<li><strong>AI agent 代币 vs agent 工程是两回事</strong>：代币层多数是投机；agent 工程不需要代币。x402 在没有代币的前提下处理年化 6 亿美元真实支付，是反例。</li>
+<li><strong>工程师的护城河</strong>：协议设计、密码学、经济建模、共识研究——AI 短期动不了，正是要投入的方向。</li>
+</ol>
+</section>
+</body>
+</html>

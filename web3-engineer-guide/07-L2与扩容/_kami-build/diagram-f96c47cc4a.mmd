@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as 用户
+    participant L1M as L1CrossDomainMessenger
+    participant Bedrock as OP Stack derivation
+    participant L2M as L2CrossDomainMessenger
+    participant L2C as L2 合约
+
+    Note over U: L1 → L2 消息（即时）
+    U->>L1M: sendMessage(L2合约, 数据)
+    L1M->>Bedrock: 写到 L1 inbox
+    Bedrock->>L2M: 派生 L2 区块时执行
+    L2M->>L2C: 调用目标合约
+
+    Note over U: L2 → L1 消息（7 天挑战期）
+    U->>L2M: sendMessage(L1Target, payload)
+    L2M-->>Bedrock: 提交 output root
+    Note over Bedrock: 等 7 天挑战期
+    U->>L1M: 主动 finalize 提款
+    L1M->>L1M: 验证 output proof + Merkle proof
+    L1M->>U: 执行 L1 调用

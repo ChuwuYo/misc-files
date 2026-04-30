@@ -1,0 +1,6 @@
+flowchart LR
+    Tx[Transaction] --> Q{只动 owned 对象?}
+    Q -- 是 --> Fast[Fast Path<br>对象 owner 签名 + 验证人 quorum<br>~250ms]
+    Q -- 否（动 shared / immutable） --> DAG[Mysticeti DAG<br>全网共识排序<br>~500ms]
+    Fast --> Final[Finalized]
+    DAG --> Final

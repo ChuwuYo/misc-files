@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph Offchain[链下]
+        M[训练好的模型] --> ONNX[导出 ONNX]
+        ONNX --> COMPILE[编译电路]
+        COMPILE --> SETUP[Setup<br/>生成 PK/VK]
+        DATA[输入 x] --> PROVE[Prove<br/>用 PK + 模型 + x]
+        SETUP --> PROVE
+        PROVE --> PROOF[π + 输出 y]
+    end
+
+    subgraph Onchain[链上]
+        VERIFIER[Solidity Verifier<br/>从 VK 生成]
+        PROOF -.提交.-> VERIFIER
+        VERIFIER --> RESULT{验证通过}
+        RESULT -->|是| ACT[业务合约逻辑]
+    end
+
+    style PROVE fill:#cce5ff,stroke:#004085
+    style VERIFIER fill:#d4edda,stroke:#155724

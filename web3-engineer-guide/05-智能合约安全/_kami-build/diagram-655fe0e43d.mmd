@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant A as Attacker
+    participant L as Aave/Sushi/Uni
+    participant B as Beanstalk
+    Note over A: 两天前：提交恶意 BIP（无人注意）
+    A->>L: flashLoan(1B+ stables)
+    A->>B: deposit BEAN3CRV/BEANLUSD → 67% 投票权
+    A->>B: emergencyCommit(BIP) → 转账全部金库
+    A->>L: repay flashLoan → 净 7700 万

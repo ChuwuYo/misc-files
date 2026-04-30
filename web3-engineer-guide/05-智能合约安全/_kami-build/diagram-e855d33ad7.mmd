@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant V as EOA
+    participant F as Phish
+    participant A as Attacker
+    F->>V: signTypedData(SetCodeAuth{addr: CrimeEnjoyor, chainId: 0, nonce: 0})
+    V-->>F: sig → type 4 tx → V.code = CrimeEnjoyor
+    Note over V: V 收到任何 ETH/ERC20 立刻转给 A

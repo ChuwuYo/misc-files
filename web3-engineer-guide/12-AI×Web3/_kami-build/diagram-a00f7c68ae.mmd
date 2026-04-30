@@ -1,0 +1,13 @@
+flowchart TD
+    A{模型推理结果<br/>是否上链直接消费} -->|否| Z[用普通后端 + LLM API]
+    A -->|是| B{对手方是否可能<br/>有动机伪造结果}
+    B -->|否| C[公开权重 hash + 中心化预言机]
+    B -->|是| D{愿等 ~10 分钟<br/>挑战期吗}
+    D -->|是| E[opML]
+    D -->|否| F{需立即 finality<br/>+ 强不可伪造}
+    F -->|是| G[zkML]
+    F -->|否| H[TEE 推理]
+
+    style E fill:#d4edda,stroke:#155724
+    style G fill:#cce5ff,stroke:#004085
+    style H fill:#fff3cd,stroke:#856404

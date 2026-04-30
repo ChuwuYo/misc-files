@@ -1,0 +1,16 @@
+graph TB
+    subgraph SS[Shared Sequencer Network]
+        SA[HotShot 共识]
+        SB[公平排序]
+        SC[共享 finality]
+    end
+
+    R1[Rollup A] --> SS
+    R2[Rollup B] --> SS
+    R3[Rollup C] --> SS
+
+    SS --> A1[Rollup A L1]
+    SS --> A2[Rollup B L1]
+    SS --> A3[Rollup C L1]
+
+    SS -.-> X[原子跨 rollup<br>交易：A 和 B<br>同时上链]
