@@ -511,6 +511,46 @@
     <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">12. 推荐阅读与持续追踪</a></span>
     <span class="toc-page">·</span>
   </div>
+  <div class="toc-item">
+    <span class="toc-num">16</span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 A. zkML 详</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">17</span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">附录 B. opML 二分仲裁详</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">附录 C. Agent 框架字段级</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">19</span>
+    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">附录 D. Bittensor / Akash / TAO 经济</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">20</span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">附录 E. MCP 协议字段</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">21</span>
+    <span class="toc-title"><a href="#ch21" style="color:inherit;text-decoration:none">附录 F. SCONE-bench / METR 详细数据</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">22</span>
+    <span class="toc-title"><a href="#ch22" style="color:inherit;text-decoration:none">附录 G. AI 代币项目分析</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">23</span>
+    <span class="toc-title"><a href="#ch23" style="color:inherit;text-decoration:none">附录 H. Intent / ERC-7521 详</a></span>
+    <span class="toc-page">·</span>
+  </div>
 </section>
 <blockquote>
 <p>2025-03 一个名叫 aixbt 的 AI agent 因为 dashboard 后台被攻破，自然语言指令"transfer 55.5 ETH"被直接执行，55.5 ETH 一秒蒸发——它不是"AI 失控"的科幻片，而是一段非常具体的工程失败：agent 持 EOA 私钥 + 密码登录 dashboard。</p>
@@ -521,40 +561,74 @@
 <p>本模块回答三个问题：2026 年的 AI 工具能帮工程师做哪些 Web3 工作、哪些不能；"链上 AI"（zkML、opML、去中心化推理、链上 agent）哪些已经跑起来、哪些还在 demo；工程师应如何升级工作流、警惕哪些被高估的方向。</p>
 <p>所有性能、行情、资本动作均附 URL；区分"已生产化 / 刚刚涌现 / 仍是 hype"三档。</p>
 <p><strong>前置</strong>：模块 11（基础设施与工具）——RPC、索引、存储、DePIN compute 是本模块"链下推理 + 链上验证"的运行底座。<strong>后续</strong>：模块 13（NFT 身份与社交）——AI agent 经济需要可验证身份，KYA（Know Your Agent）、Soulbound、信誉系统在那里展开。</p>
-<h3 id="trust-model-l0-l3">阅读纲领：Trust Model + L0-L3 成熟度</h3>
-<blockquote>
-<p>一句话先记住：<strong>这本模块用两把尺子量所有 AI × Web3 项目——一把叫"信任谁"，一把叫"成熟到几岁"</strong>。这两把尺子是后面每节抓重点的方法。</p>
-</blockquote>
-<p>整本模块用两把尺子衡量任何"AI × Web3"原语：</p>
-<ol>
-<li><strong>Trust Model（信任谁、信任什么）</strong>：每个原语开篇必须能一句话回答"链上合约 / 用户 / 协议方在信任谁的哪个假设"。zkML 信权重 commitment + 椭圆曲线假设；opML 信"挑战期内至少 1 个诚实复算者"；TEE 信硬件厂商；agent 框架信"谁持私钥、谁能改 prompt"。Trust 没说清的方案，benchmark 再亮也别接。</li>
-<li><strong>L0-L3 成熟度</strong>：
-   - <strong>L0 Vibe / 营销</strong>——只有 demo / 推文 / "扔给 AI 出报告"，无静态分析锚、无第三方验证。
-   - <strong>L1 工具锚定</strong>——LLM 在确定性工具（Slither / Aderyn / Foundry）输出上做解释、串联、PoC。
-   - <strong>L2 微调 / 专用 pipeline</strong>——领域 RL / 专用语料 + 工具集成，有第三方对照数据（Code4rena/Sherlock）。
-   - <strong>L3 增强人类工作流</strong>——一线团队（Trail of Bits、Cyfrin、OZ）把 AI 嵌入既有审计 / 开发 / 运营流，目标是放大而非替代专业人员。</li>
-</ol>
-<p>L0 是营销重灾区。<strong>L1 起才有工程价值，L3 是 2026-04 当前最先进实践</strong>。文中对每个原语标注其 L 等级与 Trust Model 列。</p>
+<h3 id="_1">阅读纲领：两把尺子</h3>
+<p><strong>尺子一：Trust Model（信任谁、信任什么）</strong></p>
+<p>每个原语必须能一句话回答。四类类比先记住：</p>
+<table>
+<thead>
+<tr>
+<th>原语</th>
+<th>类比</th>
+<th>信任谁</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>zkML</td>
+<td>密码学发票</td>
+<td>椭圆曲线假设 + 权重 commitment</td>
+</tr>
+<tr>
+<td>opML</td>
+<td>链上仲裁庭</td>
+<td>挑战期内至少 1 个诚实复算者</td>
+</tr>
+<tr>
+<td>TEE</td>
+<td>玻璃罩</td>
+<td>Intel/AMD/NVIDIA 硬件厂商</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>持私钥的实习生</td>
+<td>谁持私钥、谁能改 prompt</td>
+</tr>
+</tbody>
+</table>
+<p>Trust 没说清的方案，benchmark 再亮也别接。</p>
+<p><strong>尺子二：L0-L3 成熟度</strong></p>
+<ul>
+<li><strong>L0 Vibe</strong>——demo / 推文 / "扔给 AI 出报告"，无静态分析锚。</li>
+<li><strong>L1 工具锚定</strong>——LLM 在 Slither / Aderyn / Foundry 确定性输出上做解释串联。</li>
+<li><strong>L2 微调</strong>——专用语料 + 工具集成，有 Code4rena/Sherlock 第三方数据。</li>
+<li><strong>L3 增强人类工作流</strong>——Trail of Bits / Cyfrin / OZ 把 AI 嵌进既有流程，放大专业人员。</li>
+</ul>
+<p>L0 是营销重灾区。<strong>L1 起才有工程价值，L3 是 2026-04 最先进实践</strong>。</p>
 <hr />
 <section class="chapter">
-<h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
+<h2 id="_2" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
 
-<ul>
-<li><a href="#05-时间轴ai-编程工具与链上-ai-的两条平行历史">0.5 时间轴：AI 编程工具与链上 AI 的两条平行历史</a></li>
-<li><a href="#0-为什么这一模块要单独存在">0. 为什么这一模块要单独存在</a></li>
-<li><a href="#1-已经在帮工程师的-ai-应用生产化">1. 已经在帮工程师的 AI 应用（生产化）</a></li>
-<li><a href="#2-正在涌现但不可全信的-ai-应用">2. 正在涌现但不可全信的 AI 应用</a></li>
-<li><a href="#3-链上-ai-基础设施">3. 链上 AI 基础设施</a></li>
-<li><a href="#4-链上-ai-agent-与代币经济">4. 链上 AI Agent 与代币经济（含 §4.4 a16z/Paradigm、§4.5 攻击者的 AI、§4.6 MEV、§4.7 Agent 框架活跃度）</a></li>
-<li><a href="#5-给工程师的现实警示">5. 给工程师的现实警示</a></li>
-<li><a href="#6-实战-democlaude-code-搭建-erc-4626-vault">6. 实战 Demo：Claude Code 搭建 ERC-4626 Vault</a></li>
-<li><a href="#7-实战-demollm--viem-链上数据分析-agent">7. 实战 Demo：LLM + viem 链上数据分析 agent</a></li>
-<li><a href="#8-实战-demoezkl-把-logistic-回归塞进-zk-证明">8. 实战 Demo：EZKL 把 Logistic 回归塞进 ZK 证明</a></li>
-<li><a href="#9-实战-demoora-opml-sdk-调用链上推理">9. 实战 Demo：ORA opML SDK 调用链上推理</a></li>
-<li><a href="#10-练习">10. 练习</a></li>
-<li><a href="#11-与其他模块的双向引用">11. 与其他模块的双向引用</a></li>
-<li><a href="#12-推荐阅读与持续追踪">12. 推荐阅读与持续追踪</a></li>
-</ul>
+<p><strong>主线</strong>
+- <a href="#05-时间轴ai-编程工具与链上-ai-的两条平行历史">0.5 时间轴</a>
+- <a href="#0-公共讨论的两端为何都不可信">0. 两端为何都不可信</a>
+- <a href="#1-已经在帮工程师的-ai-应用生产化">1. 生产化 AI 应用</a>
+- <a href="#2-正在涌现但不可全信的-ai-应用">2. 涌现但不可全信</a>
+- <a href="#3-链上-ai-基础设施">3. 链上 AI 基础设施（zkML / opML / TEE / 去中心化推理 / Agent 框架 / Intent）</a>
+- <a href="#4-链上-ai-agent-与代币经济">4. 链上 AI Agent 与代币经济</a>
+- <a href="#5-给工程师的现实警示">5. 反 hype 5 条 + 工程师现实警示</a>
+- <a href="#6-实战-democlaude-code-搭建-erc-4626-vault">6–9. 实战 Demo</a>
+- <a href="#10-练习">10. 练习</a>
+- <a href="#11-与其他模块的双向引用">11. 双向引用</a>
+- <a href="#12-推荐阅读与持续追踪">12. 推荐阅读</a></p>
+<p><strong>附录</strong>
+- <a href="#附录-a-zkml-详">附录 A. zkML 详（EZKL / Modulus / Giza / DeepProve benchmark）</a>
+- <a href="#附录-b-opml-二分仲裁详">附录 B. opML 二分仲裁详</a>
+- <a href="#附录-c-agent-框架字段级">附录 C. Agent 框架字段级</a>
+- <a href="#附录-d-bittensor--akash--tao-经济">附录 D. Bittensor / Akash / TAO 经济</a>
+- <a href="#附录-e-mcp-协议字段">附录 E. MCP 协议字段</a>
+- <a href="#附录-f-scone-bench--metr-详细数据">附录 F. SCONE-bench / METR 详细数据</a>
+- <a href="#附录-g-ai-代币项目分析">附录 G. AI 代币项目分析</a>
+- <a href="#附录-h-intent--erc-7521-详">附录 H. Intent / ERC-7521 详</a></p>
 <hr />
 
 </section><section class="chapter">
@@ -1189,175 +1263,51 @@
 <figure><img src="diagram-922cf45806.png" alt="mermaid diagram"></figure>
 
 <p>zkML 把推理结果编码成 zk-SNARK/STARK 证明，链上合约只验证证明、不重新跑模型。链上不知道模型权重 + 不知道输入 x，但能信任输出 y 来自合法计算。</p>
-<h4 id="312-2026-04">3.1.2 主流框架对比（数据均检索 2026-04）</h4>
+<h4 id="312-benchmark-a">3.1.2 主流框架速查（详细 benchmark → 附录 A）</h4>
 <table>
 <thead>
 <tr>
 <th>框架</th>
-<th>团队</th>
-<th>当前能力</th>
-<th>数据来源</th>
+<th>最强能力（2026-04）</th>
+<th>场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>EZKL</strong> (zkonduit)</td>
-<td>zkonduit</td>
-<td>平均比 RISC Zero 快 65.88×、比 Orion 快 2.92×；内存占用比 Orion 少 63.95%、比 RISC Zero 少 98.13%；XGBoost 例子 1 年快 15×</td>
-<td><a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL Benchmarks</a>、<a href="https://blog.ezkl.xyz/post/state_of_ezkl/">State of EZKL 2025</a></td>
-</tr>
-<tr>
-<td><strong>JOLT Atlas</strong></td>
-<td>a16z crypto</td>
-<td>基于 lookup + sumcheck，2025 秋部分模型<strong>秒级</strong>证明、无 GPU；论文称对 ML 比 zkVM 快 3-7×</td>
-<td><a href="https://arxiv.org/abs/2602.17452">Jolt Atlas paper</a>、<a href="https://www.kinic.io/blog/joltx-reaching-for-sota-in-zero-knowledge-machine-learning-zkml">Kinic</a></td>
+<td><strong>EZKL</strong></td>
+<td>线性/树/小 CNN，秒级；vs RISC Zero 快 65.88×</td>
+<td>小模型生产首选</td>
 </tr>
 <tr>
 <td><strong>Lagrange DeepProve-1</strong></td>
-<td>Lagrange Labs</td>
-<td>2025-07 完成 GPT-2 完整推理证明；宣称比 EZKL 快 54-158×；MLP 验证 671×、CNN 验证 521×</td>
-<td><a href="https://lagrange.dev/blog/deepprove-1">DeepProve-1 公告</a>、<a href="https://github.com/Lagrange-Labs/deep-prove">DeepProve repo</a></td>
+<td>2025-07 首次完整 GPT-2 推理证明；比 EZKL 快 54-158×</td>
+<td>GPT-2 级 LLM 当前上限</td>
 </tr>
 <tr>
-<td><strong>RISC Zero (zkVM)</strong></td>
-<td>RISC Zero Inc.</td>
-<td>通用 zkVM，灵活；但 ML 路径偏慢，2025 年仍是"什么都能证、但慢"</td>
-<td>同上 EZKL 对比项</td>
+<td><strong>JOLT Atlas (a16z)</strong></td>
+<td>部分模型秒级，无 GPU</td>
+<td>研究阶段</td>
 </tr>
 <tr>
-<td><strong>zkPyTorch (ICME)</strong></td>
-<td>学术 + ICME</td>
-<td>2025-03 demo VGG-16 证明 2.2s</td>
-<td><a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">ICME zkML 2025 综述</a></td>
+<td><strong>RISC Zero</strong></td>
+<td>通用 zkVM，慢但灵活</td>
+<td>非 ML 场景</td>
 </tr>
 <tr>
-<td><strong>Modulus Labs</strong></td>
-<td>Modulus Labs</td>
-<td>2022 发布 "The Cost of Intelligence" 第一篇 zkML 系统 benchmark；曾跑通 18M 参数模型链上推理</td>
-<td><a href="https://moduluslabs.ai/blog">Modulus Labs Blog</a>、<a href="https://www.theblock.co/post/260335/modulus-raises-6-3-million-to-bring-crypto-security-to-ai">The Block 募资公告</a></td>
-</tr>
-<tr>
-<td><strong>Giza (LuminAIR)</strong></td>
-<td>Giza</td>
-<td>2025-09 发布 LuminAIR，基于 Circle STARK；与 Yearn Finance 等 DeFi 收益聚合器集成</td>
-<td><a href="https://github.com/gizatechxyz">Giza GitHub</a></td>
-</tr>
-<tr>
-<td><strong>ORA zkML</strong></td>
-<td>ORA</td>
-<td>与 opML 是同一团队的双产品线，zkML 用于"高价值低频"场景</td>
-<td><a href="https://docs.ora.io/">ORA Docs</a></td>
-</tr>
-<tr>
-<td><strong>Aztec ML / Noir 上的 zkML</strong></td>
-<td>Aztec</td>
-<td>在 Noir 电路 DSL 上写 ML，目标是隐私 DeFi + ML 组合</td>
-<td>Aztec docs</td>
+<td><strong>Giza LuminAIR</strong></td>
+<td>Circle STARK，DeFi 聚合器集成</td>
+<td>小模型 + DeFi</td>
 </tr>
 </tbody>
 </table>
-<h4 id="313-ram">3.1.3 实测数据：能证多大模型、要多久、多少 RAM</h4>
-<p>所有数据均检索 2026-04，来源以官方 benchmark 与第三方独立 benchmark 为准。</p>
-<table>
-<thead>
-<tr>
-<th>模型规模</th>
-<th>代表模型</th>
-<th>EZKL</th>
-<th>RISC Zero zkVM</th>
-<th>Modulus Labs</th>
-<th>Lagrange DeepProve</th>
-<th>JOLT Atlas</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>线性回归</strong></td>
-<td>logistic regression</td>
-<td>~1ms 证明（<a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL bench</a>）</td>
-<td>~10ms</td>
-<td>已支持</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><strong>树模型</strong></td>
-<td>XGBoost (~1k 节点)</td>
-<td>秒级；2024 年内快 15×</td>
-<td>数十秒</td>
-<td>已支持</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><strong>小 CNN</strong></td>
-<td>MNIST 分类（数十万参数）</td>
-<td>几秒-几十秒</td>
-<td>分钟级</td>
-<td>已支持</td>
-<td>MLP 验证 671×、CNN 验证 521× 加速</td>
-<td>部分模型秒级</td>
-</tr>
-<tr>
-<td><strong>中 CNN</strong></td>
-<td>VGG-16（~138M 参数）</td>
-<td>分钟级（含 setup）</td>
-<td>分钟到小时级</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><strong>中 CNN（zkPyTorch）</strong></td>
-<td>VGG-16</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>—</td>
-<td>zkPyTorch 2025-03 跑出 <strong>2.2s</strong>（<a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">ICME 综述</a>）</td>
-</tr>
-<tr>
-<td><strong>大模型上限</strong></td>
-<td>Modulus Labs 18M 参数模型</td>
-<td>—</td>
-<td>—</td>
-<td><strong>18M 参数链上推理 benchmark</strong></td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><strong>GPT-2 级 LLM</strong></td>
-<td>GPT-2 (~124M 参数)</td>
-<td>不支持完整推理</td>
-<td>不支持完整推理</td>
-<td>不支持完整推理</td>
-<td><strong>2025-07 完成完整推理证明</strong>（<a href="https://lagrange.dev/blog/deepprove-1">DeepProve-1</a>）</td>
-<td>部分层支持</td>
-</tr>
-<tr>
-<td><strong>Llama-2-7B+</strong></td>
-<td>7B-70B 参数 LLM</td>
-<td>不支持</td>
-<td>不支持</td>
-<td>不支持</td>
-<td>仅部分层 demo</td>
-<td>仅部分层 demo</td>
-</tr>
-</tbody>
-</table>
-<p>三组口诀数据：</p>
-<ul>
-<li><strong>EZKL vs RISC Zero</strong>：proof 速度 <strong>65.88×</strong>、内存少 <strong>98.13%</strong>（<a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL Benchmarks</a>）；</li>
-<li><strong>DeepProve-1 vs EZKL</strong>：proof 速度 <strong>54-158×</strong>（<a href="https://lagrange.dev/blog/deepprove-1">Lagrange</a>）；</li>
-<li><strong>完整 LLM 上限</strong>：GPT-2（~124M 参数），DeepProve-1 在 2025-07 首次实现。</li>
-</ul>
-<h4 id="314">3.1.4 现实判断</h4>
-<ul>
-<li>截至 2026-04，<strong>生产可用</strong>的 zkML 停留在小模型（线性/树模型、小 CNN、最多 GPT-2 级 LLM）。Llama-3-70B 成 ZK 证明的成本仍在小时-天量级；</li>
-<li>zkML 合适场景：<strong>高价值低频</strong>——KYC/反欺诈分类、链上信用评分、Worldcoin 类生物识别、AMM 价格喂数；</li>
-<li>大多数应用 opML 或 TEE 已足够。</li>
-</ul>
-<p><strong>"可验证推理"营销的三个反问</strong>：当 zkML 项目宣传"我们能证明 GPT-4"，先问：(1) 是<em>完整模型</em>还是<em>某层</em>？(2) 什么硬件？(3) 单次 proof 多少时间 + RAM？多数营销贴答不出。DeepProve-1 完成 GPT-2 推理证明只证明算术正确，不证明 GPT-2 输出"有用"——回到本节开头 Trust Model。</p>
+<p><strong>三条口诀</strong>：
+- 线性/树模型 → EZKL，毫秒到秒级可生产
+- GPT-2（124M 参数）→ DeepProve-1，2025-07 首次实现
+- 7B+ 参数 → 无可用 zkML，改 opML / TEE</p>
+<h4 id="313">3.1.3 现实判断</h4>
+<p>截至 2026-04，<strong>生产可用</strong>的 zkML 停留在线性/树模型、小 CNN、最多 GPT-2 级。Llama-3-70B 成 ZK 证明仍在小时-天量级。</p>
+<p>zkML 合适场景：<strong>高价值低频</strong>——KYC/反欺诈分类、链上信用评分、Worldcoin 类生物识别、AMM 价格喂数。大多数应用 opML 或 TEE 已足够。</p>
+<p><strong>"可验证推理"营销三问</strong>：(1) 是<em>完整模型</em>还是<em>某层</em>？(2) 什么硬件？(3) 单次 proof 多少时间 + RAM？多数营销贴答不出。框架对比数据详见 <a href="#附录-a-zkml-详">附录 A</a>。</p>
 <h3 id="32-opml">3.2 opML：信任模型与挑战期</h3>
 <blockquote>
 <p><strong>一句话直觉</strong>：opML = 链上的"小额仲裁庭"。提交者先把推理结果挂出来，10 分钟内谁都可以复算同一个模型；只要有 1 个邻居算出不同结果，就启动二分查找把发散点定位到一行字节码，输错那方被 slash。</p>
@@ -1444,101 +1394,39 @@
 <figure><img src="diagram-2ae8ebeb2b.png" alt="mermaid diagram"></figure>
 
 <p>99% 的 dApp 用 OpenAI/Anthropic/本地模型就够了。如果你不卖 GPU，多数项目可以观望。</p>
-<h4 id="342-bittensorsubnet-yuma">3.4.2 Bittensor：subnet 经济与 Yuma 共识</h4>
-<blockquote>
-<p><strong>直觉</strong>：把 Bittensor 想成"AI 任务的工人合作社"——每个 subnet 是一个工种（推理、训练、视频分析等），矿工干活、验证者打分、合作社按 stake 加权融合打分把 TAO 分下去。<strong>dTAO 升级（2025-02）后从 32 个工种暴涨到 128 个</strong>，2025-12 减半减了一半发行——这两个时间点是这个生态当前形态的分水岭。</p>
-</blockquote>
-<ul>
-<li><strong>定位</strong>：ML 任务拆成 subnet，每个 subnet 是微型市场（miner 跑模型、validator 评分），TAO 代币按 Yuma 共识分配。</li>
-<li><strong>工作机制</strong>：<a href="https://docs.learnbittensor.org/yuma-consensus/">Bittensor Yuma Consensus 文档</a>（检索 2026-04）：</li>
-<li>validator 提交对 miner 的 weight 向量；</li>
-<li>链上 Yuma 算法用 stake 加权融合，给出"trusted ranking"；</li>
-<li>每块铸 TAO，41% 给 miner、41% 给 validator、18% 给 subnet 创建者；</li>
-<li>2025-02 dTAO 升级让 subnet 数量从 ~32 飙到 100+，2026-04 共 <strong>128 active subnet</strong>（<a href="https://www.tao.media/the-ultimate-guide-to-bittensor-2026/">Tao Media 2026 指南</a>）；</li>
-<li>2025-12 首次减半，每日发行从 7,200 降到 3,600 TAO。</li>
-<li><strong>真实业务数据</strong>：</li>
-<li><strong>Targon (SN4)</strong> 推理服务年化收入约 1,040 万美元；</li>
-<li><strong>Score (SN44)</strong> 体育视频分析达到传统服务 1/10–1/100 成本；</li>
-<li><strong>Chutes (SN64)</strong> 主打 serverless 推理；</li>
-<li><strong>Nineteen (SN19)</strong> 主打超低延迟；</li>
-<li><strong>Templar (SN3)</strong> 协作训练；</li>
-<li>学术研究 <a href="https://arxiv.org/html/2507.02951v1">Bittensor: A Critical and Empirical Analysis</a>（检索 2026-04）对生态做了独立分析。</li>
-<li><strong>局限</strong>：subnet 之间高度异构、文档质量参差；TAO 价格波动大，矿工/验证者激励不稳定。</li>
-<li><strong>建议</strong>：接"去中心化推理 API"用 Bittensor OpenAI-compatible gateway 最方便；"投资"视角把它当算力市场而非 SaaS。</li>
-</ul>
-<h4 id="343-gpu-2026-04">3.4.3 GPU 市场详解（含 2026-04 美元小时单价）</h4>
-<p>工程师视角看 GPU 市场，最重要是单价。把头部去中心化 GPU 与中心化云对比（数据均检索 2026-04）：</p>
+<h4 id="342-bittensor-gpu-d">3.4.2 Bittensor + GPU 市场速查（经济细节 → 附录 D）</h4>
+<p><strong>Bittensor 直觉</strong>：AI 任务工人合作社。每个 subnet 是一个工种，矿工干活、验证者打分，Yuma 共识按 stake 加权分 TAO。</p>
+<p>关键时间点：2025-02 dTAO 升级（32 → 128 subnet）；2025-12 首次减半（日发行 7,200 → 3,600 TAO）。</p>
+<p>真实收入：Targon (SN4) 推理年化 ~1,040 万美元；Aethir 2025 年总收入 1.278 亿美元。</p>
+<p><strong>GPU 市场单价速查（2026-04）</strong>：</p>
 <table>
 <thead>
 <tr>
 <th>项目</th>
-<th>H100 单价/小时</th>
-<th>A100 80GB 单价/小时</th>
-<th>业务规模</th>
+<th>H100/h</th>
+<th>对 AWS 折扣</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Akash</strong></td>
-<td><strong>$1.49</strong>（<a href="https://akash.network/pricing/gpus/">Akash GPU 价格页</a>）</td>
-<td><strong>$0.79</strong></td>
-<td>2025-Q1 季度 lease 收入破 100 万美元，年化 ARR ~420 万美元（<a href="https://messari.io/report/state-of-akash-q1-2025">Messari</a>）</td>
+<td>Akash</td>
+<td>$1.49</td>
+<td>~65% off</td>
 </tr>
 <tr>
-<td><strong>Hyperbolic</strong></td>
-<td><strong>$3.20</strong> SXM（<a href="https://docs.hyperbolic.xyz/docs/hyperbolic-pricing">Hyperbolic Docs Pricing</a>）</td>
-<td><strong>$1.60</strong></td>
-<td>融资 1,200 万美元；Proof of Sampling 验证；Llama-3.x / Qwen-2.5 系列开放调用</td>
+<td>io.net</td>
+<td>spot 浮动</td>
+<td>~70% off</td>
 </tr>
 <tr>
-<td><strong>io.net</strong></td>
-<td>浮动（spot 模式）</td>
-<td>浮动</td>
-<td>链上累计可验证收入 &gt;2,000 万美元，300K+ GPU 跨 55+ 国，比 AWS/GCP 便宜 70%</td>
-</tr>
-<tr>
-<td><strong>Aethir</strong></td>
-<td>企业询价为主</td>
-<td>—</td>
-<td>2025 年总收入 1.278 亿美元，Q3 ARR ~1.66 亿美元，1.5B+ 计算小时，435K+ GPU 容器跨 93 国</td>
-</tr>
-<tr>
-<td><strong>Render</strong></td>
-<td>不直接卖 H100/A100</td>
-<td>—</td>
-<td>Solana 上的 GPU 渲染网络，主打 3D 渲染 + 部分 AI 推理</td>
-</tr>
-<tr>
-<td><strong>AWS / GCP（对照）</strong></td>
-<td>$4-6（按需）</td>
-<td>$2-4</td>
-<td>中心化云的"参考价"——大多数去中心化 GPU 卖点是"比这便宜 30-70%"</td>
-</tr>
-<tr>
-<td><strong>市场平均</strong></td>
-<td><strong>$2.98</strong> 跨 42 个云提供商（<a href="https://getdeploying.com/gpus/nvidia-h100">getdeploying H100 比价</a>）</td>
-<td>—</td>
-<td>最低 spot 已经压到 $0.47/h</td>
+<td>AWS/GCP</td>
+<td>$4-6</td>
+<td>参考价</td>
 </tr>
 </tbody>
 </table>
-<h4 id="344">3.4.4 工程师视角下的取舍</h4>
-<ul>
-<li><strong>最便宜 H100</strong>：Akash $1.49/h；</li>
-<li><strong>OpenAI-compatible 推理 API</strong>：Hyperbolic（Llama-3.x / Qwen 兼容接口）；</li>
-<li><strong>企业稳定合规</strong>：Aethir / io.net 走 enterprise contract；</li>
-<li><strong>选型原则</strong>：先看 SLA + 区域 + 网络延迟，代币价格不是选型依据。</li>
-</ul>
-<p>这一层本质是 <strong>DePIN + AI</strong>，商业模式比 agent 代币健康，但跟"链上 dApp 用户体验"几乎无关——除非你在卖 GPU。</p>
-<h4 id="345-ritual-allora-atoma-sentient-6079">3.4.5 推理网络：Ritual / Allora / Atoma / Sentient / 6079</h4>
-<ul>
-<li><strong>Ritual</strong>：以太坊上合约调用模型推理，2025 与 <a href="https://www.allora.network/blog/allora-x-ritual-powering-crowdsourced-models-e590b">Allora 合作</a>做众包模型。</li>
-<li><strong>Allora</strong>：去中心化 context-aware AI 网络，worker 投稿 + validator 评分汇总。</li>
-<li><strong>Atoma</strong>：Sui 主网 TEE 推理网络，主打私有 + 可验证。</li>
-<li><strong>Sentient AGI</strong>：开源 + 社区拥有的模型，在去中心化 AI 验证赛道有声量。</li>
-<li><strong>6079</strong>：去中心化 AI 推理基础设施，2025 年活跃度上升。</li>
-</ul>
-<p>这一层 2024-2025 集中爆发，绝大多数仍在"测试网 + 小规模真实用户"阶段，不是"明天就能接的 SaaS"。</p>
+<p>选型原则：先 SLA + 区域延迟，代币价格不是依据。详细经济数据见 <a href="#附录-d-bittensor--akash--tao-经济">附录 D</a>。</p>
+<p><strong>推理网络一览</strong>：Ritual（合约调推理）、Allora（众包模型）、Atoma（Sui TEE）、Sentient AGI（开源社区）——绝大多数仍在测试网 + 小规模用户阶段，不是"明天就能接的 SaaS"。</p>
 <h3 id="35-dao">3.5 数据 DAO 与训练数据市场</h3>
 <blockquote>
 <p>一句话直觉：<strong>让用户拥有自己产生的训练数据，模型方付费才能用</strong>——这是 OpenAI 模式的反面实验。Numerai 是这条路上少数走通了的：10 年专注让数据科学家投稿模型，2025-11 拿了 3,000 万美元 D 轮，JPMorgan 承诺最多 5 亿美元资金管理。绝大多数同类项目还在测试 + 找 PMF。</p>
@@ -1575,134 +1463,54 @@
 </tbody>
 </table>
 <p>Numerai 是 crypto + AI 里最"反 hype"的成功案例：10 年专注，代币激励数据科学家提交模型而非投机。</p>
-<h3 id="36-agent-eliza-ai16z-virtuals-olas-wayfinder-fetchai">3.6 链上 Agent 框架：Eliza / ai16z / Virtuals / Olas / Wayfinder / Fetch.ai</h3>
+<h3 id="36-agent-trust-model">3.6 链上 Agent 框架：按 Trust Model 分类</h3>
 <blockquote>
-<p>阅读这一节最有用的方法：<strong>忽略所有花名（Eliza、Virtuals、GAME、Wayfinder），只问三个问题——"agent 持私钥吗？谁能改 prompt？tx 谁签？"</strong> 这三道题答对，框架的所有差异（开源不开源、TS 还是 Python、有没有代币）都变成可推导的；答错，aixbt 那种 55.5 ETH 一秒蒸发的故事就是你的下一个 case study。</p>
+<p><strong>忽略所有花名，只问三个问题：agent 持私钥吗？谁能改 prompt？tx 谁签？</strong> 这三道题答对，框架的所有差异都变成可推导的。答错，aixbt 那种 55.5 ETH 一秒蒸发的故事就是你的下一个 case study。</p>
 </blockquote>
-<p><strong>Trust Model（关键）</strong>：每个框架本质区别 = "agent 持私钥吗？谁能改 prompt？tx 谁签？"§4.7 给出按 Trust Model 分类的对照表。本节先提取核心：</p>
-<ul>
-<li><strong>链下守护进程，运营方签 tx</strong>（elizaOS、uAgents）：信任 = 信运营方钱包 / 多签。</li>
-<li><strong>m-of-n 多签 service marketplace</strong>（Olas/Autonolas）：信任 = N 个 operator 的 m-of-n 共识。</li>
-<li><strong>平台托管签 tx</strong>（Virtuals）：信任 = Virtuals 团队 + 平台 wallet。</li>
-<li><strong>TBA 自持身份</strong>（GAME / ERC-6551）：信任 = 链上 NFT 持有者 + agent 进程 prompt 完整性。</li>
-</ul>
-<p>aixbt 黑客（§4.1）就是 Trust Model 失败：dashboard 权限被攻破 → prompt 注入 → 自然语言指令"transfer 55.5 ETH"被执行。任何"agent 持 EOA 私钥 + dashboard 通过密码登入"都是 anti-pattern。</p>
-<h4 id="361">3.6.1 框架对比</h4>
+<p><strong>Trust Model 四类</strong>：</p>
 <table>
 <thead>
 <tr>
-<th>框架</th>
-<th>直觉</th>
-<th>关键数据（2026-04）</th>
+<th>类型</th>
+<th>代表框架</th>
+<th>信任谁</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Eliza / ai16z (elizaOS)</strong></td>
-<td>TypeScript 开源 agent 框架，社交媒体 + DeFi 集成</td>
-<td><a href="https://thedefiant.io/news/nfts-and-web3/eliza-labs-ai16z-launches-ai-agent-platform">Eliza V2 + auto.fun</a> 2025 推出；ai16z 代币市值 ~20 亿美元高峰，meme 占比高</td>
+<td>链下守护进程，运营方签 tx</td>
+<td>elizaOS、uAgents</td>
+<td>运营方钱包 / 多签</td>
 </tr>
 <tr>
-<td><strong>Virtuals Protocol</strong></td>
-<td>Base 上的"AI agent L1"概念</td>
-<td>VIRTUAL 代币 2024-12 上 Binance，市值最高破 40 亿美元；GAME（agent meta token）跟随</td>
+<td>m-of-n 多签 service marketplace</td>
+<td>Olas/Autonolas</td>
+<td>N 个 operator 的 m-of-n 共识</td>
 </tr>
 <tr>
-<td><strong>Olas (Autonolas)</strong></td>
-<td>"Co-own AI"，agent app store 模式</td>
-<td>融资 1,380 万美元发布 Pearl agent app store（<a href="https://www.gate.com/learn/articles/what-is-autonolas-olas/7162">Gate Learn</a>）</td>
+<td>平台托管签 tx</td>
+<td>Virtuals Protocol</td>
+<td>Virtuals 团队 + 平台 wallet</td>
 </tr>
 <tr>
-<td><strong>Wayfinder</strong></td>
-<td>给 agent 用的"地图"——把链上操作模板化</td>
-<td>用 PROMPT 代币激励社区贡献 path</td>
-</tr>
-<tr>
-<td><strong>Fetch.ai (ASI Alliance)</strong></td>
-<td>uAgents 框架；2024 与 SingularityNET、Ocean、CUDOS 合并为 ASI</td>
-<td><a href="https://crypto.com/en/university/what-is-the-artificial-superintelligence-alliance">ASI Alliance 介绍</a>；FET 代币转换为 ASI</td>
-</tr>
-<tr>
-<td><strong>Story Protocol Agents</strong></td>
-<td>IP-on-chain，agent 持有/交易 IP</td>
-<td>在 Story 主网上的早期生态</td>
+<td>TBA 自持身份（ERC-6551）</td>
+<td>GAME</td>
+<td>链上 NFT 持有者 + prompt 完整性</td>
 </tr>
 </tbody>
 </table>
-<h4 id="362">3.6.2 诚实评估</h4>
-<ul>
-<li><strong>框架本身有用</strong>（Eliza、uAgents），适合 Twitter 机器人、Discord 机器人、链上自动化；</li>
-<li><strong>代币层面投机远大于真实使用</strong>——大多数 launch 的 agent 链上交易屈指可数；</li>
-<li>生产中的"agent 工程"不需要代币，普通 Node 服务 + ethers/viem + Anthropic/OpenAI API 就够；</li>
-<li>aixbt 案例（§4.1）显示"agent 持私钥"的运营安全模型仍不成熟。</li>
-</ul>
-<h3 id="37-intent-based-defi-solver">3.7 Intent-based DeFi 与 Solver 模式</h3>
+<p>aixbt 是 Trust Model 失败的教科书：dashboard 密码登入被攻破 → prompt 注入 → "transfer 55.5 ETH" 被执行。<strong>agent 持 EOA 私钥 + dashboard 通过密码登入 = anti-pattern</strong>。</p>
+<p>字段级对比（GitHub stars / 语言 / 真实活跃度 / tx 签名方式）见 <a href="#附录-c-agent-框架字段级">附录 C</a>。</p>
+<p>诚实评估：框架本身有用（elizaOS、uAgents）；代币层投机远大于真实使用；生产 agent 工程不需要代币——普通 Node + ethers/viem + Anthropic API 就够。</p>
+<h3 id="37-intent-based-defi-ai-agent">3.7 Intent-based DeFi 与 AI Agent 安全模式</h3>
 <blockquote>
-<p>假设你想用 1 ETH 换 USDC，要的不是某条具体路径，而是"1 小时内成交，滑点不超过 0.5%"。<strong>Intent 范式 = 你签一份"我要什么"的合同，Solver 们拍卖谁能用最优路径把它做成。</strong> 用户不再操心选 DEX、分单、桥不桥——这些变成 Solver 之间的竞争问题。</p>
-<p>对 AI agent 来说，这是关键：agent 签 intent 让别人执行，<strong>它自己不持私钥也不能跑路</strong>。aixbt 失误的根源就是没用这个范式。</p>
+<p><strong>Intent 范式 = agent 签"我要什么"的约束，Solver 拍卖最优路径。</strong> agent 不持私钥、不能跑路——这是 aixbt 失误后的业界共识安全模式。</p>
 </blockquote>
-<p><strong>Trust Model</strong>：用户信任的是"validity predicate"——签的不是具体 tx，而是"约束条件"（最低输出、最大滑点、过期时间）。Solver 拍卖路径，但只有满足约束的路径能上链结算。<strong>信任谁</strong>：(1) 钱包签名工具正确解析 intent；(2) solver 市场有竞争（不被单一 solver 垄断 MEV）；(3) ERC-7521/7683 标准实现无 bug。</p>
-<h4 id="371-transaction-intent">3.7.1 从 transaction 到 intent</h4>
-<figure><img src="diagram-d2bd05d2b5.png" alt="mermaid diagram"></figure>
+<p><strong>Trust Model</strong>：信任 validity predicate（约束条件：最低输出、最大滑点、过期时间）。Solver 只有满足约束的路径才能上链结算。</p>
+<figure><img src="diagram-6cd92fc63d.png" alt="mermaid diagram"></figure>
 
-<h4 id="372-intent">3.7.2 主要 Intent 协议</h4>
-<table>
-<thead>
-<tr>
-<th>协议</th>
-<th>关键事实（2026-04）</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>CoW Swap</strong></td>
-<td>先驱，月成交 ~18.6 亿美元（vs Uniswap 24h 30 亿+），自 2021 累计 330 亿+；第二大 solver Barter 累计执行 180 亿+，每周 9 亿（<a href="https://blockworks.co/news/barter-buys-rival-solver-codebase">Blockworks</a>）</td>
-</tr>
-<tr>
-<td><strong>UniswapX</strong></td>
-<td>Uniswap 的 solver 版；roadmap 含跨链</td>
-</tr>
-<tr>
-<td><strong>1inch Fusion</strong></td>
-<td>同型，主打 MEV 保护</td>
-</tr>
-<tr>
-<td><strong>Anoma</strong></td>
-<td>Intent-centric L1，定义 intent 为一等公民；ERC-7521 由 Anoma 团队主导</td>
-</tr>
-<tr>
-<td><strong>Khalani</strong></td>
-<td>"collaborative solving" 模型，让 solver 协作而非单一竞拍（<a href="https://khalani.network/">Khalani 官网</a>）</td>
-</tr>
-<tr>
-<td><strong>SUAVE (Flashbots)</strong></td>
-<td>加密 mempool + 私有 intent 提交</td>
-</tr>
-<tr>
-<td><strong>Bungee/Socket</strong></td>
-<td>跨链 intent 路由聚合器</td>
-</tr>
-<tr>
-<td><strong>Across</strong></td>
-<td>支持 ERC-7683 跨链 intent 标准</td>
-</tr>
-<tr>
-<td><strong>ERC-7521</strong></td>
-<td>Anoma 团队主导，<a href="https://eips.ethereum.org/EIPS/eip-7521">EIP</a>，智能合约钱包通用 intent 格式，validity predicate 在签名时锁定边界</td>
-</tr>
-<tr>
-<td><strong>ERC-7683</strong></td>
-<td>跨链 intent 标准，<a href="https://www.archetype.fund/media/erc7683-the-cross-chain-intents-standard">Archetype 介绍</a>（检索 2026-04）</td>
-</tr>
-</tbody>
-</table>
-<h4 id="373-ai-intent">3.7.3 AI 在 Intent 里的位置</h4>
-<ul>
-<li><strong>写 intent</strong>：LLM 把自然语言翻译成 ERC-7521 + ERC-7683 格式；</li>
-<li><strong>写 solver</strong>：LLM 优化 routing 算法，但 solver 决定 MEV 流向，<strong>安全模型不能让 LLM 自己拍</strong>；</li>
-<li><strong>AI agent 用 intent 操作链</strong>：agent 签 intent 让 solver 执行，不持私钥——§4.1 aixbt 事件后的业界共识"安全 agent 模式"。</li>
-</ul>
-<p>ERC-7521 intent + ERC-4337 账户抽象 = AI agent 安全操作链上的标准范式。详见模块 10 §账户抽象。</p>
+<p>主要协议：CoW Swap（月成交 ~18.6 亿美元）、UniswapX、1inch Fusion、Anoma（intent-centric L1）、Across（ERC-7683 跨链）。</p>
+<p>ERC-7521 intent + ERC-4337 账户抽象 = AI agent 安全操作链上的标准范式。EIP 细节与字段见 <a href="#附录-h-intent--erc-7521-详">附录 H</a>。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1964,64 +1772,9 @@
 </ul>
 <p><a href="https://arxiv.org/html/2510.14642v1">arXiv 2510.14642 RL for MEV</a>（检索 2026-04）：Polygon 上 RL 做 MEV 抓取在 long-tail 有效；<strong>主流 vanilla 套利 ML 已卷不过老牌 searcher</strong>。</p>
 <p>不要用 ML 做主流套利（延迟/基础设施/IOI 关系是壁垒）。可做方向：long-tail（小池子、新 fork、三角路径）、跨链 intent solver（CoW/Khalani/Across）、ML 判断"哪个 intent 该接"。</p>
-<h3 id="47-agent-trust-model-2026-04">4.7 Agent 框架活跃度对照（按 Trust Model 分类，检索 2026-04）</h3>
-<p>按"agent 持私钥? 谁签 tx? 链上身份是什么?"分四类。<strong>Trust Model 不一致的框架不能直接对比性能/费用</strong>。</p>
-<table>
-<thead>
-<tr>
-<th>框架</th>
-<th>GitHub Stars</th>
-<th>TypeScript / Python</th>
-<th>真实活跃度信号</th>
-<th>Trust Model（agent 持私钥? 链上身份? 如何执行 tx?）</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>elizaOS / ai16z eliza</strong></td>
-<td>~15K stars</td>
-<td>TypeScript</td>
-<td>文档完整、定期发布，<a href="https://docs.elizaosai.org/">官方 docs</a> 与 <a href="https://github.com/elizaOS/eliza">GitHub</a> 都活跃</td>
-<td><strong>链下守护进程</strong>：agent 是 Node 进程，<strong>不持私钥</strong>（默认）；tx 通过运营方持有的 EOA/多签/MPC 签发，agent 仅产生 intent。链上身份 = 运营方钱包。</td>
-</tr>
-<tr>
-<td><strong>uAgents (Fetch.ai)</strong></td>
-<td>几百到 1K+</td>
-<td>Python</td>
-<td>ASI Alliance 合并后存活，企业 case 多于社区</td>
-<td>链下 Python agent + Fetch.ai Almanac 注册，agent 有去中心化身份但 tx 仍由后台 wallet 签。</td>
-</tr>
-<tr>
-<td><strong>Olas / Autonolas SDK</strong></td>
-<td>几百</td>
-<td>Python</td>
-<td>Pearl app store 真实付费用户</td>
-<td><strong>Service marketplace</strong>：agent service 由 N 个 operator 节点共同运营，用 Safe 多签作为 service 链上身份，tx 走 m-of-n 多签共识。</td>
-</tr>
-<tr>
-<td><strong>Virtuals (launchpad+meme)</strong></td>
-<td>闭源</td>
-<td>mixed</td>
-<td>平台闭源，agent 通过 launchpad 部署，VIRTUAL 代币 + bonding curve</td>
-<td><strong>代币 launchpad 平台</strong>：agent 是平台托管的链下进程，每个 agent 绑一个 ERC-20，tx 由 Virtuals 平台 wallet 代签；trust = 信任 Virtuals 团队。</td>
-</tr>
-<tr>
-<td><strong>GAME (Virtuals 系)</strong></td>
-<td>部分开源</td>
-<td>mixed</td>
-<td>Virtuals 生态 meta agent 框架</td>
-<td><strong>TBA-based 链上身份</strong>：每个 agent = 一个 ERC-6551 Token Bound Account（NFT 持有的合约钱包），agent 直接以 TBA 名义签 tx，链上原生身份最干净。</td>
-</tr>
-<tr>
-<td><strong>Wayfinder paths</strong></td>
-<td>社区贡献</td>
-<td>mixed</td>
-<td>主要靠 PROMPT 代币激励</td>
-<td>路径/工作流编排，trust 取决于具体 path 实现，框架本身不规定 key 模型。</td>
-</tr>
-</tbody>
-</table>
-<p>做"agent 工程"而非"代币投机"：首选 <strong>elizaOS</strong>（生态最大、TypeScript 友好）或 <strong>uAgents</strong>（Python 生态、企业向）。代币层和工程层分开决策。</p>
+<h3 id="47-agent">4.7 Agent 框架选型</h3>
+<p>按 Trust Model 分类见 §3.6。GitHub stars / 语言 / 活跃度 / tx 签名方式的字段级对比见 <a href="#附录-c-agent-框架字段级">附录 C</a>。</p>
+<p>选型结论：做 agent 工程首选 <strong>elizaOS</strong>（TypeScript、~15K stars、生态最大）或 <strong>uAgents</strong>（Python、企业向）。代币层和工程层分开决策。</p>
 <hr />
 
 </section><section class="chapter">
@@ -2030,6 +1783,18 @@
 <blockquote>
 <p>这一节是全模块最实用的一段：<strong>把你这周要做的 Solidity / 前端 / 文档 / 协议设计 任务，在脑子里贴到 §5.1（让 AI 做）和 §5.2（亲自做）这两个清单里</strong>。贴错的代价：要么慢 19%（METR），要么把 8 位数损失埋进 tokenomics 的常数里。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：AI 是放大镜，不是替代者。四个类比先记住：zkML=密码学发票；opML=链上仲裁庭；TEE=玻璃罩；agent=持私钥的实习生。</p>
+<h3 id="50-hype-5">5.0 反 hype 5 条</h3>
+<blockquote>
+<p>这五条是全模块对"过度乐观 + 过度悲观"两类推文的统一答复——写代码前先对照一遍。</p>
+</blockquote>
+<ol>
+<li><strong>"AI 5 分钟审完合约" → L0 vibe audit，信任值 = 0。</strong> 无静态分析锚的报告不引用、不提交、不付费。召回率 &lt; 30%，误报率 70-90%（§2.1 数据）。</li>
+<li><strong>"AI 自主写新协议" → 骨架可以，设计不行。</strong> LLM 写 ERC-20 骨架快 5-10×；但清算曲线 / AMM invariant / staking 边界错一个常数 = 8 位数损失。协议设计必须人主导。</li>
+<li><strong>"AI agent 代币 = 新经济" → 代币层和工程层分开看。</strong> elizaOS 框架 15K stars 是真；ai16z 代币从 2.5B 跌 80%+ 是也真。x402 无代币处理年化 6 亿美元才是反例。</li>
+<li><strong>"链上跑大模型" → 当前上限是 GPT-2（~124M 参数）。</strong> 所有"on-chain AI"都是链下推理 + 链上验证/结算。Llama-70B 完整 ZK 证明还在天/小时量级（§3.1 + 附录 A）。</li>
+<li><strong>"AI 让我快了 X 倍" → 用仓库度量，不用主观感觉。</strong> METR 实测：主观快 20%，客观慢 19%。加速比只在 boilerplate 和不熟悉的代码库上可信（§1.1 表格）。</li>
+</ol>
 <h3 id="51-ai-web3">5.1 AI 已大幅压缩工时的 Web3 工作</h3>
 <p>L1 工具锚定可放心外包：</p>
 <ul>
@@ -2048,19 +1813,12 @@
 <li><strong>共识研究</strong>：Casper FFG/CFT、PBS、SSF、DAS；</li>
 <li><strong>激励机制设计</strong>：tokenomics、staking、slashing 边界——错一个常数 = 8 位数损失。</li>
 </ul>
-<h3 id="53-hype">5.3 被高估的方向（hype 清单）</h3>
-<ul>
-<li><strong>"AI 完全自动审计"</strong>：2026-04 当前 AI = 加速人类审计师的工具。"5 分钟出报告"的 L0 vibe audit 直接无视；</li>
-<li><strong>"AI 自主写新协议"</strong>：LLM 可写 ERC-20 骨架；<strong>设计</strong>新协议是另一回事。"AI 从白皮书生成可上线代码"的 demo 没有一个经过对抗性安全验证；</li>
-<li><strong>"AI agent 代币就是新经济"</strong>：2024-2025 大量代币 launch，多数 DAU 个位数，流动性靠投机；</li>
-<li><strong>"链上跑大模型"</strong>：截至 2026-04 没有任何 EVM 链上跑 7B+ 推理。所有"on-chain AI"都是链下推理 + 链上验证/结算。</li>
-</ul>
-<h3 id="54">5.4 工程师如何升级技能</h3>
+<h3 id="53">5.3 工程师如何升级技能</h3>
 <ol>
-<li><strong>保留不能让 AI 替你做的肌肉</strong>：手写至少 1 个完整 ERC-4626 不查文档；手算 1 个 zk constraint；从 0 写一遍 Foundry invariant test；</li>
-<li><strong>把重复劳动外包给 AI</strong>：所有 boilerplate、文档、mermaid 图、第一版测试草稿；</li>
-<li><strong>用 AI 学，但每个结论对照原始资料</strong>：LLM 解释 Plonk → 回 <a href="https://eprint.iacr.org/2019/953">论文</a> 校对常数；LLM 解释 EIP → 回 EIP 原文校对；</li>
-<li><strong>建自己的 Claude Code skills 库</strong>：参考 <a href="https://github.com/trailofbits/skills">trailofbits/skills</a>，把重复 prompt + 检查点编码成 markdown skill 跨项目复用；</li>
+<li><strong>保留不能让 AI 替你做的肌肉</strong>：手写 1 个完整 ERC-4626、手算 1 个 zk constraint、从 0 写一遍 Foundry invariant test。</li>
+<li><strong>把重复劳动外包给 AI</strong>：boilerplate、文档、mermaid 图、第一版测试草稿——全是 AI 擅长的低风险任务。</li>
+<li><strong>用 AI 学，但每个结论对照原始资料</strong>：LLM 解释 Plonk → 回<a href="https://eprint.iacr.org/2019/953">论文</a>校对常数；LLM 解释 EIP → 回 EIP 原文校对。</li>
+<li><strong>建自己的 Claude Code skills 库</strong>：参考 <a href="https://github.com/trailofbits/skills">trailofbits/skills</a>，把重复 prompt + 检查点编码成 markdown skill 跨项目复用。</li>
 <li><strong>重点投入 AI 不会替代的方向</strong>：协议设计、密码学、安全审计、经济建模、共识研究——其中任一深入都是 5-10 年红利。</li>
 </ol>
 <hr />
@@ -2330,6 +2088,498 @@ LLM 整合结果 → 自然语言回答
 <li><strong>AI agent 代币 vs agent 工程是两回事</strong>：代币层多数是投机；agent 工程不需要代币。x402 在没有代币的前提下处理年化 6 亿美元真实支付，是反例。</li>
 <li><strong>工程师的护城河</strong>：协议设计、密码学、经济建模、共识研究——AI 短期动不了，正是要投入的方向。</li>
 </ol>
+<hr />
+
+</section><section class="chapter">
+<h2 id="a-zkml" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 A. zkML 详</h2>
+
+<blockquote>
+<p>主线 §3.1 给出选型直觉和三条口诀；这里给证明系统的完整 benchmark 数据，用于技术评审、论文引用或框架切换决策。</p>
+</blockquote>
+<h3 id="a1-2026-04">A.1 框架全量对比（数据检索 2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>团队</th>
+<th>当前能力</th>
+<th>数据来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EZKL</strong> (zkonduit)</td>
+<td>zkonduit</td>
+<td>平均比 RISC Zero 快 65.88×、比 Orion 快 2.92×；内存比 RISC Zero 少 98.13%；XGBoost 例子 1 年快 15×</td>
+<td><a href="https://blog.ezkl.xyz/post/benchmarks/">EZKL Benchmarks</a>、<a href="https://blog.ezkl.xyz/post/state_of_ezkl/">State of EZKL 2025</a></td>
+</tr>
+<tr>
+<td><strong>JOLT Atlas</strong></td>
+<td>a16z crypto</td>
+<td>lookup + sumcheck，2025 秋部分模型秒级、无 GPU；对 ML 比 zkVM 快 3-7×</td>
+<td><a href="https://arxiv.org/abs/2602.17452">Jolt Atlas paper</a></td>
+</tr>
+<tr>
+<td><strong>Lagrange DeepProve-1</strong></td>
+<td>Lagrange Labs</td>
+<td>2025-07 完成 GPT-2 完整推理证明；比 EZKL 快 54-158×；MLP 671×、CNN 521× 加速</td>
+<td><a href="https://lagrange.dev/blog/deepprove-1">DeepProve-1</a></td>
+</tr>
+<tr>
+<td><strong>RISC Zero</strong></td>
+<td>RISC Zero Inc.</td>
+<td>通用 zkVM，灵活但 ML 路径慢</td>
+<td>EZKL 对比项</td>
+</tr>
+<tr>
+<td><strong>zkPyTorch (ICME)</strong></td>
+<td>学术</td>
+<td>2025-03 VGG-16 证明 2.2s</td>
+<td><a href="https://blog.icme.io/the-definitive-guide-to-zkml-2025/">ICME 综述</a></td>
+</tr>
+<tr>
+<td><strong>Modulus Labs</strong></td>
+<td>Modulus Labs</td>
+<td>2022 "The Cost of Intelligence" 首篇 zkML benchmark；18M 参数模型</td>
+<td><a href="https://moduluslabs.ai/blog">Modulus Blog</a></td>
+</tr>
+<tr>
+<td><strong>Giza LuminAIR</strong></td>
+<td>Giza</td>
+<td>2025-09 Circle STARK；Yearn Finance 集成</td>
+<td><a href="https://github.com/gizatechxyz">Giza GitHub</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="a2">A.2 模型规模 × 框架性能矩阵</h3>
+<table>
+<thead>
+<tr>
+<th>模型规模</th>
+<th>代表模型</th>
+<th>EZKL</th>
+<th>RISC Zero</th>
+<th>Lagrange DeepProve</th>
+<th>JOLT Atlas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>线性回归</td>
+<td>logistic regression</td>
+<td>~1ms</td>
+<td>~10ms</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>树模型</td>
+<td>XGBoost (~1k 节点)</td>
+<td>秒级</td>
+<td>数十秒</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>小 CNN</td>
+<td>MNIST</td>
+<td>几秒-几十秒</td>
+<td>分钟级</td>
+<td>MLP/CNN 521-671× 加速</td>
+<td>部分秒级</td>
+</tr>
+<tr>
+<td>中 CNN</td>
+<td>VGG-16 (~138M)</td>
+<td>分钟级</td>
+<td>分钟-小时</td>
+<td>—</td>
+<td>2.2s (zkPyTorch)</td>
+</tr>
+<tr>
+<td>GPT-2 (~124M)</td>
+<td>GPT-2</td>
+<td>不支持完整</td>
+<td>不支持完整</td>
+<td><strong>2025-07 首次实现</strong></td>
+<td>部分层</td>
+</tr>
+<tr>
+<td>7B+ LLM</td>
+<td>Llama-2-7B</td>
+<td>不支持</td>
+<td>不支持</td>
+<td>仅部分层 demo</td>
+<td>仅部分层 demo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>三条口诀</strong>：EZKL vs RISC Zero = 65.88× 快、98.13% 少内存；DeepProve-1 vs EZKL = 54-158× 快；GPT-2 完整证明 2025-07 首次实现。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="b-opml" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 B. opML 二分仲裁详</h2>
+
+<blockquote>
+<p>主线 §3.2 给出交互图和直觉；这里给争议博弈的字节码级机制，供自己实现 FPVM 或审计 ORA 合约时参考。</p>
+</blockquote>
+<h3 id="b1">B.1 二分查找协议</h3>
+<p>ORA opML 的 FPVM（Fraud Proof Virtual Machine）把"一次推理"分解为确定性的逐步执行。挑战方与提交方通过二分查找把"发散点"定位到单条指令：</p>
+<ol>
+<li>提交方发布推理执行轨迹的 Merkle root（中间状态 commitment）；</li>
+<li>挑战方声明某个 step 的状态与自己的计算不一致；</li>
+<li>双方通过 Interactive Bisection Game 把范围缩小到 1 步；</li>
+<li>链上合约执行该单步，裁定谁对谁错，slash 错误方的 bond。</li>
+</ol>
+<p><a href="https://arxiv.org/abs/2401.17555">ORA opML 论文 arXiv 2401.17555</a>（检索 2026-04）：挑战期 ~10 分钟源于"单次推理可并行复算"；OP Rollup 7 天源于"所有 L2 交易的时间冗余"。</p>
+<h3 id="b2-opml-op-rollup">B.2 为什么 opML 挑战期比 OP Rollup 短</h3>
+<p>OP Rollup 复算单元 = 一批 L2 交易（顺序依赖）；opML 复算单元 = 一次推理（独立、可并行）。实验数据：13B 参数模型 demo 挑战期 ~10 分钟（<a href="https://mirror.xyz/orablog.eth/Z__Ui5I9gFOy7-da_jI1lgEqtnzSIKcwuBIrk-6YM0Y">ORA Mirror</a>，检索 2026-04）。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="c-agent" id="ch18"><span class="chapter-num">Chapter 18</span><br>附录 C. Agent 框架字段级</h2>
+
+<blockquote>
+<p>主线 §3.6 按 Trust Model 分四类；这里给每个框架的 GitHub stars、语言、签名机制、活跃度信号，供工程师做具体选型。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>框架</th>
+<th>Stars</th>
+<th>语言</th>
+<th>tx 签名机制</th>
+<th>链上身份</th>
+<th>活跃度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>elizaOS</strong></td>
+<td>~15K</td>
+<td>TypeScript</td>
+<td>运营方 EOA / 多签 / MPC，agent 不持私钥</td>
+<td>运营方钱包</td>
+<td>文档完整，定期发版</td>
+</tr>
+<tr>
+<td><strong>uAgents (Fetch.ai)</strong></td>
+<td>~1K</td>
+<td>Python</td>
+<td>后台 wallet 签，Almanac 注册</td>
+<td>去中心化身份</td>
+<td>ASI Alliance 合并后企业 case 多</td>
+</tr>
+<tr>
+<td><strong>Olas / Autonolas SDK</strong></td>
+<td>~几百</td>
+<td>Python</td>
+<td>Safe 多签 m-of-n</td>
+<td>Service 链上 Safe</td>
+<td>Pearl app store 真实付费</td>
+</tr>
+<tr>
+<td><strong>Virtuals Protocol</strong></td>
+<td>闭源</td>
+<td>mixed</td>
+<td>平台 wallet 代签</td>
+<td>每 agent 绑 ERC-20</td>
+<td>VIRTUAL 代币 bonding curve</td>
+</tr>
+<tr>
+<td><strong>GAME (ERC-6551)</strong></td>
+<td>部分开源</td>
+<td>mixed</td>
+<td>TBA 直接签（NFT 持有的合约钱包）</td>
+<td>ERC-6551 Token Bound Account</td>
+<td>Virtuals 生态 meta</td>
+</tr>
+<tr>
+<td><strong>Wayfinder</strong></td>
+<td>社区贡献</td>
+<td>mixed</td>
+<td>path 实现决定</td>
+<td>无固定模型</td>
+<td>PROMPT 代币激励</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="d-bittensor-akash-tao" id="ch19"><span class="chapter-num">Chapter 19</span><br>附录 D. Bittensor / Akash / TAO 经济</h2>
+
+<blockquote>
+<p>主线 §3.4 给工程师选型直觉；这里给 Yuma 共识的分配比例、subnet 收入、GPU 单价，供研究激励机制或做成本分析。</p>
+</blockquote>
+<h3 id="d1-bittensor">D.1 Bittensor 经济参数</h3>
+<ul>
+<li><strong>发行分配</strong>（<a href="https://docs.learnbittensor.org/yuma-consensus/">Yuma Consensus 文档</a>，检索 2026-04）：每块铸 TAO，<strong>41% 给 miner、41% 给 validator、18% 给 subnet 创建者</strong>；</li>
+<li><strong>dTAO 升级</strong>（2025-02）：subnet 数从 ~32 飙到 100+，validator 进入动态权重分配；</li>
+<li><strong>首次减半</strong>（2025-12）：每日发行 7,200 → 3,600 TAO；</li>
+<li><strong>2026-04 状态</strong>：128 active subnet（<a href="https://www.tao.media/the-ultimate-guide-to-bittensor-2026/">Tao Media 2026 指南</a>）。</li>
+</ul>
+<h3 id="d2-subnet">D.2 典型 Subnet 收入数据</h3>
+<table>
+<thead>
+<tr>
+<th>Subnet</th>
+<th>定位</th>
+<th>收入/规模（2026-04）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Targon (SN4)</td>
+<td>推理服务</td>
+<td>年化 ~1,040 万美元</td>
+</tr>
+<tr>
+<td>Score (SN44)</td>
+<td>体育视频分析</td>
+<td>传统服务 1/10–1/100 成本</td>
+</tr>
+<tr>
+<td>Chutes (SN64)</td>
+<td>Serverless 推理</td>
+<td>活跃增长</td>
+</tr>
+<tr>
+<td>Nineteen (SN19)</td>
+<td>超低延迟推理</td>
+<td>活跃增长</td>
+</tr>
+<tr>
+<td>Templar (SN3)</td>
+<td>协作训练</td>
+<td>学术研究阶段</td>
+</tr>
+</tbody>
+</table>
+<p>学术独立分析：<a href="https://arxiv.org/html/2507.02951v1">Bittensor: A Critical and Empirical Analysis</a>（检索 2026-04）。</p>
+<h3 id="d3-gpu-2026-04">D.3 GPU 市场单价完整对比（2026-04）</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>H100/h</th>
+<th>A100 80GB/h</th>
+<th>业务规模</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Akash</strong></td>
+<td>$1.49</td>
+<td>$0.79</td>
+<td>2025-Q1 lease 收入破 100 万美元，年化 ~420 万美元</td>
+</tr>
+<tr>
+<td><strong>Hyperbolic</strong></td>
+<td>$3.20 SXM</td>
+<td>$1.60</td>
+<td>融资 1,200 万；Llama-3.x / Qwen 兼容接口</td>
+</tr>
+<tr>
+<td><strong>io.net</strong></td>
+<td>spot 浮动</td>
+<td>浮动</td>
+<td>链上累计收入 &gt;2,000 万，300K+ GPU，55+ 国</td>
+</tr>
+<tr>
+<td><strong>Aethir</strong></td>
+<td>企业询价</td>
+<td>—</td>
+<td>2025 年总收入 1.278 亿，1.5B+ 计算小时</td>
+</tr>
+<tr>
+<td><strong>AWS/GCP</strong></td>
+<td>$4-6</td>
+<td>$2-4</td>
+<td>参考价</td>
+</tr>
+<tr>
+<td><strong>市场均价</strong></td>
+<td>$2.98</td>
+<td>—</td>
+<td>最低 spot $0.47/h（<a href="https://getdeploying.com/gpus/nvidia-h100">getdeploying</a>）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="e-mcp" id="ch20"><span class="chapter-num">Chapter 20</span><br>附录 E. MCP 协议字段</h2>
+
+<blockquote>
+<p>主线 §1.7 给出 Web3 MCP 服务器全景；这里给协议字段定义，供自己写 MCP server 或排查工具调用问题。</p>
+</blockquote>
+<p>MCP（Model Context Protocol）由 Anthropic 于 2024-11 发布（<a href="https://modelcontextprotocol.io">文档</a>）。核心是 JSON-RPC 2.0 + 工具调用协议。</p>
+<h3 id="e1">E.1 工具调用字段</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;jsonrpc&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;2.0&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;method&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;tools/call&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;params&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;name&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;slither_analyze&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;arguments&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;contract_path&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;./src/Vault.sol&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">&quot;detectors&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;reentrancy&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;access-control&quot;</span><span style="color: #000; font-weight: bold">]</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;id&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>关键字段：<code>name</code>（工具标识符）、<code>arguments</code>（工具参数 JSON 对象）、<code>id</code>（请求 ID，用于匹配响应）。</p>
+<h3 id="e2">E.2 安全注意事项</h3>
+<p>Anthropic tool use 文档明确：<strong>工具调用结果属于"非 principal"输入，必须二次校验，不允许直接驱动决策</strong>。具体到 Web3：Slither/Aderyn 输出是地基真相，LLM 的解释层必须人工审核，不可直接 submit finding。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="f-scone-bench-metr" id="ch21"><span class="chapter-num">Chapter 21</span><br>附录 F. SCONE-bench / METR 详细数据</h2>
+
+<blockquote>
+<p>主线引用了两个关键实验；这里给完整方法论和数字，供撰写技术报告或做内部培训时引用。</p>
+</blockquote>
+<h3 id="f1-anthropic-scone-bench2025-12-2026-04">F.1 Anthropic SCONE-bench（2025-12，检索 2026-04）</h3>
+<p>来源：<a href="https://red.anthropic.com/2025/smart-contracts/">Anthropic Red Team</a></p>
+<ul>
+<li><strong>测试集</strong>：405 个真实被黑合约（2020-2025，Ethereum/BSC/Base）+ 2,849 个最近部署的"未公开漏洞"合约；</li>
+<li><strong>模型</strong>：Claude Opus 4.5 / Sonnet 4.5 / GPT-5；</li>
+<li><strong>结果</strong>：</li>
+<li>405 个样本：51.11% 自动可攻；模拟盗取总额 <strong>5.5 亿美元</strong>；</li>
+<li>2,849 个样本：发现 <strong>2 个 zero-day</strong>，模拟盗取 3,694 美元；</li>
+<li><strong>单 agent run 成本 1.22 美元</strong>，测 2,849 个合约总成本 3,476 美元；</li>
+<li><strong>含义</strong>：攻击侧 AI 比防御侧更便宜更快；"链下合约"安全审计必须把 AI 加进流程。</li>
+</ul>
+<h3 id="f2-metr-oss-2025-07-2026-04">F.2 METR OSS 开发者实验（2025-07，检索 2026-04）</h3>
+<p>来源：<a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR Blog</a></p>
+<ul>
+<li><strong>方法</strong>：16 位资深 OSS 开发者，246 个真实任务，工具：Cursor Pro + Claude 3.5/3.7；</li>
+<li><strong>客观结果</strong>：平均完成时间比手写<strong>慢 19%</strong>（中位数）；</li>
+<li><strong>主观感知</strong>：参与者报告平均<strong>快 20%</strong>；</li>
+<li><strong>2026-02 更新</strong>：<a href="https://metr.org/blog/2026-02-24-uplift-update/">METR uplift update</a> 承认样本偏差变大；</li>
+<li><strong>含义</strong>：METR "time-horizon" 论文（<a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/">2025-03</a>）显示当前模型在 4 分钟以内任务接近 100% 成功，超过 4 小时跌到 &lt;10%——加速比只在短时、低上下文任务上可信。</li>
+</ul>
+<hr />
+
+</section><section class="chapter">
+<h2 id="g-ai" id="ch22"><span class="chapter-num">Chapter 22</span><br>附录 G. AI 代币项目分析</h2>
+
+<blockquote>
+<p>主线 §4.1 给代币行情快照；这里给更完整的业务支撑分析，供做项目研究或写报告时引用。</p>
+</blockquote>
+<p><strong>分层标准</strong>：按"真实业务收入 / 链上活跃用户 / 代币市值"三维拆解。</p>
+<table>
+<thead>
+<tr>
+<th>代币</th>
+<th>价格（2026-04）</th>
+<th>市值</th>
+<th>业务支撑</th>
+<th>评级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TAO (Bittensor)</td>
+<td>~$251</td>
+<td>~$2.5B</td>
+<td>Targon SN4 年化 ~1,040 万；128 active subnet</td>
+<td>真实收入 ★★★</td>
+</tr>
+<tr>
+<td>RNDR/RENDER</td>
+<td>~$1.81</td>
+<td>~$939M</td>
+<td>GPU 渲染 + AI 推理；OctaneRender 集成</td>
+<td>真实收入 ★★★</td>
+</tr>
+<tr>
+<td>AKT (Akash)</td>
+<td>—</td>
+<td>—</td>
+<td>Q1 2025 lease 收入 &gt;100 万；H100 $1.49/h 透明定价</td>
+<td>真实收入 ★★★</td>
+</tr>
+<tr>
+<td>WLD (Worldcoin)</td>
+<td>—</td>
+<td>—</td>
+<td>Orb 注册可查链上；AI 时代 Proof of Personhood</td>
+<td>真实用户 ★★</td>
+</tr>
+<tr>
+<td>FET/ASI</td>
+<td>~$0.21</td>
+<td>~$471M</td>
+<td>uAgents 框架下载量；链上付费交互稀薄</td>
+<td>框架真实 ★★，代币溢价高</td>
+</tr>
+<tr>
+<td>VIRTUAL</td>
+<td>—</td>
+<td>600-800M</td>
+<td>平台费 + agent launch 费；部分链上活跃</td>
+<td>混合 ★★</td>
+</tr>
+<tr>
+<td>AI16Z</td>
+<td>—</td>
+<td>150-250M（从 2.5B 跌 80%+）</td>
+<td>elizaOS 框架 ~15K stars；代币 80%+ meme</td>
+<td>框架真实 ★★，代币 meme ★</td>
+</tr>
+<tr>
+<td>AIXBT</td>
+<td>~$0.020</td>
+<td>~$20M</td>
+<td>2025-01 ATH $0.95，2026-04 跌 97.6%；黑客事件</td>
+<td>hype ★</td>
+</tr>
+</tbody>
+</table>
+<p>结论：有真实 GPU/计算业务的代币（TAO、RNDR、AKT）基本面最健康；纯 agent meme 代币基本面最弱。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="h-intent-erc-7521" id="ch23"><span class="chapter-num">Chapter 23</span><br>附录 H. Intent / ERC-7521 详</h2>
+
+<blockquote>
+<p>主线 §3.7 给 AI agent 安全模式直觉；这里给 ERC-7521 / ERC-7683 的字段定义和实现细节，供接入 intent 协议时参考。</p>
+</blockquote>
+<h3 id="h1-erc-7521-intent">H.1 ERC-7521：通用 intent 格式</h3>
+<p><a href="https://eips.ethereum.org/EIPS/eip-7521">EIP-7521</a>（Anoma 团队主导，检索 2026-04）核心结构：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">struct</span><span style="color: #F8F8F8"> </span><span style="color: #000">UserIntent</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">sender</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic">// 签名者（智能合约钱包）</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">nonce</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">         </span><span style="color: #8F5902; font-style: italic">// 防重放</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>segments<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">      </span><span style="color: #8F5902; font-style: italic">// 意图段落列表（可组合）</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">signature</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">       </span><span style="color: #8F5902; font-style: italic">// 签名</span>
+<span style="color: #000; font-weight: bold">}</span>
+
+<span style="color: #204A87; font-weight: bold">struct</span><span style="color: #F8F8F8"> </span><span style="color: #000">IntentSegment</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">standard</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">      </span><span style="color: #8F5902; font-style: italic">// 解释该 segment 的 standard 合约</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">data</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">            </span><span style="color: #8F5902; font-style: italic">// standard-specific 数据（约束条件）</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>validity predicate 在 <code>standard</code> 合约里定义：如"最低输出 X USDC"、"滑点 ≤ 0.5%"、"过期时间 T"。Solver 只有提交满足所有 segment 约束的执行路径才能结算。</p>
+<h3 id="h2-erc-7683-intent">H.2 ERC-7683：跨链 intent 标准</h3>
+<p><a href="https://www.archetype.fund/media/erc7683-the-cross-chain-intents-standard">ERC-7683</a>（检索 2026-04）扩展 ERC-7521 到跨链场景：</p>
+<ul>
+<li><code>CrossChainOrder</code>：源链用户意图 + 目标链填充规范；</li>
+<li><code>FillInstruction</code>：Solver 在目标链如何执行；</li>
+<li><code>ResolvedCrossChainOrder</code>：Solver 解析后的可执行订单。</li>
+</ul>
+<p>Across 协议已实现 ERC-7683；UniswapX roadmap 含跨链 intent 支持。</p>
+<h3 id="h3-ai-agent-intent">H.3 AI Agent + Intent 安全范式</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>AI Agent
+  ↓ 生成 ERC-7521 UserIntent（只写约束，不写路径）
+Solver 市场
+  ↓ 竞拍：谁能满足约束 + 利润最大化
+链上 EntryPoint 合约
+  ↓ 验证 validity predicate，原子执行
+  ↓ 结果回调 Agent
+</code></pre></div>
+<p>关键：Agent 不直接持私钥，不直接签 tx。只有人类（或 ERC-4337 SmartAccount）最终授权。这是 aixbt 黑客事件后的业界共识安全模式。</p>
 </section>
 </body>
 </html>

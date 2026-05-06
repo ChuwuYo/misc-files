@@ -1,0 +1,5 @@
+flowchart LR
+    A[攻击者接管 Discord] --> B[发假 mint 链接]
+    B --> C[用户打开仿冒网站]
+    C --> D[签 setApprovalForAll(drainer)]
+    D --> E[drainer 转移所有 NFT]

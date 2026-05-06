@@ -1,0 +1,7 @@
+flowchart TD
+    A[1-of-1 DVN<br/>不是 X-of-Y-of-N] --> B[DVN 私钥被攻陷]
+    B --> C[攻击者签发铸造消息]
+    C --> D[Ethereum 侧验证通过]
+    D --> E[$292M rsETH 凭空铸造]
+    E --> F[抵押 Aave 借 wETH]
+    F --> G[Aave 坏账 $196M]

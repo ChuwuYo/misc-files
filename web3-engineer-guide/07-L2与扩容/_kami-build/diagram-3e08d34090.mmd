@@ -1,0 +1,10 @@
+graph TB
+    subgraph SS[Shared Sequencer Network]
+        SA[共识层]
+        SB[公平排序]
+    end
+    R1[Rollup A] --> SS
+    R2[Rollup B] --> SS
+    SS --> A1[L1 结算 A]
+    SS --> A2[L1 结算 B]
+    SS -.-> X[原子跨 rollup 交易]

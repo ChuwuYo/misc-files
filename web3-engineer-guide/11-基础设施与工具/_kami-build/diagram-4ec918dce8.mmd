@@ -1,0 +1,7 @@
+flowchart LR
+    S[Searchers<br/>套利/清算] -->|bundle| B[Builders<br/>beaver/rsync/titan]
+    B -->|sealed header + bid| R[Relays<br/>ultrasound/flashbots]
+    R -->|getHeader: 仅 header| V[Validator<br/>+ mev-boost]
+    V -->|signed header commit| R
+    R -->|reveal: full body| V
+    V -->|propose block| Chain[Beacon Chain]

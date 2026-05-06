@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph DMZ[DMZ]
+        BN[Beacon Node] --> VC[VC 无 keystore]
+    end
+    subgraph Vault[内网/HSM]
+        Web3signer[web3signer]
+        SlashingDB[(slashing DB SQL)]
+        Keys[keystore / HSM]
+    end
+    VC -->|HTTP signing API| Web3signer
+    Web3signer --> Keys
+    Web3signer --> SlashingDB

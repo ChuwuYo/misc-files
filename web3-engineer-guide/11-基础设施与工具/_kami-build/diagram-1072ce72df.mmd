@@ -1,0 +1,7 @@
+flowchart TD
+    A{需要 RPC} --> B{是否 MEV / 隐私敏感}
+    B -->|是| C[自建 reth full<br/>任何 mempool 查询托管商可见]
+    B -->|否| D{月请求量}
+    D -->|< 300M CU/月| E[Alchemy free tier<br/>或 QuickNode free]
+    D -->|中等| F[dRPC $6/1M req<br/>重 trace 性价比最佳]
+    D -->|大量 + SLA| G[自建 + eRPC 网关<br/>reth full ¥11000/年]

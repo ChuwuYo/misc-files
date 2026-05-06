@@ -1,0 +1,23 @@
+sequenceDiagram
+  participant W as 钱包（EOA）
+  participant MP as 公开 mempool
+  participant B as Block builder
+  participant P as Proposer / Validator
+  participant EL as 执行层（EL）
+  participant USDC as USDC Proxy（EIP-1967）
+  participant IMPL as USDC FiatTokenV2_2
+
+  W->>W: 构造 Type 2（EIP-1559）tx<br/>to=USDC, data=transfer(Alice,1000e6)
+  W->>MP: 广播签名后的 RLP tx
+  B->>MP: 监听，纳入候选块
+  B->>P: 提交 signed block + bid（MEV-Boost）
+  P->>EL: engine_newPayloadV4(executionPayload)
+  EL->>EL: 收 intrinsic gas 21000+<br/>验签，扣 maxFee×gasLimit
+  EL->>USDC: CALL transfer(Alice,1000e6)
+  USDC->>IMPL: DELEGATECALL transfer
+  Note over IMPL: SLOAD blacklist[from]<br/>SLOAD balance[from]（cold 2100）<br/>SLOAD balance[to]（cold 2100）<br/>SSTORE balance[from] -= amt<br/>SSTORE balance[to] += amt<br/>LOG3 Transfer(from,to,1000e6)
+  IMPL-->>USDC: return true
+  USDC-->>EL: return true
+  EL->>EL: 更新 stateRoot；退还剩余 gas<br/>烧毁 baseFee×gasUsed
+  EL-->>P: VALID + latestValidHash
+  P->>网络: 广播区块（~12s 后 finalize）

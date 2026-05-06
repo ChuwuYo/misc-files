@@ -1,0 +1,5 @@
+flowchart LR
+    U[用户] -->|锁 1.5 ETH<br/>$4500| V[CDP Vault]
+    V -->|铸 2000 USDS| U
+    M[ETH 跌到 $2500] --> Liq[清算人]
+    Liq -->|偿 2000 USDS<br/>拿走 1.45 ETH| V

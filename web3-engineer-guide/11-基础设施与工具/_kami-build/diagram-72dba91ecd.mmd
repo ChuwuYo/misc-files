@@ -1,0 +1,6 @@
+flowchart TD
+    A[离线机器生成密钥<br/>staking-deposit-cli] --> B[deposit 32 ETH launchpad]
+    B --> C[导入 keystore 到 VC]
+    C --> D[配 mev-boost 5 个 relay]
+    D --> E[等 ~24h 激活队列]
+    E --> F[attest + propose<br/>~3-4% APR]

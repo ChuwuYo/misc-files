@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant U as 用户
+    participant G as Governor
+    participant T as Timelock
+    participant Tr as Treasury
+
+    U->>G: propose(targets, values, calldatas, desc)
+    Note over G: votingDelay 1 day（防快照前买票）
+    U->>G: castVote(proposalId, 1)
+    Note over G: votingPeriod 7 days
+    U->>G: queue(targets, values, calldatas, descHash)
+    Note over T: minDelay 2 days（社区紧急否决窗口）
+    U->>G: execute(targets, values, calldatas, descHash)
+    G->>Tr: calldata 落地

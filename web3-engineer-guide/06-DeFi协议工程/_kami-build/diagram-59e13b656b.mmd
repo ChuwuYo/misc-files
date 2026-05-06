@@ -1,0 +1,7 @@
+flowchart LR
+    U[1 ETH] --> E[Ethena]
+    E -->|链上托管| C[Off-Exchange Custody]
+    E -->|开 ETH 永续空单| CEX[Bybit / Binance]
+    E -->|铸 USDe 给用户| U2[USDe]
+    C -->|stETH yield 3%| Y[sUSDe]
+    CEX -->|funding 5%| Y

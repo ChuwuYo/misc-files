@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant A as Asserter (sequencer)
+    participant C as Challenger
+    participant L1 as L1 仲裁合约
+    A->>L1: 提交状态根 S'
+    C->>L1: 提交挑战（我说应该是 S''）
+    loop O(log N) 轮
+        L1->>A: 把当前区间一分为二
+        A->>L1: 提交中间状态 M_A
+        C->>L1: 提交中间状态 M_C
+        L1->>L1: 比较，不一致的那半段继续
+    end
+    L1->>L1: 最后仲裁一条 EVM/WAVM 指令
+    L1-->>A: 错的那方被 slash

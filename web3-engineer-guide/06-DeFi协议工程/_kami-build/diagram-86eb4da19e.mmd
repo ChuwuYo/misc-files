@@ -1,0 +1,7 @@
+flowchart LR
+    A[ETH=3000<br/>抵押 10 ETH<br/>借 20000 crvUSD] --> B{ETH 跌穿 band 上限}
+    B --> C[band 内逐步软清算<br/>10 ETH → 9 ETH + 3000 crvUSD]
+    C --> D{ETH 继续跌?}
+    D -->|是| E[继续穿 band]
+    D -->|价格反弹| F[de-liquidation]
+    E --> G[完全清算]

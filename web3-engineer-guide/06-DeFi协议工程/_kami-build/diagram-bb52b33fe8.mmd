@@ -1,0 +1,6 @@
+flowchart TD
+    A[用户 stake aUSDC/GHO/aWETH] --> B[stkUSDC / stkGHO / stkWETH]
+    C[Aave Pool] -->|monitor deficit| D{deficit > threshold?}
+    D -->|是| F[automatic slash<br/>无需治理投票]
+    F --> G[补偿对应 reserve 坏账]
+    H[DAO Treasury] -.前 X 万先吃.-> G

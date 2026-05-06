@@ -1,0 +1,8 @@
+graph LR
+    A[ZK 证明系统] --> B[SNARK]
+    A --> C[STARK]
+    B --> B1[Groth16：per-circuit setup, 200B proof]
+    B --> B2[PLONK/Halo2：universal setup, 1-10KB proof]
+    C --> C1[纯 STARK：no setup, 50-200KB proof]
+    B --> D[递归 SNARK：多证明压一个，200B-2KB]
+    C --> D

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant V as 受害者
+    participant A as 攻击者
+    participant Pool as Uniswap
+    V->>Pool: swap 100 ETH → 期望 289K USDC（滑点忍受 1%）
+    A->>Pool: front-run 50 ETH → USDC（拉高 ETH 价）
+    V->>Pool: victim swap（实际收到 285K，滑点 1.4% 但仍 < 容忍）
+    A->>Pool: back-run USDC → ETH（卖回拿到 51 ETH）
+    Note over A: 净赚 1 ETH ≈ $3000

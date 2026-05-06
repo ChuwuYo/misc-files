@@ -1,0 +1,8 @@
+flowchart TD
+  A[新 dApp] --> B{目标用户已有钱包?}
+  B -- 是 --> C{需要 onramp/swap/跨链?}
+  B -- 否 --> D{愿意托管私钥?}
+  C -- 否 --> E[RainbowKit]
+  C -- 是 --> F[Reown AppKit]
+  D -- 是 --> G[Privy / Dynamic → 附录 G]
+  D -- 否 --> H[Coinbase Smart Wallet + Passkey]

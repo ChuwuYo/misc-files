@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph BN["Beacon Node"]
+        Sync[sync<br/>checkpoint / range / forward]
+        Fork[fork choice LMD-GHOST + Casper FFG]
+        DB[(beacon DB)]
+        P2P[p2p libp2p gossipsub]
+        API[Beacon API :5052]
+    end
+    subgraph VC["Validator Client"]
+        Keys[keystore + slashing DB]
+        Duties[duties scheduler]
+        Sign[BLS signing]
+    end
+    BN -->|duties| VC
+    VC -->|signed msg| BN
+    BN -->|engine API JWT :8551| EL[EL]
+    BN -->|builder API :18550| MevBoost[mev-boost]

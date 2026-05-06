@@ -1,0 +1,6 @@
+flowchart LR
+    Dev[本地 anvil<br/>forge test] --> PR[PR CI<br/>Sepolia + mainnet fork]
+    PR --> Review[reviewer 用 Tenderly Devnet 复现]
+    Review --> Tag[push tag v*<br/>触发 deploy job]
+    Tag --> Verify[forge verify-contract<br/>Etherscan]
+    Tag --> Broadcast[forge script --broadcast<br/>--slow]

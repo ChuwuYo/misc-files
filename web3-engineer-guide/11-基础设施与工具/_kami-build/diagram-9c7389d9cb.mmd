@@ -1,0 +1,10 @@
+flowchart TD
+    PR[Pull Request] --> Build[build & test]
+    Build --> Fmt[forge fmt --check]
+    Build --> Test[forge test -vvv]
+    Build --> Cov[forge coverage >= 80%]
+    Build --> Slither[Slither fail-on=high]
+    Build --> Aderyn[Aderyn lint]
+    PR --> Inv[invariant + heavy fuzz<br/>5000 runs, 仅 PR]
+    Tag[push tag v*] --> Deploy[forge script --broadcast<br/>--aws --slow]
+    Deploy --> Verify[forge verify-contract]

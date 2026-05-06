@@ -1,0 +1,6 @@
+flowchart LR
+    L[1 ETH] --> S[stake → wstETH]
+    S --> A[Aave 抵押 → 借 USDC → 再 swap wstETH 循环]
+    S --> P[Pendle 切片 PT/YT]
+    S --> R[再质押 EigenLayer → ezETH/eETH]
+    R --> A2[再扔进 Aave / Morpho 当抵押]

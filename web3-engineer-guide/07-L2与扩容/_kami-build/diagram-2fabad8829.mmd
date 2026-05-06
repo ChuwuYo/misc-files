@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant U as 用户
+    participant L1 as L1 inbox
+    participant S as Sequencer
+    U->>L1: 把交易发到 L1 inbox
+    alt sequencer 12 小时内不打包
+        L1->>L1: 强制执行（Stage 1 硬要求）
+    else 正常打包
+        S->>S: 正常处理
+    end

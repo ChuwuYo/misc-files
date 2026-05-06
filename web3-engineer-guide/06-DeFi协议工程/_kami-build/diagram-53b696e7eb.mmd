@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Oracle as Chainlink
+    participant Pool as Aave
+    participant Bot as 清算 Bot
+    participant Flash
+    Oracle->>Pool: ETH 跌到 $2400
+    Note over Pool: HF<1
+    Bot->>Flash: 借 10,000 USDC（零抵押闪电贷）
+    Bot->>Pool: liquidationCall(用户, 10k USDC)
+    Pool->>Bot: 转 ~4.6 ETH（含 5% 折扣）
+    Bot->>Flash: 还 10k USDC + fee
+    Note over Bot: 净利 ~$900

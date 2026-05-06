@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph Obol
+        OKey[key 拆 6 份 BLS threshold] --> OOp[6 个 operator 同团队]
+        OOp --> OQBFT[QBFT 共识]
+    end
+    subgraph SSV
+        SKey[key 拆 7 份 BLS threshold] --> SOp[7 个独立 operator 公开市场]
+        SOp --> SIBFT[Istanbul BFT]
+        SOp --> SMkt[按 SSV token 付费]
+    end

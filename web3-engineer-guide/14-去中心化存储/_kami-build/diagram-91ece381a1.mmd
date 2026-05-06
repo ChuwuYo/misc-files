@@ -1,0 +1,7 @@
+flowchart TB
+    Client[客户/数据所有者] -->|FIL 付费 + 数据| SM[Storage Market]
+    SM -->|签 deal| SP[Storage Provider 矿工]
+    SP -->|定期 PoSt 证明| Chain[Filecoin 链]
+    Chain -->|奖励 / 罚没| SP
+    Devs[开发者] -->|Solidity 合约| FVM[FVM 2023-03 上线]
+    FVM -->|程序化存储 deal| SM

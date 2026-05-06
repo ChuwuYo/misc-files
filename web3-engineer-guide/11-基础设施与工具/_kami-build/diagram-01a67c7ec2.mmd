@@ -1,0 +1,6 @@
+flowchart TD
+    A[离线机器生成密钥<br/>staking-deposit-cli] --> B[deposit 32 ETH<br/>launchpad.ethereum.org]
+    B --> C[导入 keystore 到 lighthouse VC<br/>lighthouse account validator import]
+    C --> D[等 ~24h 激活队列]
+    D --> E[运行 attest + propose<br/>~3-4% APR]
+    E --> F[配 mev-boost<br/>捕获额外 MEV 收益]

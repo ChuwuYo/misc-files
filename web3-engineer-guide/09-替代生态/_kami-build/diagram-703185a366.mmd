@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Alice
+    participant ChainA
+    participant Relayer
+    participant ChainB
+    Alice->>ChainA: MsgTransfer(channel-0, 100ATOM)
+    ChainA->>ChainA: lock 100ATOM in escrow
+    Relayer-->>ChainA: 拉 packet + proof
+    Relayer->>ChainB: MsgRecvPacket(packet, proof)
+    ChainB->>ChainB: 验轻客户端 + proof，mint 100 ibc/ATOM

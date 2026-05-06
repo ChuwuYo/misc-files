@@ -10,18 +10,21 @@
 
 ## 章节地图
 
-四条主线，每条独立成段，章节顺序按工程依赖：
+**主线**（≤30 页 PDF）→ **附录**（按需深入）。
 
 ```mermaid
 flowchart TD
-    Start[开始] --> Run[运行节点 §2-§7<br/>EL+CL · light client · sync · RPC]
-    Run --> Data[数据出口 §8-§10<br/>Indexer · 分析平台 · 监控告警]
-    Data --> MEV[MEV+Validator §11+§11A<br/>因果链: PBS → mev-boost → DVT → Pectra]
-    MEV --> Dev[开发流水线 §12-§14<br/>Foundry · CI · 密钥]
-    Dev --> Tail[§15-§18<br/>浏览器 · 实战 · 习题 · AI]
+    Start[开始] --> EL[§2 EL+CL 概念<br/>reth+lighthouse 一对]
+    EL --> RPC[§3 节点 vs RPC 选型<br/>Alchemy/QuickNode]
+    RPC --> Val[§4 Validator 入门<br/>32 ETH 代议士]
+    Val --> MEV[§5 MEV-Boost 直觉<br/>密封投标]
+    MEV --> Idx[§6 Indexer<br/>Ponder 一例]
+    Idx --> Net[§7 测试网 vs 主网]
+    Net --> CI[§8 CI/CD<br/>Foundry GitHub Actions]
+    CI --> App[附录 A-H<br/>内部架构 · CL 详 · DVT<br/>MEV 详 · Slashing · Pectra]
 ```
 
-每段开头一句话讲清楚"前一段留下什么问题、本段如何解"。配置堆（YAML/Docker/CI）放在每段末尾的"复制即用"小节。
+附录 H2 在后，主线优先。
 
 ---
 
@@ -33,237 +36,521 @@ flowchart TD
 
 | 失败模式 | 工程后果 | 对应章节 |
 |---|---|---|
-| 可用性 | 节点 lag / RPC throttle，用户看到旧余额 | §2-§7（节点 + RPC） |
-| 可信性 | 单一 RPC 端点返回假 state | §5（light client） |
+| 可用性 | 节点 lag / RPC throttle，用户看到旧余额 | §2（节点）/ §3（RPC 选型） |
+| 可信性 | 单一 RPC 端点返回假 state | 参考：Light Client |
 | 可观测性 | 攻击发生 30 秒后才 oncall 知道 | §10（监控告警） |
-| 运维成本 | archive 自建 ¥15000/年，云上 ¥40000/年 | §2.3 + §7.3（成本对照） |
+| 运维成本 | archive 自建 ¥11000/年，云上 ¥17000+/年 | §3.3（成本对照） |
 
 真实故事：2024 年某 30M TVL DeFi 项目，5 个 Solidity 工程师 0 个 SRE，开盘当天免费 RPC tier 高峰被 throttle 上百次/小时——前端 8 小时显示"余额 0"，社区以为合约被黑，TG 群 5000 人挤兑。教训：**Solidity 工程师不是 SRE 的替代品。**
 
 ---
 
-## 2. 节点分类: Full / Archive / Light
+## 2. EL + CL：一对共生进程
 
-把节点想成三种不同的"图书馆"：**Full** 像本期杂志架，只放最新刊（最近 ~128 块状态），不占地方但查不到旧报纸；**Archive** 像有缩微胶卷的国家图书馆，从创世到现在每一笔交易状态都翻得到（2-20 TB 不等）；**Light** 是一张借阅证，自己什么书都没有，但能向别的图书馆要"这书是真的"的密码学证明。选哪种，看你的应用要回答什么问题。
+**TL;DR**：合并后以太坊 = EL（执行层）+ CL（共识层）两个进程，缺一不可。reth + lighthouse 是 2026 年最流行的组合。reth 处理 EVM 执行 + state；lighthouse 处理 PoS 信标链 + attestation。
 
-### 2.1 三种节点参数对照
+**钩子**：2026-04 某 1.7 Gigagas peak block，reth v2.0 用 400ms 完成 state root，geth OOM 退出。选错客户端 = 节点掉队。
 
-| 类型 | 存储数据 | 查询能力 | 信任模型 | 典型用途 | 2026-04 mainnet 磁盘 |
-|---|---|---|---|---|---|
-| Full | 最近 ~128 块完整状态 + 全历史 header | 仅 latest 状态 | 自主验证 | RPC / 出块 / 中继 | reth ~700 GB, geth ~1.2 TB |
-| Archive | 全部历史状态 + 全 trace | 任意区块 / debug_trace / eth_call any block | 自主验证 | indexer / 浏览器 / DeFi 分析 | reth ~2.5 TB, erigon ~2 TB, geth ~18-20 TB |
-| Light | 仅 beacon header | 通过 merkle proof 校验 untrusted RPC | 信 sync committee 多数 | 钱包 / 移动端 / IoT / 浏览器 | <1 GB |
-
-archive 的 18-20 TB 是 geth 的数字 (trie-based)；reth/erigon 用"静态文件 + 增量索引"，archive 只要 2-2.5 TB。
-
-**快速选型**：前端要最新数据 → full node；indexer / 浏览器 / holder 排行 → archive node；钱包 / 移动端 → light client（§5）。
-
-### 2.2 硬件选型清单 (2026-04 价格)
-
-#### 自建 ATX 主流配置
-
-| 组件 | 型号 | 价格 (¥) | 注意 |
-|---|---|---|---|
-| CPU | AMD Ryzen 7 7700X (8C16T, 65W) | 1900 | 不要超频, 节点要长跑 |
-| 主板 | ASRock B650M Pro RS | 1100 | 双 NVMe 槽 (一块系统一块数据) |
-| 内存 | DDR5-5600 64 GB | 2200 | full 32 GB 够; archive 建议 64 GB |
-| 系统盘 | NVMe 1 TB Samsung 990 | 600 | 仅 OS + monitoring |
-| 数据盘 (full) | NVMe 4 TB Samsung 990 Pro | 1700 | TBW ~2400, 5-7 年寿命 |
-| 数据盘 (archive) | NVMe 8 TB Crucial T700 | 4500 | TBW ~4800, 必须企业级 / 高端 TLC |
-| 电源 | 850W 80+ Gold 模组 | 700 | 富余, 静音 |
-| 散热 | 利民 PA120 SE 风冷 | 200 | 风冷足够 65W TDP |
-| 机箱 | 联力 LANCOOL 216 | 500 | 大风道, 长时间运行 |
-| **合计** (full) | | **¥8900** |  |
-| **合计** (archive) | | **¥11700** | 仅升级数据盘 |
-
-#### 月度运营 (自建)
-
-- 电费: 整机 idle ~30W peak ~120W, 日均 60W -> 1.44 kWh/天 -> 月 43.2 kWh -> ¥30 (商业电价 ¥0.7/kWh)
-- 网络: 家宽 1000M ¥150/月; 机房托管 ¥150/月 (1U+100Mbps)
-- UPS / 冗余电源: 一次性 ¥800-1500, 折月 ¥30
-- **合计**: ¥210-300/月
-
-#### 实测同步时间 (Hetzner AX52, 7700X / 64GB / 990 Pro 4TB / 1Gbps, 2026-04)
-
-| 组合 (Mainnet) | EL sync | CL sync | EL 磁盘 | CL 磁盘 |
-|---|---|---|---|---|
-| reth v2.0 + lighthouse v8.1 | 4.5 h | 6 min | 700 GB | 120 GB |
-| geth v1.16 + lighthouse v8.1 | 7.5 h | 6 min | 1.2 TB | 120 GB |
-| reth archive + lighthouse | 14 h | 6 min | 2.5 TB | 120 GB |
-| erigon 3 archive + lighthouse | 36 h | 6 min | 2.0 TB | 120 GB |
-| geth archive + lighthouse | 7 d+ | 6 min | 18 TB | 120 GB |
-
-第一次跑 mainnet sync 一定 disable swap (`swapoff -a`) 并设 `vm.swappiness=1`。swap thrash 会让 sync 时间从 4.5h 涨到 24h。
-
-#### 自建 vs 云对照
-
-| 方案 | 一次性 | 月度 | 一年总 | 适合 |
-|---|---|---|---|---|
-| 自建 full + 自建 colo | ¥8900 | ¥180 | ¥11000 | 个人 / 小团队 |
-| 自建 archive + colo | ¥11700 | ¥210 | ¥14200 | indexer / 协议 |
-| Alchemy Growth | 0 | ¥1450 | ¥17400 | 早期 / MVP |
-| Alchemy Scale | 0 | ¥7200 | ¥86000 | 中等流量 dApp |
-| AWS i4i.2xlarge (8 vCPU + 64GB + 1.875TB NVMe) | 0 | ¥3500 | ¥42000 | 完全云上 |
-
----
-
-## 3. EL + CL 客户端：一对共生进程
-
-2026-04，Paradigm 在 reth 2.0 release blog 里贴了一张曲线：mainnet 一个 1.7 Gigagas peak block，reth 用 380ms 做完 state root，geth OOM 退出。这事在 X 上被讨论一周——它意味着 Glamsterdam 升级后的高 gas limit 时代，**选错客户端 = 节点直接掉队**。
-
-合并后 EL（执行层）和 CL（共识层）像一对绑在一起的双胞胎：通过 engine API（8551，JWT 鉴权）通信，EL 管交易执行 + state + JSON-RPC；CL 管 PoS 信标链、attestation/proposal、light client 服务。两个进程职责不重叠，但单独跑都没意义。下面这张表把"五个 EL 哪个适合你"用三组数字（市占、archive 磁盘、卖点痛点）讲完。
-
-### 3.1 EL：五个客户端的核心权衡
-
-| EL | 语言 | State DB | EVM | 历史策略 | 主流市占 | archive 磁盘 (2026-04) | 卖点 / 痛点 |
-|---|---|---|---|---|---|---|---|
-| **geth** | Go | LevelDB / Pebble + snapshot | Native Go | trie 全保存 | ~50% | ~18-20 TB | 兼容性最强 / archive 巨大 |
-| **reth** | Rust | MDBX + Static Files V2 | revm | 静态文件 + 增量索引 | ~8% (上升最快) | ~2.5 TB | 1.7 Gigagas/s / 团队需读 Rust |
-| **erigon** | Go | MDBX 平面状态 | Native Go | 平面历史 + 按需重算 trie | ~7% | ~2 TB | archive 最省 / `eth_getProof` 慢 |
-| **nethermind** | C# .NET | RocksDB Halfpath | Native C# | trie + plugin | ~25% | ~12 TB | ARM 友好 (RPi 5) / Coinbase 大量采用 |
-| **besu** | Java | RocksDB / Bonsai V2 | Native Java | flat state + diff 链表 | ~10% | ~6 TB | Apache 2.0 / 联盟链 IBFT/QBFT |
-
-**三种存储范式**：MPT 全保存（geth, archive 巨大）；平面 + 按需重算（erigon, archive 最省，但 trace 慢）；flat + diff（reth Storage V2、besu Bonsai V2，平衡磁盘与延迟）。
-
-**reth 2.0（2026-04）的两个关键变化**——去掉 plain state 双写、historical changesets 移到 append-only static files——把 trie 计算从 200ms 降到 < 50ms。这是它能跑 1.7 Gigagas peak block 的根因。
-
-### 3.2 三种存储范式可视化
-
-geth 风格（trie 全保存）vs reth Storage V2（hashed state + static files）vs erigon 平面历史（按需重算 trie）：
+### 2.1 EL/CL 职责切分
 
 ```mermaid
 flowchart LR
-    subgraph Geth["geth: trie 全保存"]
-        GA["state trie (Pebble)<br/>历史节点不删<br/>archive 18 TB"]
-        GS["snapshot<br/>flat addr->account<br/>加速 eth_call"]
-        GF["ancient freezer<br/>历史 block + receipts<br/>zstd 压缩"]
+    subgraph EL["执行层 (reth)"]
+        EVM["EVM 执行<br/>state / receipt"]
+        JSONRPC["JSON-RPC :8545<br/>eth_call / eth_getLogs"]
+        TxPool["TxPool<br/>mempool"]
     end
-    subgraph Reth["reth V2: hashed + static files"]
-        RH["MDBX hashed state only<br/>(plain state 已删)"]
-        RS["static append-only files<br/>historical changesets<br/>不进 MDBX 不 compact"]
-        RC["SparseTrieCacheTask<br/>trie 计算 200ms -> <50ms"]
+    subgraph CL["共识层 (lighthouse)"]
+        Beacon["Beacon Chain<br/>slot / epoch / attestation"]
+        ForkChoice["LMD-GHOST + Casper FFG"]
+        VC["Validator Client<br/>签名 BLS"]
     end
-    subgraph Erigon["erigon: 平面 + 按需 trie"]
-        EP["plain state (addr -> RLP)"]
-        EH["history index"]
-        EO["按需重建 trie<br/>仅 eth_getProof 时"]
-    end
+    CL -->|engine API JWT :8551| EL
+    CL -->|builder API :18550| MevBoost["mev-boost"]
 ```
 
-reth staged sync 把同步拆成 headers → bodies → sender recovery → execution（revm）→ hashing → merkle → tx lookup 七阶段，每阶段独立 ETL、可重试、可并行——比 geth 快 1.5-2x。
+JWT 文件（`jwt.hex`）是 EL/CL 通信唯一凭证，务必 read-only 挂载。
 
-> 来源: [Paradigm Reth 2.0 Release (2026-04)](https://www.paradigm.xyz/2026/04/releasing-reth-2-0), [go-ethereum releases](https://github.com/ethereum/go-ethereum/releases)
+### 2.2 节点类型速查
 
-### 3.3 节点客户端 2026-04 基准对比 (mainnet)
+| 类型 | 存储 | 查询能力 | 2026-04 磁盘 (reth) | 典型用途 |
+|---|---|---|---|---|
+| **Full** | 最近 ~128 块状态 | latest 状态 | 700 GB | RPC / 前端 |
+| **Archive** | 全历史状态 + trace | 任意区块 | 2.5 TB | indexer / DeFi 分析 |
+| **Light** | 仅 beacon header | merkle proof 校验 | <1 GB | 钱包 / 移动端 |
 
-测试机: Hetzner AX52 (Ryzen 7 7700X / 64GB DDR5 / 2× Samsung 990 Pro 4TB / 1Gbps), CL = lighthouse v8.1.3.
+### 2.3 reth + lighthouse docker-compose（Sepolia，复制即用）
 
-| 指标 | reth v2.0 | geth v1.16.7 | nethermind | besu (Bonsai) | erigon 3 (archive only) |
-|---|---|---|---|---|---|
-| Fresh sync 时间 (full) | 4.5 h | 7.5 h | 6.5 h | 8 h | N/A |
-| Fresh sync 时间 (archive) | 14 h | 7 d+ | 36 h | 48 h | 36 h |
-| Steady-state 磁盘 (full) | 700 GB | 1.2 TB | 1.4 TB | 1.5 TB (Bonsai) | N/A |
-| Steady-state 磁盘 (archive) | 2.5 TB | 18 TB | 12 TB | 6 TB (Bonsai V2) | 2.0 TB |
-| Idle 内存 | 8 GB | 12 GB | 14 GB | 16 GB | 20 GB |
-| Peak 内存 (重负载 RPC) | 16 GB | 24 GB | 28 GB | 32 GB | 40 GB |
-| `eth_call` p99 (本地) | 8 ms | 15 ms | 20 ms | 25 ms | 30 ms |
-| `eth_getLogs` 1k 块 p99 | 80 ms | 220 ms | 280 ms | 350 ms | 60 ms |
-| `debug_traceTransaction` p99 | 200 ms | 350 ms | 500 ms | 650 ms | 800 ms (要重算 trie) |
-| Block import p50 | 40 ms | 180 ms | 220 ms | 300 ms | 250 ms |
-| 1.7 Gigagas 块 (peak) 持久化 | 400 ms | 失败 / OOM | 慢 (5+ s) | 慢 | 不支持 |
+```yaml
+services:
+  reth:
+    image: ghcr.io/paradigmxyz/reth:v2.0.0
+    restart: unless-stopped
+    stop_grace_period: 5m
+    networks: [eth]
+    expose: ["8545","8546","8551","9001"]
+    ports:
+      - "30303:30303/tcp"
+      - "30303:30303/udp"
+    volumes:
+      - reth-data:/root/.local/share/reth
+      - ./jwt:/root/jwt:ro
+    command:
+      - node
+      - --chain=sepolia
+      - --datadir=/root/.local/share/reth
+      - --metrics=0.0.0.0:9001
+      - --authrpc.addr=0.0.0.0
+      - --authrpc.port=8551
+      - --authrpc.jwtsecret=/root/jwt/jwt.hex
+      - --http --http.addr=0.0.0.0 --http.port=8545
+      - --http.api=eth,net,web3,txpool,debug,trace   # 禁止加 admin
+      - --ws --ws.addr=0.0.0.0 --ws.port=8546
+      - --port=30303
 
-#### 工程师选择速查
+  lighthouse:
+    image: sigp/lighthouse:v8.1.3
+    restart: unless-stopped
+    depends_on: [reth]
+    networks: [eth]
+    expose: ["5052","5054"]
+    ports:
+      - "9000:9000/tcp"
+      - "9000:9000/udp"
+    volumes:
+      - lh-data:/root/.lighthouse
+      - ./jwt:/root/jwt:ro
+    command:
+      - lighthouse bn
+      - --network=sepolia
+      - --execution-endpoint=http://reth:8551
+      - --execution-jwt=/root/jwt/jwt.hex
+      - --checkpoint-sync-url=https://checkpoint-sync.sepolia.ethpandaops.io
+      - --disable-deposit-contract-sync
+      - --http --http-address=0.0.0.0 --http-port=5052
+      - --metrics --metrics-address=0.0.0.0 --metrics-port=5054
+      - --port=9000 --target-peers=80
 
-| 场景 | 首选 | 备选 |
-|---|---|---|
-| 自建 RPC 给前端 | reth full | geth full |
-| 公共 RPC 商 / 大厂 staking | nethermind / besu | reth |
-| Indexer 后端 | reth archive | erigon 3 |
-| Token holder 分析 / Dune 风格 | erigon archive | reth archive |
-| 树莓派 / IoT / 家庭节点 | nethermind | reth |
-| 联盟链 / 企业 | besu | nethermind |
+networks:
+  eth:
+volumes:
+  reth-data:
+  lh-data:
+```
 
-上表 "1.7 Gigagas 块" 指 Pectra/Glamsterdam 后预计的 peak block。reth v2 的 SparseTrieCacheTask 是目前唯一在 commodity 硬件上 400ms 内能完成 state root 计算的客户端。
+**15 分钟上手**：`./setup.sh`（生成 jwt）→ `docker compose up -d` → Sepolia EL 约 28 min、CL 约 4 min 同步完毕。
 
-> 来源: [Paradigm Reth 2.0](https://www.paradigm.xyz/2026/04/releasing-reth-2-0), [stake.fish State of Ethereum 2026](https://blog.stake.fish/the-state-of-ethereum-in-2026/)
+> 节点客户端内部架构详见 [附录 A](#附录-a-reth-内部架构--storage-v2)；五种 CL 横评见 [附录 B](#附录-b-cl-客户端横评)。
 
-### 3.4 EL 选型决策树
+---
+
+## 3. 跑节点 vs 用 RPC 服务：选型
+
+**TL;DR**：MVP 先用 Alchemy/QuickNode；流量稳定或有隐私/信任需求时自建 reth full；MEV searcher 必须自建。
+
+**钩子**：2026-04-15 凌晨 2 点，某 80M TVL 借贷协议的清算机器人 6 分钟无响应——Alchemy 静默把 `eth_getLogs` 从 10 RPS 降到 2 RPS，返回 "block range too large" 而不是 429。8000 ETH 头寸滑向坏账。**RPC 才是合约真正活的地方。**
+
+### 3.1 决策树
 
 ```mermaid
 flowchart TD
-    Start[需要 EL] --> A{用途}
-    A -->|RPC 应用后端| B{是否需要 archive}
-    A -->|protocol 层 / staking| C[选 nethermind / besu 帮助多样化]
-    A -->|indexer / DeFi 分析| D[reth archive 或 erigon]
-    B -->|否, 全节点| E[reth 优先, geth 次之]
-    B -->|是| D
-    C --> F[别选 geth]
-    D --> G[reth 性能最好, erigon 磁盘最省]
-    E --> H{追求最新性能}
-    H -->|是| I[reth 2.0]
-    H -->|否, 兼容性优先| J[geth]
+    A{需要 RPC} --> B{是否 MEV / 隐私敏感}
+    B -->|是| C[自建 reth full<br/>任何 mempool 查询托管商可见]
+    B -->|否| D{月请求量}
+    D -->|< 300M CU/月| E[Alchemy free tier<br/>或 QuickNode free]
+    D -->|中等| F[dRPC $6/1M req<br/>重 trace 性价比最佳]
+    D -->|大量 + SLA| G[自建 + eRPC 网关<br/>reth full ¥11000/年]
 ```
 
-> client diversity 是协议安全核心：geth 占 51%+ 时若出 bug，错误链会被视为"多数真理"。新部署优先 reth/nethermind/besu 反而帮整个网络。
+### 3.2 主流 RPC 提供商速查 (2026-04)
 
----
+| 提供商 | 月度免费额度 | 优势 | 适合 |
+|---|---|---|---|
+| **Alchemy** | 300M CU | Enhanced API (NFT/transfer) | 大多数 dApp |
+| **QuickNode** | 10M credit | SOC2 / ISO27001 全认证 | 企业 / 合规 |
+| **dRPC** | 100k req (后 $6/1M) | flat 价，重 trace 最省 | indexer 后端 |
+| **Tenderly Gateway** | 25M | 与 Alert/Devnet 联动 | 开发调试 |
+| **LlamaRPC** | 完全免费 | DefiLlama 聚合多 RPC | 个人 / 测试 |
 
-## 4. CL 客户端横评
+### 3.3 成本对照（年度）
 
-2022 年 prysm 占信标链 70% 时业内就开始焦虑——"如果 prysm 出 consensus bug，70% 的 validator 同步出错，链可能直接停"。EthStaker 社区花了三年苦口婆心劝大家迁移到 lighthouse / teku / nimbus，到 2026-04 prysm 终于降到 38%、lighthouse 升到 33%、teku 18%、nimbus 6%、lodestar 5%——分布刚好接近 client diversity 安全线。**选 CL 不只是个人选型，是给以太坊投票。**
+| 方案 | 一年总费 | 适合 |
+|---|---|---|
+| 自建 reth full + colo | ¥11000 | 长期 / 隐私 / archive 不限次 |
+| Alchemy Growth | ¥17400 | 早期 / MVP |
+| Alchemy Scale | ¥86000 | 中等流量 dApp |
+| AWS i4i.2xlarge | ¥42000 | 全云上 |
 
-### 4.1 五个客户端对照
+自建额外优势：数据可信、无 rate limit、archive/trace 不限次、隐私（托管商能看到所有查询地址）。
 
-| CL | 语言 | 市占 | 内存 | 磁盘 | sync (checkpoint) | peer 数 |
-|---|---|---|---|---|---|---|
-| **lighthouse** | Rust | ~33% | 2-4 GB | ~120 GB | 2-5 min | 60-80 |
-| **prysm** | Go | ~38% | 4-8 GB | ~150 GB | 5-15 min | 40-60 |
-| **teku** | Java | ~18% | 4-8 GB (off-heap) | ~80 GB | 3-8 min | 80-100 |
-| **nimbus** | Nim | ~6% | <1 GB | ~100 GB | 5-10 min | 100-150 |
-| **lodestar** | TypeScript | ~5% | 4-6 GB | ~110 GB | 8-15 min | 25 |
-
-> 来源: [migalabs Analysis of Ethereum2 Consensus Clients](https://mirror.xyz/0x934e6B4D7eee305F8C9C42b46D6EEA09CcFd5EDc/b69LBy8p5UhcGJqUAmT22dpvdkU-Pulg2inrhoS9Mbc), [coincashew Disk Usage by Client](https://www.coincashew.com/coins/overview-eth/guide-or-how-to-setup-a-validator-on-eth2-mainnet/part-iii-tips/disk-usage-by-execution-consensus-client)
-
-**速记差异**：lighthouse v8.1（Rust，Fulu ready，hierarchical state diffs 让磁盘 I/O 降 4x，eth-docker 默认）/ prysm（Go，内置 Web UI，内存吃得多）/ teku（Java，ConsenSys + Splunk 企业集成）/ nimbus（Nim，<1 GB 内存，RPi 唯一选择）/ lodestar（TS，ChainSafe，浏览器 light client）。
-
-> 来源: [Sigma Prime - Lighthouse releases](https://github.com/sigp/lighthouse/releases), [migalabs CL benchmarks](https://mirror.xyz/0x934e6B4D7eee305F8C9C42b46D6EEA09CcFd5EDc/b69LBy8p5UhcGJqUAmT22dpvdkU-Pulg2inrhoS9Mbc)
-
-### 4.2 CL 进程内部职责拆分
+### 3.4 eRPC 网关（多 upstream 聚合）
 
 ```mermaid
 flowchart LR
-    subgraph BN["Beacon Node"]
-        Sync[sync 模块<br/>checkpoint / range / forward]
-        Fork[fork choice<br/>LMD-GHOST + Casper FFG]
-        DB[(beacon DB<br/>state + block + attestations)]
-        P2P[p2p libp2p<br/>gossipsub topics]
-        API[Beacon API HTTP<br/>port 5052]
-    end
-    subgraph VC["Validator Client"]
-        Keys[keystore + slashing protection DB]
-        Duties[duties scheduler]
-        Sign[signing<br/>BLS]
-    end
-    BN -->|attest / propose duties| VC
-    VC -->|signed message| BN
-    BN -->|engine API JWT 8551| EL[Execution Layer]
-    BN -->|builder API 18550| MevBoost[mev-boost]
+    Client[前端 / 后端] --> GW[eRPC 网关<br/>cache + failover]
+    GW --> Self[自建 reth]
+    GW --> Alch[Alchemy]
+    GW --> Quick[QuickNode]
+    GW --> Drpc[dRPC]
+    Self -.fail.-> Alch
+    Alch -.fail.-> Quick
 ```
 
-同一组 keystore 跑两个 VC 进程最容易触发 slashing。slashing protection DB 必须 single-source-of-truth。
+eRPC 自带 health check + circuit breaker（lag > 30 块自动剔除）。`eth_call` cache 30s 可挡 ~80% 请求。
 
-### 4.3 EL × CL 推荐组合
-
-| 场景 | EL | CL |
-|---|---|---|
-| 默认 / 大众 | reth | lighthouse |
-| 客户端多样化 | nethermind / besu | lighthouse / teku |
-| 树莓派家庭节点 | nethermind | nimbus |
-| JS 生态 | reth | lodestar |
+> 同步策略（snap sync / checkpoint sync 必开）详见原 §6；自建调优清单见原 §7.5。
 
 ---
 
-## 5. Light Client
+## 4. Validator 入门
+
+**TL;DR**：质押 32 ETH → 获得 validator 身份 → 每个 slot 投票（attestation）→ 偶尔被选中提议区块（proposal）→ 获得 ~3-4% APR。
+
+**钩子**：Validator = 押金 32 ETH 的代议士。投票投错（attestation）扣几 gwei；蓄意双投（同一 slot 签两份不同票）最高罚 32 ETH + 强制退出。2024 年某 staking 服务商机房迁移，工程师把 keystore `scp` 到新机器后忘了关老 VC，**9 个 validator 触发 double-sign，单次损失 ~16 ETH/个，共赔 144 ETH**（当时约 $50 万）。
+
+### 4.1 入门流程（直觉版）
+
+```mermaid
+flowchart TD
+    A[离线机器生成密钥<br/>staking-deposit-cli] --> B[deposit 32 ETH<br/>launchpad.ethereum.org]
+    B --> C[导入 keystore 到 lighthouse VC<br/>lighthouse account validator import]
+    C --> D[等 ~24h 激活队列]
+    D --> E[运行 attest + propose<br/>~3-4% APR]
+    E --> F[配 mev-boost<br/>捕获额外 MEV 收益]
+```
+
+### 4.2 关键命令（快速参考）
+
+```bash
+# 1. 离线机器生成密钥
+./deposit.sh new-mnemonic \
+  --num_validators 1 \
+  --chain mainnet \
+  --eth1_withdrawal_address 0xYOUR_SAFE_MULTISIG
+
+# 2. 导入 keystore + 启动 VC
+lighthouse account validator import \
+  --network mainnet --directory validator_keys
+lighthouse vc \
+  --network mainnet \
+  --beacon-nodes http://lighthouse-bn:5052 \
+  --suggested-fee-recipient 0xYOUR_FEE_RECIPIENT \
+  --enable-doppelganger-protection \   # 防双签！
+  --builder-proposals
+```
+
+### 4.3 Slashing 防御三板斧
+
+| 防御 | 工具 | 关键点 |
+|---|---|---|
+| slashing DB 单一来源 | lighthouse VC | 永远不要复制 keystore 到第二台机器同时跑 |
+| doppelganger 检测 | `--enable-doppelganger-protection` | 启动时延迟 2 epoch 检测网络上是否同 pubkey 在线 |
+| 迁移时导出 EIP-3076 | `prysmctl / lighthouse slashing-protection` | 切换客户端必须导出导入 slashing DB |
+
+> 0x01/0x02 升级完整操作、key 管理、DVT 拆分详见 [附录 C](#附录-c-validator-完整流程) / [附录 D](#附录-d-dvt-obol--ssv)。
+
+---
+
+## 5. MEV-Boost 直觉
+
+**TL;DR**：mev-boost 让 validator 接入第三方 builder 提供的高 MEV 区块，validator 不需要自己搜索 MEV，只需接收出价最高的 block header 并签名。
+
+**钩子**：MEV bundle = 密封投标。Builder（快递员）打包一批交易出价给 validator（拍卖师）；validator 只看到密封的出价金额（blinded header），签名后 relay 才揭示具体 tx 列表（reveal）。一旦签了就必须提议，否则被 slashing。
+
+### 5.1 PBS 架构（四个角色）
+
+```mermaid
+flowchart LR
+    S[Searchers<br/>套利/清算] -->|bundle| B[Builders<br/>beaver/rsync/titan]
+    B -->|sealed header + bid| R[Relays<br/>ultrasound/flashbots]
+    R -->|getHeader: 仅 header| V[Validator<br/>+ mev-boost]
+    V -->|signed header commit| R
+    R -->|reveal: full body| V
+    V -->|propose block| Chain[Beacon Chain]
+```
+
+**为什么需要 relay**：validator 先看完 tx 再签 = 能挑好的拒签差的 = builder 被骗；relay 当公证人确保 commit-reveal 公平。
+
+### 5.2 mev-boost 配置（复制即用）
+
+```bash
+mev-boost \
+  -mainnet \
+  -relay-check \
+  -relays https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net,\
+https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money,\
+https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live \
+  -addr 127.0.0.1:18550
+
+# lighthouse 加上
+lighthouse bn ... --builder http://127.0.0.1:18550 \
+  --builder-fallback-skips=3
+```
+
+**至少配 4-5 个 non-censoring relay**（ultrasound / titan / aestus / flashbots / bloXroute max-profit）。bloXroute regulated 仅在合规要求下添加。
+
+> Relay 市占、Builder market、SUAVE、BuilderNet 详见 [附录 E](#附录-e-mev-boost-relay-市占--builder-market--suave--epbs)。
+
+---
+
+## 6. Indexer：Ponder 一例
+
+**TL;DR**：indexer = 监听 logs → 解码 → 写 Postgres → 暴露 GraphQL。把"链上即时计算"变成"数据库查询"，前端 50ms 返回而不是等 10 秒 `eth_getLogs`。
+
+**钩子**：产品问"首页展示用户最近 30 天所有 swap"，工程师写 `eth_getLogs(fromBlock=head-216000)` 然后等——15 秒后 RPC 报 "block range too large"。用户不会等，这就是 indexer 存在的理由。
+
+### 6.1 选型速查
+
+| 方案 | 适合 | 速度 (Uniswap V2 bench) |
+|---|---|---|
+| **Ponder** | TS 团队 / 自托管 / 类型安全 | ~4 min（自建 reth archive） |
+| **Envio HyperIndex** | 极端高吞吐 | ~1 min（HyperSync） |
+| **Goldsky** | 需要 webhook / 流到 BigQuery | ~10 min |
+| **The Graph** | 抗审查 / 老 subgraph 迁移 | ~158 min |
+
+### 6.2 Ponder 最小可跑示例（USDC Transfer 索引）
+
+```bash
+# 1. 初始化项目
+pnpm create ponder@latest my-indexer
+cd my-indexer && cp .env.example .env   # 填 PONDER_RPC_URL_1
+docker compose up -d                    # 起 Postgres
+pnpm dev                                # 打开 http://localhost:42069/graphql
+```
+
+`ponder.config.ts` 关键字段：
+
+```ts
+export default createConfig({
+  database: { kind: "postgres", connectionString: process.env.DATABASE_URL },
+  networks: { mainnet: { chainId: 1, transport: http(process.env.PONDER_RPC_URL_1) } },
+  contracts: {
+    USDC: {
+      network: "mainnet",
+      abi: erc20Abi,
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      startBlock: 22300000,   // 不要从 0 开始！全量回填要数小时
+    },
+  },
+});
+```
+
+`src/index.ts` handler（Ponder 0.11+ Drizzle ORM）：
+
+```ts
+ponder.on("USDC:Transfer", async ({ event, context }) => {
+  const { from, to, value } = event.args;
+  await context.db.transferEvent.insert({ from, to, value, blockNumber: event.block.number });
+  if (from !== ZERO_ADDRESS) {
+    await context.db.account
+      .insert({ address: from, balance: -value, transferCount: 1 })
+      .onConflictDoUpdate(row => ({
+        balance: row.balance - value,
+        transferCount: row.transferCount + 1,
+      }));
+  }
+});
+```
+
+### 6.3 reorg 处理
+
+Ponder 自动 rollback head ~5 块以内的 reorg，不需要你操心。自己写 indexer 时必须存 `block_hash`，每块检查 `parent_hash` 是否仍指向已写块。
+
+### 6.4 生产部署要点
+
+- Postgres 用托管（RDS / Neon / Supabase），不要自建（备份/PITR 麻烦）
+- Ponder 把 cursor 写在 `_ponder_status`，重启自动续上
+- 必须配 PITR：Postgres 损坏则从 `startBlock` 重跑
+
+> Ponder schema 完整示例（含 relations / primaryKey / index）见 [附录 F](#附录-f-ponder-schema-完整示例)。
+
+---
+
+## 7. 测试网 vs 主网工作流
+
+**TL;DR**：Sepolia = 主要开发测试网；Holesky = validator / staking 测试；mainnet fork（anvil / Tenderly Devnet）= 集成测试；主网 = 只有 CI 全绿 + tag push 才部署。
+
+### 7.1 三种环境对比
+
+| 环境 | 用途 | RPC |
+|---|---|---|
+| **Sepolia** | 合约开发测试、indexer 功能验证 | ethpandaops checkpoint + Alchemy Sepolia |
+| **Holesky** | Validator / staking 测试（32 hoETH 免费水龙头） | checkpoint-sync.holesky.ethpandaops.io |
+| **mainnet fork（anvil）** | 集成测试 / 模拟真实 state | `anvil --fork-url $MAINNET_RPC --fork-block-number 22000000` |
+| **Tenderly Devnet** | 团队共享 fork、reviewer 复现 PR | 控制台一键创建，URL 共享 |
+| **mainnet** | 生产部署 | 自建 reth + eRPC 网关 |
+
+### 7.2 工作流节奏
+
+```mermaid
+flowchart LR
+    Dev[本地 anvil<br/>forge test] --> PR[PR CI<br/>Sepolia + mainnet fork]
+    PR --> Review[reviewer 用 Tenderly Devnet 复现]
+    Review --> Tag[push tag v*<br/>触发 deploy job]
+    Tag --> Verify[forge verify-contract<br/>Etherscan]
+    Tag --> Broadcast[forge script --broadcast<br/>--slow]
+```
+
+**关键规则**：
+- `startBlock` 在测试网用近期区块，不从 0 跑
+- mainnet deploy job 仅 `v*` tag 触发，不跟 PR push
+- deploy 前必须 `forge build --sizes` 检查 24KB / 49152B initcode 限制
+
+### 7.3 常用测试网命令
+
+```bash
+# Sepolia 水龙头
+open https://sepoliafaucet.com
+
+# Holesky validator 水龙头（32 hoETH）
+open https://holesky-faucet.pk910.de
+
+# mainnet fork（anvil）
+anvil --fork-url $MAINNET_RPC_URL \
+      --fork-block-number 22000000 \
+      --chain-id 1
+
+# 模拟账户余额（测试用）
+cast rpc anvil_setBalance 0xYOUR_ADDR 0x1000000000000000000
+```
+
+---
+
+## 8. CI/CD：Foundry GitHub Actions
+
+**TL;DR**：PR 跑 `forge fmt + test + coverage + Slither`；release tag 才跑 invariant heavy fuzz + Halmos + deploy。30 秒 PR CI vs 1 小时 release CI，用时间换安全。
+
+**钩子**：2024 年 Curve 重大 bug，reentrancy 在 invariant test 里能找出来——但 PR CI 配的 `FOUNDRY_INVARIANT_RUNS=256` 太少没跑到那条路径，merge 上线两周后被白帽报告。**CI 不是装饰，是合约最后一道筛。**
+
+### 8.1 流水线全景
+
+```mermaid
+flowchart TD
+    PR[Pull Request] --> Build[build & test]
+    Build --> Fmt[forge fmt --check]
+    Build --> Test[forge test -vvv]
+    Build --> Cov[forge coverage >= 80%]
+    Build --> Slither[Slither fail-on=high]
+    Build --> Aderyn[Aderyn lint]
+    PR --> Inv[invariant + heavy fuzz<br/>5000 runs, 仅 PR]
+    Tag[push tag v*] --> Deploy[forge script --broadcast<br/>--aws --slow]
+    Deploy --> Verify[forge verify-contract]
+```
+
+### 8.2 完整 CI 模板（可复制）
+
+```yaml
+# .github/workflows/ci.yml
+name: One-shot CI
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive, persist-credentials: false }
+      - uses: foundry-rs/foundry-toolchain@v1
+        with: { version: stable }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.foundry
+            ./lib
+            ./out
+          key: foundry-${{ hashFiles('foundry.toml', 'lib/**') }}
+      - run: forge fmt --check
+      - run: forge build --sizes
+      - run: forge test -vvv
+        env: { FOUNDRY_ETH_RPC_URL: ${{ secrets.MAINNET_RPC_URL }} }
+      - run: forge coverage --report lcov --report summary
+      - uses: zgosalvez/github-actions-report-lcov@v4
+        with:
+          coverage-files: lcov.info
+          minimum-coverage: 80
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          update-comment: true
+
+  slither:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive, persist-credentials: false }
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge build --skip test --build-info
+      - uses: crytic/slither-action@v0.4.0
+        with:
+          fail-on: high
+          slither-args: --filter-paths "lib|test|script" --sarif results.sarif
+          ignore-compile: true
+
+  invariant:
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 45
+    env:
+      FOUNDRY_INVARIANT_RUNS: "5000"
+      FOUNDRY_FUZZ_RUNS: "10000"
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive, persist-credentials: false }
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test --match-test invariant -vvv
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive, persist-credentials: false }
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/eth-deploy-role
+          aws-region: us-east-1
+      - run: |
+          forge script script/Deploy.s.sol:DeployScript \
+            --rpc-url $RPC_URL \
+            --aws --aws-kms-key-id $KMS_KEY_ID \
+            --broadcast --verify \
+            --etherscan-api-key $ETHERSCAN_API_KEY \
+            --slow
+        env:
+          RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+          KMS_KEY_ID: ${{ secrets.KMS_KEY_ID }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+```
+
+### 8.3 关键设计点
+
+- `FOUNDRY_PROFILE: ci`：切 `[profile.ci]`，fuzz/invariant 跑更多 runs
+- `submodules: recursive`：forge install 用 git submodule，缺此行依赖会丢
+- `forge build --sizes`：24KB runtime + 49152B initcode 限制，临近提前预警
+- `--slow`：等 receipt 才发下一笔，防 nonce 错乱
+- deploy 用 AWS KMS OIDC（`id-token: write`），GitHub secrets 里无长期 AWS 凭证
+
+> 章末：能跑一个 dev 节点 + indexer + CI 了吗？§2 docker-compose 跑节点 → §6 Ponder 跑 indexer → §8 CI 流水线。如需深入：附录 A-H。
+
+---
+
+## 参考：Light Client（Helios）
 
 2024 年某次 Infura 部分节点返回了一个错误的 USDC 余额——不是攻击，是它的 archive 集群其中一个节点 fork 走错链没追回，前端显示用户余额比实际多 1500 USDC，有人据此发起 swap 触发回滚。**MetaMask 默认走 Infura，给假数据时用户无从分辨——这正是 light client 要解决的问题。**
 
@@ -395,7 +682,7 @@ helios opstack \
 
 ---
 
-## 6. 同步策略
+## 参考：同步策略
 
 假设你晚上 11 点开始跑节点，目标第二天早上能用。三种 sync 模式决定第二天醒来你看到的是绿勾还是红叉：full sync 像从图书馆第一本书读到最新一本（数周）；snap sync 像有人给你一张"截至昨天的快照"再补一晚增量（4-12h，主流默认）；archive sync 像 full sync 但保留每一页的高亮笔记（数周-月）。**第一次跑节点九成的人选错的不是 EL/CL 客户端，是忘了开 checkpoint sync——CL 不开就要从 genesis 重放 ~5 天**。
 
@@ -429,7 +716,7 @@ Mainnet 数据见 2.3 节表格 (同测试机).
 
 ---
 
-## 7. RPC 服务: 自建 vs 托管
+## 参考：RPC 服务详细横评
 
 故事时间线还原：周五晚 10 点 NFT mint 开盘，预计 5000 用户。结果朋友在 X 转发，10 分钟涌进 50000 人，前端疯狂 `eth_call` 查白名单——Alchemy free tier 30M CU/月当晚被打穿，所有请求 429，用户看到 "transaction failed" 但其实交易压根没发出去。同样的故事 2024-2025 在 mint、空投领取、清算窗口至少出现过几十次。**RPC 是协议的命门，但 99% 团队第一次部署时没认真选过。**
 
@@ -730,7 +1017,7 @@ flowchart LR
 
 ---
 
-## 8. Indexer 全谱系
+## 参考：Indexer 全谱系（详细）
 
 新人最容易踩的坑：产品经理问 "首页要展示用户最近 30 天所有 swap 记录"，工程师写 `eth_getLogs(fromBlock=head-216000)` 然后等——15 秒后 RPC 报 "block range too large"，换成分批拉，发现要打 200 多次请求，10 分钟才返回。**用户不会等 10 分钟，前端要"几百毫秒返回"。** 这就是 indexer 存在的理由：监听 logs → 解码 → 写 Postgres → 暴露 GraphQL/SQL，把"链上即时计算"变成"数据库查询"。
 
@@ -1256,11 +1543,11 @@ flowchart TD
 
 ---
 
-## 11. MEV 基础设施 → mev-boost → Validator 链路
+## 旧-11. MEV（详细，已移至附录 E）
 
-2024 年 4 月一次著名的 MEV-Boost relay 审查事故：某 validator 收到 ultrasound 给的 high-MEV bundle，但里面包含一笔 OFAC 制裁地址的 swap，validator 用 ad-hoc 改的代码故意跳过 propose（"我宁愿损失 0.05 ETH 也不上这块"）——结果链空了一个 slot，但更重要的是 EthStaker 社区炸了：**"这种私下审查能不能在协议层根本消除？"** 这就是 ePBS 要解的问题，也是这一节的主线。
+> 本节内容已浓缩至主线 §5（MEV-Boost 直觉）。详细 relay 市占 / Builder market / SUAVE / ePBS 见 [附录 E](#附录-e-mev-boost-relay-市占--builder-market--suave--epbs)。
 
-理解这一节有个简单类比：MEV bundle 像拍卖里的"密封投标"——validator（拍卖师）想拿最高价（高 MEV 区块），但不能让 builder（投标方）看到对手出价，更不能在拆开信封后反悔说"我不卖了"。**Validator 想最大化收益 → 必须接 builder 出的高 MEV 区块 → 但 validator 不能裸信任 builder → 需要 commit-reveal + relay 当公证人 → 这就是 mev-boost → 但 relay 自身也是信任假设 → ePBS / SUAVE 想把公证人写进协议层**。理解这条链才能解释为什么 §11A 的 solo staking 流程末尾要配 mev-boost，以及为什么 DVT 在 validator 安全模型里出现。
+<!-- 旧 §11 详细内容已移至附录 E，此处省略 -->
 
 ### 11.1 PBS 架构与 commit-reveal
 
@@ -1406,11 +1693,11 @@ OFAC 制裁地址 (如 Tornado Cash) 能否上链, 取决于 relay + builder 是
 
 ---
 
-## 11A. Validator：从 mev-boost 接入到 DVT 与 Pectra
+## 旧-11A. Validator（详细，已移至附录 C/D）
 
-2024 年某 SaaS 的 staking 服务商搬迁机房，工程师把 keystore 文件 `scp` 到新机器上——但他忘了把老机器的 VC 进程关掉，新老两台 VC 同时收到 attestation duty 同时签名……**结果 9 个 validator 在同一个 epoch 触发 double-sign slashing，单次损失 ~16 ETH/validator**，团队赔进去 144 ETH（当时约 $50 万）。这种事故 2023-2025 至少发生过 5 次，几乎全都是"复制 keystore"或"忘了导出 slashing protection DB"。
+> 本节内容已浓缩至主线 §4（Validator 入门）。0x01/0x02 升级操作、key 管理见 [附录 C](#附录-c-validator-完整流程0x010x02-升级-key-管理)；DVT（Obol/SSV）见 [附录 D](#附录-d-dvt-obol--ssv-详)；Slashing 防御详见 [附录 G](#附录-g-slashing-防御详)。
 
-§11 解释了 MEV 链路里 mev-boost 的位置。这一节把视角切到 validator 自己——把 32 ETH 想成押金的"代议士"：投票投错（attestation 错）扣几 gwei，蓄意双投（同一个 slot 签两份不同票）罚 1-32 ETH 直接退役。下面这条链每一步都在解决前一步留下的问题：**solo staking 全流程 → 双签防御三板斧 → web3signer 把 keystore 与 VC 解耦 → DVT 把单 key 彻底拆成 t-of-N 阈值签名 → Pectra MaxEB 让规模化更经济 → 三层监控**。
+<!-- 旧 §11A 详细内容已移至附录 C/D/G，此处省略 -->
 
 ### 11A.1 solo staking 全流程 (~3-4% APR)
 
@@ -2478,3 +2765,397 @@ goldsky generate subgraph \
 ---
 
 本模块第 18 节预览了 AI 在告警、calldata 解码、schema 生成上的应用。下一模块 [12-AI×Web3](../12-AI×Web3/README.md) 系统讲解 AI 工具如何深度融入 Web3 开发全链路，包括智能合约审计辅助、链上数据分析自动化与 AI Agent 钱包。
+
+---
+
+---
+
+# 附录
+
+> 附录按需深入，不影响主线阅读。主线（§1-§8）能让你跑节点 + indexer + CI；附录提供内部架构、完整操作手册、高级话题。
+
+---
+
+## 附录 A：reth 内部架构 / Storage V2
+
+**TL;DR**：reth v2.0 删去 plain state 双写，historical changesets 移到 append-only static files，trie 计算从 200ms 降到 <50ms，这是 1.7 Gigagas peak block 400ms 完成 state root 的根因。
+
+### A.1 三种存储范式对比
+
+```mermaid
+flowchart LR
+    subgraph Geth["geth: trie 全保存"]
+        GA["state trie (Pebble)<br/>历史节点不删 → archive 18 TB"]
+        GS["snapshot flat addr->account<br/>加速 eth_call"]
+        GF["ancient freezer 历史 block+receipts zstd"]
+    end
+    subgraph Reth["reth V2: hashed + static files"]
+        RH["MDBX hashed state only<br/>(plain state 已删)"]
+        RS["static append-only files<br/>historical changesets<br/>不进 MDBX 不 compact"]
+        RC["SparseTrieCacheTask<br/>trie 200ms → <50ms"]
+    end
+    subgraph Erigon["erigon: 平面 + 按需 trie"]
+        EP["plain state addr→RLP"]
+        EH["history index"]
+        EO["按需重建 trie 仅 eth_getProof 时"]
+    end
+```
+
+### A.2 reth staged sync 七阶段
+
+headers → bodies → sender recovery → execution (revm) → hashing → merkle → tx lookup
+
+每阶段独立 ETL、可重试、可并行——比 geth 快 1.5-2x。
+
+### A.3 2026-04 基准（mainnet，Hetzner AX52）
+
+| 指标 | reth v2.0 | geth v1.16 | nethermind | besu (Bonsai) |
+|---|---|---|---|---|
+| Fresh sync full | 4.5 h | 7.5 h | 6.5 h | 8 h |
+| Fresh sync archive | 14 h | 7 d+ | 36 h | 48 h |
+| 磁盘 full | 700 GB | 1.2 TB | 1.4 TB | 1.5 TB |
+| 磁盘 archive | 2.5 TB | 18 TB | 12 TB | 6 TB |
+| eth_call p99 | 8 ms | 15 ms | 20 ms | 25 ms |
+| 1.7 Gigagas 块持久化 | 400 ms | OOM | >5 s | 慢 |
+
+### A.4 EL 选型速查
+
+| 场景 | 首选 | 备选 |
+|---|---|---|
+| 自建 RPC 给前端 | reth full | geth full |
+| protocol 层 / 大厂 staking | nethermind / besu | reth |
+| indexer 后端 | reth archive | erigon 3 |
+| 树莓派家庭节点 | nethermind | nimbus |
+| 联盟链 / 企业 | besu | nethermind |
+
+> client diversity 核心：geth 占 51%+ 时若出 bug，错误链被视为"多数真理"。新部署优先 reth/nethermind/besu。
+
+> 来源: [Paradigm Reth 2.0 (2026-04)](https://www.paradigm.xyz/2026/04/releasing-reth-2-0)
+
+---
+
+## 附录 B：CL 客户端横评（lighthouse / prysm / teku / nimbus / lodestar）
+
+**背景**：2022 年 prysm 占 70%，EthStaker 社区花三年劝迁。2026-04：prysm 38%、lighthouse 33%、teku 18%、nimbus 6%、lodestar 5%——接近 client diversity 安全线。
+
+### B.1 五客户端对照
+
+| CL | 语言 | 市占 | 内存 | 磁盘 | checkpoint sync | 速记 |
+|---|---|---|---|---|---|---|
+| **lighthouse** | Rust | ~33% | 2-4 GB | ~120 GB | 2-5 min | Fulu ready，hierarchical diffs I/O 降 4x，eth-docker 默认 |
+| **prysm** | Go | ~38% | 4-8 GB | ~150 GB | 5-15 min | 内置 Web UI，内存吃得多 |
+| **teku** | Java | ~18% | 4-8 GB | ~80 GB | 3-8 min | ConsenSys + Splunk 企业集成 |
+| **nimbus** | Nim | ~6% | <1 GB | ~100 GB | 5-10 min | RPi 唯一选择 |
+| **lodestar** | TypeScript | ~5% | 4-6 GB | ~110 GB | 8-15 min | 浏览器 light client |
+
+### B.2 CL 进程内部职责
+
+```mermaid
+flowchart LR
+    subgraph BN["Beacon Node"]
+        Sync[sync<br/>checkpoint / range / forward]
+        Fork[fork choice LMD-GHOST + Casper FFG]
+        DB[(beacon DB)]
+        P2P[p2p libp2p gossipsub]
+        API[Beacon API :5052]
+    end
+    subgraph VC["Validator Client"]
+        Keys[keystore + slashing DB]
+        Duties[duties scheduler]
+        Sign[BLS signing]
+    end
+    BN -->|duties| VC
+    VC -->|signed msg| BN
+    BN -->|engine API JWT :8551| EL[EL]
+    BN -->|builder API :18550| MevBoost[mev-boost]
+```
+
+同一组 keystore 跑两个 VC = 最容易触发 slashing。slashing DB 必须 single-source-of-truth。
+
+> 来源: [migalabs CL benchmarks](https://mirror.xyz/0x934e6B4D7eee305F8C9C42b46D6EEA09CcFd5EDc/b69LBy8p5UhcGJqUAmT22dpvdkU-Pulg2inrhoS9Mbc), [Sigma Prime lighthouse releases](https://github.com/sigp/lighthouse/releases)
+
+---
+
+## 附录 C：Validator 完整流程（0x01/0x02 升级、key 管理）
+
+**钩子**：2024 年某 staking 服务商机房迁移——工程师 `scp` keystore 到新机器后忘关老 VC，9 个 validator 触发 double-sign slashing，共赔 144 ETH（~$50 万）。
+
+### C.1 solo staking 全流程
+
+```mermaid
+flowchart TD
+    A[离线机器生成密钥<br/>staking-deposit-cli] --> B[deposit 32 ETH launchpad]
+    B --> C[导入 keystore 到 VC]
+    C --> D[配 mev-boost 5 个 relay]
+    D --> E[等 ~24h 激活队列]
+    E --> F[attest + propose<br/>~3-4% APR]
+```
+
+### C.2 0x01 → 0x02 升级（Pectra EIP-7251 MaxEB）
+
+| 维度 | 0x01（旧） | 0x02（Pectra 后推荐） |
+|---|---|---|
+| MaxEB | 32 ETH（超出强制 partial withdraw） | 2048 ETH |
+| 复利 | 否 | 是 |
+| 合并多 validator | 不能 | 能（`consolidate`） |
+
+```bash
+# 1. 检查 credentials 类型
+curl -s http://localhost:5052/eth/v1/beacon/states/head/validators/$IDX \
+  | jq '.data.validator.withdrawal_credentials'
+# 0x01... 需升级
+
+# 2. 生成 BLS-to-execution change
+./deposit.sh generate-bls-to-execution-change \
+  --chain mainnet \
+  --mnemonic "your mnemonic" \
+  --bls_withdrawal_credentials_list 0xCURRENT \
+  --validator_start_index 0 \
+  --validator_indices VALIDATOR_IDX \
+  --execution_address 0xYOUR_NEW_0x02_ADDR
+
+# 3. broadcast
+curl -X POST http://localhost:5052/eth/v1/beacon/pool/bls_to_execution_changes \
+  -H 'Content-Type: application/json' --data @bls_to_execution_changes.json
+```
+
+### C.3 consolidation（多 validator 合并为 1）
+
+```bash
+cast send --rpc-url $RPC --account deployer \
+  $CONSOLIDATION_CONTRACT \
+  "consolidate(address,bytes,bytes)" \
+  $WITHDRAWAL_ADDRESS $SOURCE_PUBKEY $TARGET_PUBKEY
+```
+
+合并后：source 进入 exit queue；target 收到全部 ETH；余额上限 2048 ETH。
+
+### C.4 web3signer：把 keystore 与 VC 解耦
+
+```mermaid
+flowchart LR
+    subgraph DMZ[DMZ]
+        BN[Beacon Node] --> VC[VC 无 keystore]
+    end
+    subgraph Vault[内网/HSM]
+        Web3signer[web3signer]
+        SlashingDB[(slashing DB SQL)]
+        Keys[keystore / HSM]
+    end
+    VC -->|HTTP signing API| Web3signer
+    Web3signer --> Keys
+    Web3signer --> SlashingDB
+```
+
+HSM 接入：YubiHSM 2 或 AWS CloudHSM，web3signer 走 PKCS#11。
+
+### C.5 迁移时 EIP-3076 slashing DB 导出导入
+
+```bash
+# prysm 导出
+prysmctl validator slashing-protection-history export \
+  --datadir=/path/to/prysm \
+  --slashing-protection-export-dir=/path/to/export.json
+
+# lighthouse 导入
+lighthouse account validator slashing-protection import /path/to/export.json
+```
+
+**切换客户端必须做此步**。2024 年至少 3 次大型 slashing 是"迁移没导出 slashing DB"所致。
+
+> 来源: [EthStaker Pectra Features](https://docs.ethstaker.org/upgrades/pectra-features/), [EIP-3076](https://eips.ethereum.org/EIPS/eip-3076)
+
+---
+
+## 附录 D：DVT（Obol / SSV）详
+
+**背景**：web3signer 仍是单 key 单服务。DVT 把 validator key 拆成 N 份给 M 个 operator，t-of-N 阈值签名——单机宕机不影响出块，双签需 t 个 operator 同时作恶。
+
+### D.1 两个主流方案
+
+| 项目 | 阈值默认 | 共识层 | 主网状态 (2026-04) | 适合 |
+|---|---|---|---|---|
+| **Obol Network** | 4-of-6 / 5-of-7 | Charon QBFT | mainnet alpha+，Lido Simple DVT 集成 | DAO / 大型 staker |
+| **SSV Network** | 4-of-7 / 7-of-10 | Istanbul BFT | permissionless mainnet | 公开 operator 市场 / 个人 |
+
+### D.2 架构差异
+
+```mermaid
+flowchart LR
+    subgraph Obol
+        OKey[key 拆 6 份 BLS threshold] --> OOp[6 个 operator 同团队]
+        OOp --> OQBFT[QBFT 共识]
+    end
+    subgraph SSV
+        SKey[key 拆 7 份 BLS threshold] --> SOp[7 个独立 operator 公开市场]
+        SOp --> SIBFT[Istanbul BFT]
+        SOp --> SMkt[按 SSV token 付费]
+    end
+```
+
+2025-Q3：~547,968 ETH（17,124 validators）在 DVT 上，占总 staked ETH ~1.5%，Lido Simple DVT 占其中过半。
+
+> 来源: [Obol Road to Mainnet](https://blog.obol.org/road-to-mainnet-and-beyond-for-distributed-validators/), [SSV permissionless mainnet](https://www.theblock.co/post/267244/ethereum-staking-ssv-network-permissionless-launch)
+
+---
+
+## 附录 E：MEV-Boost relay 市占 / Builder market / SUAVE / ePBS
+
+### E.1 Relay 列表（2026-04）
+
+| Relay | 市占 (payload) | 审查模式 |
+|---|---|---|
+| relay.ultrasound.money | 33.92% | non-censoring |
+| titanrelay.xyz | 24.19% | non-censoring |
+| bloxroute.max-profit | 14.67% | non-censoring |
+| aestus.live | 10.03% | non-censoring |
+| bloxroute.regulated | 9.07%（波动大） | OFAC 合规 |
+| boost-relay.flashbots.net | 4.22% | non-censoring |
+
+bloXroute regulated 月度波动区间约 5-15%，选型前用 [relayscan.io](https://www.relayscan.io/) 复核 28 天滚动数据。
+
+### E.2 Builder 市场
+
+beaverbuild + rsync 合计 >50% payload；Flashbots builder 开源，做 fallback。BuilderNet 体系（beaver/rsync/titan）已形成寡头。
+
+### E.3 Censorship 现状（2026-04）
+
+| 维度 | 2022 | 2024 | 2026-04 |
+|---|---|---|---|
+| 审查 relay 占比 | ~80% | 30% | 9% |
+| TC 交易上链 p50 | ~6 块 | ~2 块 | ~1 块 |
+
+### E.4 ePBS（Glamsterdam）与 SUAVE
+
+**ePBS**：把 PBS 写进协议——validator 通过链上 commitment + reveal 直接拿 builder block，不再需要信任 relay。Glamsterdam（2026 H1）= ePBS + BAL + gas limit 调整。
+
+**SUAVE**：Flashbots 另一条路——让 builder 拍卖去中心化，2026 仍在 testnet。ePBS 解决"不再需要信任 relay"，SUAVE 解决"builder 不再是中心化巨头"，二者互补。
+
+> 来源: [relayscan.io](https://www.relayscan.io/), [Datawallet Glamsterdam](https://www.datawallet.com/crypto/ethereum-glamsterdam-upgrade-explained)
+
+---
+
+## 附录 F：Ponder schema 完整示例
+
+```ts
+// ponder.schema.ts — Ponder 0.11+ Drizzle ORM
+import { onchainTable, relations, primaryKey, index } from "@ponder/core";
+
+export const account = onchainTable("account", (t) => ({
+  address:       t.hex().primaryKey(),
+  balance:       t.bigint().notNull().default(0n),
+  transferCount: t.integer().notNull().default(0),
+}));
+
+export const transferEvent = onchainTable("transfer_event", (t) => ({
+  id:          t.text().primaryKey(),
+  from:        t.hex().notNull(),
+  to:          t.hex().notNull(),
+  value:       t.bigint().notNull(),
+  blockNumber: t.bigint().notNull(),
+  txHash:      t.hex().notNull(),
+  logIndex:    t.integer().notNull(),
+}), (table) => ({
+  fromIdx: index().on(table.from),
+  toIdx:   index().on(table.to),
+}));
+
+export const accountRelations = relations(account, ({ many }) => ({
+  sent:     many(transferEvent, { fields: [account.address], references: [transferEvent.from] }),
+  received: many(transferEvent, { fields: [account.address], references: [transferEvent.to] }),
+}));
+```
+
+`ponder.config.ts` 多合约示例：
+
+```ts
+export default createConfig({
+  database: { kind: "postgres", connectionString: process.env.DATABASE_URL },
+  networks: {
+    mainnet: { chainId: 1, transport: http(process.env.PONDER_RPC_URL_1) },
+  },
+  contracts: {
+    USDC: {
+      network: "mainnet",
+      abi: erc20Abi,
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      startBlock: 22300000,
+    },
+    WETH: {
+      network: "mainnet",
+      abi: erc20Abi,
+      address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      startBlock: 22300000,
+    },
+  },
+});
+```
+
+性能基线（7 天历史）：自建 reth archive 本机 ~4 min；Alchemy free tier ~22 min；Envio HyperSync ~1 min。
+
+---
+
+## 附录 G：Slashing 防御详
+
+### G.1 触发条件
+
+1. **double signing**：同一 slot 签了两份不同 attestation/proposal
+2. **surround vote**：新 attestation 时间区间包住已有 attestation
+
+**罚则**：立即 1 ETH 削减 + 强制退出，correlation penalty 0.5-32 ETH。
+
+### G.2 三板斧（详细）
+
+| 防御 | 工具 | 配置 |
+|---|---|---|
+| slashing DB 单一来源 | lighthouse VC / web3signer | 不要复制 keystore 到第二台同时运行 |
+| doppelganger 检测 | `--enable-doppelganger-protection` | 启动时等 2 epoch，检测同 pubkey 是否在网络在线 |
+| 切换客户端必须导 EIP-3076 | prysmctl / lighthouse | 详见附录 C.5 |
+
+### G.3 事故回顾（2023-2025）
+
+| 年份 | 原因 | 损失 |
+|---|---|---|
+| 2023 | 机房迁移未关老 VC | ~32 ETH（2 validator） |
+| 2024 | "只切 EL 未切 VC" 误操作 | ~112 ETH（7 validator） |
+| 2024 | SaaS 迁移未导出 slashing DB | 144 ETH（9 validator） |
+
+### G.4 anti-slasher 监控配置
+
+```yaml
+# alerts.yml
+- alert: ValidatorSlashed
+  expr: increase(validator_monitor_slashed_total[5m]) > 0
+  for: 1m
+  labels: { severity: critical }
+  annotations:
+    summary: "Validator slashed! 立即调查"
+```
+
+至少装 beaconcha.in Telegram bot（免费）。一个 missed proposal = $30-100 损失。
+
+---
+
+## 附录 H：Pectra 升级实操
+
+**Pectra 主网上线：2025-05-07**。主要 EIP：EIP-7251（MaxEB 2048 ETH）、EIP-7002（EL 触发 exit/withdrawal）、EIP-7549（attestation 效率优化）。
+
+### H.1 影响速查
+
+| EIP | 变化 | 操作要求 |
+|---|---|---|
+| EIP-7251 MaxEB | 单 validator 上限 32→2048 ETH | 升级到 0x02 credentials，可选 consolidate |
+| EIP-7002 EL exit | 可从 EL 合约触发 validator exit | 0x02 credentials 才能用 |
+| EIP-7549 | attestation 聚合效率提升 | 升级 CL 客户端 |
+
+### H.2 是否需要操作
+
+- **已是 0x02 credentials**：MaxEB 自动生效，超过 32 ETH 不再 partial withdraw，而是累积复利
+- **仍是 0x01**：建议升级到 0x02（见附录 C.2），Pectra 前后均可操作
+- **想合并多个 validator**：等 0x02 升级完成后用 `consolidate`（见附录 C.3）
+
+### H.3 Lido/大型 staker 的影响
+
+Lido / Coinbase / Kraken 2025-Q4 大批量 consolidate，单月 active validator 数掉 ~16,000 个但总 ETH 不变。协议级降本：同等 staking 量但只需 1/64 attestation/proposal 流量，减轻共识层带宽压力。
+
+> 来源: [EthStaker Pectra Features](https://docs.ethstaker.org/upgrades/pectra-features/), [Markaicode EIP-7251 Guide](https://markaicode.com/ethereum-validator-eip-7251-upgrade-guide/)

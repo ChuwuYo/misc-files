@@ -1,0 +1,8 @@
+flowchart LR
+    BTCH[BTC holder] -->|UTXO 锁定<br/>EOTS 一次性签名| Babylon[Babylon Genesis L1]
+    Babylon -->|finality provider 签名| PoS[PoS 链]
+    PoS -->|奖励| FP[Finality Provider]
+    FP -->|按 stake 比例| BTCH
+    FP -.两次签同 height.-> EOTS[提取私钥]
+    EOTS --> Slash[BTC UTXO 被 slash]
+    Babylon -.每小时 timestamping.-> BTC[BTC 主链]

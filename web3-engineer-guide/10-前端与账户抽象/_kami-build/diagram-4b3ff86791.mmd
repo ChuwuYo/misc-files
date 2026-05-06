@@ -1,0 +1,6 @@
+flowchart LR
+  U[用户] -->|sign UserOp| B[Bundler<br/>快递员]
+  B --> EP[EntryPoint<br/>v0.7 单例合约]
+  EP --> SA[Smart Account<br/>validateUserOp]
+  EP --> PM[Paymaster<br/>可选，代付 gas]
+  SA --> EXT[业务合约]

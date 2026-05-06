@@ -1,0 +1,5 @@
+graph LR
+    A["链 A\n区块头"] --> P["zkBridge Prover\n(SP1 / Plonky3)"]
+    P --> Proof["ZK proof\n~200B"]
+    Proof --> B["链 B\n验 proof"]
+    B --> C["确认跨链消息"]

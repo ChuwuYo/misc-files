@@ -1,0 +1,8 @@
+flowchart TB
+    Data[关键数据]
+    Data --> L1[热: IPFS pin × 3 家]
+    Data --> L2[温: Filecoin via FIL+]
+    Data --> L3[冷: Arweave 永久]
+    L1 -.即时访问.-> L1
+    L2 -.低成本批量.-> L2
+    L3 -.最终保险.-> L3

@@ -1,0 +1,9 @@
+flowchart LR
+    U[用户存任意 ERC-20] --> V[Symbiotic Vault<br/>curator 定 slashing 逻辑]
+    V --> AM[Accounting Module]
+    V --> SM[Slashing Module<br/>per-network 规则]
+    V --> DM[Delegation Module]
+    DM --> Op[Operators]
+    Op --> N1[Network 1: oracle]
+    Op --> N2[Network 2: bridge]
+    SM -.veto by resolver.-> SM

@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph EL["执行层 (reth)"]
+        EVM["EVM 执行<br/>state / receipt"]
+        JSONRPC["JSON-RPC :8545<br/>eth_call / eth_getLogs"]
+        TxPool["TxPool<br/>mempool"]
+    end
+    subgraph CL["共识层 (lighthouse)"]
+        Beacon["Beacon Chain<br/>slot / epoch / attestation"]
+        ForkChoice["LMD-GHOST + Casper FFG"]
+        VC["Validator Client<br/>签名 BLS"]
+    end
+    CL -->|engine API JWT :8551| EL
+    CL -->|builder API :18550| MevBoost["mev-boost"]

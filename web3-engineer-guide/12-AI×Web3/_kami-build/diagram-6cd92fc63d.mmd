@@ -1,0 +1,7 @@
+flowchart LR
+    A[AI Agent] -->|签 intent<br/>约束: 滑点 ≤0.5%, 1h 内| B[Solver 竞拍]
+    B --> C[满足约束的最优路径]
+    C --> D[链上原子结算]
+    D -->|回调| A
+    style A fill:#fff3cd,stroke:#856404
+    style B fill:#cce5ff,stroke:#004085
