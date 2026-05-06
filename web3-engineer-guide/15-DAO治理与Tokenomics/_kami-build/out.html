@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -597,7 +597,11 @@
     <span class="toc-page">·</span>
   </div>
 </section>
-<p>DAO 治理 + 代币经济学 + RWA 三件事的工程视角。前置：模块 04 Solidity、05 安全、06 DeFi、14 去中心化存储。所有协议数据、TVL、监管时间表为 2026-04 快照。</p>
+<blockquote>
+<p>"Code is law" 在 2016 年 6 月那一晚被打了一记耳光。一名匿名攻击者把 The DAO 抽走 360 万 ETH，按合约规则——他完全合法。然后以太坊基金会硬分叉了，少数派愤而离开建立了 Ethereum Classic。十年后，"DAO 治理"早已不只是一句口号，它是 350 亿美元资产、几十亿美元闪电贷攻击、Curve 国会式 bribe 经济、以及 BlackRock 把美国国债搬上链的工程实战。</p>
+</blockquote>
+<p>本模块写给想真正读懂 DAO 源码、能设计代币模型、能识别治理攻击向量的工程师。<strong>假设你接到一个任务：给一个 1 亿美元国库的协议设计治理。</strong> 这本指南会陪你走完从"Solidity governor 怎么写"到"为什么 Compound 差点被 Humpy 一周末抢走 5%"的全部坑。</p>
+<p>前置：模块 04 Solidity、05 安全、06 DeFi、14 去中心化存储。所有协议数据、TVL、监管时间表为 2026-04 快照。</p>
 <hr />
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>章节路径图</h2>
@@ -610,11 +614,14 @@
 </section><section class="chapter">
 <h2 id="1-dao-the-dao-2016" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章：DAO 是什么——从 The DAO 2016 讲起</h2>
 
+<blockquote>
+<p>2016 年 4 月，一群以太坊老兵开了个"链上风投基金"叫 The DAO。28 天内，1.5 亿美元 ETH 砸进去——占当时全部 ETH 流通量的 14%。他们以为自己在写未来公司法的第一行代码。两个月后这行代码崩了，整个以太坊为了救它撕裂成两条链。这一节讲的是那次崩塌、它教给所有现代 DAO 的三条铁律，以及为什么"代币 + 投票 ≠ 治理"。</p>
+</blockquote>
 <h3 id="11-dao">1.1 DAO 定义</h3>
-<p><strong>DAO</strong>（Decentralized Autonomous Organization）= 一组合约 + 一个代币 + 一个时间锁。提案即 calldata，章程即字节码，国库 = <code>address(this).balance</code>。区别于公司章程的三件事：组合（一份提案可同时调 Aave/Uniswap/Lido）、无许可投票（持币即投权，无 KYC）、合约执行（票数达标后由 <code>timelock.execute</code> 自动落地）。</p>
+<p>把它想成乐高版的"传统公司"：<strong>DAO</strong>（Decentralized Autonomous Organization）= 一组合约 + 一个代币 + 一个时间锁。提案即 calldata，章程即字节码，国库 = <code>address(this).balance</code>。区别于公司章程的三件事：组合（一份提案可同时调 Aave/Uniswap/Lido，传统公司想做这种联合操作得签三份合同找四组律师）、无许可投票（持币即投权，无 KYC）、合约执行（票数达标后由 <code>timelock.execute</code> 自动落地，不需要 CEO 批字）。</p>
 <h3 id="12-the-dao2016">1.2 起源：The DAO（2016）</h3>
 <p><strong>The DAO</strong> 是 2016 年 4 月上线的去中心化风险投资基金（Slock.it 编写），28 天众筹吸纳约 1150 万 ETH（~1.5 亿美元，占 ETH 总流通量 14%）。来源：<a href="https://en.wikipedia.org/wiki/The_DAO">The DAO Wikipedia</a>。</p>
-<p><strong>致命漏洞</strong>：<code>splitDAO()</code> 先发送 ETH 再更新余额——典型<strong>重入漏洞</strong>（详见模块 05 第 2 章）。</p>
+<p><strong>致命漏洞</strong>：<code>splitDAO()</code> 先发送 ETH 再更新余额——典型<strong>重入漏洞</strong>（详见模块 05 第 2 章）。把它想象成 ATM：你按"取 1000 美元"，机器先吐钱，<strong>再</strong>扣账户余额。如果你手够快、能在它扣账之前再按一次"取 1000"——它会再吐一次。攻击者的合约就是这台被无限按下去的 ATM。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// The DAO 的 splitDAO 简化伪代码（带漏洞）</span>
 <span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">splitDAO</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">proposalId</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">amount</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>balances<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">];</span>
@@ -706,7 +713,11 @@
 </section><section class="chapter">
 <h2 id="2-vs" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章：治理原理——一票一币 vs 一人一票</h2>
 
+<blockquote>
+<p>"为什么 Uniswap 治理里 a16z 一票顶一万人？" 因为投票权 = 代币余额 = 钱。但如果你设计的是 Optimism 的 RPGF，目标是分配公共物品，纯按钱投票就等于让首富一个人决定哪所大学拿到捐款。Glen Weyl 在 <em>Plurality</em> 系列里反复戳这个矛盾：<strong>民主是"一人一票"的，资本主义是"一币一票"的，它们之间需要一种新原语。</strong> QF/QV 是这个原语的早期实验。这一章先把"权重从哪里来"想清楚，后面所有机制设计才不会变成数学魔术。</p>
+</blockquote>
 <h3 id="21">2.1 两种权重来源</h3>
+<p>直觉版：<strong>1T1V = 股东大会</strong>（你有多少股就有多少话语权）；<strong>1P1V = 美国大选</strong>（一人一票，但谁是"人"是个问题）；<strong>QV = 给小户加杠杆的混合制</strong>（钱花得越多边际越贵，强迫你只在最在乎的事上重仓）。</p>
 <table>
 <thead>
 <tr>
@@ -771,7 +782,7 @@
 </table>
 <p>QV 详见第 12 章。直觉：二次方让大户边际投票成本陡升，小户话语权更等比例。</p>
 <h3 id="23-delegation">2.3 委托（Delegation）</h3>
-<p><strong>委托机制</strong>让代币持有者把投票权交给信任的"代议士"。Uniswap、Compound、Sky 均支持。</p>
+<p><strong>委托机制</strong>让代币持有者把投票权交给信任的"代议士"——就像美国大选里你不直接投候选人而是投 elector。Uniswap、Compound、Sky 均支持。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 简化的 ERC20Votes（OpenZeppelin）委托接口</span>
 interface<span style="color: #F8F8F8"> </span>IERC20Votes<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">delegate</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">delegatee</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #000; font-weight: bold">;</span>
@@ -791,6 +802,9 @@ interface<span style="color: #F8F8F8"> </span>IERC20Votes<span style="color: #F8
 </section><section class="chapter">
 <h2 id="3-vs" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章：链上 vs 链下治理</h2>
 
+<blockquote>
+<p><strong>场景对比</strong>：Snapshot 投票像在 Twitter 发民调（gas 免费、签名记账、IPFS 存档，没人能用 calldata 抢国库）；OZ Governor 投票像在国会按表决器（每票交易费 1-5 美元，但通过即自动 execute）。混合派 Snapshot X 想要"两全其美"——L2 上签名免费投，storage proofs 让 L1 自动认账。这一节讲三种范式各自的失败模式，以及最近哪个真实案例验证了它们。</p>
+</blockquote>
 <h3 id="31">3.1 定义</h3>
 <p><strong>链下治理</strong>：投票签名 + IPFS 存储，多签手动执行（代表：Snapshot v1）。
 <strong>链上治理</strong>：投票交易上链，calldata 自动执行（代表：GovernorBravo、OZ Governor）。</p>
@@ -856,6 +870,9 @@ interface<span style="color: #F8F8F8"> </span>IERC20Votes<span style="color: #F8
 </section><section class="chapter">
 <h2 id="4" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章：治理生命周期</h2>
 
+<blockquote>
+<p><strong>想象 DAO 治理是"铁路调度"</strong>：从你脑子里的想法到链上 calldata 落地，要经过 6 个站台、3 道延迟闸——论坛温度测试 → Snapshot 链下 → propose 上链 → votingDelay → 投票 → 排队 → timelock → execute。<strong>任何一个站台漏掉都是 Beanstalk 级灾难</strong>。</p>
+</blockquote>
 <h3 id="41">4.1 完整流程</h3>
 <figure><img src="diagram-97cd90195a.png" alt="mermaid diagram"></figure>
 
@@ -926,10 +943,16 @@ Canceled  Defeated               Canceled / Expired
 </section><section class="chapter">
 <h2 id="5" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章：治理攻击向量</h2>
 
+<blockquote>
+<p>想象你周一上班，老板说："咱们 DAO 的国库里 2 亿美元，对吧？" 你点头。周二早上你看 Twitter——一个昵称叫 <code>0x...beanstalk</code> 的攻击者，用 Aave 借的 10 亿美元闪电贷，在<strong>一笔交易、十几秒、一个区块</strong>里把整个国库抽空了。事后社区翻代码，发现攻击者甚至顺手转了 25 万美元给乌克兰当道德烟雾弹。这是 2022 年 4 月的真事，损失 1.82 亿美元。这一章把治理攻击拆成五种范式，每一种都对应一个"那年发生过"的真实案例——读完你会知道为什么 timelock 是工程师的安全带。</p>
+</blockquote>
 <h3 id="51">5.1 五种主要攻击</h3>
 <figure><img src="diagram-4828a9d1fe.png" alt="mermaid diagram"></figure>
 
 <h3 id="52-beanstalk2022-04182m">5.2 Beanstalk（2022-04，$182M）</h3>
+<blockquote>
+<p>一句话钩子：<strong>没有 timelock + 没有 snapshot = 自动化抢劫工具</strong>。Beanstalk 是 DeFi 史上最干净利落的治理攻击——前后 13 秒，一笔交易，1.82 亿美元蒸发。事后社区翻 calldata 才看懂攻击者的提案标题：<code>emergencyCommit("BIP-18")</code>，描述里写"紧急修复"，实际 calldata 是"把国库全转到 0xattacker"。</p>
+</blockquote>
 <p><strong>攻击</strong>：稳定币协议 Beanstalk，<code>emergencyCommit</code> 允许 2/3 票即时执行，投票权 = 当前 LP 余额（无 snapshot）。</p>
 <p><strong>PoC</strong>：单 tx 内（<a href="https://www.halborn.com/blog/post/explained-the-beanstalk-hack-april-2022">Halborn</a> / <a href="https://medium.com/immunefi/hack-analysis-beanstalk-governance-attack-april-2022-f42788fc821e">Immunefi</a>）：
 1. Aave 闪电贷 10 亿 USD → 转 Curve/SushiSwap 拿 BEAN+3CRV LP；
@@ -950,6 +973,9 @@ Canceled  Defeated               Canceled / Expired
 <p><strong>影响</strong>：~$470k 损失，DAO 治理瘫痪，BUILD 代币归零。</p>
 <p><strong>防御</strong>：proposalThreshold ≥ 1% 流通、quorum ≥ 4-10%、敏感操作（mint/upgrade/pause）走独立 emergency multisig + 提案监控告警。</p>
 <h3 id="54-compound-cmp-2892024-07">5.4 Compound CMP-289（2024-07）</h3>
+<blockquote>
+<p>这次攻击的诡异之处在于：<strong>它完全合法</strong>。Humpy 没有动用闪电贷、没有重入、没有 oracle 操纵——他只是去市场买了 13% 的 COMP，等周末交易所流动性最低、社区没人盯盘的时候，提案转 2400 万美元到自己的钱包。Twitter 上叫这种人 "governance raider"，机制设计里它叫 "minority capture under permissionless voting"。读完它你会同意：<strong>1T1V + 委托是糖衣，里面是寡头政治的内核。</strong></p>
+</blockquote>
 <p><strong>攻击</strong>：Humpy（Balancer 同套路）控 ~13% COMP，周末发提案转 49.9 万 COMP（$24M）至自控的 "Golden Boys"。</p>
 <p><strong>PoC</strong>（<a href="https://www.theblock.co/post/307943/24-million-compound-finance-proposal-passed-by-whale-over-dao-objections">The Block</a> / <a href="https://protos.com/compound-dao-asleep-at-the-wheel-as-25m-governance-attack-passes/">Protos</a>）：
 1. 提案前夕 N 个钱包向单一地址集中委托（绕开 votingDelay 冻结）；
@@ -1061,6 +1087,9 @@ Canceled  Defeated               Canceled / Expired
 </section><section class="chapter">
 <h2 id="6-snapshot-v2-snapshot-x" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 6 章：链下投票——Snapshot v2 / Snapshot X</h2>
 
+<blockquote>
+<p><strong>场景</strong>：Uniswap 想做一个"是否要把 fee switch 打开"的预投票，但 5000 个持有者每人花 5 美元 gas 上链投票太蠢。Snapshot 解决这个：<strong>你签一个 EIP-712 typed data，免费</strong>；签名 + 提案存 IPFS；按某个历史区块的余额计票。它不能直接执行链上动作，但是 Aave、Sky、ENS、Lido 等 30+ 大型 DAO 的"温度计"。2024 年 Snapshot Labs 还推出了 Snapshot X——L2 上跑、用 storage proofs 直接证明 L1 余额、可自动执行——把"链下"拽回了"半链上"。</p>
+</blockquote>
 <h3 id="61">6.1 工作机制</h3>
 <p>EIP-712 签名 → 签名 + 提案存 IPFS → 用 snapshot block 处的链上余额（按 strategy 计算）得到权重。链下意愿统计层，本身不执行任何 onchain action。</p>
 <h3 id="62-snapshot-v2-x2024-2025">6.2 Snapshot v2 / X（2024-2025）</h3>
@@ -1113,6 +1142,9 @@ Canceled  Defeated               Canceled / Expired
 </section><section class="chapter">
 <h2 id="7-tally-boardroom-agora" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 7 章：链上执行界面——Tally / Boardroom / Agora</h2>
 
+<blockquote>
+<p><strong>2026 年 3 月 17 日，Tally 关停</strong>——这个曾经服务 500+ DAO、几乎是 OZ Governor 标配前端的工具。CEO 在告别信里写了句让所有人愣住的话："Gensler 和 Biden 时代对加密反而更友好——监管压力让协议被迫认真做去中心化基础设施。监管缓和后，协议都自建 UI 了，独立工具失去了空间。" 这是 DAO 工具市场的一个时代缩影。</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -1159,6 +1191,9 @@ Canceled  Defeated               Canceled / Expired
 </section><section class="chapter">
 <h2 id="8-openzeppelin-governor-governorbravo-timelock" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 8 章：治理框架——OpenZeppelin Governor + GovernorBravo + Timelock</h2>
 
+<blockquote>
+<p><strong>如果说 Solidity 是 EVM 的 C 语言，那 OZ Governor 就是 DAO 的 Linux kernel——99% 的现代 DAO 直接 import 它</strong>。但它只是个空壳，真正持有钱的是 TimelockController。这是工程上的精妙设计：<strong>Governor 只能"提议执行"，Timelock 才能"实际执行"，中间隔着一个 2 天延迟</strong>——如果你看到一个明显恶意的提案通过了，社区有 48 小时去 fork、去骂、去推动 emergency multisig 取消。这一章给你一份能跑的 Foundry 部署脚本，以及"为什么忘了 <code>timelock.renounceRole(ADMIN)</code> 你的 DAO 等于裸奔"的工程教训。</p>
+</blockquote>
 <h3 id="81-governorbravo">8.1 GovernorBravo</h3>
 <p>Compound 2021 接替 GovernorAlpha，四点关键差异：可升级（proxy + storage 兼容）、proposalThreshold 可治理调整、结构化 receipt 追踪每个 voter、支持 for/against/abstain 三选项。Compound、Uniswap、ENS、Hop 直接 fork。</p>
 <h3 id="82-openzeppelin-governor">8.2 OpenZeppelin Governor</h3>
@@ -1305,6 +1340,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 </section><section class="chapter">
 <h2 id="9-aragon-osx-llama-daohaus-hats-protocol" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 9 章：其它治理框架——Aragon OSx / Llama / DAOhaus / Hats Protocol</h2>
 
+<blockquote>
+<p><strong>OZ Governor 是"一份合约管全部"</strong>——简单但僵硬。<strong>Aragon OSx 是"插件商店"</strong>——你的 DAO 是空壳，可以同时跑大额 token 投票 + 小额 multisig + 默认通过的 optimistic voting，互不冲突。<strong>Hats Protocol 是"角色 NFT"</strong>——把"安全官"、"财务官"、"版主"做成 ERC-1155，谁戴上谁有权限。<strong>DAOhaus / Moloch v3 是"小工会"</strong>——支持 ragequit（少数派愤而退出还能拿走自己份额，这是其它框架做不到的事）。这一章告诉你什么场景选什么。</p>
+</blockquote>
 <h3 id="91-aragon-osx">9.1 Aragon OSx</h3>
 <p>Aragon OSx（v2，2023）：DAO 是空壳，所有治理逻辑插拔 Plugin。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>DAO（核心合约：拥有资金 + 权限注册表）
@@ -1470,6 +1508,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 </section><section class="chapter">
 <h2 id="10-safegnosis-safe-squads" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 10 章：多签——Safe（Gnosis Safe）/ Squads</h2>
 
+<blockquote>
+<p><strong>Safe 在 EVM 链上托管 1000 亿美元——比许多国家的外汇储备还多</strong>。它是 DAO 工具栈里最不起眼但最关键的一层：treasure 多签、紧急 pauser、grantee 收款地址，背后几乎都是一个 Safe。Solana 那边对应的是 Squads（100 亿美元）。理解 Safe 的 <code>delegatecall</code> 危险性、modules / guards 扩展点、以及它和 Timelock 的"职责分工"，是任何 DAO 架构师的必修课。</p>
+</blockquote>
 <h3 id="101-dao">10.1 DAO 中的三种多签角色</h3>
 <p>① <strong>紧急刹车</strong>：治理 7-10 天 vs 黑客 1 小时，timelock 之外最快防御；② <strong>小额日常运营</strong>：grant 拨款不必走完整治理；③ <strong>资金接收</strong>：grantee 通常是 multisig（如 Optimism Foundation 5/7）。</p>
 <h3 id="102-safegnosis-safe">10.2 Safe（Gnosis Safe）</h3>
@@ -1549,6 +1590,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 </section><section class="chapter">
 <h2 id="11-dao-2026-q1" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 11 章：真实 DAO 解剖（2026 Q1 数据）</h2>
 
+<blockquote>
+<p><strong>理论是干净的，现实是肮脏的。</strong> 这一章把前面所有概念扔进真实 DAO 的"肠道"里看会变成什么——Uniswap 的 a16z 委托堆叠、Optimism 的双院制实验、Arbitrum 把 5000 万 ARB 砸进流动性激励然后看着钱跑光、Sky 改名时四个钱包决定一切、Compound 在 CMP-289 之后给所有 COMP 持有者发 staking 奖励来"补偿"差点被抢的损失。读完这一章你会看清：<strong>没有完美治理，只有不同失败模式的选择。</strong></p>
+</blockquote>
 <h3 id="111-uniswap-governance">11.1 Uniswap Governance</h3>
 <ul>
 <li><strong>代币</strong>：UNI（10 亿初始供给，2020 年 9 月空投）。</li>
@@ -1579,6 +1623,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 <li><strong>教训</strong>：激励停则 TVL 走。来源：<a href="https://www.arbitrumhub.io/incentive-programs/">Arbitrum Hub</a>、<a href="https://messari.io/report/arbitrum-stip-allocations">Messari STIP</a>。</li>
 </ul>
 <h3 id="114-sky-makerdao-endgame">11.4 Sky（前 MakerDAO）的 Endgame</h3>
+<blockquote>
+<p><strong>2024 年 8 月，MakerDAO 改名为 Sky</strong>——这不是品牌重塑，这是 Rune Christensen 写了几万字白皮书要把"DeFi 蓝筹"重构成多个"星辰"子 DAO 的 Endgame。社区辩了两年。投票当天，The Block 翻链上数据发现：<strong>支持改名票数中 90% 来自四个钱包</strong>。Vitalik 的 DAO 民主梦在这里露出底裤——重大方向其实由几张大鲸鱼脸决定。</p>
+</blockquote>
 <p>2024-08 "Endgame"：MakerDAO → Sky，MKR → SKY（1:24000），DAI → USDS（1:1）。拆成多个 <strong>SubDAO（"Sky Stars"）</strong>，各有独立代币/治理。首个 Star：<strong>Spark</strong>（借贷，TVL $30 亿+，SPK）。来源：<a href="https://blockworks.com/news/maker-rebrands-as-sky-dai-will-be-changed-to-usds">Blockworks</a>。</p>
 <p>改名投票中四个实体占绝大多数票，重大转型实际由巨鲸决定。来源：<a href="https://www.theblock.co/post/325096/just-four-entities-account-for-nearly-all-the-votes-to-keep-makerdaos-rebranding-to-sky">The Block</a>。</p>
 <h3 id="115-compound">11.5 Compound</h3>
@@ -1600,6 +1647,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 </section><section class="chapter">
 <h2 id="12-quadratic-funding-quadratic-voting" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 12 章：Quadratic Funding 与 Quadratic Voting</h2>
 
+<blockquote>
+<p>把 QF 想成"给小额捐款人加杠杆"：<strong>1 个人捐 100 块</strong>，匹配池给项目加 100 分；<strong>100 个人各捐 1 块</strong>，匹配池给项目加 10000 分——同样的钱，分散到一百个真实用户身上，机制把它放大一百倍。这正是 Vitalik、Hitzig、Glen Weyl 在 <em>Liberal Radicalism</em>（2018）里要解决的核心问题：<strong>怎么让公共物品资助不再被首富一票决定？</strong> Gitcoin Grants 用这个机制分了 5000 万美元给开源；Optimism Citizens House 用它的变体分了几千万 OP。它的最大敌人叫 Sybil——一个人伪装成一百个，公式立刻崩溃。</p>
+</blockquote>
 <p>QF/QV 用平方根抑制金额、放大参与人数信号，用于公共物品分配。Buterin/Hitzig/Weyl 在 <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3243656">Liberal Radicalism</a> 中给出闭式解。</p>
 <h3 id="121-qf">12.1 QF 公式</h3>
 <p>项目 p 收到捐款 $c_1, ..., c_N$，匹配池补贴：</p>
@@ -1626,6 +1676,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="13-conviction-voting-holographic-consensus-futarchy" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 13 章：Conviction Voting / Holographic Consensus / Futarchy</h2>
 
+<blockquote>
+<p><strong>如果"代币 + 投票"是民主，那 Futarchy 就是技术官僚专政。</strong> 经济学家 Robin Hanson 在 2000 年提出："让民主决定目标（GDP、TVL、福利），让预测市场决定手段（哪个政策能最大化目标）。" 听起来荒谬，但 2024 年 Vitalik 写文力推、Optimism 真的搞了 21 天试验、MetaDAO 的所有治理都跑在 Futarchy 上。本章三种机制——Conviction Voting（时间换权重）、Holographic Consensus（押注换关注）、Futarchy（预测换决策）——都是对"1T1V 不够好"的不同方向的逃逸。它们大多没成功，但失败本身值得读。</p>
+</blockquote>
 <h3 id="131-conviction-voting">13.1 Conviction Voting</h3>
 <p>Zargham（BlockScience）2019 设计，1Hive 在 Aragon 上首次部署（<a href="https://github.com/1Hive/conviction-voting-cadcad">cadCAD 仿真</a>）。代币持续质押在提案上，按指数曲线累积权重，达阈值自动通过。</p>
 <p>$$y_t = \alpha \cdot y_{t-1} + x_t$$</p>
@@ -1683,6 +1736,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="14-retroactive-public-goods-fundingrpgf" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 14 章：Retroactive Public Goods Funding（RPGF）</h2>
 
+<blockquote>
+<p><strong>传统 grant 是"我有个想法，给我钱"</strong>——Web3 早期烧了几亿美元给 PPT 项目。<strong>RPGF 是"我已经做了，回头看值不值"</strong>——以太坊客户端、libp2p 库、那些没人想资助但所有人在用的开源工具，终于有了报酬。Optimism 把 Vitalik 这个 idea 落地成 Citizens House，2022 至 2024 年分了 6 轮、超过 5000 万美元的 OP。这套机制最大的问题不是数学，是<strong>谁来当 Citizen</strong>——这是个政治问题，不是工程问题。</p>
+</blockquote>
 <p><strong>核心命题</strong>（Vitalik 2021-07，<a href="https://medium.com/ethereum-optimism/retroactive-public-goods-funding-33c9b7d00f0c">原文</a>）：判断已发生的影响比预测未来事容易，所以反转 grant 流程——先做、再评、再发钱。</p>
 <h3 id="142-optimism-citizens-house-rpgf">14.2 Optimism Citizens House RPGF</h3>
 <p>Optimism 是 RPGF 最大的实践者。从 2022 年的 RPGF Round 1（100 万 OP）到 2024 Q4 的 Round 6（240 万 OP），每轮主题不同：</p>
@@ -1757,8 +1813,12 @@ $$</p>
 </section><section class="chapter">
 <h2 id="15-ve-tokenomics-curve-velodrome-aerodrome" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 15 章：ve-Tokenomics 详解——Curve / Velodrome / Aerodrome</h2>
 
+<blockquote>
+<p><strong>把 ve-token 想成"投票权 IRA 账户"</strong>：你把 CRV 锁进去，最长 4 年；锁得越久，发给你的 veCRV 越多，能投的票、能分的协议费、LP 收益的乘数都越大。它是 Curve 在 2020 年丢出的一颗手榴弹——把"治理权"和"时间偏好"硬挂钩。三年后，整个 DeFi 都在抄它：Frax 抄、Convex 抄、Velodrome 抄、Aerodrome 抄、Pendle 抄完又退回 sPENDLE。这一章讲清楚 veCRV 的数学、它如何引爆 Curve War（第 25 章）、以及为什么 Pendle 在 2025 年说"算了，我软化它"。</p>
+</blockquote>
 <p>ve（vote-escrow）由 Curve 2020-09 发明，把治理权与时间偏好挂钩——锁得越久权重越大。</p>
 <h3 id="151-vecrv">15.1 veCRV 设计</h3>
+<p>直觉先行：<strong>veCRV 像一张"承诺书 NFT"</strong>——你承诺把 CRV 锁 N 年不动，协议给你一张随时间逐日缩水的投票卡。锁 4 年的人投票权是锁 1 年的人 4 倍，是不锁的人无穷大。这种设计逼出三件事：①投机者不会玩（他们不愿意被锁），②长期主义者天然胜出，③"控制 Curve 让自己稳定币流动性更深"成了一门生意。</p>
 <p>CRV 锁仓 1 周到 4 年 → 得到 veCRV。锁越长，veCRV 越多，投票权 + 协议分红 + LP boost 同步上升。</p>
 <p><strong>核心公式</strong>：
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>veCRV = CRV_locked × (lock_duration / max_lock)
@@ -1806,6 +1866,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="16-vc-fair-launch-airdrop-tge-vesting" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 16 章：代币分发模型——VC / fair launch / airdrop / TGE / vesting</h2>
 
+<blockquote>
+<p><strong>2024 年 BeInCrypto / The Defiant 反复讨论一个词：「low float / high FDV scam pattern」</strong>——VC 项目上线 FDV 50-100 亿美元，流通比 5%，散户接盘，团队和投资人在 1 年 cliff 后开始 vesting，价格瀑布式下跌。Aptos、Sui、Worldcoin 是范本。Vitalik 多次撰文批评这个设计选择，称之为"有毒分发"。<strong>作为工程师你可能不写这部分代码，但你的代币模型决定了项目能不能走过 4 年——比合约审计还重要。</strong> 这一章给你一份"红旗清单"和现代代币分发的工程模板。</p>
+</blockquote>
 <h3 id="161">16.1 五种主流分发方式</h3>
 <p><strong>1. VC 轮</strong>：种子 / A / B 轮，给机构 / 天使。折扣 50-90%，1-3 年 cliff + 3-5 年线性 vesting。典型：Solana、Aptos、EigenLayer。</p>
 <p><strong>2. Fair launch</strong>：无预挖无 VC 分配，代币靠 LP / 挖矿 / 公开购买获得。优势：抗砸盘、SEC 风险低；劣势：缺长期资金、易被女巫抢光。示例：YFI（100% fair）、OHM、HYPE（2024，含小量团队份额）。</p>
@@ -1842,6 +1905,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="17-vesting" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 17 章：真实 Vesting 案例对比</h2>
 
+<blockquote>
+<p><strong>场景</strong>：你是 Optimism 的早期员工，2022 年 5 月入职，分到 100 万 OP。一年 cliff（2023 年 5 月解锁第一笔），三年线性。<strong>2025 年 5 月你刚刚解锁了完整的 100 万 OP——市场也刚刚迎来"OP 团队 + 投资人解锁峰值"。</strong> 你怎么操作？卖一半？质押锁仓？做 LP？这一章把 OP / ARB / EIGEN / APT / SUI 五种 vesting 模型摆在一起，让你看懂"内部人解锁日"对市场的真实冲击。</p>
+</blockquote>
 <h3 id="171-optimism-op">17.1 Optimism (OP)</h3>
 <ul>
 <li><strong>总量</strong>：4,294,967,296 OP（fixed，2³² 致敬经典）。</li>
@@ -1899,6 +1965,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="18-ve-token" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 18 章：ve-Token 实战合约</h2>
 
+<blockquote>
+<p><strong>第 15 章讲了 ve 是什么、为什么；这一章告诉你怎么写出来。</strong> Curve VotingEscrow 大约 600 行 Vyper，这里我们给一个 250 行 Solidity 的精简版，覆盖 95% 的工程场景。最容易踩的坑：<strong><code>bias</code> / <code>slope</code> 是一对线性函数参数</strong>——很多人写到第三十行才意识到，"原来 ve 余额不是状态变量，是一条衰减直线"。理解这点，整个合约的 checkpoint 系统就不再玄学。</p>
+</blockquote>
 <p>第 15 章讲过 ve 数学，这里给最小可编译实现。完整版 <code>code/ve-token/VeToken.sol</code>，本节摘核心。</p>
 <h3 id="181">18.1 数据结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>
@@ -1986,6 +2055,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="19-bonding-curves-token-curated-registries" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 19 章：Bonding Curves 与 Token-Curated Registries</h2>
 
+<blockquote>
+<p><strong>Bonding curve 是"自动做市商之前的自动做市商"</strong>——2017 年 Bancor 用一条数学曲线让代币能够即时买卖，无需流动性提供者。Friend.tech 的 keys、Pump.fun 的 memecoin "毕业"机制、Aavegotchi GHST，都是它的衍生。<strong>TCR 则是"链上白名单战争"</strong>——质押代币把项目写进列表，挑战者质押同等代币说"它不该在"，然后社区投票，败方代币没收。这两个机制都没成为主流，但它们的失败留下了关键设计原语，仍在 UMA Optimistic Oracle、Kleros 仲裁市场里活着。</p>
+</blockquote>
 <h3 id="191-bonding-curves">19.1 Bonding Curves</h3>
 <p>合约锁 reserve token（ETH/DAI）；买代币 → 按曲线收 reserve + mint；卖 → burn + 退 reserve。<code>price = f(supply)</code>，常见 linear / polynomial / exponential / logarithmic。</p>
 <p><strong>线性 bonding curve</strong>：
@@ -2021,6 +2093,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="20-howey-test-sec-mica" id="ch22"><span class="chapter-num">Chapter 22</span><br>第 20 章：法律风险——Howey Test / SEC / MiCA</h2>
 
+<blockquote>
+<p><strong>2025 年 1 月 20 日</strong>，Trump 上任，SEC 撤掉对 Coinbase / Uniswap Labs / ConsenSys 的所有调查；2025 年 8 月 SEC 推出 "Project Crypto"；2026 年 3 月 SEC + CFTC 联合发文为代币分类松绑。Tally 关停时 CEO 说："Gensler 时代对加密反而更好——监管压力让协议被迫认真做去中心化。" 现在路径清晰了，但 Howey Test（1946 年的判例）仍然在那儿盯着你的 fee switch、你的 vesting schedule、你的 DAO 国库。<strong>作为工程师你不写法律意见书，但你的代币设计 14% 的概率会触发 SEC 起诉</strong>。这一章给你一份合规 checklist 和踩雷案例。</p>
+</blockquote>
 <p>本节不是法律建议。工程师只需识别边界：哪些设计选择会显著增加证券化判定风险。</p>
 <h3 id="201-howey-test">20.1 Howey Test</h3>
 <p><em>SEC v. W. J. Howey Co.</em>（1946）四要件：</p>
@@ -2072,6 +2147,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="21-rwa" id="ch23"><span class="chapter-num">Chapter 23</span><br>第 21 章：RWA 全景与历史</h2>
 
+<blockquote>
+<p><strong>想象 BlackRock 的 Larry Fink 走进 SEC，说："我要把 25 亿美元的美国国债基金搬到以太坊上。" 2024 年 3 月这件事真的发生了——产品叫 BUIDL。</strong> RWA（Real World Assets）是 DeFi 的"长大成人"：不再只是 ETH 和 stETH 互相套娃，而是真有美国国债、私募信贷、黄金、商业地产被代币化进入 DeFi 流动性。截至 2026 年 4 月，链上 RWA 市值 120 亿美元（不含稳定币）。这一节给你时代背景：第一波（STO 时代）为什么死了，第二波（私募信贷）为什么半生不死，第三波（机构国债）为什么真的成了。</p>
+</blockquote>
 <h3 id="211-rwa">21.1 RWA 是什么</h3>
 <p><strong>RWA</strong>（Real World Assets）：把链下法律资产（国债、房地产、私募信贷、股票、商品）代币化，链上 token 代表底层资产的所有权或受益权。解决 DeFi 两个空缺：原生收益率长期低于美短债 4-5%、缺乏非加密抵押品。</p>
 <h3 id="212-rwa">21.2 RWA 历史</h3>
@@ -2126,6 +2204,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="22-rwa-erc-3643-erc-1400-erc-1404" id="ch24"><span class="chapter-num">Chapter 24</span><br>第 22 章：RWA 标准——ERC-3643 / ERC-1400 / ERC-1404</h2>
 
+<blockquote>
+<p><strong>想象你是 BlackRock 的合约工程师，要把美国国债基金搬上链。</strong> 你不能用普通 ERC-20——SEC 第一天就来敲门。你需要 transfer 函数在每次执行前问三个问题：<strong>接收方通过 KYC 了吗？金额超过日限额了吗？接收方在被制裁国家吗？</strong> 任何一个 No 就 revert。这就是 ERC-3643 的全部哲学。它的前身 ERC-1400 太复杂没人用，简化版 ERC-1404 又太弱。三者之间的"K线"是工程演化故事的范本：模块化没人买账，最简化能跑就行，中间路线胜出。</p>
+</blockquote>
 <p>RWA 资产代币不能是普通 ERC-20，需要在 transfer 层做合规校验（KYC、辖区、限额）。三个标准沿这条主线演化。</p>
 <h3 id="221-erc-3643t-rex">22.1 ERC-3643（T-REX）</h3>
 <p><strong>ERC-3643</strong>（也叫 T-REX，Token for Regulated EXchanges）由 Tokeny 团队 2018 起开发，2023 年正式 ERC 化。</p>
@@ -2193,6 +2274,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="23-rwa-ondo-blackrock-sky-centrifuge-maple-goldfinch-provenance" id="ch25"><span class="chapter-num">Chapter 25</span><br>第 23 章：主要 RWA 协议——Ondo / BlackRock / Sky / Centrifuge / Maple / Goldfinch / Provenance</h2>
 
+<blockquote>
+<p><strong>2026 年 2 月 11 日，BUIDL 在 Uniswap 上市</strong>——一个 BlackRock 发的、SEC 监管的、KYC 白名单的代币化国债基金，和 ETH/USDC 一起在 Uniswap 上交易（限白名单地址）。这件事放在 2020 年的 DeFi summer 是无法想象的。这一章带你看 RWA 三个赛道的真实玩家：<strong>国债（Ondo $2.7B、BUIDL $2.5B）</strong>、<strong>Sky 国库 RWA Vault</strong>、<strong>私募信贷（Centrifuge / Maple / Goldfinch）</strong>。后者是高收益高风险的"链上次贷"——Goldfinch 在 2022 年的 Stratos pool 违约让 LP 真的损失本金。<strong>RWA 不是无风险，只是把"crypto 市场风险"换成"链下信用风险"。</strong></p>
+</blockquote>
 <h3 id="231-ondo-financeusdyousg">23.1 Ondo Finance（USDY、OUSG）</h3>
 <p>Ondo 是 RWA 第三波代表，2026 Q1 ~$2.75B TVL，代币化国债市场龙头。两个旗舰产品：
 - <strong>OUSG</strong>（Ondo Short-Term US Government Bond Fund）：代币化短期国债。3.49% APY（2026 年 1 月）。$692M TVL。投资组合分散在 BUIDL、Franklin Templeton FOBXX、Fidelity FYHXX、WisdomTree WTGXX、Wellington 等。
@@ -2249,6 +2333,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="24-treasury" id="ch26"><span class="chapter-num">Chapter 26</span><br>第 24 章：Treasury 管理</h2>
 
+<blockquote>
+<p><strong>场景</strong>：你刚被任命为某个 DAO 的"财务负责人"。国库 1 亿美元，60% 是本币，40% 是 USDC。Twitter 上有人喊"为什么我们的钱躺在 Coinbase 不去 Aave 赚 4%"，论坛有人喊"为什么我们的本币占比这么高，这是赌博"，VC 委托人后台私信问"能不能把 USDC 换成 OUSG 多赚 1.5%"。<strong>这不是技术问题，是组合问题——你要在收益、流动性、监管、品牌之间做权衡，并且每一笔操作的 calldata 都要发到论坛公示 7 天。</strong> 这一章讲 ENS、Lido、Gnosis 这些大 DAO 真实做的事，以及 Karpatkey、Steakhouse 这些"DAO 财政顾问"的服务模式。</p>
+</blockquote>
 <h3 id="241-dao">24.1 DAO 国库四问</h3>
 <p>主要 DAO 量级：Arbitrum ~$30-50亿、Sky ~$20亿+、Uniswap ~$30亿+、Optimism ~$10亿+。工程关心的四个问题：① 多元化（避免本币 + USDC 双跌）；② 收益化（USDC 放 Aave 还是 Ondo OUSG？）；③ 支付实操（grant 月付、team vesting 线性流的链上实现）；④ 透明度（变动实时可查）。</p>
 <h3 id="242-treasury">24.2 主要 Treasury 管理服务商</h3>
@@ -2304,6 +2391,9 @@ function: supply(asset=USDC, amount=5e12, onBehalfOf=Treasury, referralCode=0)
 </section><section class="chapter">
 <h2 id="25-dao-curve-war-velodrome-war-pendle-war" id="ch27"><span class="chapter-num">Chapter 27</span><br>第 25 章：DAO 战争——Curve War / Velodrome War / Pendle War</h2>
 
+<blockquote>
+<p>Curve War 是 DeFi 最戏剧化的连续剧。<strong>第一幕</strong>（2021 Q3）：Frax、UST（对，那个后来归零的 UST）、MIM 各自买几亿美元的 CRV 锁仓，争夺谁的稳定币能在 Curve 池里得到最深流动性——因为深流动性 = 用户更敢用 = 协议存活。<strong>第二幕</strong>（2022 Q1）：Convex 横空出世，"我帮你永久锁 CRV，给你发 cvxCRV，可交易"——一夜之间 47% 的 veCRV 被它吸走，战场转移到"贿赂 vlCVX 持有者"。<strong>第三幕</strong>（2022 至今）：Hidden Hand、Votium 把贿赂标准化成市场，1 美元 bribe 换 4 美元 emissions，ROI 公开透明。Bankless / Dose of DeFi 把这场仗写成了 DeFi 的"罗马帝国史"。读懂它你才懂为什么 ve-token 不是技术问题，是政治经济学问题。</p>
+</blockquote>
 <h3 id="251-curve-war">25.1 Curve War 三轮演化</h3>
 <table>
 <thead>
@@ -2366,6 +2456,9 @@ function: supply(asset=USDC, amount=5e12, onBehalfOf=Treasury, referralCode=0)
 </section><section class="chapter">
 <h2 id="26-bribe" id="ch28"><span class="chapter-num">Chapter 28</span><br>第 26 章：Bribe 经济与治理外包</h2>
 
+<blockquote>
+<p><strong>"Bribe"在传统语境里是负面词——贿赂。在 Curve 经济里它是中性的市场机制。</strong> Hidden Hand、Votium 是公开透明的 bribe 交易所——你要 emissions 流到自己的池子里？挂个 bribe，让 vlCVX 持有者投你的票，他们拿钱、你拿流动性，所有人皆大欢喜。这听起来很合理直到你想起：<strong>这不就是钱直接买治理结果吗？</strong> 这一章讨论的不是技术，是伦理边界——以及为什么所有最严肃的治理设计者（Vitalik、Glen Weyl）都在思考"怎么阻止合法贿赂市场在自己的代币上形成"。</p>
+</blockquote>
 <h3 id="261-bribe">26.1 三大 Bribe 平台</h3>
 <table>
 <thead>
@@ -2416,6 +2509,9 @@ function: supply(asset=USDC, amount=5e12, onBehalfOf=Treasury, referralCode=0)
 </section><section class="chapter">
 <h2 id="27-oz-governor-ve-token" id="ch29"><span class="chapter-num">Chapter 29</span><br>第 27 章：完整 OZ Governor + ve-Token 部署实战</h2>
 
+<blockquote>
+<p><strong>理论讲完了。现在打开终端、<code>forge init</code>、写第一行代码。</strong> 这一章的目标：让你在 Anvil 本地链上完整跑通"部署代币 → 部署 Timelock → 部署 Governor → propose → vote → queue → execute"——并且模拟一次 Beanstalk 风格的闪电贷攻击，验证你的 DAO 能挡住。读完之后你会发现 95% 的工程坑是<strong>忘了 <code>delegate(self)</code></strong>——ERC20Votes 是个伏笔，没 delegate 你的票数永远是 0，新人在这里卡过的小时数加起来够建一座金字塔。</p>
+</blockquote>
 <p>把第 8、15、18 章合约串成一个 Foundry/Anvil 可跑的完整 DAO。代码在 <code>code/governor-foundry/</code> 与 <code>code/ve-token/</code>。</p>
 <h3 id="271">27.1 项目结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/governor-foundry/
@@ -2531,6 +2627,9 @@ function: supply(asset=USDC, amount=5e12, onBehalfOf=Treasury, referralCode=0)
 </section><section class="chapter">
 <h2 id="28-erc-3643-quadratic-funding" id="ch30"><span class="chapter-num">Chapter 30</span><br>第 28 章：ERC-3643 简化版 + Quadratic Funding 计算实战</h2>
 
+<blockquote>
+<p><strong>本章是双合一收官</strong>：用 250 行 Solidity 写一个能用的 ERC-3643（KYC 强制 + 监管强制收回），再用 30 行 TypeScript 写一个能跑测试的 QF 算法（带 Sybil 折扣）。读完之后你可以做两件事：在 Foundry 测试网上 mint 自己的"许可型"代币、跑一遍 Gitcoin 风格的资助分配模拟。</p>
+</blockquote>
 <h3 id="281-erc-3643">28.1 ERC-3643 简化版</h3>
 <p>完整代码 <code>code/erc3643-simple/SimpleERC3643.sol</code>，关键摘录：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>

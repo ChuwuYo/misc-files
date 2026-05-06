@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -592,6 +592,10 @@
     <span class="toc-page">·</span>
   </div>
 </section>
+<blockquote>
+<p>2017 年夏天，两个加拿大人 Matt Hall 和 John Watkinson 用一段 Python 脚本在以太坊上发了 1 万个像素头像，免费送给任何人——他们怕没人要，连合约都没写好就上线了。这就是 CryptoPunks。八年后，#5822 卖了 8000 ETH，整套合约成了 ERC-721 的灵感来源。</p>
+<p>这一章想说的是：NFT 不是 JPEG 图片，是一种<strong>给链上 256 位整数绑定语义</strong>的通用机制。绑张图就是收藏品，绑个角色就是游戏装备，绑个名字就是 ENS，绑个声誉就是 Soulbound，绑个钱包就是 ERC-6551——同一抽象，不同语义。</p>
+</blockquote>
 <p>本模块覆盖三层 primitive：<strong>资产层</strong>（ERC-721/1155/6551/5192 标准族）、<strong>身份层</strong>（DID / SIWE / ENS / EAS / ZK ID）、<strong>社交层</strong>（Lens / Farcaster / XMTP / Push）。三层共用同一抽象：<strong>给一个 256 位 ID 或 address 绑定一段语义</strong>，差异只在「这段语义谁验证、存哪、谁能改」。</p>
 <p>前置：模块 04（Solidity）。后续：模块 14（去中心化存储）补充第 9 章 IPFS / Arweave 协议细节。</p>
 <p>工程基线：Solidity <code>0.8.28</code>（EVM = cancun），OpenZeppelin v5.5.0，forge-std v1.9.5，viem 2.43.3，siwe@2.3.2，eas-sdk@2.7.0，@farcaster/frame-sdk 0.1.x，@lens-protocol/client 3.x，Next.js 15.2.x。原 Polygon ID 于 2024-06 拆分为 <strong>Privado ID</strong> 独立运营，合约层仍兼容 iden3 协议。</p>
@@ -606,6 +610,9 @@
 </section><section class="chapter">
 <h2 id="1-erc" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 ERC 标准矩阵与三层抽象</h2>
 
+<blockquote>
+<p>想象你打开一个 RPG 游戏：左手是独一无二的传奇宝剑（ERC-721），右手是 999 瓶生命药水（ERC-1155 同质化部分），背包是个能装东西的钱包（ERC-6551），头顶飘着"勇者"称号摘不下来（ERC-5192 Soulbound），还能把宝剑租给朋友周末玩（ERC-4907）。每个 ERC 标准都对应游戏世界里的一种"道具属性"——下面这张表就是道具栏说明书。</p>
+</blockquote>
 <h3 id="11-erc">1.1 ERC 标准一次到位</h3>
 <p>整个资产层的标准谱系就这一张表，后续章节是逐一展开。每个变体对应一个具体工程痛点。</p>
 <table>
@@ -735,6 +742,10 @@
 </section><section class="chapter">
 <h2 id="2-erc-721-oz-v5" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章 ERC-721 经典：OZ v5 实现</h2>
 
+<blockquote>
+<p>2017-10，Dapper Labs 上线 CryptoKitties，一只虚拟猫卖到 11.7 万美元，以太坊网络被堵到无法出块。Dieter Shirley 在赶 deadline 时画了一张 EIP，把"独一无二的猫"抽象成"unique uint256"——这就是 ERC-721 草案。半年后 William Entriken 把它改写成正式标准，从此猫、Punks、BAYC、ENS 域名、Uniswap LP 凭证全在用同一份接口。</p>
+<p>一个 ERC-20 余额表答的是"你有多少"。一个 ERC-721 owner 表答的是"这个东西归谁"——视角从聚合（账本）翻成了离散（资产清单）。</p>
+</blockquote>
 <p>ERC-721（EIP 作者 William Entriken 等，2018-01 finalize，<a href="https://eips.ethereum.org/EIPS/eip-721">eips.ethereum.org/EIPS/eip-721</a>）的核心 API 是 <code>ownerOf(tokenId) -&gt; address</code>——从 ERC-20 的「你有多少」到「这个东西归谁」。其他全是辅助：approve（单 token 授权）、setApprovalForAll（全集合授权）、transferFrom、safeTransferFrom（检查 receiver 能否处理 NFT）、tokenURI。</p>
 <h3 id="21-oz-v550-erc721sol-walkthrough">2.1 OZ v5.5.0 ERC721.sol walkthrough</h3>
 <p>OZ v5.5.0 是 2025-Q4 稳定版（来源：<a href="https://github.com/OpenZeppelin/openzeppelin-contracts">github.com/OpenZeppelin/openzeppelin-contracts</a>）。</p>
@@ -852,6 +863,10 @@ abstract<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-w
 </section><section class="chapter">
 <h2 id="3-erc-721a-mint" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 ERC-721A：批量 mint 优化</h2>
 
+<blockquote>
+<p>2022-01-12，Azuki 开 mint。8 分钟卖光 8700 张，crowd 把 Goerli 当生产玩，但有人发现一件怪事：用户 mint 5 张只花 8 万 gas，比 OZ 经典少 6 倍。Chiru Labs 把这套实现开源叫 ERC-721A。当时全场都在拼 gas war，节省 80% 的合约 = 直接发币起飞——后续 Doodles、CloneX、Moonbirds 全部 fork。</p>
+<p>核心思路一句话：<strong>OZ 经典在 mint 时给每张 NFT 都立户口本；ERC-721A 只给一段连号的"开头"立一次，后面的人查户口时往前找队首</strong>。把 5 次 SSTORE 砍到 1 次，但读取要遍历——典型的"写优化换读代价"。</p>
+</blockquote>
 <p>ERC-721A（Chiru Labs / Azuki 团队，2022 开源，v4.3.0；<a href="https://github.com/chiru-labs/ERC721A">github.com/chiru-labs/ERC721A</a>）接口完全兼容 ERC-721，重写 storage layout 把 batch mint 压到接近单 mint 成本。</p>
 <p>实测 gas（来源：<a href="https://www.alchemy.com/blog/erc721-vs-erc721a-batch-minting-nfts">alchemy.com/blog/erc721-vs-erc721a-batch-minting-nfts</a>）：</p>
 <table>
@@ -989,6 +1004,10 @@ alice 把 #102 转给 bob：
 </section><section class="chapter">
 <h2 id="4-erc-1155" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 ERC-1155：多代币标准</h2>
 
+<blockquote>
+<p>想象一个魔兽 RPG 仓库：500 把同款铁剑 + 50 件稀有皮甲 + 1 把传奇神剑 + 999 瓶蓝药。用 ERC-20 每个药水都得部一个合约（破产）；用 ERC-721 每瓶药都是独一无二的（魔兽里点开背包看到 999 个不同 ID 的"小蓝瓶"——离谱）。Enjin 团队 2018 提出 ERC-1155 来解这个问题：<strong>一个合约就是一个仓库，token ID 是货架编号，每格里可以放 1 件也可以放 1 万件</strong>。</p>
+<p>这是为什么《Axie Infinity》、《The Sandbox》道具栏、Coca-Cola 数字收藏品、几乎所有票务 dApp 都选 1155——同一份合约 = 整个商店。</p>
+</blockquote>
 <p>ERC-1155（Enjin 团队 2018 提出，2019 finalize；<a href="https://eips.ethereum.org/EIPS/eip-1155">eips.ethereum.org/EIPS/eip-1155</a>）在一个合约里管理任意多个 token ID，每个 ID 可 fungible 也可 NFT。典型场景：RPG 1000 种装备 + 100 种传奇装备——用 1000 个 ERC-20 + 100 个 ERC-721 部署即破产，一个 ERC-1155 一笔 tx 转 50 种道具 100 个。</p>
 <p>核心 API 批量优先：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">balanceOf</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">account</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">id</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>view<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">);</span>
@@ -1113,6 +1132,10 @@ alice 把 #102 转给 bob：
 </section><section class="chapter">
 <h2 id="5-erc-2981" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 ERC-2981：版税标准与版税战争</h2>
 
+<blockquote>
+<p>2022 年的 NFT 圈像极了王家卫电影——平台、艺术家、交易者背叛与结盟，而剧本只有一句台词："5% 版税到底要不要给？"</p>
+<p>时间线像连续剧：8 月 Sudoswap 突然推出"零版税 AMM"，OpenSea 急了；10 月 X2Y2 改成"版税可选"；11 月 OpenSea 祭出 Operator Filter 黑名单；2023 年 2 月 Blur 反杀，激励交易者绕过黑名单；8 月 OpenSea 投降，宣布版税变可选；2024 年艺术家集体离场到 Sui。这一章讲的就是这场战争背后的工程根因：<strong>ERC-2981 故意没规定"谁来强制付钱"——这是协议层的设计选择，也是它能被市场战争撕裂的原因</strong>。</p>
+</blockquote>
 <p>ERC-2981（<a href="https://eips.ethereum.org/EIPS/eip-2981">eips.ethereum.org/EIPS/eip-2981</a>）只定义一个查询接口：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>interface<span style="color: #F8F8F8"> </span>IERC2981<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">royaltyInfo</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenId</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">salePrice</span><span style="color: #000; font-weight: bold">)</span>
@@ -1211,6 +1234,11 @@ alice 把 #102 转给 bob：
 </section><section class="chapter">
 <h2 id="6-erc-4907nft" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 ERC-4907：NFT 租赁</h2>
 
+<blockquote>
+<p>假设你在 The Sandbox 买了块虚拟地，但你只在周末玩——平日地皮闲着也是闲着，能不能租给在亚洲时区的玩家赚点 ETH？</p>
+<p>直接 transfer 给租客？不敢，怕他不还。挂个智能合约托管？合约一旦有 bug 全盘资产丢失。这就是 NFT 早期租赁市场（Double Protocol、reNFT 等）必须包一层 wrapper 合约的原因——直到 ERC-4907 把"所有权"和"使用权"原生拆成两个角色。</p>
+<p>类比：你的房子有"产权人"（房本）和"租客"（合同），ERC-4907 就是给 NFT 加了张"租客名册"和"租约到期日"——产权不动，使用权按期归零。</p>
+</blockquote>
 <p>ERC-4907（<a href="https://eips.ethereum.org/EIPS/eip-4907">eips.ethereum.org/EIPS/eip-4907</a>）在 ERC-721 之上分离 owner / user 角色 + 到期时间：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>interface<span style="color: #F8F8F8"> </span>IERC4907<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">event</span><span style="color: #F8F8F8"> </span><span style="color: #000">UpdateUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>tokenId<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>user<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint64</span><span style="color: #F8F8F8"> </span><span style="color: #000">expires</span><span style="color: #000; font-weight: bold">);</span>
@@ -1280,6 +1308,11 @@ abstract<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-w
 </section><section class="chapter">
 <h2 id="7-erc-6551token-bound-account" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 ERC-6551：Token-Bound Account</h2>
 
+<blockquote>
+<p>一句话：<strong>ERC-6551 让 NFT 自己长出钱包——猫可以拥有玩具，玩具可以拥有更小的玩具，套娃到底</strong>。</p>
+<p>2023 年 5 月，Future Primitive 团队（前 Manifold 工程师）扔出 EIP-6551，并迅速被 Sapienz、Mocaverse、Pudgy Penguins 采用。想象 BAYC #4321 是个角色，他口袋里装着 100 USDC、一只 CryptoPunk 当宠物、一个 ENS 名字当胸牌——这个口袋本身有一个以太坊地址，但<strong>没有私钥</strong>，谁拥有 BAYC #4321 谁就是这口袋的主人。卖出 BAYC = 整个口袋连人带物易主，不需要再签 100 笔 transfer。</p>
+<p>这一章讲的就是：怎么用 CREATE2 + 一行 ownerOf 查询，从无到有造出"NFT 的钱包"。</p>
+</blockquote>
 <p>ERC-6551（<a href="https://eips.ethereum.org/EIPS/eip-6551">eips.ethereum.org/EIPS/eip-6551</a>）让每个 ERC-721 NFT 拥有自己的 smart contract wallet，由 NFT 当前 owner 间接控制。资产层从"叶子节点"升级成"内部账户"，可持币、持其他 NFT、调合约。</p>
 <figure><img src="diagram-0efec197e4.png" alt="mermaid diagram"></figure>
 
@@ -1392,6 +1425,11 @@ interface<span style="color: #F8F8F8"> </span>IERC6551Registry<span style="color
 </section><section class="chapter">
 <h2 id="8-erc-5192soulbound" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 ERC-5192：Soulbound</h2>
 
+<blockquote>
+<p>2022 年 5 月，Vitalik 在 <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4105763">《Decentralized Society: Finding Web3's Soul》</a> 里抛出一个想法：<strong>有些东西不该被买卖——你的毕业证、你的医院记录、你的"我参加过 Devcon"勋章</strong>。如果一切都能转让，富人花点小钱就能买齐别人的人生履历。</p>
+<p>论文里这种"绑灵魂的 token"叫 SBT。问题是怎么实现：直接禁 transfer？太粗暴；burn 后重发？破坏 ID 连续性。EIP-5192 给了个最小答案——只加一个 <code>locked(tokenId)</code> 视图函数，至于怎么阻止转让，合约自己看着办。生产标准做法是 transfer 时 revert。</p>
+<p>类比：普通 NFT 像车牌（可转让），SBT 像身份证（绑你这个人，丢了只能补办）。Binance 的 BAB、Optimism Citizen Badge、GitCoin Passport 都从这条路上长出来。</p>
+</blockquote>
 <p>ERC-5192（<a href="https://eips.ethereum.org/EIPS/eip-5192">eips.ethereum.org/EIPS/eip-5192</a>，2022-09 finalize）是 SBT 最小实现——只规定 <code>locked(tokenId)</code> 视图，不规定怎么阻止转让（实现自由：revert、burn-rebmint、vault 等）。生产标准做法：transfer 时 revert。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">event</span><span style="color: #F8F8F8"> </span><span style="color: #000">Locked</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenId</span><span style="color: #000; font-weight: bold">);</span>
@@ -1465,6 +1503,10 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="9-metadata" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 Metadata 与存储</h2>
 
+<blockquote>
+<p>2021-09，Dom Hofmann（Vine 联合创始人）发了个怪东西：Loot。每个 NFT 是一段纯文字——"格挡盾、皮甲、铁靴、一卷魔法卷轴"。<strong>没图，没官方画风，故事自己想，画面自己画</strong>。8000 张半小时抢光，因为它的图全藏在合约 bytecode 里，永远不会被中心化服务器删掉。</p>
+<p>同一时间另一头，BAYC 的 metadata 还托管在 OpenSea AWS 上——直到 2022 年某次 IPFS pinning 出问题，几千只猴子图片突然变成灰色占位符，BAYC 推特紧急 fixed it。这就是 NFT 存储的核心张力：<strong>链上贵但永恒，链下便宜但脆弱</strong>。这一章把所有方案排进一张表，配 IPFS / Arweave / on-chain SVG 三条主流路线的代码。</p>
+</blockquote>
 <p>ERC-721 Metadata 扩展：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenURI</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenId</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>view<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #F8F8F8"> </span><span style="color: #000">memory</span><span style="color: #000; font-weight: bold">);</span>
 </code></pre></div>
@@ -1597,6 +1639,10 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="10-metaplex-core-sui-kiosk-aptos-da" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 跨生态：Metaplex Core / Sui Kiosk / Aptos DA</h2>
 
+<blockquote>
+<p>2024 年 NFT 圈有件大事被低估了：<strong>Sui 上线一年后，DeGods、Pudgy Penguins、Ika 等大厂集体把版税战争"打到 Sui 去解决"</strong>。原因？Sui 的 TransferPolicy 让版税在协议层就跑不掉，不是市场愿不愿意——是 runtime 本身不允许。</p>
+<p>这一章带你看三条主流非 EVM 链怎么解 NFT。Solana 把 NFT 拆成账户（每只猴子一个独立小数据库）；Sui 把 NFT 当对象（自带 owner，自带 transfer policy）；Aptos 把 NFT 当 resource（资源像粘贴在某个账户上的便签）。语义都不一样，但都能完成"独一无二资产 + 转让 + 版税"的同一份工作——这是从 EVM 思维跳出去的好机会。</p>
+</blockquote>
 <p>非 EVM 链 runtime 模型不同——Solana 账户即数据（每 NFT 一个 account）；Sui 是 Object 模型（NFT 是 object，自带 owner address）；Aptos 是资源模型（NFT 是 resource type 挂某 account）。直接搬 ERC-721 mapping 不仅低效而且语义不通。</p>
 <h3 id="101-metaplex-coresolana">10.1 Metaplex Core（Solana）</h3>
 <p>Solana NFT 事实标准（<a href="https://www.metaplex.com/blog/articles/metaplex-foundation-launches-metaplex-core-next-generation-of-solana-nft-standard">metaplex.com/blog/articles/metaplex-foundation-launches-metaplex-core</a>）。v1 Token Metadata（2021）每 NFT 用 mint + metadata + master edition 三 account；v2 Core（2024）合并为单 account。</p>
@@ -1713,6 +1759,10 @@ struct Token has key {
 </section><section class="chapter">
 <h2 id="11-seaport-blur-reservoir" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章 市场协议：Seaport / Blur / Reservoir</h2>
 
+<blockquote>
+<p>2022 年 6 月，Devin Finzer 发了篇博客——OpenSea 的旧合约 Wyvern 被砍掉，全平台迁移到一个叫 Seaport 的新协议。当晚交易者发现：挂单不再要 gas、能一笔吃多张 NFT、还能换 ERC-20。半年后 Yuga Labs 的 ApeCoin staking 开放，几个鲸鱼一笔 tx 同时买进 5 张 BAYC 配仓——这就是 Seaport "一张订单 N 种 offer/consideration" 的设计威力。</p>
+<p>几个月后 Blur 反过来撕裂这个市场。它给交易者发空投激励，强行抢走 OpenSea 70% 的成交量。等到 2025 年风向再次反转，OpenSea 接受版税可选 + 上线 OS2 拉回份额，Blur 又掉到 &lt; 10%。这一章不只看协议本身，也看协议怎么被市场博弈重塑。</p>
+</blockquote>
 <h3 id="111-wyvern-seaport">11.1 Wyvern → Seaport</h3>
 <p>OpenSea 早期 Wyvern（2018）通用 swap 合约，复杂度大。2022-02 Wyvern bug + phishing 损失 $1.7M（<a href="https://heimdalsecurity.com/blog/1-7-million-stolen-in-opensea-phishing-attack/">heimdalsecurity.com</a>；<a href="https://www.thefashionlaw.com/opensea-named-in-lawsuit-after-a-bored-ape-nft-was-stolen-in-hack/">The Fashion Law</a>）。</p>
 <p>2022-06 推出 Seaport，2026 已 v2.0：ERC-20/721/1155 任意组合 swap，gas 比 Wyvern 省 35%，Zone hooks 让市场可注入规则（如 royalty 强制）。</p>
@@ -1778,6 +1828,10 @@ struct Token has key {
 </section><section class="chapter">
 <h2 id="12_1" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 事故复盘</h2>
 
+<blockquote>
+<p>2022 年情人节，BAYC 持有者 Larry Lawliet 醒来发现自己 12 张猴子全没了——价值约 230 万美元。他没被骗到假网站，也没把私钥告诉过任何人。他只是几个月前在 OpenSea 挂过一张降价订单，没取消，攻击者用一个奇技淫巧"补全 calldata"把订单转成转账指令。</p>
+<p>这不是黑客 0day，是协议设计的 footgun。本章把 NFT 圈最贵的几起事故拆开看：(1) Wyvern calldata 漏洞、(2) Inferno Drainer 钓鱼工厂 8900 万美元产业链、(3) BAYC Discord 接管、(4) Premint 第三方 widget 投毒。每一起都长成同一个模式——<strong>用户被诱导签了一个看不懂的 typed data</strong>。</p>
+</blockquote>
 <h3 id="121-opensea-wyvern-bug2022-02">12.1 OpenSea Wyvern Bug（2022-02）</h3>
 <p>损失 $1.7M / 254 NFT（含 BAYC #3475）。Wyvern v2 允许订单创建后改 calldata，攻击者拿"半填"订单签名后补 calldata 把 NFT 转出（<a href="https://medium.com/@CryptoSavingExpert/exploit-on-the-old-opensea-contract-4f1b0ca9f132">medium.com/@CryptoSavingExpert</a>；<a href="https://heimdalsecurity.com/blog/1-7-million-stolen-in-opensea-phishing-attack/">heimdalsecurity.com</a>）。Seaport 修复：calldata 进 hash。<strong>教训</strong>：用户绝不签看不懂的 typed data，EIP-712 + 钱包 message preview 必备。</p>
 <h3 id="122-inferno-drainer2022-2023-2024-2025">12.2 Inferno Drainer（2022-2023, 2024-2025 复活）</h3>
@@ -1829,6 +1883,11 @@ struct Token has key {
 </section><section class="chapter">
 <h2 id="13-w3c-did" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 W3C DID</h2>
 
+<blockquote>
+<p>假设你毕业了，想去面试一家美国公司。你递过去一张电子毕业证，HR 怎么验证它真的是清华发的？传统答案：访问中国"学信网"——但学信网在中国境内、有维护方、可被关停。</p>
+<p>W3C DID 是要造一种<strong>让任何机构发证、任何人持证、任何雇主验证，都不依赖第三方查询服务</strong>的标识系统。每个 DID 长得像 <code>did:ethr:0xb9c5...</code>，前缀告诉你"去哪查"（以太坊？DNS？比特币？），后面是 ID 本身。验证流程像查 PGP 公钥指纹：你说你是张三 → 给我看你的 DID Document（公钥黄页）→ 我用里面的公钥验你的签名 → 信任建立。</p>
+<p>这章是身份层的"协议总纲"，下面 SIWE/ENS/EAS 都能映射回 DID 里的某个角色。</p>
+</blockquote>
 <p>W3C DID（<a href="https://www.w3.org/TR/did-1.1/">w3.org/TR/did-1.1/</a>）2022 finalize v1.0，2026-03 进入 v1.1 Candidate Recommendation（<a href="https://www.biometricupdate.com/202603/w3c-releases-updated-decentralized-identifiers-spec-for-comment">biometricupdate.com 2026-03</a>；<a href="https://www.w3.org/news/2026/w3c-invites-implementations-of-decentralized-identifiers-dids-v1-1/">w3.org/news/2026</a>）。DID 是 URI：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>did:method:method-specific-id
 
@@ -1938,6 +1997,11 @@ did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w
 </section><section class="chapter">
 <h2 id="14-siwesign-in-with-ethereum-eip-4361" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 SIWE：Sign-In with Ethereum (EIP-4361)</h2>
 
+<blockquote>
+<p>2021 年 9 月 ENS / Spruce / EF 召集了一次圆桌会议，主题就一句："我们烦透了用钱包登 dApp 时，每个网站签名格式都不一样、字段乱写、签的东西看不懂"。Wayne Chang（Spruce 创始人）和 Brantly Millegan（前 ENS）合写出 EIP-4361——给"用钱包登网站"这件事制定一份统一的消息模板。</p>
+<p>一年后 OpenSea / Uniswap / Snapshot 全部接入。今天打开 ConnectKit 或 RainbowKit 默认就走 SIWE——你以为是"Google 登录的钱包版"，其实底下是一份精心设计的反 phishing 消息：domain 防跨站重放、nonce 防重签、chainId 防主网测试网混淆，每一行都对应一种攻击。</p>
+<p>类比：OAuth 是"找谷歌作担保"，SIWE 是"我自己用私钥写一张当场失效的承诺书"。</p>
+</blockquote>
 <p>SIWE（<a href="https://eips.ethereum.org/EIPS/eip-4361">eips.ethereum.org/EIPS/eip-4361</a>；<a href="https://docs.login.xyz/general-information/siwe-overview/eip-4361">docs.login.xyz</a>）把钱包签名标准化为 Web 登录协议——OAuth 的"Google"换成"你的钱包"。</p>
 <h3 id="141">14.1 标准消息格式</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>example.com wants you to sign in with your Ethereum account:
@@ -2078,6 +2142,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="15-ens-ccip-read" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 ENS + CCIP-Read</h2>
 
+<blockquote>
+<p>2017 年 5 月 ENS 主网上线。Nick Johnson（前 Google 工程师）写了第一版 registry 合约——简单到只有 2 个 mapping。第一个抢注的是 <code>weather.eth</code>，最贵的拍卖纪录是 <code>paradigm.eth</code> 的 420 ETH。今天 vitalik.eth 是 Vitalik 推特和钱包的同名招牌，有人发以太到 <code>vitalik.eth</code>，钱包自动解析成他主网地址 0xd8da6...</p>
+<p>2024 年 ENS Labs 宣布要建自己的 L2 叫 Namechain，引爆社区争议——ENS 的灵魂是"以太坊原生"，结果搞个独立 rollup 听着不伦不类。Vitalik 自己也警告 L2 安全模型问题。<strong>2026-02-06 ENS Labs 突然宣布取消 Namechain，ENSv2 直接回 mainnet</strong>，理由是 L1 gas 已经下降 99%，L2 没必要了。这是少见的"撤回 + 转向" 案例。</p>
+<p>这一章除了讲 ENS 三层架构，还会讲 EIP-3668（CCIP-Read）这个被低估的"链下数据 + 链上信任"通用机制——它让 <code>jesse.base.eth</code> 这种跨链子域名成为可能。</p>
+</blockquote>
 <p>ENS 把 <code>vitalik.eth</code> 映射到地址 / IPFS / DNS / 社交账号。<strong>v2 时间线</strong>：2024 宣布 ENSv2 + 自有 L2 Namechain；<strong>2026-02-06 取消 Namechain</strong>，ENSv2 直接部署回 mainnet（<a href="https://www.coindesk.com/tech/2026/02/06/ethereum-s-ens-identity-system-scraps-planned-rollup-amid-vitalik-s-warning-about-layer-2-networks">coindesk.com</a>；<a href="https://www.theblock.co/post/388932/ens-labs-scraps-namechain-l2-shifts-ensv2-fully-ethereum-mainnet">The Block</a>）——L1 gas 下降 ~99% 让 L2 必要性消失。v2 重写 registry，原生支持 60+ 链解析（含 Bitcoin / Solana），大幅降低 register / renew gas。</p>
 <h3 id="151">15.1 三层架构</h3>
 <figure><img src="diagram-e6afaac3d7.png" alt="mermaid diagram"></figure>
@@ -2160,6 +2229,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="16-easethereum-attestation-service" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 EAS：Ethereum Attestation Service</h2>
 
+<blockquote>
+<p>2023 年初 Optimism 在搞 RetroPGF（追溯性公共物品资助），10 万 ETH 要发给做开源贡献的开发者，问题来了：<strong>怎么链上证明"alice 给 ethers.js 提过有用的 PR"</strong>？做个 SBT？每个 PR 部署一个新 contract 太蠢；写到 ENS text record？ENS 没这接口。</p>
+<p>Optimism 联合 Ethereum Attestation Service（EAS）解决方案：<strong>链上盖章</strong>。任何人定一个 schema（"我证明 X 对 Y 这件事，分数 Z"），任何人填表盖章。盖完的 attestation 永久存在，可被任何合约 / 链下索引器读取。今天 Coinbase Verifications、Optimism Citizens House、Gitcoin Passport v2、Base 声誉系统全都跑在 EAS 上。</p>
+<p>类比：SBT 像每个证书都印一张 NFT 卡片塞钱包；EAS 像一本电子记事本，谁都能在上面写一行"我，alice，证明 bob 在 2026-04-15 通过了 KYC"——细颗粒、可撤销、不占 token slot。</p>
+</blockquote>
 <p>EAS（<a href="https://attest.org/">attest.org</a>；<a href="https://docs.attest.org/">docs.attest.org</a>；<a href="https://github.com/ethereum-attestation-service/eas-contracts">GitHub</a>）是 VC 的轻量化链上版本——任何人/合约可"为任何事盖章"。三件套：<strong>Schema</strong>（表单模板）/ <strong>Attestation</strong>（填好的表单）/ <strong>Resolver</strong>（提交时的额外校验/动作）。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>schema: &quot;address recipient, uint8 score, string reason&quot;
 attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
@@ -2268,6 +2342,11 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="17-zk-self-anon-aadhaar-privado-id" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 ZK 身份：Self / Anon Aadhaar / Privado ID</h2>
 
+<blockquote>
+<p>假设你想去酒吧买酒，门口保安要看身份证。常规做法是把卡递过去——结果 18 岁这件事顺便暴露了你住址、身份证号、出生年月日。隐私换效率。</p>
+<p>ZK 身份在干一件事：<strong>让你只回答"我超过 18 岁"，不暴露任何其他属性</strong>。Sismo 2022 年首先用 Groth16 证明"我有 GitHub 100 星仓库 + 我没说是哪一个"火过一阵；2025 年 Celo 收购 OpenPassport 改名 Self.xyz——你手机 NFC 扫一下护照芯片，本地生成 ZK 证明"我超过 18 + 国籍非 OFAC 黑名单"，护照号永远不离开手机。一年内 700 万用户、174 国覆盖。</p>
+<p>同期印度 Aadhaar 14 亿人口的反女巫方案 Anon Aadhaar 上线 ETHIndia，扫一下 Aadhaar QR 就能匿名投票。ZK 身份从"研究玩具"变成"亿级 KYC 替代"花了不到三年。</p>
+</blockquote>
 <p>EAS / SBT 都明文公开。ZK 身份解"我证明我有但不告诉你具体是什么"——满 18 岁不暴露生日、是 BAYC 持有者不暴露具体哪只、是中国公民不暴露身份证号。</p>
 <h3 id="171-sismo">17.1 Sismo（已转向，思想被继承）</h3>
 <p>Sismo 2022-2024 提出 "ZK Vault + Data Sources"——用户把 GitHub / Twitter / NFT 持有汇总进 vault，再生成 "我有 100+ stars" 类匿名证明。2024 后期团队转向新项目，主仓库 2026-04 已半年无更新（<a href="https://github.com/sismo-core">github.com/sismo-core</a>）。思想被 Self / Privado ID 继承。</p>
@@ -2323,6 +2402,11 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="18-worldcoin-world-id" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 18 章 Worldcoin / World ID</h2>
 
+<blockquote>
+<p>2023 年夏天，肯尼亚内罗毕的临时活动现场排起长队，年轻人挨个站到一只 1 米高的银色金属球面前，让它扫描虹膜——扫完每人拿到 25 个 WLD 代币（当时约 50 美元）。这就是 Sam Altman 的"Orb 计划"。三年后 World 已扫描 1200 万人，集成进 Tinder、Zoom、Docusign 反 AI 假账号。</p>
+<p>工程上 World ID 是个混合体：<strong>ZK 证明"我是 Merkle tree 里某叶子" + 一个中心化 Orb 信任根</strong>。前半段是 Semaphore 协议（Vitalik 在用），后半段是 World Foundation 控的 Orb 私钥。这是为什么它扩张很快但被批评——西班牙、葡萄牙、肯尼亚监管已暂停 Orb 运营。</p>
+<p>这一章读完你会明白：<strong>完全 trustless 的"人格证明"目前不存在</strong>，World ID 是已知最大规模实现，但代价是信任 Orb。</p>
+</blockquote>
 <p>Worldcoin（2025 改名 World）Sam Altman 2019 创立，靠 Orb（虹膜扫描设备）确认"真人 + 未注册过"。</p>
 <p>数据（<a href="https://techcrunch.com/2026/04/17/sam-altmans-project-world-looks-to-scale-its-human-verification-empire-first-stop-tinder/">techcrunch.com 2026-04-17</a>；<a href="https://www.forrester.com/blogs/worldcoin-orb-identity-verification-device-faces-headwinds-in-mass-adoption/">forrester.com</a>；<a href="https://en.wikipedia.org/wiki/World_(blockchain)">wikipedia</a>）：2026-04 26M+ App 用户 / 12M+ Orb-verified；2025-Q4-2026-Q1 月增 350-400K；2026-04 集成 Tinder / Zoom / Docusign。</p>
 <h3 id="181">18.1 工程视角</h3>
@@ -2389,6 +2473,10 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="19-mica-travel-rule" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 19 章 监管张力：MiCA / Travel Rule</h2>
 
+<blockquote>
+<p>2024-12-30 凌晨，欧盟 MiCA 全面生效。当晚 Tether（USDT 发行方）被踢出欧盟主流交易所——它没拿到 MiCA 许可证。同期 Coinbase / Binance / Kraken 把所有欧盟用户重新做 KYC，Travel Rule 要求每笔超 €1000 的转账双方 KYC 信息互通，技术上用一个叫 IVMS 101 的协议传输。</p>
+<p>这跟前面 18 章讲的"用户自控、无许可"哲学<strong>直接冲突</strong>。监管要 CASP 知道你是谁，DID 要让你不告诉任何人你是谁。这一章讲工程师怎么在两者之间做工程妥协——ZK KYC、链上 attestation、隐私池、选择性披露——这些不是"理想方案"，是 2026 年欧盟运营产品的合规底线。</p>
+</blockquote>
 <p>2024-2026 欧盟 MiCA + FATF Travel Rule 全面落地：</p>
 <ul>
 <li><strong>MiCA</strong>：2024-12-30 全面生效；2025-12-31 各成员国转入国内法；2026-07-01 CASP 授权 deadline（<a href="https://www.ciat.org/carf-mica-dac-8-the-travel-rule-move-towards-greater-transparency-in-the-crypto-asset-market/?lang=en">ciat.org</a>；<a href="https://notabene.id/world/eu">notabene.id/world/eu</a>）。</li>
@@ -2468,6 +2556,10 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="20-lens-protocol-v3-lens-chain" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 20 章 Lens Protocol v3 + Lens Chain</h2>
 
+<blockquote>
+<p>2025-04-04 凌晨，Lens 团队按下 mainnet 部署按钮——把 v2 上 65 万个 profile、2800 万个 follow 关系、1600 万个 post，共 125GB 数据从 Polygon 迁移到 Lens Chain。当晚社区直播聊起来：Stani Kulechov（Aave 创始人）2022 年发 Lens 的初衷是 "Twitter 的算法是黑盒，每个推文的可见性都是平台决定的，能不能让协议层把社交图存起来，让任何应用都能消费？"</p>
+<p>Lens v3 的赌注：<strong>所有社交数据上链 + 模块化 primitives</strong>。Username 是 NFT、Feed 是合约、Graph 是合约、Group 是合约——连 follow 都是链上写一次的状态变更。代价是 TPS 不够，所以专门搭了 Lens Chain（zkSync stack + Avail DA）让 social 层 gasless。2026-Q1 Mask Network 接手 stewardship，Stani 退到顾问位。</p>
+</blockquote>
 <p>Lens（Aave 创始人 Stani Kulechov 2022 推出）走 on-chain social 路线。时间线（<a href="https://lens.xyz/news/migrating-the-lens-ecosystem-to-lens-chain">lens.xyz</a>；<a href="https://blockworks.co/news/lens-mainnet-l2-socialfi-launch">blockworks.co</a>；<a href="https://blog.availproject.org/lens-chain-goes-live-scaling-socialfi-with-avail-and-zksync/">blog.availproject.org</a>；<a href="https://lens.xyz/news/mask-network-to-steward-the-next-chapter-of-lens">lens.xyz mask-network</a>）：</p>
 <ul>
 <li>2022-05 v1 on Polygon</li>
@@ -2534,6 +2626,11 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="21-farcaster" id="ch22"><span class="chapter-num">Chapter 22</span><br>第 21 章 Farcaster 协议</h2>
 
+<blockquote>
+<p>2024-01-26，Farcaster 推出 Frames——把任意 dApp 嵌进一条 cast 里，下面挂三个按钮就能 mint NFT、投票、玩游戏。当天 Vitalik 发了第一个 Frame（投票），整条 timeline 一周内出现 2000+ 个 Frame 应用。Dan Romero（前 Coinbase 高管）和 Varun Srinivasan 当时押的是 "social 不要重新发明，而是把 Web2 的 UX 装进 Web3 的身份"。</p>
+<p>一年后 Frames 改名 Mini Apps，从"嵌入式按钮"升级成"in-app 浏览器加载完整 web app"。现在 Warpcast 里点开任何一个 Mini App 都自动拿到你的 fid + 验证过的钱包地址，省掉了 SIWE 流程——这是 Farcaster 真正的杀手锏。</p>
+<p>跟 Lens 比，Farcaster 选了相反路线：<strong>身份上链（fid 在 OP Mainnet），但内容走 Hub 网络（链下 gossip）</strong>。性能接近 Web2，代价是数据完整性靠 ~40 个 Hub 节点诚实多数。</p>
+</blockquote>
 <p>Farcaster（Dan Romero / Varun Srinivasan，前 Coinbase）走 "身份上链 + 数据链下" 路线。</p>
 <p>数据（<a href="https://blockeden.xyz/blog/2025/10/28/farcaster-in-2025-the-protocol-paradox/">blockeden.xyz</a>；<a href="https://www.theblock.co/data/decentralized-finance/social-decentralized-finance/farcaster-daily-users">theblock.co</a>）：2024-07 峰值 DAU ~100K；2025-10 DAU 40-60K，DAU/MAU ~0.2；Power Badge 真实 DAU ~4.4K；2026-Q1 低位横盘，靠 Mini Apps 拉留存。</p>
 <h3 id="211">21.1 三层架构</h3>
@@ -2571,6 +2668,11 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="22-mini-apps" id="ch23"><span class="chapter-num">Chapter 23</span><br>第 22 章 Mini Apps 实战</h2>
 
+<blockquote>
+<p>假设你想给 NFT 收藏 dApp 加一个分发渠道。常规做法：发推 → 点击跳到自家网站 → 钱包连接 → SIWE 登录 → 切链 → mint。每一步流失 30%。</p>
+<p>Mini App 的版本：在 Farcaster 发一条 cast 含你的 URL → Warpcast 下方直接出按钮"Mint NFT" → 点击在 in-app 浏览器打开 → 自动拿到用户 fid + 已验证地址 → 直接弹 mint 签名。零 SIWE、零钱包选择器、零跳转。</p>
+<p>这一章用 Next.js 15 + <code>@farcaster/frame-sdk</code> 写一个 30 行最小可运行 Mini App，配 OG image 动态生成 + manifest 部署到 Vercel。读完你能在 30 分钟内把任意 dApp 包成 Mini App。</p>
+</blockquote>
 <p>Mini App = Web App + (1) HTML head 的 <code>fc:miniapp</code> meta tag + (2) <code>@farcaster/frame-sdk</code> client lib。后端无需特殊适配。</p>
 <h3 id="221-nextjs-15">22.1 最小可运行（Next.js 15）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// app/page.tsx</span>
@@ -2691,6 +2793,11 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="23-xmtp" id="ch24"><span class="chapter-num">Chapter 24</span><br>第 23 章 XMTP：去中心化加密消息</h2>
 
+<blockquote>
+<p>想象一个 NFT 拍卖出价场景：你看上 BAYC #4321 想私聊 owner 谈价。怎么联系？查推特？大多数 NFT 持有者不公开身份。发链上 transaction memo？太贵且全网公开。Discord？得先加群验证 NFT 持有者。</p>
+<p>XMTP 的答案：<strong>钱包地址即邮箱</strong>。你已经知道 owner 是 0xabc...，直接给这个地址发 E2E 加密消息。owner 用同一个钱包就能收到。2025-06 v3 上线，引入 IETF MLS 协议（Signal、WhatsApp 也在迁）支持 1000+ 人大群、完美前向安全；2026-03 mainnet 去中心化，告别单 cluster。</p>
+<p>类比：邮箱地址（@gmail.com）绑邮箱服务商，钱包地址（0xabc...）绑你的私钥——前者你换了服务就丢联系，后者你换了任何 dApp 都还在。</p>
+</blockquote>
 <p>XMTP（<a href="https://xmtp.org/">xmtp.org</a>）是钱包到钱包 E2E 加密协议——地址 = 收件箱。数据（<a href="https://blog.xmtp.org/xmtps-decentralization-update-jan-2026/">blog.xmtp.org</a>；<a href="https://cryptoadventure.com/xmtp-review-2026-decentralized-messaging-mls-group-chats-and-the-mainnet-transition/">cryptoadventure.com</a>）：v3 launch 2025-06；2026-01 累计 228M 消息；2026-03 mainnet 去中心化 launch（60 天迁移窗口 / 30 分钟停机）。</p>
 <p><strong>工程模型</strong>：用户钱包签名生成 XMTP keys（一次性）→ 上传 XMTP 网络（v3 单 cluster，mainnet 多节点）→ 发件人用收件人公钥 E2E 加密推到节点 → 收件人 fetch + 私钥解。</p>
 <p>v3 引入 IETF MLS 作为群聊加密：完美前向安全（密钥泄漏不影响历史）、1000+ 成员大群可用、跨平台标准（Signal / WhatsApp 也在迁）。</p>
@@ -2760,6 +2867,10 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="24-mirrorparagraph-push" id="ch25"><span class="chapter-num">Chapter 25</span><br>第 24 章 Mirror→Paragraph + Push</h2>
 
+<blockquote>
+<p>2020 年 Mirror 上线时一炮而红——它把每篇博客文章铸成 ERC-1155 NFT，读者付 0.01 ETH "收藏"一篇，作者直接拿钱。Linda Xie、Vitalik、Cobie 等大 V 发了不少经典 Writing NFT。但 2024-05 Mirror 突然卖给 Paragraph，创始人 Denis Nazarov 转去做 Kiosk。这一章不只讲技术，也讲一段 Web3 内容创作平台的兴衰——同期 Substack、Medium、Mirror 三角竞争里，链上写作为什么最终被收购。</p>
+<p>第二部分讲 Push（原 EPNS），它是 Web3 圈"被遗忘的通知层"。你的 CDP 健康度低于 1.1 时怎么提醒？传统答案是 webhook + 邮件，但你不想给 Aave 你邮箱。Push 让合约直接给"订阅这个频道的钱包"推消息，2025 年累计 1 亿条通知。</p>
+</blockquote>
 <h3 id="241-mirrorparagraph">24.1 Mirror→Paragraph</h3>
 <p>时间线（<a href="https://www.coindesk.com/tech/2024/05/02/web3-publishing-platform-mirror-sells-to-paragraph-pivots-to-social-app-kiosk">coindesk.com 2024-05</a>；<a href="https://dev.mirror.xyz/_JH3B2prRmU23wmzFMncy9UOmYT7mHj5wdiQVUolT3o">dev.mirror.xyz</a>）：2020 Mirror v1 launch（开创 Writing NFT，文章铸 NFT 收藏）→ 2024-05 卖给 Paragraph，创始人转做 Kiosk → 2025-11 数据迁移完成 → 现 Writing NFT 在 Paragraph 延续。</p>
 <p>每篇文章 = 一个 ERC-1155 collection。读者 collect 即 mint（open edition）。作者收 mint 费 - 平台抽成。</p>
@@ -2815,6 +2926,10 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </section><section class="chapter">
 <h2 id="25-1-nft" id="ch26"><span class="chapter-num">Chapter 26</span><br>第 25 章 实战 1：完整 NFT 合约族</h2>
 
+<blockquote>
+<p>假设你要给一款 RPG 游戏发"角色 NFT 集合"：(1) 一些角色是普通收藏品，玩家可买卖（普通 ERC-721）；(2) 一些是赛季奖励"勇者"称号，绑账号不能卖（Soulbound）；(3) 玩家可以把暂时不玩的角色租给朋友周末用（ERC-4907）；(4) 每次二级市场交易自动给工作室 5%（ERC-2981）。</p>
+<p>这就是真实游戏项目的 NFT 合约需求：四个 ERC 标准在同一合约里共存，但很容易写出菱形继承冲突 + 错误的 transfer hook。这一章用 Foundry 把它们正确组合起来，给一份能直接 forge build 通过的工程级实现 + 全测试覆盖。</p>
+</blockquote>
 <p>目标：用 Foundry 部署一个支持 royalty + rental + soulbound 选择性切换的 NFT 集合。</p>
 <h3 id="251">25.1 项目结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>13-NFT身份与社交/code/
@@ -2982,6 +3097,10 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="26-2siwe-eas" id="ch27"><span class="chapter-num">Chapter 27</span><br>第 26 章 实战 2：SIWE + EAS 完整身份后端</h2>
 
+<blockquote>
+<p>假设你做一个 Web3 招聘平台——求职者用钱包登录（不要密码），HR 给求职者盖"通过技术面试"链上印章。整套流程不需要数据库存任何 PII，求职者跳槽时印章跟着钱包走。</p>
+<p>这就是 SIWE + EAS 的经典组合：SIWE 解决"我是这个钱包的主人"（认证），EAS 解决"我对你这件事的评价"（声誉）。这一章用 Next.js 15 给你拼一份最小可用版本——后端 50 行，前端 30 行，30 分钟跑通。</p>
+</blockquote>
 <p>目标：搭一个最小可用的「认证 + 链上声誉」服务。</p>
 <h3 id="261-stack">26.1 stack</h3>
 <ul>
@@ -3074,6 +3193,10 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="27-3farcaster-mini-appnft-dapp" id="ch28"><span class="chapter-num">Chapter 28</span><br>第 27 章 实战 3：Farcaster Mini App（NFT 收藏 dApp）</h2>
 
+<blockquote>
+<p>假设你做了一个 NFT 系列，想分发给加密原生用户。常规打法：发推 + Discord 拉群 + 招商务找 KOL。Mini App 打法：发一条 cast，下面挂 mint 按钮——用户在 Warpcast 内一个动作就完成。</p>
+<p>2025 年 Frens NFT、Higher、aPE Drops 这些"在 Farcaster 内首发"的项目证明了这条路径：<strong>Mini App 的转化率 是发推 + 跳到外部网站的 5-10 倍</strong>，因为零跳转 + 自动拿到 fid + 已验证地址。这一章 60 行代码 + Vercel 部署，让你 30 分钟内上线一个 Mini App NFT 收藏 dApp。</p>
+</blockquote>
 <p>目标：用户在 Warpcast 看到 cast → 点 Mini App 按钮 → 进入应用 → mint NFT。</p>
 <h3 id="271">27.1 项目骨架</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/farcaster-miniapp/
@@ -3173,6 +3296,10 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="28-4seaport-style-mini-marketplace" id="ch29"><span class="chapter-num">Chapter 29</span><br>第 28 章 实战 4：Seaport-style Mini Marketplace</h2>
 
+<blockquote>
+<p>想要弄懂 Seaport，最好的办法是自己写一个简化版。OpenSea 主合约 4000+ 行，光 zone hooks 就能看半天——但核心思想其实只有 50 行：<strong>卖家离线签 EIP-712 typed data → 链下订单簿存订单 → 买家上链一笔 fulfillBasicOrder 同时完成 NFT 转移 + ETH 分账 + 版税扣除</strong>。</p>
+<p>这一章带你实现一个真能跑的 Mini Marketplace：链下挂单零 gas，成交时 royalty 自动从 ERC-2981 查询接口扣除分给创作者，剩余给卖家，nonce 防重放。读完你能直接看真实 Seaport 源码不再懵。</p>
+</blockquote>
 <p>目标：实现一个最小撮合合约 + 离线签名上架 + 链上成交。</p>
 <h3 id="281">28.1 合约</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>
@@ -3294,6 +3421,9 @@ interface<span style="color: #F8F8F8"> </span>IERC5192<span style="color: #F8F8F
 </section><section class="chapter">
 <h2 id="29" id="ch30"><span class="chapter-num">Chapter 30</span><br>第 29 章 习题（含答案）</h2>
 
+<blockquote>
+<p>下面 10 道题模拟真实工程决策——你接到产品需求 / 安全审查 / 客户合规问题，怎么把前 28 章的标准、协议、教训组合成一份可交付的方案。每道题给出真实场景，答案部分藏在 <code>&lt;details&gt;</code> 里，先自己想再展开。</p>
+</blockquote>
 <h3 id="1">题 1：标准选择题</h3>
 <p><strong>场景</strong>：你接到一个游戏项目需求——
 - 道具系统：500 种装备，每种有 1-10 万份

@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -671,11 +671,14 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="1-defi" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章：DeFi 是什么——四层货币机器</h2>
 
 <h3 id="11-defi">1.1 工程师视角的 DeFi</h3>
-<p>DeFi 不是"金融的去中心化重构"——这种修辞解释不了为什么 LP 会被 sandwich、为什么 stETH 在 Curve 会脱锚到 0.94。给工程师的定义只有一句：</p>
+<blockquote>
+<p>2022 年 5 月 9 日凌晨，一个 Anchor 用户分两笔从协议里取出 3.75 亿 UST，扔进 Curve 3pool 卖出。72 小时后，UST 跌穿 $0.10，LUNA 总供应从 7.25 亿炸到 70 亿，$400 亿市值蒸发。代码没出 bug，全程按设计运行——只是设计本身假设"无论何时都有人愿意用 1 LUNA 换 1 UST 套利"。</p>
+</blockquote>
+<p>这种事在传统金融里是想不到的：你存银行的钱不会因为别人挤兑就连本金都消失。DeFi 之所以会，是因为它本质上不是"金融的去中心化重构"——这种修辞解释不了为什么 LP 会被 sandwich、为什么 stETH 在 Curve 会脱锚到 0.94。给工程师的定义只有一句：</p>
 <blockquote>
 <p><strong>DeFi 是一组互相调用的状态机，每个状态机用自己的不变量约束代币流动。</strong></p>
 </blockquote>
-<p>后面 28 章就是把这个定义里的三个名词逐一展开：「状态机」是合约（Ch6 起的源码精读），「不变量」是数学约束（V2 的 $xy=k$、Curve 的 StableSwap、Pendle 的 SY=PT+YT），「互相调用」是组合性，也是 90% 事故的发源地（Ch28）。</p>
+<p>后面 28 章就是把这个定义里的三个名词逐一展开：「状态机」是合约（Ch6 起的源码精读），「不变量」是数学约束（V2 的 $xy=k$、Curve 的 StableSwap、Pendle 的 SY=PT+YT），「互相调用」是组合性，也是 90% 事故的发源地（Ch28）。UST 倒下时不变量 ($1 UST 永远换 $1 LUNA) 还在跑，只是市场不再认这个不变量值钱了——这就是经济模型 vs 代码的差。</p>
 <p>DeFi 相对传统金融的硬差异只有三个工程事实：① <strong>可组合</strong>——A 协议的输出是 B 协议的输入，链路里没有人评估你的对手方；② <strong>无许可</strong>——部署合约不需要牌照；③ <strong>24/7</strong>——没有 T+1，也没有暂停按钮。其它都是营销。</p>
 <p>2020-2026 累计上万亿美元交易量，约 $1300 亿 TVL（2026-04，<a href="https://defillama.com/protocols">DefiLlama</a>，95-140B 区间波动）。</p>
 <p><strong>TVL（Total Value Locked）</strong>：合约里锁的资产美元价值，重复计算——1 ETH 经 Lido → Aave → Pendle → Convex 至少被计 4 次。读 TVL 永远要除以"组合深度"。</p>
@@ -718,6 +721,9 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="2-wrapped" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章：原生资产与 Wrapped 资产</h2>
 
 <h3 id="21-eth-erc-20">2.1 ETH 不是 ERC-20</h3>
+<blockquote>
+<p>2017 年 Vitalik 写以太坊白皮书时还没 ERC-20，ETH 当时是"链的燃料"。等 2018 年 Uniswap V1 上线、ERC-20 成事实标准后，所有 DEX/借贷协议都要 <code>transferFrom + approve</code> 这套接口——结果以太坊主币自己反而不兼容自己生态的标准。这是协议演化早于标准的典型副作用：<strong>整个 DeFi 第一行代码就是给 ETH 套个壳让它假装成 ERC-20</strong>。</p>
+</blockquote>
 <p>ETH 是以太坊原生资产，但没有 <code>transferFrom</code>、<code>approve</code>，无法被 DeFi 合约直接调用。</p>
 <p><strong>WETH（Wrapped ETH）</strong> 解决这个问题：让 ETH 拥有 ERC-20 接口，供所有 DeFi 合约统一调用。</p>
 <p>WETH 合约只有约 60 行代码：</p>
@@ -800,6 +806,9 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="3" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章：法币抵押稳定币</h2>
 
 <h3 id="31">3.1 模型：发行方做托管，链上做转账</h3>
+<blockquote>
+<p>2023 年 3 月 10 日周五傍晚，硅谷银行被 FDIC 接管。Circle 在该行存有 $33 亿 USDC 储备无法即时取出。当晚 USDC 跌穿 $0.95、最低到 $0.88——一个号称"100% 现金抵押"的稳定币把链上所有借贷协议都拖下水：DAI 通过 PSM 吃了 USDC 储备，DAI 也跟着脱锚；Aave 上有人 USDC 抵押借 ETH，HF 突然变成 0.93 触发清算。整个周末 DeFi 工程师们盯着 Twitter 等 FDIC 公告，没人能在合约层做任何事——因为问题在合约<strong>外</strong>。周一美联储救助 SVB，USDC 回锚。<strong>整个周末教会大家一件事</strong>：法币稳定币的"链上代码再安全"都不如"发行方银行账户在不在 FDIC 保险范围"重要。</p>
+</blockquote>
 <p>法币抵押稳定币按交易量统治 DeFi。机制只有一行：发行方持有 1:1 的现金+短期国债储备，链上代币与储备 1:1 可赎回。所有工程问题都集中在「发行方」三个字——它就是单点。</p>
 <table>
 <thead>
@@ -894,6 +903,9 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="4-cdp" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章：超额抵押稳定币（CDP 系）</h2>
 
 <h3 id="41-cdp">4.1 CDP 模板</h3>
+<blockquote>
+<p>假设你 2017 年在以太坊上想要"美元"，但你不信任何中心化发行方。怎么办？MakerDAO 给的答案是：<strong>用代码把抵押品锁在合约里、用代码铸稳定币、用代码触发清算——不需要银行</strong>。锁 1.5 ETH 进金库，借出 2000 DAI；ETH 价跌穿阈值，谁都能调一行 <code>liquidate(你)</code> 拿走你的抵押品换 DAI 销毁。整个流程不依赖任何法币储备，只依赖"清算人会按时来"。这是链上货币学的第一次跑通——也是后面 LUSD / GHO / crvUSD 共用的同一个模板。</p>
+</blockquote>
 <p>法币稳定币把信任压在发行方。CDP 把信任压在「抵押品价格 + 清算机制」——锁一笔超额抵押品，铸出稳定币，价格跌穿阈值时第三方清算还原。下面所有 CDP 协议都是这个模板的变体；本章关注差异，清算机制本身在 Ch13 一次讲完。</p>
 <p><strong>CDP（Collateralized Debt Position）</strong>：合约里锁抵押品，按抵押率铸稳定币。链上资产（ETH/BTC/wstETH）由此产生稳定币流动性，无需信任发行方——只需信任「清算人会准时来」（Ch13）。</p>
 <figure><img src="diagram-68c9409f77.png" alt="mermaid diagram"></figure>
@@ -949,6 +961,9 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="5-rwa" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章：合成与 RWA 稳定币</h2>
 
 <h3 id="51-usdeethenadelta-neutral">5.1 USDe（Ethena）：delta-neutral 合成稳定币</h3>
+<blockquote>
+<p>2014 年 BitMEX 发明永续合约：永远不到期、用 funding rate 让永续价向现货收敛。十年后 Ethena 的 Guy Young 看着这个机制想：如果我现货 long 1 ETH 同时永续 short 1 ETH，组合美元价值就不动；只要永续 funding 是正的（牛市基本如此），我还能同时收 stETH 收益 + funding——<strong>这就是凭空造一个"美元等价物"，不用法币储备也不用超额抵押</strong>。USDe 2024 上线后两年冲到 $14B 供应量。然后 2025-10 funding 倒挂、Aave-Pendle 杠杆环引爆，USDe 三周缩到 $5.92B——它不是死了，是教会了所有人"delta=0 不等于自动锚定"。</p>
+</blockquote>
 <h4 id="511">5.1.1 直觉</h4>
 <p>把"现货 long"和"永续 short"按等额相抵——组合美元价值不随 ETH 涨跌变化（delta=0），那这组合本身就可以充当稳定币。无需法币储备、无需 CDP 抵押率，只需 CEX 永续合约保证金存得住。</p>
 <figure><img src="diagram-0c7e540b18.png" alt="mermaid diagram"></figure>
@@ -1016,6 +1031,7 @@ Part VI  MEV、账户、风险（Ch26-28）
 <h2 id="6-xykuniswap-v2-il" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章：恒定乘积 <code>x*y=k</code>（Uniswap V2 完整源码 + IL）</h2>
 
 <blockquote>
+<p>2018 年 Hayden Adams 被以太坊基金会一笔 $100k 资助养着写代码。他没经验、没团队，只有 Vitalik 在 Reddit 上贴的一句话："如果有人能在链上做一个 x<em>y=k 的做市商就好了。" Hayden 把它实现，250 行代码，2018-11 主网上线。第一年没人用——大家都觉得"AMM 滑点太大、永远干不过订单簿"。2020-06 流动性挖矿引爆 DeFi summer，Uniswap 一个月内从 $30M TVL 飙到 $2B。</em><em>就是这 250 行代码定义了后续 6 年所有 DEX 的形状</em>*：Curve、Balancer、Pancake、Sushi、Aerodrome 都是它的变体。本章把 V2 一次推透，Ch7 V3 是它的"集中区间版"，Ch8 V4 是"工程重构版"。</p>
 <p><strong>AMM 三章一次讲完</strong>——本章 V2 把恒定乘积、LP 数学、IL、TWAP、闪电贷、PUSH 模式一次推到位；Ch7 把同一套数学映射到 $\sqrt{P}$ 坐标得到 V3 集中流动性；Ch8 把 V3 升级成 singleton + flash accounting + hooks 得到 V4。后续 DEX 章节（Curve / Balancer / Trader Joe / Maverick）只讲对此模板的偏离，不重复推不变量基础。</p>
 </blockquote>
 <h3 id="61">6.1 几何直觉</h3>
@@ -1094,6 +1110,9 @@ $$</p>
 - <strong>PUSH 模式</strong>：路由器先把 token 转进来，合约比较 <code>balance</code> 和 <code>reserve</code> 推算输入量。副作用：<strong>无许可 flash swap</strong>。
 - <strong><code>lock</code> reentrancy 保护</strong>：布尔锁。Curve 2023-07 事件是此保护被 Vyper 编译器 bug 失效。</p>
 <p><strong>swap（核心交易，闪电贷的根源）</strong>：</p>
+<blockquote>
+<p>闪电贷不是"借钱"——它是借和还在同一笔交易里完成的"神奇魔法"：你借走 100 ETH，在同一个 tx 里做完套利/清算/操纵，结尾还回 100 ETH + 0.3% 手续费。如果还不上，<strong>整笔交易反转</strong>，等于从来没发生过。所以 Uniswap V2 池子敢借给你 100 ETH 不要任何抵押——因为最坏情况它一分钱不亏。这就是 V2 swap 函数 <code>if (data.length &gt; 0)</code> 那一行做的事，下面 swap 源码读到这一行时停一下品。</p>
+</blockquote>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">swap</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint</span><span style="color: #F8F8F8"> </span><span style="color: #000">amount0Out</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint</span><span style="color: #F8F8F8"> </span><span style="color: #000">amount1Out</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>data<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>lock<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">require</span><span style="color: #000; font-weight: bold">(</span>amount0Out<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span>amount1Out<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;INSUFFICIENT_OUTPUT_AMOUNT&#39;</span><span style="color: #000; font-weight: bold">);</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint112</span><span style="color: #F8F8F8"> </span><span style="color: #000">_r0</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint112</span><span style="color: #F8F8F8"> </span><span style="color: #000">_r1</span><span style="color: #000; font-weight: bold">,)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>getReserves<span style="color: #000; font-weight: bold">();</span>
@@ -1124,6 +1143,9 @@ $$</p>
 
 <p>bZx 2020-02 两次事件就是 flash swap+oracle 操纵的组合拳。</p>
 <h3 id="65">6.5 无常损失数学</h3>
+<blockquote>
+<p>假设你在 ETH=$3000 时存了 1 ETH + 3000 USDC 进 V2 池。三个月后 ETH 涨到 $6000，你回来撤资。<strong>直觉</strong>：我应该有 1 ETH + 3000 USDC = $9000，对吧？<strong>实际</strong>：你只有 0.707 ETH + 4243 USDC = $8485。少了 $515。这 $515 就叫无常损失（IL）——你被池子"自动卖飞"了——价格涨时池子帮你卖出 ETH，价格跌时池子帮你抄底 ETH。<strong>LP 本质上是在给整个市场卖 straddle 期权</strong>，期权金就是手续费。下面把这件事写成数学。</p>
+</blockquote>
 <p>设初始价格 $p_0$、提供 $x_0$ 个 token0 和 $y_0 = x_0 p_0$ 个 token1，则 $k = x_0^2 p_0$。</p>
 <p>价格变成 $p_1 = p_0 \cdot r$ 时，新储备 $(x, y)$ 满足 $xy = k$ 且 $y/x = p_1$：</p>
 <p>$$
@@ -1237,6 +1259,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="7-uniswap-v3-sqrtpricex96-tick" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章：集中流动性（Uniswap V3 sqrtPriceX96 / tick）</h2>
 
+<blockquote>
+<p>2021 年初，Hayden 团队盯着 V2 池子的数据看了一年——99% 的 USDC/USDT 交易发生在 $0.998 到 $1.002 之间，但 V2 把流动性平铺在 $0 到 $∞，导致 99.8% 的资本在闲着。<strong>为什么不让 LP 选区间？</strong>——这一念之差，2021-05 V3 上线，资本效率 1000x。代价是 LP 不再是"无脑被动"——选错区间一夜之间持仓全变成单边废币。这一章把 V2 数学搬到 $\sqrt{P}$ 坐标系下重新跑一遍，所有数学都是 Ch6 的"换坐标"——别被 Q64.96 唬住。</p>
+</blockquote>
 <h3 id="71-v3-v2">7.1 V3 = V2 的"区间截断版"</h3>
 <p>V2 把流动性铺到 $(0, \infty)$，但 ETH/USDC 池 99% 的交易发生在 ±20% 区间——绝大部分流动性闲置。V3 让 LP 选区间 $[p_a, p_b]$，在区间内表现为虚拟 V2 池（同一条 $xy=k$ 曲线截断），出区间则曲线接到端点的水平/垂直渐近线。<strong>所有 V3 数学都是 Ch6 V2 推导在 $\sqrt{P}$ 坐标系下的代换</strong>——不需要从零再推。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>       V2                    V3（LP 集中在 [2800, 3200]）
@@ -1330,6 +1355,9 @@ $$</p>
 <h3 id="76-v3-lp">7.6 V3 LP 实质上是在卖期权</h3>
 <p>在区间 $[p_a, p_b]$ 内提供 $L$，等价于 V2 虚拟流动性 $L \cdot \sqrt{p_a p_b} / (\sqrt{p_b} - \sqrt{p_a})$。LP 赚手续费、承担价格突破区间的尾部风险——与 market maker 卖 straddle 同构。</p>
 <h3 id="77-kyberswap-elastic-2023-11">7.7 反例：KyberSwap Elastic 2023-11</h3>
+<blockquote>
+<p>攻击者花了几个月研究 KyberSwap Elastic 的 swap 函数——他在找一种叫"边界条件"的东西：当输入量"恰好少 1 wei"于触发某状态变化时，合约会怎么走。2023-11-23 凌晨他找到了：池子状态被推到 <code>1056056735638220799999</code>，差 1 wei 就跨 tick。合约的内部记账以为已经跨了，外部状态实际没跨——<strong>两个状态错位</strong>。他反向 swap 利用错位抽走 $47M，KyberSwap TVL 从 $71M 跌到 $3M，团队解散。<strong>这就是"1 wei 杀死一个协议"的字面意义</strong>。</p>
+</blockquote>
 <p>KyberSwap Elastic 是 V3-style 集中流动性 DEX。2023-11-23 损失 $47M。</p>
 <p><strong>根因</strong>：tick 边界整数舍入方向错。当 swap 量恰好"几乎等于"跨过 tick 边界所需量但又少 1 wei 时（<code>1056056735638220799999</code> vs <code>1056056735638220800000</code>），合约<strong>没跨 tick</strong> 但<strong>假设已经跨了</strong>——baseL 记录错误，远高于真实状态。攻击者反向 swap 利用状态错误抽走 $47M。</p>
 <p><strong>TVL 影响</strong>：$71M → $3M。来源：<a href="https://www.halborn.com/blog/post/explained-the-kyberswap-hack-november-2023">Halborn KyberSwap</a>、<a href="https://blocksec.com/blog/kyberswap-incident-masterful-exploitation-of-rounding-errors-with-exceedingly-subtle-calculations">BlockSec 精度分析</a>。</p>
@@ -1345,6 +1373,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="8-uniswap-v4singleton-flash-accounting-hooks" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章：Uniswap V4（singleton + flash accounting + hooks）</h2>
 
+<blockquote>
+<p>V3 上线 4 年里，Uniswap 团队眼睁睁看着别人在它上面"寄生"：1inch 抽走路由用户、TWAP 操纵导致 borrow 协议爆雷、JIT LP 抢走 passive LP 的 fee。Uniswap 自己却抽不到一分钱协议费——因为 V3 是不可升级的，连 fee switch 都开不了。<strong>V4 不是数学升级，是权力重构</strong>：把所有池子塞进一个 singleton 合约（部署成本降 99%），让协议作者通过 hook 在交易生命周期任何点插钩子（动态费率、MEV 返利、限价单都能插），把"协议租值"还给 hook 作者。Uniswap 自己也变成"V4 平台上的一个普通用户"——Bunni、Angstrom 这些 hook 作者反而抽走了租值。</p>
+</blockquote>
 <p>V4 在 2025-01-30 主网上线。AMM 数学本身没变（仍是 V3 的 $\sqrt{P}$/tick 体系），改动全在工程架构上——三件事让 V3 时代的部分外部协议直接成为 V4 hook：</p>
 <h3 id="81-singleton">8.1 Singleton 合约</h3>
 <p>所有池子住在同一个 <code>PoolManager</code> 合约里：创建池子 gas 降 99%（~5M → ~50K）、跨池路由无外部转账（同一 storage）、LP 表示从 NFT 改为内部账本。</p>
@@ -1467,6 +1498,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="9-curve-stableswap-crvusd-llamma" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章：Curve StableSwap 不变量 + crvUSD LLAMMA</h2>
 
+<blockquote>
+<p>Michael Egorov 是俄罗斯物理学家，2020 年盯着 Uniswap V2 的 USDC/USDT 池——明明都是 1 美元的稳定币，居然有 0.3% 滑点。他算出一条新曲线，平段无限接近 $x+y=k$（零滑点）、边缘退化回 $xy=k$（防掏空）。Curve 上线后一个月成为稳定币交易首选，三年后又用 LLAMMA 把这条曲线改造成"渐进式清算 AMM"——抵押品不是一秒被强平，而是穿过一个个 band 慢慢被换成稳定币。<strong>直觉是物理学的"势能曲面"思路</strong>：在平段你像滑滚珠，到边缘势能墙挡住你。下面那个吓人不变量就是这条曲面的方程。</p>
+</blockquote>
 <h3 id="91-v2">9.1 设计动机：在 V2 与"恒定和"之间插值</h3>
 <p>Ch6 V2 的 $xy=k$ 在稳定币之间太陡——同一池里 USDC/USDT 任意小额 swap 都付 0.3%+ 滑点。极限的另一头是恒定和 $x+y=k$（零滑点），但任一边归零池子被掏空，无法做市。Curve StableSwap 在两者之间插值：价格接近 1:1 时退化成恒定和（无滑点），偏离时退化成恒定乘积（保护池子不被掏空）。</p>
 <h3 id="92">9.2 不变量</h3>
@@ -1494,6 +1528,9 @@ $$</p>
 
 <p><strong>优点</strong>：避免暴跌一秒被强平。<strong>缺点</strong>：反复穿 band 的"震荡损耗"持续侵蚀抵押品——借款人被 LP 化。</p>
 <h3 id="95-curve-2023-07-vyper-bug">9.5 反例：Curve 2023-07 Vyper 编译器 bug</h3>
+<blockquote>
+<p>Curve 团队写代码用 Vyper 而非 Solidity（出于"语言更简洁、攻击面更小"的信念）。2023-07-30 周日凌晨，多个池子同时被攻击——alETH/ETH、pETH/ETH、msETH/ETH、CRV/ETH 接连失血 $73M。审计人员翻 Curve 自家代码翻了一晚没找到 bug——因为 bug 不在 Curve，在 <strong>Vyper 编译器 0.2.15/0.2.16/0.3.0 的 <code>@nonreentrant</code> 装饰器实现</strong>：它把 reentrancy lock 标志和其他变量塞到同一 storage slot 里，某些路径下 lock 失效。这是 DeFi 历史上"工具链 0day"第一次造成八位数损失——你 99% 的代码再安全都不顶用，编译器一个 bug 就能掀桌子。</p>
+</blockquote>
 <p>受害池：alETH/ETH（$22.6M）、msETH/ETH（$3.4M）、pETH/ETH（$11M）、CRV/ETH（$24.7M），共 $73M。</p>
 <p><strong>根因</strong>：Vyper 编译器 0.2.15、0.2.16、0.3.0 的 <code>@nonreentrant</code> 装饰器把 lock 标志和其它变量塞到同一 storage slot，导致 lock 在某些路径下失效。攻击者调用 <code>add_liquidity</code> → ETH 转账触发 fallback → reentrancy 进入 <code>remove_liquidity</code> → 因为 lock 失效得以执行 → 池子状态错乱后用低价买走代币。</p>
 <p><strong>根因不在协议代码</strong>——工具链 0day。来源：<a href="https://www.halborn.com/blog/post/explained-the-vyper-bug-hack-july-2023">Halborn Vyper Bug</a>、<a href="https://hackmd.io/@LlamaRisk/BJzSKHNjn">LlamaRisk 复盘</a>。</p>
@@ -1509,6 +1546,7 @@ $$</p>
 <h2 id="10-balancer-v3-maverick-trader-joe-lb" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章：Balancer V3 加权池 + Maverick + Trader Joe LB</h2>
 
 <blockquote>
+<p>"如果 V2 是 50/50 池子（永远等权），为什么不能 80/20？或者 10 个币按权重组合？"——Fernando Martinelli 2019 年提出 Balancer，把 LP 池升级成"自动再平衡的指数基金"。Maverick 团队又问：被动 LP 太傻、价格涨跌都被动接盘，<strong>为什么不能让 LP 选个方向，价格朝那边走时自动跟随？</strong> Trader Joe 团队又问：连续 tick 计算太复杂，<strong>为什么不直接做成离散 bin、每个 bin 是恒定和</strong>？三家都是同一思路——V2 的某个假设值得放宽——往前迈半步。本章看三种半步的工程取舍。</p>
 <p>本章三个 DEX 都是 V2 恒定乘积的变体——Balancer 改"等权"为"加权"，Maverick 改"被动 LP"为"方向 LP"，Trader Joe LB 改"连续 tick"为"离散 bin"。Ch6/Ch7 的 LP 数学和 IL 公式仍适用。</p>
 </blockquote>
 <h3 id="101-balancer-v3-hooks-erc-4626-buffer">10.1 Balancer V3：加权池 + hooks + ERC-4626 buffer</h3>
@@ -1534,6 +1572,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="11-solidly-ve33-v4-hooks" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章：Solidly ve(3,3) + V4 hooks 生态</h2>
 
+<blockquote>
+<p>Andre Cronje 是 DeFi 圈最有争议的开发者——一年发十个协议、又突然宣布"退圈"两次。2022 年初他扔出 Solidly：把 Curve 的 vetokenomics（锁仓越久投票权越大）和 OlympusDAO 的 (3,3) 博弈论合在一起，造一个"贿赂市场"——项目方花钱让 ve-holder 投票把 emission 导向自家池子。结果 Solidly 自己很快崩盘（代币经济太极端），但模型被 Velodrome（Optimism）和 Aerodrome（Base）继承做成"L2 上的流动性发动机"。<strong>这一章关注一件事</strong>：当通胀代币 + 投票权 + bribe 凑在一起，到底是真生意还是庞氏？</p>
+</blockquote>
 <h3 id="111-ve33">11.1 ve(3,3) 模型</h3>
 <p>Andre Cronje 在 Solidly 引入，Velodrome（Optimism）、Aerodrome（Base）继承。</p>
 <p><strong>核心机制</strong>：锁仓治理代币换 veToken（time-lock NFT，锁越久权重越大）；veToken 持有人投票决定每周通胀代币分配；LP 拿通胀，投票人拿 100% 池子手续费——形成"贿赂市场"，项目方向 ve-holder 送 bribe 换票。</p>
@@ -1592,6 +1633,7 @@ $$</p>
 <h2 id="12-jump-rate" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章：借贷利率模型（jump rate / 差异化）</h2>
 
 <blockquote>
+<p>假设你是 Aave USDC 池子的存款人，池子里有 $1 亿 USDC，已经有人借走 $9000 万——利用率 90%。这时候有人想再借 $1000 万，借贷利率应该是多少？设成线性 $5\% \times 0.9 = 4.5\%$ 吗？不行：池子快被借空了，必须<strong>用价格挤出借款人</strong> + <strong>吸引新存款</strong>进来——所以 90% 那个点之后，曲线必须陡到逆天。这个"陡"叫 kink，是 Compound 2019 年发明的"利率自动稳定器"——本章就讲这条曲线长什么样、为什么 kink 通常在 80-90% 而不是 50%、Aave 怎么对不同资产用不同曲线。</p>
 <p><strong>借贷六章</strong>（Ch12-17）共享同一抽象骨架：(供给/借款利率 + 利率曲线) × (HF + 清算机制) × (抵押模型)。Ch12 一次讲利率曲线，Ch13 一次讲健康因子和清算时序，Ch14-17 各借贷协议<strong>只讲它对这个骨架的偏离</strong>——共享池（Aave）/ 单基础资产（Comet）/ 隔离市场（Morpho）/ KYC 信用（Maple）。</p>
 </blockquote>
 <h3 id="121">12.1 利用率驱动的利率曲线</h3>
@@ -1704,7 +1746,7 @@ $$</p>
 <h2 id="13_1" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章：健康因子与清算流程</h2>
 
 <blockquote>
-<p>这一章是 Ch4 CDP、Ch12 利率曲线、Ch14-17 各借贷协议共享的清算模板。后续协议讲清算时只指出对此模板的偏离（Comet 拆 absorb+buyCollateral 两步、crvUSD 用 LLAMMA 把硬清算改成软清算、Liquity 拆两层 Stability Pool），HF 公式、close factor、闪电贷清算时序不再重复。</p>
+<p>假设你存 10 ETH（市价 $30,000）借了 $20,000 USDC——HF=1.24，看起来很安全。然后周末 ETH 跌 15%，HF 突然变成 1.05；周一开盘前再跌 5%，HF=0.99——一秒钟后你的电脑屏幕弹出邮件：<strong>"Your position has been liquidated."</strong> 5% 抵押品被清算人折价拿走当奖励，你为这个"自动售货机"贡献了一顿饭钱。整个过程没有银行打电话警告你、没有客服可以求情——<strong>这就是链上清算</strong>。一个清算 bot 写得好，年化挣 7 位数；写得不好，gas 烧光自己。这一章讲两件事：清算什么时候触发（HF 公式）、清算 bot 怎么挣钱（闪电贷清算时序）。</p>
 </blockquote>
 <h3 id="131-hf">13.1 健康因子（HF）</h3>
 <p>$$
@@ -1778,6 +1820,7 @@ $$</p>
 <h2 id="14-aave-v3-umbrella" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章：共享池借贷（Aave V3 + Umbrella）</h2>
 
 <blockquote>
+<p>2017 年 Stani Kulechov 在赫尔辛基写他的法学硕士论文——"链上金融市场的法律含义"。研究着研究着他自己开了个协议叫 ETHLend（P2P 借贷），不温不火。2019 年改名 Aave（芬兰语"幽灵"），改成池化借贷模型——存款人共享一个池、借款人共享一个池——TVL 一年内从 $1M 飙到 $2B。<strong>Aave 之所以是借贷龙头，不是因为代码最优雅，是因为它最早把"共享流动性 + 多资产抵押 + 闪电贷"三件事缝在一起</strong>。后来 Compound III 觉得共享池太危险拆成单一基础资产、Morpho Blue 觉得共享池太死板拆成隔离市场——但 Aave V3 + Umbrella 仍是 $20B+ TVL 的标杆。本章看它独有的三件事：自动化 slash 模块、原生稳定币 GHO、和被 Kelp 事件打掉 $6.6B TVL 的共享池传染。</p>
 <p>Aave 是借贷模板的"参照实现"——共享池 + 多资产抵押 + Ch13 的硬清算 + Ch12.3 的差异化曲线 + e-mode 高 LTV 集群。本章关注三件 Aave 独有的工程：Umbrella 自动 slash、stkGHO/sGHO 演化、共享池在 Kelp 事件中的传染。利率曲线和清算时序见 Ch12/Ch13。</p>
 </blockquote>
 <h3 id="141-aave-v3">14.1 Aave V3 架构</h3>
@@ -1839,6 +1882,9 @@ $$</p>
 </table>
 <p><strong>当前状况</strong>：stkGHO ~5% APY &lt; sGHO 风险无 → 治理论坛在讨论 Merit redirect。</p>
 <h3 id="144-rsethweth-2026-04">14.4 反例：rsETH/wETH 2026-04 危机</h3>
+<blockquote>
+<p>2026-04-18 凌晨，Aave 的 risk steward 收到告警：rsETH/wETH 配对借款量异常飙升。他打开浏览器看链上——一个地址在 30 分钟内抵押 $292M rsETH 借走巨量 wETH，而且 rsETH 的"链上铸造记录"对不上 Kelp 实际质押的 stETH。<strong>等他反应过来这是假的 rsETH 时，攻击者已经把 wETH 桥跑了。</strong> 紧接着 Aave 治理频道炸锅，48 小时内 TVL 跌 $6.6B、AAVE 代币跌 16%、Lido 也跌 19%（市场担心 stETH 也走 LayerZero）。<strong>根因不在 Aave 自己代码</strong>——是 Kelp 跨链桥用了 1-of-1 DVN（单点验证），私钥被攻陷。<strong>教训</strong>：借贷协议接受跨链 wrapped 资产时，桥的安全模型就是你协议安全模型的一部分。</p>
+</blockquote>
 <p>Kelp DAO 跨链桥被攻击（1-of-1 DVN 单点被攻陷），$292M 伪造 rsETH 被用作 Aave 抵押借走 wETH，造成 ~$196M 坏账。Aave TVL 单日跌 $6.6B、AAVE 代币跌 16%。完整复盘见第 24.3 节。</p>
 <p>来源：<a href="https://www.coindesk.com/tech/2026/04/19/aave-records-usd6-billion-tvl-drop-as-kelp-hack-exposes-structural-risk-at-defi-lender">Aave Records $6B TVL Drop</a>、<a href="https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580">rsETH Incident Report</a>。</p>
 <p><strong>Aave 视角教训</strong>：
@@ -1855,6 +1901,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="15-compound-iii-comet" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章：单一基础资产借贷（Compound III Comet）</h2>
 
+<blockquote>
+<p>Compound 是借贷协议的"祖师爷"——2018 年 Robert Leshner 发明了流动性挖矿这个词、把 COMP 代币空投给所有用户、引爆 2020 DeFi summer。但 V2 时代它接连被各种闪电贷+oracle 操纵打到——抵押品可以被借出意味着别人能用闪电贷把池子掏空。2022 年 V3（代号 Comet）上线时 Robert 干脆说："我不要资本效率了，我要安全。"——抵押品只能存不能借、每市场只能借一种基础资产。代价是 TVL 远小于 Aave（$3B vs $20B），换来的是<strong>Compound III 上线 4 年没有过一次 oracle 攻击</strong>。这是 DeFi 工程史上少见的"主动牺牲资本效率换安全"的设计。</p>
+</blockquote>
 <h3 id="151">15.1 设计哲学：用资本效率换简单性</h3>
 <p>Compound III（Comet）2022 年起采用单一基础资产模型：每市场只能借一种基础资产（cUSDCv3 等），抵押物<strong>只能存不能借</strong>。设计动机直接来自 Compound II 时代的事故清单——闪电贷把抵押品池子掏空、oracle 污染传染整个市场（见第 12.4 节）。代价是抵押品闲置带来的资本效率损失，反映在 TVL 上（~$3B vs Aave ~$20B）。</p>
 <h3 id="152">15.2 工程结构</h3>
@@ -1945,6 +1994,7 @@ $$</p>
 <h2 id="16-morpho-euler-silo-ajna" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章：隔离市场借贷（Morpho / Euler / Silo / Ajna）</h2>
 
 <blockquote>
+<p>"为什么 Aave 治理上线一个新资产要等 3 个月？" 2023 年 Paul Frambot 的 Morpho 团队问出这个问题——背后是更尖锐的矛盾：<strong>共享池协议必须保守，因为任一资产出事都会污染整个池</strong>。他给的答案是 Morpho Blue：把借贷拆到极简——五元组 (抵押, 借款, oracle, IRM, LLTV) 一个市场、600 行代码、谁都能无许可创建。复杂性外包给上层 curator（Steakhouse、Gauntlet、Re7）建 vault 把多个市场聚合成一个 ERC-4626 vault 给普通用户。<strong>这是 DeFi 借贷的下一波浪潮</strong>：先把协议拆碎到不能再拆，再用 vault/curator 在上层重新组合。Euler V2、Silo V2、Ajna 都是同一思路的变体。</p>
 <p>共享池（Aave）和单基础资产（Comet）都把"风险评估"留给协议治理。隔离市场把风险评估外包给市场参与者——任何人都可以无许可创建一个 (抵押, 借款, oracle, IRM, LLTV) 五元组，每个市场是独立的破产单元。胜负由 curator/ vault 在上层重新聚合，本质是"先拆碎，后重组"。</p>
 </blockquote>
 <h3 id="161-morpho-blue">16.1 Morpho Blue：极简借贷原语</h3>
@@ -2023,6 +2073,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="17-kyc-maple-centrifuge-spark" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章：链上 KYC / 机构借贷（Maple / Centrifuge / Spark）</h2>
 
+<blockquote>
+<p>一家做新能源电池的越南企业想借 $500 万周转 6 个月。它没 ETH 抵押、有的是发票、应收账款、年报。传统银行拒贷（"国别风险高"），它的选择是 P2P 链下放贷——年化 18%。如果链上有协议愿意按它的资产负债表+审计报告放款（年化 10%），这就是它愿意付出的"链上记账"代价。<strong>Maple、Centrifuge、Goldfinch 做的就是这事</strong>：链上记账+清算（透明、自动化），链下尽调+合同（人情、法律、SPV）。这一章是 DeFi 唯一一次主动<strong>放弃无许可</strong>——因为现实世界的信贷需要 KYC 才能放贷。</p>
+</blockquote>
 <h3 id="171-aave">17.1 为什么机构不接受 Aave 模型</h3>
 <p>Ch13-16 的所有协议都是超额抵押——只服务"链上有 ETH 想借 USDC"的零售杠杆需求。企业不会拿 1.5 ETH 抵押借 1 USDC 周转工资，他们要的是基于资质（资产负债表、信用记录、SPV 法律包装）的信贷。<strong>链上 KYC 信用市场</strong>是这个需求的折衷：链上记账+清算、链下尽调+合同。</p>
 <h3 id="172-maple-finance">17.2 Maple Finance</h3>
@@ -2062,6 +2115,7 @@ $$</p>
 <h2 id="18-push-pull-twap-redstone" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 18 章：预言机——Push / Pull / TWAP / RedStone</h2>
 
 <blockquote>
+<p>2022-10-11，Avi Eisenberg 用 $5M 在三家小盘 CEX 同时挂单把 MNGO 现货价从 $0.04 拉到 $0.91（涨 22 倍）。Mango Markets 的 oracle 是这三家 CEX 的中位数价——OK，它老老实实把 MNGO 估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，他把这笔"虚高浮盈"当抵押借走 $116M。<strong>整个攻击 20 分钟、合法合约调用、每一行代码都按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。预言机是把链下世界搬上链的桥，桥造得不结实，后面的借贷、衍生品、稳定币全部失血。这一章讲三种主流喂价模型 + 五次史诗级 oracle 攻击。</p>
 <p>预言机是 Ch14-17 借贷、Ch19-21 衍生品、Ch4-5 稳定币 CDP 的共同信任入口——也是 DeFi 历史上单类损失最大的攻击面（bZx, Cream, Mango 系列见 18.5）。三种主流模型按"谁推、谁付 gas、何时上链"区分。</p>
 </blockquote>
 <h3 id="181-chainlink-push">18.1 Chainlink Push 模型</h3>
@@ -2119,6 +2173,7 @@ $$</p>
 <h2 id="19-lp-gmx-v2-glpgm" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 19 章：永续 LP 模式——GMX V2 完整 GLP/GM 机制</h2>
 
 <blockquote>
+<p>想象你在赌场办了张 VIP 卡，但你不是赌客，你是赌场——所有玩家在你的桌上下注，他们赢就从你这拿钱、他们输就把钱给你。<strong>长期赌客必输于赌场</strong>（庄家有 expected value）——这就是 GMX LP 的处境。LP 把 ETH/BTC/USDC 投进 GM 池子，所有 trader 在池子上做多做空 perp、池子是统一对手方。Trader 整体亏损时 LP 赚 fee + funding；trader 整体大赚时（比如 2024 牛市某天 BTC 暴涨 trader 都做对了多），LP 短期"放血"。这就是"LP-as-counterparty"模型——简单粗暴，但解决了"谁来当对手方"这个永续 DEX 第一难题。</p>
 <p>永续 DEX 三大流派：① <strong>LP 池作为对手方</strong>（GMX/HLP，本章）——LP 集合承担 trader 的盈亏。② <strong>链上订单簿</strong>（Hyperliquid/dYdX，Ch20）——把撮合搬进共识层，trader 互为对手方。③ <strong>合成 + 通用 vault</strong>（Synthetix/Aevo/Lyra，Ch21）——用债务 vault 撮合多种衍生品。本章讲第一种。</p>
 </blockquote>
 <h3 id="191-gmx-v2">19.1 GMX V2 总体架构</h3>
@@ -2167,6 +2222,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="20-hyperliquid-hyperbft-hip-2-hip-3" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 20 章：链上订单簿——Hyperliquid HyperBFT + HIP-2 / HIP-3</h2>
 
+<blockquote>
+<p>2023 年 Hyperliquid 团队（哈佛量化背景的几个交易员）做了一件 Vitalik 都不敢做的事：他们说"以太坊太慢了，我们自己造一条 L1，专门为永续 DEX 优化"。HyperBFT 共识、订单簿直接做进共识状态机、没有 EVM、撮合性能不输 Binance——结果 OI 一年内冲到 $7.5B、日成交峰值 $10-15B，2025-10 又上线 HIP-3 让任何人 stake 50 万 HYPE（当时约 $1500 万）就能部署任意 perp 市场（AAPL、白银、原油都可以）。<strong>这是 DeFi 史上第一次出现"应用专用链"打败"通用链上 DApp"的案例</strong>——同样可以参考 dYdX 走 Cosmos appchain 路线。</p>
+</blockquote>
 <h3 id="201-hyperliquid">20.1 Hyperliquid 总体设计</h3>
 <p>把 matching engine 做进共识层（而非智能合约）。<strong>HyperCore</strong>：自有 L1，HyperBFT 共识，bid/ask 存在状态机，价格-时间优先撮合，所有 perp 用 USDC 抵押。<strong>HyperEVM</strong>（2025-02 上线）：同一 L1 上的 EVM 兼容层，首例"原生 CLOB + EVM 双栈"。</p>
 <p>来源：<a href="https://rocknblock.io/blog/how-does-hyperliquid-work-a-technical-deep-dive">Hyperliquid Architecture</a>、<a href="https://www.datawallet.com/crypto/hyperliquid-hlp-explained">Hyperliquid HLP</a>。</p>
@@ -2220,6 +2278,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="21-dydx-v4-synthetix-v3-aevo-lyra-premia" id="ch22"><span class="chapter-num">Chapter 22</span><br>第 21 章：dYdX v4 / Synthetix V3 / Aevo / 期权（Lyra / Premia）</h2>
 
+<blockquote>
+<p>链上期权的窘境：Deribit（CEX 期权龙头）日成交 $50 亿+、链上期权所有协议加起来日成交不到 $5000 万，差 100 倍。<strong>为什么？</strong> 期权定价需要 IV surface 实时调整、做市商需要 vega/gamma hedging、流动性提供者需要专业知识——链上做不到这些就只能"假装做市"。Lyra（已改名 Derive）和 Premia 用 IV surface oracle + 隐含波动率参数化模型试图把这些做上链，TVL 一直起不来。这一章是 DeFi 衍生品的<strong>反例篇</strong>——告诉你哪些事链上目前做不好，以及为什么。</p>
+</blockquote>
 <h3 id="211-dydx-v4">21.1 dYdX v4</h3>
 <p>见第 20.6 节。2025 年新增 isolated margin 和 token incentive 模型改版。</p>
 <h3 id="212-synthetix-v3">21.2 Synthetix V3：模块化衍生品</h3>
@@ -2248,6 +2309,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="22-lst-lido-rocket-pool-frax-cbeth-meth" id="ch23"><span class="chapter-num">Chapter 23</span><br>第 22 章：LST 全集（Lido / Rocket Pool / Frax / cbETH / mETH）</h2>
 
+<blockquote>
+<p>2020 年 12 月 1 日 ETH 2.0 信标链上线时，质押有两个让普通人皱眉的事：<strong>32 ETH 起步</strong>（小户进不来）、<strong>本金锁死、退出要等几天到几周</strong>（流动性死亡）。Lido 团队问了一个改变 DeFi 的问题：<strong>为什么不让用户存任意数量 ETH，给他一个 ERC-20 的"凭证币"代表他的质押权益？这个币可以在 Curve 上交易、可以在 Aave 上抵押——和质押的本金完全分离</strong>。这一念之差，stETH 上线 4 年涨到 $23B TVL、占以太坊总质押 30%、引爆 EigenLayer/LRT/Pendle 整条 yield 食物链。<strong>这一章是后面所有"再质押 + 利率切片 + 杠杆循环"的物质前提</strong>——没有 LST 就没有 DeFi 第二季。</p>
+</blockquote>
 <h3 id="221-lst">22.1 LST 是什么</h3>
 <p>ETH PoS 质押年化 2.5-3.5%，但本金锁定+退出队列长达数天。<strong>LST（Liquid Staking Token）</strong> 把质押权益代币化：用户存 ETH → 协议委托验证者 → 用户拿 LST（ERC-20）代表本金+持续累积的 staking yield。LST 把"锁定+生息"重新拆成"可自由转账+生息"——这是 Ch23 再质押、Ch25 Pendle PT/YT、Ch24 LRT 的物质前提。</p>
 <h3 id="222-lst-2026-04">22.2 主流 LST 对比（2026-04）</h3>
@@ -2325,6 +2389,9 @@ $$</p>
 </code></pre></div>
 <p><strong>结论</strong>：DeFi 合约永远用 wstETH，不用 stETH（Aave V3 e-mode 亦如此）。</p>
 <h3 id="224-steth-2022-06">22.4 stETH 流动性脱锚（2022-06）</h3>
+<blockquote>
+<p>假设你是 Curve stETH/ETH 池的 LP，stETH/ETH 池里有 100M 美元，2022-06-12 周日凌晨——三箭资本（3AC）爆仓清算开始，几亿美元的 stETH 被强制抛进 Curve 池。stETH/ETH 比价从 1:1 跌到 1:0.97、再到 1:0.94——你池子里那一半 stETH 突然估值少了 6%。但<strong>底层 ETH 仍 1:1 可兑换</strong>——只是要等几天才能从 Lido 提出来。这就叫<strong>流动性脱锚而非基本面脱锚</strong>：1 stETH 始终代表 1 ETH，只是市场不愿意马上等几天。<strong>这件事让所有借贷协议吓到给 stETH 设 LT 70-80%</strong>——从此 stETH 在 DeFi 里再不能享受和 ETH 一样的待遇。</p>
+</blockquote>
 <p>2022-06 三箭暴雷，强制砸盘 stETH，Curve stETH/ETH 池跌到 0.94——<strong>流动性脱锚</strong>，而非基本面问题（底层 ETH 仍 1:1 兑换，只是赎回需等几天）。此后所有借贷协议给 stETH 设 LT 70-80%。</p>
 <h3 id="225-rocket-pool">22.5 Rocket Pool 与去中心化叙事</h3>
 <p>Rocket Pool 让任何人成为节点运营商（minipool），代价是协议复杂度高、TVL 增长慢。节点运营商除基础 staking 收益外还拿 RPL 奖励，需 stake 一定比例 RPL 作信用押金。</p>
@@ -2343,6 +2410,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="23-eigenlayer-symbiotic-karak-babylon" id="ch24"><span class="chapter-num">Chapter 24</span><br>第 23 章：再质押（EigenLayer / Symbiotic / Karak / Babylon）</h2>
 
+<blockquote>
+<p>2021 年某天，Sreeram Kannan（华盛顿大学教授）盯着以太坊在想一件事：<strong>全网 $400 亿+ 美元的 ETH 在质押挣 3% 的钱，干的"工作"只有一个——验证以太坊主链区块。这是巨大的资本闲置</strong>。如果让 staker 自愿把这笔 ETH 的"安全性"再租给第二份工作（数据可用性层、跨链桥、appchain）、第三份工作、第四份……每份工作都给一份额外收益，这不就是把 ETH 变成"安全性的房东"了吗？这就是 EigenLayer 的核心思路。代价是 <strong>slashing surface 叠加</strong>——任一份工作出错你的本金都被罚。两年后 EigenLayer TVL 冲到 $19B，开启了 LRT 浪潮（也埋下了 2026-04 Kelp $292M 事件的种子）。</p>
+</blockquote>
 <h3 id="231-restaking">23.1 什么是 Restaking</h3>
 <p><strong>Restaking（再质押）</strong> = 把同一笔 ETH（或 LST）的安全性出租给多个 AVS（Actively Validated Service：DA 层、桥、appchain、AI co-processor、bridge oracle…），赚多份收益。代价是把"slashing surface"叠加——任一 AVS 触发 slashing condition 都会扣本金。本质是抵押品的"重复使用"：和 Ch22 LST 让 ETH 同时 stake+流通是同一思路的下一阶。</p>
 <h3 id="232-eigenlayer">23.2 EigenLayer：始祖</h3>
@@ -2384,6 +2454,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="24-lrt-kelp-2026-04" id="ch25"><span class="chapter-num">Chapter 25</span><br>第 24 章：LRT 全集 + Kelp 2026-04 事件复盘</h2>
 
+<blockquote>
+<p>2026-04-18 的一个深夜，一个名叫"DVN_eth"的 LayerZero 验证器节点的 EOA 私钥被攻击者拿到。他做的第一件事不是转账——他对着 Ethereum 上的 Kelp DAO rsETH 接收合约签了一条假消息：<strong>"Polygon 那边刚 mint 了 $292M rsETH，请给我同步铸造。"</strong> Ethereum 合约去验证这条消息——Kelp 配置了 1-of-1 DVN（<strong>只需要这一个 DVN 签字就放行</strong>）——验证通过，$292M 凭空出现的 rsETH 落入攻击者钱包。30 分钟后他抵押到 Aave 借走巨量 wETH，桥到不可追踪的链。<strong>Aave 一夜 TVL 跌 $6.6B，Lido 跌 19%（市场恐慌 stETH 也走 LayerZero）、所有 LRT 一起被打折扣</strong>。<strong>根因不是 Kelp 代码 bug、不是 Aave 代码 bug——是一个被低估的"配置错误"</strong>：1-of-1 是单点。本章是 LRT 全集 + 这次史诗级事件的完整复盘。</p>
+</blockquote>
 <h3 id="241-lrt">24.1 LRT 是什么</h3>
 <p>LST 之于 ETH staking，LRT 之于 EigenLayer/Symbiotic restaking——同样的"代币化复杂性"思路再走一阶。<strong>LRT（Liquid Restaking Token）</strong>：用户委托 ETH/stETH 给 LRT 协议 → 协议作为 operator 接管多个 AVS 的 slashing 风险 → AVS 奖励聚合后分给 LRT holder。</p>
 <p>代价是用户买进 ezETH/eETH 时往往<strong>不知道协议挂了多少个 AVS、各自 slashing condition 是什么</strong>。这把 Ch23 的 slashing surface 进一步糊在了一起——一旦 LRT 被 Aave 等借贷协议接受作抵押（24.3 Kelp），单个 AVS 的故障就能传染到整个 DeFi 借贷栈。</p>
@@ -2473,6 +2546,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="25-pendle-ptyt-berachain-pol-real-yield" id="ch26"><span class="chapter-num">Chapter 26</span><br>第 25 章：Pendle PT/YT 完整数学 + Berachain PoL + Real Yield 辨真伪</h2>
 
+<blockquote>
+<p>TT Wong 2021 年在新加坡的房间里盯着传统金融的 zero-coupon bond strip 想：<strong>任何生息资产 = 未来一笔本金 + 中间所有利息流——为什么不能在链上把它真的切开</strong>？传统债券市场是机构特权（Bloomberg 终端、上千万美元起步），Pendle 用 ERC-20 让任何人花 100 USDC 就能玩同样的游戏：买 PT-stETH-2026-12 锁定 8% 固收、买 YT-stETH-2026-12 押注利率上涨。Pendle 在 2024-2025 LRT 浪潮中 TVL 从 $230M 飙到 $4.4B、被所有 LST/LRT 协议视为"标配集成"。这一章把 Pendle 一次讲透——SY=PT+YT 的不变量、AMM 的隐含 APY 数学、还有怎么 5 分钟判断一个 80% APR 的项目是 Real Yield 还是庞氏。</p>
+</blockquote>
 <h3 id="251-pendle">25.1 Pendle：把生息资产切成本金+利息</h3>
 <p>任何生息资产 $A$ 都可以分解为「未来某时点的本金」+「现在到那个时点之间的利息流」。Pendle 把这一分解写成两个独立 ERC-20——PT 和 YT——让本金和利息分别可交易。这等价于债券市场的 strip + zero-coupon——但比传统市场更激进，<strong>任何 ERC-4626 / yvUSD / aUSDC / stETH 都可以一键切片</strong>。</p>
 <figure><img src="diagram-2f177b8d7b.png" alt="mermaid diagram"></figure>
@@ -2585,6 +2661,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="26-mev-flashbots-mev-boost-buildernet-suave-mev-burn" id="ch27"><span class="chapter-num">Chapter 27</span><br>第 26 章：MEV 全景（Flashbots / MEV-Boost / BuilderNet / SUAVE / MEV-Burn）</h2>
 
+<blockquote>
+<p>Phil Daian 是康奈尔的博士生，2019 年和几个同事写了一篇叫 <em>Flash Boys 2.0</em> 的论文——名字致敬 Michael Lewis 的《Flash Boys》（讲华尔街高频交易的黑暗面）。Phil 的发现更黑暗：以太坊 mempool 里每天上演前置交易+三明治+清算大战，套利者赚走 $5-10B/年——<strong>这些钱的来源是普通用户每笔 swap 多付的滑点</strong>。论文一出引爆 DeFi 社区，Phil 和团队成立 Flashbots，给搜索者建私有 mempool（不让 sandwich bot 看见你的 tx）、给 validator 建拍卖系统（让 MEV 利润竞标）。<strong>Flashbots 的目标不是"消灭 MEV"——MEV 是博弈论的必然产物——而是"把它从黑暗丛林变成有规则的拍卖场"</strong>。这一章讲 MEV 五大类、Flashbots/PBS/MEV-Boost 三层架构、和 sandwich 利润的数学。</p>
+</blockquote>
 <h3 id="261-mev">26.1 MEV 是什么</h3>
 <p><strong>MEV（Maximal Extractable Value）</strong>：区块内交易的"排序、插入、删除"权限本身具有市场价值——builder/proposer 通过支配这种权限能提取额外利润。Daian 等 2019 年的 <em>Flash Boys 2.0</em> 把 MEV 从黑话推上学术议程：链上是有"前置交易+清算+套利"竞速场的，赢家拿区块内最佳座次的代价是付给 builder 的 priority bid。</p>
 <p>每年估算 $5-10B 规模。本章把 MEV 拆成「五类机会」+「Flashbots/MEV-Boost/PBS 三层架构」+「sandwich 利润数学」，回答两个问题：MEV 怎么挣？协议怎么防？</p>
@@ -2642,6 +2721,7 @@ $$</p>
 <h2 id="27-4337-7702-permit2-cowswap-oif" id="ch28"><span class="chapter-num">Chapter 28</span><br>第 27 章：账户抽象 + 意图（4337 / 7702 / Permit2 / CowSwap / OIF）</h2>
 
 <blockquote>
+<p>你妈想买 1000 USDC 的 ETH，你给她讲了 30 分钟："先去交易所买 ETH 转过来——错，先建钱包记 12 个助记词、不能截图——别用那个 PDF 的截图，会被钓鱼……" 一小时后她说"算了我直接去微信群找人换"。<strong>DeFi UX 是 DeFi 增长的最大瓶颈</strong>——所有人都同意，但十年没人解决。账户抽象（4337/7702）和意图（intent）是 2024-2026 年两条同时进展的解药：<strong>前者把账户从"私钥+EOA"放宽到"任意逻辑合约"——社交恢复、batch 交易、用 USDC 付 gas 都成为可能</strong>；<strong>后者把"用户必须懂 DEX 路径滑点"放宽到"用户只签结果，solver 网络去找最优路径"</strong>。两者合一就是<strong>普通人不用懂私钥也不用懂 DeFi 就能用 DeFi</strong>——这才是下一个十亿用户的入口。</p>
 <p>本章两条主线：① <strong>账户抽象</strong>——把"账户=私钥签名的 EOA"放宽为"账户=任意智能合约"，让 batch / 社交恢复 / paymaster 成为可能（4337 + 7702 + Permit2）。② <strong>意图</strong>——把"用户必须指定 DEX/路径/滑点"放宽为"用户只声明结果约束，solver 网络竞标实现"（CowSwap / UniswapX / OIF）。两者都在做同一件事：<strong>把 UX 工程化的责任从用户端转移到协议端 + solver 市场</strong>。</p>
 </blockquote>
 <h3 id="271-erc-4337">27.1 ERC-4337：账户抽象</h3>
@@ -2742,6 +2822,7 @@ permit2<span style="color: #000; font-weight: bold">.</span>permit<span style="c
 <h2 id="28-12-ai-defi" id="ch29"><span class="chapter-num">Chapter 29</span><br>第 28 章：风险全景 + 12 大事故复盘 + AI × DeFi + 自审查</h2>
 
 <blockquote>
+<p>这一章是 DeFi 工程师的"夜间读物"——12 个 $50M+ 事件、共计 $400 亿美元蒸发、读完会让你重新审视所有"看起来稳"的协议。Ronin 桥 5/9 multisig 被 LinkedIn 假招聘 PDF 钓鱼一夜失血 $625M；UST 死亡螺旋 7 天蒸发 $400 亿、把 Do Kwon 送进美国法院 15 年；Wormhole 一个 deprecated API 漏验证账户身份送出 $326M；Mango $5M 拉盘三家小盘 CEX 借走 $116M；Kelp DAO 1-of-1 DVN 配置错误送出 $292M。<strong>每一桩都不是"代码 bug"那么简单</strong>——根因往往是经济模型、跨协议假设、私钥管理、监管转向。这一章把 28 章前文的每一个不变量假设都扔回到事故里检验一遍——这不是吓你，是让你<strong>敬畏组合性</strong>。</p>
 <p>前 27 章把每个机制单独讲透，这一章是<strong>回放</strong>——把同一组事故从攻击面分类、根因链、五大铁律三个角度重看。每个 postmortem 都至少绑到前文某章的一个不变量假设破裂。</p>
 </blockquote>
 <h3 id="281">28.1 风险六大类</h3>
@@ -2868,6 +2949,9 @@ permit2<span style="color: #000; font-weight: bold">.</span>permit<span style="c
 - <strong>2020-02 bZx 两次 ~$954K</strong>：DeFi 历史上第一次大规模 oracle manipulation</p>
 <h3 id="283">28.3 三个深度复盘</h3>
 <h4 id="2831-ust-2022-05">28.3.1 UST 死亡螺旋（2022-05）</h4>
+<blockquote>
+<p>想象一栋楼有两部电梯：A 电梯（UST）说"我永远在 1 楼"、B 电梯（LUNA）说"我浮动"。规则是：A 不在 1 楼时，谁都能用 1 个 A 的票换"1 美元价值的 B 票"——市场会自动套利把 A 拽回 1 楼。<strong>这套机制在 LUNA 票还值钱时一直工作</strong>。问题来了：当 A 跌到 0.97、套利者大量铸 B 卖出，B 价格跌；A 还没回到 1 元、套利者要更多 B 票才换 1 美元价值；铸出的 B 更多被卖、B 价格继续跌。<strong>两部电梯互相往下拽——这就是死亡螺旋</strong>。2022-05-07 周末第一次脱锚开始，到 2022-05-13 一周内 UST 从 $1 跌到 $0.01、LUNA 从 $80 跌到 $0.0001、$400 亿市值蒸发。Do Kwon 流亡黑山被抓，2025 年在美国法院被判 15 年。</p>
+</blockquote>
 <p><strong>机制根因</strong>：UST 跌 → 套利者用 1 UST 换价值 $1 的 LUNA → 铸出的 LUNA 立刻被卖 → LUNA 价格跌 → 每 UST 换更多 LUNA → LUNA 供应爆炸——<strong>死亡螺旋</strong>。</p>
 <p><strong>时间线</strong>（来源：<a href="https://corpgov.law.harvard.edu/2023/05/22/anatomy-of-a-run-the-terra-luna-crash/">Anatomy of a Run 哈佛</a>、<a href="https://arxiv.org/pdf/2207.13914">Terra-Luna ScienceDirect</a>）：
 - 2022-05-07：两大地址从 Anchor 提走 $375M UST。Curve 3pool 出现 UST/3CRV 卖压。UST 跌到 ~$0.972。
@@ -2876,6 +2960,9 @@ permit2<span style="color: #000; font-weight: bold">.</span>permit<span style="c
 - 2022-05-16：UST/LUNA 基本归零。LUNA 总供应从 7.25 亿炸到 70 亿。</p>
 <p><strong>Do Kwon 后续</strong>：2024-2025 在美国受审，因 $40B 崩盘被判 15 年。教训见第 5.5 节。</p>
 <h4 id="2832-euler-v12023-03donatetoreserves">28.3.2 Euler V1（2023-03）：donateToReserves</h4>
+<blockquote>
+<p>Euler V1 团队为修复一个小 bug ("first depositor inflation") 加了个新函数叫 <code>donateToReserves</code>——名字听起来温暖：你可以"捐赠"给协议储备。功能审计了，bug 修复了，没人多想——直到 3 月 13 日凌晨。攻击者发现这个"捐赠"函数没做账户健康检查：你可以借入 100M、然后捐 100M、瞬间让自己看起来"严重资不抵债"——然后用第二个账户清算自己拿走清算折扣。$197M 抵押品就这么蒸发。<strong>这是 DeFi 史上最优雅的攻击之一</strong>——不是黑魔法，就是函数设计漏了一行 healthCheck。荒诞的是：攻击者最后归还了 $240M（多于偷的）——团队通过他的 OpSec 失误（在 Tornado Cash 之外的地址留过痕）找到他、谈判、施压、归还。</p>
+</blockquote>
 <p><strong>攻击链</strong>：
 1. Euler 引入 <code>donateToReserves</code> 函数（修复一个更小的"first depositor" bug）。
 2. 这个函数没做"健康检查"——你 donate 后不需要保证账户 HF 仍 &gt; 1。

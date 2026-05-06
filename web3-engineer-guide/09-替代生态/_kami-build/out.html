@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -769,6 +769,9 @@
 </section><section class="chapter">
 <h2 id="0-evm" id="ch02"><span class="chapter-num">Chapter 02</span><br>0 · 导论：EVM 不是世界的中心</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2024 年初，一个老 EVM 工程师同时拿到三家公司的面试题。Solana 公司让他解释为什么转账要"显式列账户"；Cosmos 公司让他设计一条 RWA 应用链；Sui 公司让他用线性类型重写 ERC-20。他三道全错——不是不会写代码，而是<strong>心智模型不对</strong>：他在用"合约 + mapping"的脑回路看四个完全不同的世界。本章先把这四套世界观摆上桌：Solana 把 EVM"通用服务器"做到极致，Cosmos 让每个应用自己当链，Move 把资产做成编译期不可复制的对象，Bitcoin 干脆<strong>故意不图灵完备</strong>。理解这四种"反 EVM"动机，才能读懂后面 53 章。</p>
+</blockquote>
 <h3 id="01-evm">0.1 为什么要学非 EVM</h3>
 <p>EVM 解决的是"通用应用服务器"问题；其他生态要么把这个问题做得更极致（Solana），要么换个问法（Cosmos、Move、Bitcoin）。</p>
 <p>当下（2026-04）格局总表：</p>
@@ -885,6 +888,10 @@
 </section><section class="chapter">
 <h2 id="1-solana" id="ch03"><span class="chapter-num">Chapter 03</span><br>1 · Solana 账户模型：状态属于账户而不是合约</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2017 年 Anatoly Yakovenko 在高通做 4G 基带固件，长期与硬件实时性死磕。他写下一份白皮书，主张区块链的瓶颈是"全网协调时钟"——所以应该把时钟做成<strong>任何节点都能本地验证的密码学对象</strong>（PoH），再把状态拆到无数个互不相干的账户里<strong>并行写</strong>。这两个直觉合在一起，就有了 Solana。代价是：在 EVM 里"状态属于合约"的常识，在这里<strong>完全反过来</strong>——状态属于账户，合约只是个"有写权限的程序 ID"。下面这段心智反转是后续 12 章的总开关。</p>
+<p><strong>类比图像</strong>：EVM 像一座中央仓库（合约自带库房，里面 mapping 摆一排排架子）；Solana 像一座<strong>自助寄存柜</strong>——每个柜子（账户）独立编号，柜门上写"哪个程序有钥匙"（owner），合约本身只是路过来开柜子的人。</p>
+</blockquote>
 <p>在 Solana 上，<strong>所有东西都是账户</strong>——钱包、token 余额、合约本身、每个 NFT 都是账户。账户里只有裸字节 (<code>data: Vec&lt;u8&gt;</code>) + 一个 <code>owner</code> 字段标明哪个 program 有权写入。</p>
 <h3 id="11-evm">1.1 与 EVM 的最大差异</h3>
 <p>EVM 世界：
@@ -994,6 +1001,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <h2 id="2-poh" id="ch04"><span class="chapter-num">Chapter 04</span><br>2 · PoH：可验证的全网时钟</h2>
 
 <blockquote>
+<p><strong>场景钩子</strong>：2017 年 Anatoly 在 Loom 第一次画 PoH 草图时，跟同事 Greg Fitzgerald 解释："想象沙漏——只不过是密码学沙漏。下面那粒沙没漏完，上面这粒就不可能存在。"SHA-256 是单线程不可并行的，把它当作"沙漏的下一粒沙"就拿到了一条<strong>全网都能本地验证的时间轴</strong>——共识协议不再需要花一半时间互相喊"现在几点"。这就是 PoH。常被人误解为"PoH 替代了 PoS"，<strong>完全不对</strong>：PoH 只是共识下面的时钟。</p>
 <p>共识基础与 Tower BFT 完整对比见模块 02 第 25-26 节。本节只讲 PoH 在 Solana 系统里独有的东西：它<strong>不是共识</strong>，是写在共识下面的时钟。</p>
 </blockquote>
 <p>PoH = 严格顺序的 SHA-256 哈希链：$h_{n+1} = \text{SHA256}(h_n)$。SHA-256 不可并行，leader 把事务 hash 喂进去就把它"钉"在这条链的某个位置。</p>
@@ -1040,6 +1048,9 @@ DEX 撮合账户       ←  owner = DEX Program
 </section><section class="chapter">
 <h2 id="4-sealevel" id="ch06"><span class="chapter-num">Chapter 06</span><br>4 · Sealevel：账户列表驱动的并行执行</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：EVM 的并行执行像北京二环——所有车（事务）都挤在一条路（合约状态）上，谁也不知道谁要去哪儿，只能排队。Solana 的解法是：<strong>进城前先填申报表</strong>——这辆车要去 1 号停车场、2 号停车场、3 号停车场（账户列表）。调度器一看：A 车去 1、2 号；B 车去 3、4 号；互不冲突 → 直接分到两条车道并行开。漏填一个停车场 = 海关直接拒入境（runtime 拒绝），没有"宽容退化为串行"这种事。这种<strong>严格</strong>是 Solana 把账户模型做到极致后的必然代价：要拿"高速公路"的吞吐，就得忍"申报表"的繁琐。</p>
+</blockquote>
 <p>Sealevel 要求事务<strong>静态声明所有账户</strong>，调度器据此在执行前构造依赖图，互不冲突的事务分到不同 CPU 核并行执行。没填全 = runtime 拒绝入队。</p>
 <h3 id="41">4.1 调度算法</h3>
 <figure><img src="diagram-90890ff697.png" alt="mermaid diagram"></figure>
@@ -1100,6 +1111,9 @@ DEX 撮合账户       ←  owner = DEX Program
 </section><section class="chapter">
 <h2 id="5-anchorsolana" id="ch07"><span class="chapter-num">Chapter 07</span><br>5 · Anchor：Solana 的声明式框架</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2021 年 Armani Ferrante 在 Serum 撸 native Solana 程序时崩溃了——一个简单的转账要写 200 行账户校验、序列化、PDA 派生，<strong>80% 是机械样板</strong>。他用一个周末撸出 Anchor 第一版宏，把这些样板全塞进 <code>#[derive(Accounts)]</code>。社区接得飞快：3 个月内 Solana 上 80% 新项目用 Anchor，从此"写 Solana = 写 Anchor"成为默认。这是 Solana 史上最重要的工程师工具，也是非 EVM 世界少见的"DSL 把心智门槛打下一档"的成功案例。</p>
+</blockquote>
 <p>Anchor (<code>solana-foundation/anchor</code>，本教程用 0.31.1；Anchor 1.0 已发布但生态尚未全量迁移，0.31.1 仍是主流兼容版本) 用 Rust 过程宏把指令分发、账户校验、序列化、PDA 派生声明化，省去 60-70% 手写代码。</p>
 <h4 id="idl">三件套：程序 + IDL + 客户端</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>programs/counter/src/lib.rs   ← Rust 程序，用 Anchor 宏写
@@ -1235,6 +1249,9 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </section><section class="chapter">
 <h2 id="6-pinocchio-native-rust" id="ch08"><span class="chapter-num">Chapter 08</span><br>6 · Pinocchio：零依赖 Native Rust 框架</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Anchor 把入门门槛打下来了，但有一群人不买账：高频做市商。Phoenix DEX 的撮合内核每多一行 Anchor 宏展开，就多消耗几百个 CU；二进制大点 10 KB，链上部署租金就多一笔。2024 年 Anza（Solana Foundation 工程团队）拍桌子做 Pinocchio：<strong>零依赖、零拷贝、no_std</strong>，hello-world 从 5000 CU 砍到 600 CU，二进制从 100KB 砍到 5-10KB。Anchor 是给 90% 工程师用的；Pinocchio 是给最后 10% 极致优化派的——读 Phoenix / Mango v4 / Jupiter 内核之前先读它。</p>
+</blockquote>
 <h3 id="61-pinocchio">6.1 Pinocchio 定位</h3>
 <p><strong>Pinocchio</strong>（Anza 维护，2024-2025 兴起）是<strong>零依赖</strong>的 Native Rust 框架，专为 CU 和二进制大小敏感的程序设计。无需 <code>solana-program</code> crate，账户和指令数据以字节切片<strong>零拷贝</strong>读取。</p>
 <h3 id="62-pinocchio-anchor-native">6.2 Pinocchio 与 Anchor / 传统 Native 对比</h3>
@@ -1472,6 +1489,9 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </section><section class="chapter">
 <h2 id="9-firedancer" id="ch11"><span class="chapter-num">Chapter 11</span><br>9 · Firedancer：客户端多元化</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2022 年 Solana 整链停机 7 次，最长一次 17 小时——根因都是同一个：<strong>全网 100% 跑同一份 Rust 客户端</strong>，一颗 bug 拖垮所有节点。Jump Crypto 的 Kevin Bowers 当时是芝加哥高频交易工程师，他看不下去：写过纳秒级交易系统的人，怎么能容忍这种单点故障？2022 年底他带队用<strong>纯 C</strong> 把 Solana 客户端从零写一遍，目标 1M TPS——这就是 Firedancer。2026-Q1 主网激活至今 100% 在线。意义不在 TPS，在<strong>客户端多元化</strong>：Solana 终于有了 Ethereum 风格的"Geth 挂了还有 Besu"。</p>
+</blockquote>
 <p>2026-04 Solana 客户端版图：</p>
 <figure><img src="diagram-2431f44097.png" alt="mermaid diagram"></figure>
 
@@ -1517,6 +1537,9 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </section><section class="chapter">
 <h2 id="10-jito-mevtiproutersquads" id="ch12"><span class="chapter-num">Chapter 12</span><br>10 · Jito MEV、TipRouter、Squads</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Solana 没有 mempool，事务直发 leader——理论上没有 EVM 那种 mempool 抢跑。但人类的贪婪不会消失：搜索者们想出"私下塞钱给 leader 优先打包"的玩法。2022 年 Jito Labs 的 Lucas Bruder 看到这个灰色市场，干脆把它<strong>协议化</strong>：明码标价的 tip 通道 + 多笔事务原子打包（bundle）+ tip 按 stake 分给全网验证人。今天 Jito-Solana 客户端占 ~72% stake，几乎所有头部协议都用 Squads 多签管 program upgrade。<strong>MEV 没法消灭，但可以阳光化</strong>——Jito 是这个观点最成功的实现。</p>
+</blockquote>
 <h3 id="101-jito-mev">10.1 Jito MEV 机制</h3>
 <p>Solana 无 mempool，事务直发 leader。Jito 给 leader 加"VIP tip 通道"——付额外小费排优先队列，小费按规则分给全网验证人。</p>
 <h3 id="102-jito">10.2 Jito 三件套</h3>
@@ -1562,6 +1585,9 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </section><section class="chapter">
 <h2 id="11-solana-mobile-svm" id="ch13"><span class="chapter-num">Chapter 13</span><br>11 · Solana Mobile 与 SVM 外延</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2023 年 Solana Mobile 出第一代 Saga 手机时，发布会人到位、媒体齐——但只卖出 几千台。Anatoly 当时打趣："反正 BONK 空投就值回了。" 业界都以为 Solana Mobile 是 Anatoly 的偏执项目，会很快关停。但 2025 年 Seeker（Chapter 2）一出，<strong>72 小时预订突破 100 万台</strong>，成了 Web3 历史最大硬件发布。秘密武器：跳过 Apple/Google 抽成的 dApp Store + SKR 代币奖励。这个故事说明非 EVM 不只是技术抽象之争，<strong>渠道也是一个独立战场</strong>。配合 SVM 外延（一次写多链跑），是 Solana 把 EVM 远远抛在身后的两个非技术武器。</p>
+</blockquote>
 <h3 id="111-saga-seeker">11.1 Saga → Seeker</h3>
 <ul>
 <li><strong>Saga</strong>（2023 上市，2025-09 停止安全补丁）</li>
@@ -1618,6 +1644,9 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 
 <p>一次 Anchor 编写可跑在 4-5 条链上——非 EVM 里<strong>最成功的 VM 标准化</strong>。</p>
 <h3 id="115-solana-outage">11.5 Solana 历史 outage 与稳定性恢复</h3>
+<blockquote>
+<p><strong>场景钩子</strong>：2022 年 5 月 1 日凌晨 4 点，一个值班工程师盯着 Solana 主网区块号停在了某一个数字上，<strong>整整 7 小时一动不动</strong>——一群 NFT mint bot 用 600 万笔 tx 灌爆了 leader 流水线。Discord 里全是骂声："这也叫高性能链？" 那一年 Solana 一共停机 7 次。但 2024-02-06 之后，至 2026-04 已连续运行 26 个月，&gt;99.95% 可用——靠的不是某一个魔法补丁，而是<strong>七步连环改造</strong>：QUIC 替 UDP、stake-weighted QoS、本地 fee market、Firedancer 客户端多元化……生产部署前把这段历史读懂，比读任何官方营销文档都重要。</p>
+</blockquote>
 <p>Solana 早年因为单一客户端 + 高吞吐压力，多次出现整链停机。生产部署前必须知道这段历史：</p>
 <table>
 <thead>
@@ -1794,6 +1823,10 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 </section><section class="chapter">
 <h2 id="13-cosmosapp-chain" id="ch15"><span class="chapter-num">Chapter 15</span><br>13 · Cosmos：app-chain 哲学</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2014 年 Jae Kwon 写出 Tendermint 论文，把 PBFT 拍扁成"3 秒 finality 的实用 BFT"。他与 Ethan Buchman 合伙做 Cosmos，喊出"Internet of Blockchains"——每条链都是独立王国，靠 IBC 高速公路互通。理想很美。但 Cosmos 的故事也有黑历史：<strong>ATOM 2.0 提案被社区否决</strong>、<strong>Tendermint Inc 与 Cosmos Hub 治理摩擦后改名 CometBFT</strong>、<strong>dYdX 跑路了又回来</strong>……一直到 2025 年 IBC Eureka 终于把 Ethereum 接进来时，社区才松一口气。app-chain 哲学不是免费午餐：你要主权，就得自己招验证人、自己造工具链、自己跨链。这一章讲为什么有人愿意付这个代价。</p>
+<p><strong>类比图像</strong>：Solana 像高速公路（吞吐高、车道并行、偶尔堵塞）；Cosmos 像独立王国邦联（每个国家自己的律法，靠条约通商）；Ethereum 像超大型购物中心（每家店共用电梯和保洁，但都得排队）。</p>
+</blockquote>
 <p>以太坊"一条链承载所有应用"；Cosmos"每个应用配自己的链"——链是 OS，dApp 是其上的服务，链间通过 IBC 互通资产和消息。</p>
 <h4 id="evm-vs-cosmos">EVM vs Cosmos 架构对立</h4>
 <figure><img src="diagram-5e92268bcc.png" alt="mermaid diagram"></figure>
@@ -1940,6 +1973,9 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 </section><section class="chapter">
 <h2 id="16-ibc-eureka-v10" id="ch18"><span class="chapter-num">Chapter 18</span><br>16 · IBC Eureka v10：跨链互操作</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2022 年 Ronin 桥被朝鲜黑客掏走 6 亿美元、2022 年 Wormhole 桥失血 3.2 亿……同一年 Cosmos 上的 IBC 累计搬运了上百亿美元资产，<strong>零损失</strong>。原因很简单：IBC 不依赖"多签托管 + oracle"这种链下信任，而是让每条链<strong>在对端跑一份轻客户端</strong>——把"信任桥的节点"变成"信任两条链的共识 + 一段开源验证代码"。2025 年 4 月 IBC Eureka v10 把这套思路延伸到 Ethereum：在 EVM 上跑 CometBFT 验签太贵？那就用 ZK 把它压成一个 200KB 的 proof。第一笔 ATOM ↔ ETH 跨链交易在 2025-03-28 落地。<strong>Cosmos 这条赛道唯一没被黑的桥协议，正在吃下整个 EVM 跨链市场。</strong></p>
+</blockquote>
 <p>IBC 核心：每条链在对端跑轻客户端验证真实性，relayer 只搬运不能伪造。<strong>IBC Eureka v10</strong>（2025-Q1 主网）用 ZK light client 把协议延伸到 Ethereum、Solana 等非 Cosmos 链。</p>
 <h3 id="161">16.1 协议分层</h3>
 <figure><img src="diagram-0e56a2bcc8.png" alt="mermaid diagram"></figure>
@@ -2004,6 +2040,9 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 </section><section class="chapter">
 <h2 id="17-cosmwasm-30wasm" id="ch19"><span class="chapter-num">Chapter 19</span><br>17 · CosmWasm 3.0：WASM 合约引擎</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2018 年 Confio 团队的 Ethan Frey 看着 EVM 重入漏洞清单（DAO hack、Cream Finance、Fei……），决定从根上堵住。他在 Cosmos 上写出 CosmWasm：用 WASM 替 EVM bytecode、用 Rust 替 Solidity，<strong>关键改动是合约间调用强制异步</strong>——sub-message 提交后本笔事务先跑完，reply 回来另算一次执行。这一刀切死了重入攻击整类。代价是写 DEX 撮合得用"事件驱动"思维。Neutron 把这套引擎当作主战场，Osmosis 把它跟 module 混用，今天 Cosmos 上的 DeFi 几乎都跑在 CosmWasm 上。</p>
+</blockquote>
 <p>CosmWasm：Rust 编写、编译成 WASM、部署到任何带 <code>x/wasm</code> 模块的 Cosmos 链。</p>
 <h4 id="evm">与 EVM 合约的差异</h4>
 <table>
@@ -2336,6 +2375,10 @@ blogchaind<span style="color: #F8F8F8"> </span>q<span style="color: #F8F8F8"> </
 </section><section class="chapter">
 <h2 id="20" id="ch22"><span class="chapter-num">Chapter 22</span><br>20 · 资源模型：用类型系统封装资产</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2019 年 Facebook 想做 Libra 稳定币时，技术总监 Sam Blackshear 翻完 Solidity 漏洞库后做了个判断：<strong>绝不能让"资产"是个数字</strong>。数字可以加可以减、可以"被忘记"——重入、溢出、意外销毁，每一个都源于"余额是个 uint256"。他主导设计了 Move：<strong>资产是一种线性类型对象</strong>，编译期就禁止复制和凭空丢弃。Diem 项目最终被监管干掉，但 Move 活了下来——核心团队拆成两支：一支做 Aptos（保留 Diem 的"资源挂在 address 下"），一支做 Sui（把资源拆成独立对象，每个对象自带 owner）。两支用同一份语法但<strong>几乎不能跨链复用</strong>。这是区块链史上罕见的"语言比项目活得更久"的故事。</p>
+<p><strong>类比图像</strong>：Solidity 的余额像银行存款（一串数字）；Move 的资产像物理金条（必须有人拿在手里，转账 = 把金条搬过去，编译器盯着它绝对不消失）。</p>
+</blockquote>
 <p>Move 把"资产"做成<strong>有线性类型的对象</strong>——编译期保证不可复制、不可凭空消失，必须显式 transfer / store / destroy。</p>
 <h4 id="solidity">与 Solidity 的根本对立</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// Solidity: 余额是 mapping 里的数字</span>
@@ -2409,6 +2452,9 @@ public fun transfer&lt;T&gt;(coin: Coin&lt;T&gt;, recipient: address) {
 </section><section class="chapter">
 <h2 id="21-sui-mysticeti-dag" id="ch23"><span class="chapter-num">Chapter 23</span><br>21 · Sui 对象模型与 Mysticeti DAG</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Diem 项目 2022 年被美国国会按死，研究院顶级人马（Evan Cheng、Sam Blackshear、Adeniyi Abiodun）决定不给 Meta 打工了——他们出来做 Mysten Labs，把 Move 重写成"以对象为中心"的版本。他们的核心赌注：<strong>owned 对象的事务天然不冲突</strong>，所以它们可以跳过共识、走 fast path（&lt; 300ms）；只有 shared 对象的写才走 Mysticeti DAG（~500ms）。这跟 Aptos 那支老团队选的"乐观并行"完全反方向：Sui 让类型系统<strong>静态保证</strong>并行，Aptos 让 Block-STM <strong>运行时检测</strong>冲突。一个语言、两条路径、两条主网，至今谁也说服不了谁。</p>
+</blockquote>
 <h3 id="211-sui-move-vs-aptos-move">21.1 Sui Move vs Aptos Move</h3>
 <figure><img src="diagram-3cfccf6520.png" alt="mermaid diagram"></figure>
 
@@ -2644,6 +2690,9 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 </section><section class="chapter">
 <h2 id="22-aptos-block-stm" id="ch24"><span class="chapter-num">Chapter 24</span><br>22 · Aptos 全局存储与 Block-STM</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Diem 团队解散时，CEO Mo Shaikh 与 CTO Avery Ching 拐弯做了 Aptos——保留 Diem 原版"资源挂在 address 下"的存储模型（用着舒服），但执行层换成了<strong>乐观并行 Block-STM</strong>：所有事务先假装无冲突并行跑，事后用 multi-version storage 检测冲突，撞了就回滚重排。这条路反过来挑战 Sui："你不需要让用户思考 owned/shared，并行让虚拟机自己处理。"Aptos 与 Sui 同月主网（2022-10），但两家在 Move 标准库、token 规范、共识算法上几乎彻底分家。今天 Sui TVL ≈ 1B、Aptos ≈ 500M——技术上分庭抗礼，市场口碑略有差距。</p>
+</blockquote>
 <h3 id="221-aptos">22.1 Aptos 的全局存储模型</h3>
 <p>Aptos 沿用 Diem Move 的"resource lives at an address"风格，资源<strong>挂在某个 address 的 storage slot 上</strong>，不是独立对象。</p>
 <h4 id="api">核心 API</h4>
@@ -2929,6 +2978,9 @@ public entry fun mint(creator: &amp;signer, name: String) {
 </section><section class="chapter">
 <h2 id="24-move-prover" id="ch26"><span class="chapter-num">Chapter 26</span><br>24 · Move Prover：形式化验证进生产</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Solidity 圈做形式化验证一直是奢侈品——Certora 一年百万美元起步，多数项目只在 audit 前临时上一次。Move Prover 把这件事内置进编译器：写完合约直接 <code>aptos move prove</code>，调 Boogie + Z3 求解器，把"总供应量恒定"这种不变量当 CI 测试跑。今天 aptos-framework 100% 形式化验证，是公链史上最大的"上链 spec"工程。它<strong>不能替代审计</strong>（不会证明经济激励正确），但能在写代码时就堵死溢出、除零、权限漏洞——每一个曾经吃掉 EVM 协议数千万美元的 bug 类型。</p>
+</blockquote>
 <p>Move 自带<strong>形式化验证子语言</strong> (<code>spec</code> 块)，编译期证明"总供应量恒定"等性质——这在 Solidity 圈要用 SMTChecker、Certora 才能做。</p>
 <h4 id="spec">spec 示例</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>public entry fun increment(account: &amp;signer) acquires Counter {
@@ -2985,6 +3037,9 @@ spec increment {
 </section><section class="chapter">
 <h2 id="25-zkloginaptos-keylesswalrusdeepbook" id="ch27"><span class="chapter-num">Chapter 27</span><br>25 · zkLogin、Aptos Keyless、Walrus、DeepBook</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：让妈妈用钱包是 Web3 永恒的笑话。私钥助记词 12 个、写在纸上、塞进保险柜——把 99% 的潜在用户挡在门外。EVM 这边搞 ERC-4337 + Privy/Magic 试图用 MPC 绕过；Mysten Labs 走得更激进：<strong>把 OAuth 的 JWT 直接做成 zk proof</strong>——你用 Google 账户登录 dApp 时，背后一个 Groth16 证明把"这个人就是 Google 认证的 alice@gmail.com"贴到链上地址。私钥不在 Google 手里、没在用户脑子里、依然 self-custody。Aptos Keyless（AIP-61）走同样路线。这是非 EVM 第一次在"消费级账户体验"上<strong>领先 EVM</strong>。</p>
+</blockquote>
 <h3 id="251-zkloginsui">25.1 zkLogin（Sui）</h3>
 <p>用户直接用 Google/Apple/Facebook/Twitch 账户登录 Sui dApp，背后用 Groth16 zk 证明把"OAuth ID token 与链上地址绑定"放上链。</p>
 <h4 id="_11">工作流</h4>
@@ -3206,6 +3261,10 @@ aptos<span style="color: #F8F8F8"> </span>move<span style="color: #F8F8F8"> </sp
 </section><section class="chapter">
 <h2 id="27-utxo" id="ch29"><span class="chapter-num">Chapter 29</span><br>27 · UTXO：余额是钱包算出来的</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：在 Bitcoin Core 老炮论坛上贴一个新提案，最高频的回复是"Why? 不行。"——Pieter Wuille、Andrew Poelstra、Greg Maxwell 这帮人对"加智能合约"的执念是宗教级别的反感：<strong>Bitcoin 是货币，不是云服务</strong>。这种保守造就了 UTXO + Script 这套"故意不图灵完备"的极简内核：链上没有账户、没有余额、甚至没有"状态"——只有未花输出（UTXO）。钱包显示的"你有 0.5 BTC"是客户端把属于你私钥的所有 UTXO 加总算出来的。这种"反 EVM"的极简性带来意外的红利：天然并行（不同 UTXO 互不影响）、天然隐私（HD 钱包给每笔收款新地址）、最小攻击面。后面 11 章会看到，Bitcoin 老炮们怎么用一堆 L2（Lightning、Citrea、Babylon、RGB……）把可编程性偷偷塞回来——但<strong>主链 1 字节不让动</strong>。</p>
+<p><strong>类比图像</strong>：EVM 的账户像支付宝（一个账户余额表，所有人共用一张表）；Bitcoin 的 UTXO 像现金信封（每张钞票有自己的编号，转账 = 把整摞信封凑数交出去，找零再装回新信封）。</p>
+</blockquote>
 <p>Bitcoin 链上无"账户"无"余额"，只有未花输出（UTXO）。钱包显示的余额是客户端把属于你私钥的所有 UTXO 加总计算出来的。</p>
 <h4 id="_13">一笔交易结构</h4>
 <figure><pre><code class="language-mermaid">flowchart LR
@@ -3372,6 +3431,9 @@ OP_DUP OP_HASH160 &lt;20-byte pubkey hash&gt; OP_EQUALVERIFY OP_CHECKSIG
 </section><section class="chapter">
 <h2 id="29-taprootschnorr-mast-tapscript" id="ch31"><span class="chapter-num">Chapter 31</span><br>29 · Taproot：Schnorr + MAST + Tapscript</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2021 年 11 月，Bitcoin 经过四年讨论、两次激活流程，终于把 Taproot 软分叉激活——这是自 2017 年 SegWit 之后最大的一次升级。Pieter Wuille、Tim Ruffing、Jonas Nick 把 Schnorr 签名 + MAST 脚本树 + Tapscript 三件套捆在一起，目标是<strong>让复杂的多签、协议、Lightning channel 在链上长得跟普通转账一模一样</strong>——别人在区块浏览器看到一笔 P2TR 输出，无从分辨是 1 个人签的、100 个人 MuSig2 聚合签的、还是闪电通道关闭。这种"隐写式隐私"是 BTC 老炮们认可的妥协形态：不引入图灵完备，但偷偷把表达力推上一档。Ordinals、Runes、BitVM 全都建在 Taproot 之上。</p>
+</blockquote>
 <p>Taproot（BIP-340/341/342，2021-11 激活）把 <strong>Schnorr 签名 + MAST 脚本树 + 新 sighash 算法</strong>打包，让复杂脚本在大部分情况下与普通转账<strong>在链上长得完全一样</strong>。</p>
 <h4 id="taproot">Taproot 的三件套</h4>
 <h5 id="bip-340-schnorr">BIP-340 · Schnorr 签名</h5>
@@ -3409,6 +3471,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="30-ordinalsbrc-20-runes" id="ch32"><span class="chapter-num">Chapter 32</span><br>30 · Ordinals、BRC-20 与 Runes</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2023 年 1 月，工程师 Casey Rodarmor 公布 Ordinals 协议——给每一聪 BTC 编号，把任意字节塞进 Taproot witness。Bitcoin Core 老炮们当场炸锅：Luke Dashjr 公开骂"这是攻击 Bitcoin"、要求矿工过滤；Adam Back 阴阳怪气；Pieter Wuille 罕见沉默。但市场不听老炮的：3 个月内 inscription 数量爆到千万级，BRC-20 meme 币把链费打到 100 sat/vB，矿工们一边骂一边收 fee。Casey 后来又出了 Runes 试图把 BRC-20 的状态膨胀压回去。<strong>这是 Bitcoin 历史上最大的文化分裂</strong>：极简内核不愿意动，但社区把"链上数据存证"硬塞进了 witness——你怎么看待这件事，决定你站哪一边。</p>
+</blockquote>
 <p>用 Taproot 的 script-path 把任意字节封装到 witness 里，并用"序号 satoshi"给每一聪 BTC 一个永久编号。</p>
 <h4 id="ordinals-theory">序号理论（Ordinals theory）</h4>
 <ul>
@@ -3473,6 +3538,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="31-lightning-network-ldk" id="ch33"><span class="chapter-num">Chapter 33</span><br>31 · Lightning Network 与 LDK</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2015 年 Joseph Poon 与 Thaddeus Dryja 在白皮书里写下"Bitcoin 的可扩展性不应该靠加块大小，而靠把支付推到链下"——4 年后 Lightning 主网上线。今天 Block（Jack Dorsey 的 Cash App）、Strike、Binance 出入金、阿根廷的全国支付都跑在 Lightning 上。HTLC 多跳路由的数学非常优雅：要么所有跳成功，要么全不动；中间节点挣 0.001% 路由费、不承担本金风险。但 Lightning 也在悄悄变质——节点数从 2022 年高峰 20,700 跌到 14,940 然后回升至 17,000，<strong>总容量却在持续上升</strong>：钱在向少数机构节点集中。这是去中心化退步还是金融成熟标志？读完这一节自己判断。</p>
+</blockquote>
 <p>Lightning 是基于 Bitcoin 的<strong>链下支付通道网络</strong>：双方在主链上锁资金开通道，链下无限次结算，close 通道把最终状态写回链上。</p>
 <h4 id="_15">单通道生命周期</h4>
 <figure><img src="diagram-db665e3c85.png" alt="mermaid diagram"></figure>
@@ -3540,6 +3608,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="32-bitvm-2-citreabtc" id="ch34"><span class="chapter-num">Chapter 34</span><br>32 · BitVM 2 与 Citrea：BTC 的乐观执行</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2023 年 10 月，独立研究者 Robin Linus 在密码学论坛贴出 BitVM 白皮书：<strong>Bitcoin 主链不需要图灵完备——只需要让矿工裁决谁说谎。</strong> 他用 Lamport 签名 + 二分挑战，把任意计算编码成"链下执行 + 链上仲裁"，实质上把 Bitcoin 变成了乐观 rollup 的 settlement 层。1 年后 BitVM 2 把安全假设降到 <strong>1-of-n existential honesty</strong>——只要 n 个节点里有 1 个诚实，桥就安全。这是自 Lightning 以来 Bitcoin 表达力最大的一次跃进，<strong>完全不需要软分叉</strong>。Citrea 在 2026-01-27 用 BitVM2 桥上线主网，第一个真正 trust-minimized 的 BTC L2。</p>
+</blockquote>
 <p>BTC 矿工不跑复杂程序，但愿意按标准脚本仲裁。BitVM 2：操作员链下执行并承诺结果，有人挑战时用 3-4 笔链上交易完成仲裁。</p>
 <h4 id="bitvm-2026">BitVM 演进与 2026 状态</h4>
 <table>
@@ -3614,6 +3685,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="33-stacks-nakamoto-sbtc" id="ch35"><span class="chapter-num">Chapter 35</span><br>33 · Stacks Nakamoto 与 sBTC</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2017 年 Muneeb Ali 与 Ryan Shea 在普林斯顿做 Blockstack（后来的 Stacks），是少数 SEC 批准过 Reg A+ 公开发行的区块链项目。他们的赌注：<strong>BTC 不能升级，但可以做一条独立 PoS 链定期把状态摘要写回 BTC</strong>——这样 Stacks 上的合约能"借用 BTC 的 finality"。2024 Nakamoto 升级把出块时间从 10 分钟砍到 5 秒，2024-12 sBTC 主网上线（1:1 BTC 锚定，14+ 联邦签名者）。这条路比 Citrea 老 5 年，比 Babylon 早 3 年——Stacks 是 BTC 生态最早跑通"借安全"的链。</p>
+</blockquote>
 <p>Stacks 有独立共识（PoX，leader 选举消耗 BTC），定期把账本摘要写回 BTC 主链；sBTC 1:1 锚定 BTC。</p>
 <h4 id="_16">核心机制</h4>
 <table>
@@ -3679,6 +3753,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="34-babylonbtc-staking-pos" id="ch36"><span class="chapter-num">Chapter 36</span><br>34 · Babylon：BTC Staking 给 PoS 链借安全</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：David Tse 是斯坦福的信息论教授，2022 年他读完 EigenLayer 白皮书后想：ETH 能给 AVS 借安全，那 BTC 这块沉睡的 1.5 万亿美元怎么办？他与团队设计了 <strong>EOTS（Extractable One-Time Signature）</strong>——如果 staker 在 PoS 链上同高度签了双花，他的 BTC 私钥<strong>会从签名里被任何人提取出来</strong>，被罚没的 BTC 直接销毁。这是把 BTC 自托管 staking 变成可能的数学魔法。Phase-1 主网（2024-08）累计锁了 57,000+ BTC（~40 亿美元），是 BTC 老炮们罕见的"愿意借出 BTC"行为。<strong>Babylon 与 EigenLayer 是同代人但走完全不同的数学路径。</strong></p>
+</blockquote>
 <h3 id="341">34.1 机制</h3>
 <figure><img src="diagram-1ca056414c.png" alt="mermaid diagram"></figure>
 
@@ -3735,6 +3812,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="35-rgbliquid-btc-l2" id="ch37"><span class="chapter-num">Chapter 37</span><br>35 · RGB、Liquid 与其他 BTC L2</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Blockstream 的 Adam Back（HashCash 发明人）2018 年做出 Liquid 联邦侧链——<strong>~15 家机构跑节点、用 Confidential Transactions 隐藏金额与资产</strong>。当时被嘲讽"中心化 BTC L2 哪个不是骗局"，但 7 年后 Liquid 成了机构 RWA、Tether USDt-Liquid、合规稳定币的事实主场。2026-03 Liquid 又干了一件大事：<strong>首次后量子签名（SHRINCS）实际资金转账</strong>——比 BTC 主网领先了至少 5 年的后量子准备。RGB（2025-07 主网）走完全相反的方向：链上不存任何 RGB 状态，全靠客户端 P2P 验证 + Lightning 通道流转，理论上限 40M tx/s。两条路都是 BTC L2，技术哲学却南辕北辙——这一节带你看清 BTC L2 爆炸式增长里谁是真材料。</p>
+</blockquote>
 <h3 id="351-rgb">35.1 RGB：客户端验证的智能合约</h3>
 <p>RGB 是 <strong>client-side validation</strong> 的极致形态：交易在 Lightning P2P 网络点对点传播，BTC 主链只做"防双花承诺"。</p>
 <table>
@@ -4062,6 +4142,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="38-tonactor" id="ch41"><span class="chapter-num">Chapter 41</span><br>38 · TON：Actor 异步消息的极致</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：2018 年 Telegram 创始人 Pavel Durov 兄弟想给 9 亿用户做一条链，集结俄系顶级密码学家写出 TON（Telegram Open Network）。SEC 一脚踩死后，团队解散；TON Foundation 把代码开源接力跑。今天 Telegram Mini Apps 月活 5 亿，STON.fi DEX 累计 swap volume 58 亿美元——一个<strong>没有美国市场</strong>的 Web3 巨人。技术上 TON 是怪胎：<strong>所有合约调用都是异步消息</strong>（actor 模型推到尽头）、Workchain 自动分片、FunC 写起来像 LISP——但在 Telegram 内嵌 WebView 的分发渠道下，UX 漏斗短到极致：开聊天 → 点 Mini App → 一键登录 → 交易。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：CosmWasm sub-message 是"主流程同步 + reply 异步"，TON 把整个调用模型推到尽头——<strong>所有调用都是异步消息，没有同步 call</strong>。这堵死了重入攻击整类，代价是不能"调一个函数等返回值"。</p>
 <table>
 <thead>
@@ -4188,6 +4271,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="39-near-chain-signatures" id="ch42"><span class="chapter-num">Chapter 42</span><br>39 · NEAR：链抽象与 Chain Signatures</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Illia Polosukhin 在 Google 研究院共同写出 Transformer 论文（"Attention Is All You Need"）后，2018 年与 Alex Skidanov 创立 NEAR——一个用机器学习背景做的链。NEAR 走过很多弯路：动态分片（Nightshade）真的跑通了，但 2022-2023 拿不到主流 mindshare。2024 年团队做了个大胆的转向：<strong>chain abstraction</strong>——用一个 MPC 网络让 <code>alice.near</code> 一对私钥派生并代签 BTC/ETH/SOL 25+ 条链的交易，不需要桥、不需要 wrap，钱直接在原链上动。配合 Intents（用户表达"想干啥"，Solver 网络竞拍最优路径），NEAR 把"跨链 UX"做成了协议级原语，反过来吃掉 LayerZero/Wormhole 的午餐。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：EVM/Solana 的私钥只能签本链；NEAR 用一个 MPC 网络让 <code>alice.near</code> 一对密钥<strong>派生并代签 BTC/ETH/SOL/Cosmos 25+ 条链的交易</strong>——不需要桥、不需要 wrap，钱直接在原链上动。</p>
 <blockquote>
 <p>共识 Doomslug（PoS BFT）+ Nightshade 动态分片 + WASM 执行细节略；NEAR 工程师真正用得上的两件事是 <strong>Chain Signatures</strong> 和 <strong>accessKey + Intents</strong>。</p>
@@ -4314,6 +4400,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="40-polkadot-20-jam" id="ch43"><span class="chapter-num">Chapter 43</span><br>40 · Polkadot 2.0 与 JAM</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Gavin Wood 写过 Solidity、写过 Yellow Paper、是 Ethereum 早期联合创始人——然后离开 Ethereum 做了 Polkadot。Parachain 拍卖那一套（每年百万 DOT 锁仓换插槽）2024 年被他自己亲手砍掉，换成 Agile Coretime。2025-2026 又来一刀：JAM（"3.0"）——<strong>抛弃 parachain 概念，把 RISC-V 当 VM</strong>。其他链都在做特化 VM（EVM/SVM/MoveVM），Gavin 押注真实硬件 ISA，让 LLVM 工具链（C++/Rust/Go/Zig）开箱即用。这是非 EVM 世界最学院派、也最孤独的一次赌注——赌赢区块链入场门槛降一个数量级，赌输……Polkadot 已经第三次重启了。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：EVM/SVM/MoveVM 都是<strong>特化 VM</strong>——Solidity 写完编译到 EVM bytecode，丢失原生工具链。JAM 押注<strong>通用 ISA（RISC-V）作为区块链 VM</strong>，让 LLVM 工具链（C++/Rust/Go/Zig）开箱即用。这是对"区块链需要专用 VM"信念的一次正面对赌。</p>
 <h4 id="polkadot-10-20-jam">Polkadot 1.0 → 2.0 → JAM 演进</h4>
 <table>
@@ -4443,6 +4532,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="41-cardanoeutxo" id="ch44"><span class="chapter-num">Chapter 44</span><br>41 · Cardano：eUTXO 学院派</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Charles Hoskinson 是 Ethereum 早期联合创始人（与 Vitalik 闹翻后离开），创立 IOHK / Cardano。Cardano 招了一群学院派密码学家，每一个改动都要先发<strong>形式化论文</strong>，再上链。社区戏称"Cardano 论文比代码多"——Plutus、Hydra、Mithril、Ouroboros，每一个都是 PhD 论文级别。eUTXO 把 Bitcoin UTXO 加上 datum 字段，让 Haskell 风格的纯函数验证能跑智能合约。结果是：技术优雅、社区死忠、但 DeFi TVL 长期落后 Sui/Aptos——<strong>学院派的胜利常常是技术上的，不一定是市场上的</strong>。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：EVM"合约写状态"，Cardano eUTXO<strong>反过来</strong>——客户端<strong>先把新状态算好</strong>作为 UTXO 的 <code>datum</code> 提交，链上 Plutus validator 只回答"这次花费合不合法"。状态变成纯函数 <code>(input UTXO, datum, redeemer) → bool</code>，链下可完整模拟。</p>
 <blockquote>
 <p>Ouroboros 共识、Plutus V3 / Hydra / Mithril 见模块 02。本节只讲 eUTXO 与 EVM 的对立。</p>
@@ -4586,6 +4678,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="42-algorandpure-pos-avm-v10" id="ch45"><span class="chapter-num">Chapter 45</span><br>42 · Algorand：Pure PoS 与 AVM v10</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Silvio Micali 是图灵奖得主、零知识证明发明人之一、MIT 终身教授——2017 年他 70 岁了，决定亲自做一条链。他对其他 PoS 设计的批评一针见血："让全员投票太慢、太容易被腐蚀"。Algorand 的解法是用 <strong>VRF 每轮抽 ~1000 人临时组委员会</strong>，对手根本无法预测下一个 leader → 抗 grinding、抗分叉。Silvio 的数学证明非常严谨："committee 不冲突 ⇒ 不出现自然分叉"。但学院派教授做产品也有代价：8 年过去，Algorand TVL/DAU 远不如 Solana/Sui——<strong>算法的优雅与生态的繁荣，在加密世界经常背离。</strong></p>
+</blockquote>
 <p><strong>心智迁移点</strong>：CometBFT/Tower BFT 让全员投票；Algorand 用 <strong>VRF 抽 ~1000 人</strong>临时组委员会，对手无法预测下一个 leader → 抗 grinding、抗分叉。Silvio Micali 把"committee 不冲突 ⇒ 不出现自然分叉"作为核心论证。共识细节见模块 02 §13。</p>
 <h3 id="421-avm-v10-dynamic-round-times">42.1 AVM v10 与 Dynamic Round Times</h3>
 <ul>
@@ -4631,6 +4726,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="43-tezos-etherlink" id="ch46"><span class="chapter-num">Chapter 46</span><br>43 · Tezos 与 Etherlink</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Arthur Breitman 与 Kathleen Breitman 夫妇 2014 年写出 Tezos 白皮书，2017 年 ICO 拿了 2.32 亿美元——史上最大 ICO 之一。然后是基金会内斗、SEC 调查、白皮书作者与基金会董事打官司，Tezos 上线被推迟 1 年。技术层面的赌注是<strong>链上自升级</strong>：协议本身是链上对象，治理提案通过即热替换，像系统更新而非"换链"。Athens、Babylon、Carthage、Delphi……每 3 个月一次升级，已无停机连续运行多年。生态上 Tezos 错过 DeFi 主战场，但意外靠 NFT（Hic Et Nunc、fxhash）成为生成艺术圣地。2024 年开始用 Etherlink（自家 EVM L2）补 EVM 短板。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：Ethereum 升级要硬分叉、协调全网、停机；Tezos 把协议本身写成链上对象，<strong>治理提案通过即热替换</strong>——像系统更新而非"换链"。每 ~3 月一周期，已无停机连续运行多年。共识 Tenderbake（CometBFT 派生）见模块 02。</p>
 <h3 id="431">43.1 升级历史（部分）</h3>
 <table>
@@ -4688,6 +4786,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="44-internet-computer" id="ch47"><span class="chapter-num">Chapter 47</span><br>44 · Internet Computer：链上跑全栈应用</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Dominic Williams 用 5 年时间和 1.2 亿美元做出 ICP（Internet Computer）——目标是<strong>取代 AWS</strong>。野心大到夸张：HTML、CSS、JS、数据库、AI 推理全跑链上，浏览器 HTTPS 直连 canister，dApp 替用户付费（reverse gas）——用户根本不需要钱包就能访问 Web3 应用。2021 主网启动时市值进过 top 10，然后 token 价格跌了 95%，社区一度沉寂。但 Dominic 没放弃：<strong>Chain Key Cryptography</strong> 让 canister 直接持有 BTC/ETH 私钥（subnet ⅔ 共同保管，threshold ECDSA），没有桥也没有 wrap。2026 又押注链上 LLM。这是个孤独但执着的赌注——你可能不喜欢它，但很难不佩服。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：以太坊 dApp = 链上合约 + 链下前端（IPFS 或 Vercel）；ICP 把 <strong>HTML/CSS/JS/数据库/AI 推理全做成链上 canister</strong>，浏览器 HTTPS 直连 <code>&lt;canister-id&gt;.icp0.io</code>，dApp <strong>替用户付费</strong>（reverse gas），用户无需钱包即可访问。</p>
 <h3 id="441-subnet-canister">44.1 Subnet 与 Canister 架构</h3>
 <figure><img src="diagram-66f73b9bfb.png" alt="mermaid diagram"></figure>
@@ -4772,6 +4873,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="45-filecoin-fvm" id="ch48"><span class="chapter-num">Chapter 48</span><br>45 · Filecoin 与 FVM</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Juan Benet 在斯坦福读研时做了 IPFS——免费的去中心化存储协议。但"免费"养不起激励层，所以他又做了 Filecoin：把存储变成市场。2017 ICO 拿了 2.57 亿美元，2020 主网上线后矿工集体翻车——前 2 年 PoRep 计算成本高到不可持续，FIL 价格跟着跌。但 Juan Benet 没退缩：<strong>把 EVM 兼容 VM 加进来</strong>（FVM），让 Solidity 合约能管"什么数据该存、谁付钱、怎样收费"——把存储做成可编程资产，而非 EVM L2 那种"成本项"。今天 AI 模型市场、企业归档、加密数据 DAO 是 Filecoin 的新故事——Juan 还在赌存储经济。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：Bitcoin 矿工烧电、Solana 验证人烧 CPU，Filecoin 矿工<strong>烧硬盘</strong>——提交 PoRep（证明唯一存了一份副本）+ PoSt（周期性证明仍持有）赢得 FIL。FVM（EVM 兼容）让 Solidity 合约直接对存储交易计费、解锁付款，把"存储"做成可编程资产，而非 EVM L2 那种"成本项"。</p>
 <h3 id="451">45.1 三类核心证明</h3>
 <table>
@@ -4871,6 +4975,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="46-tronusdt" id="ch49"><span class="chapter-num">Chapter 49</span><br>46 · Tron：USDT 的事实主场</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Tron 的技术故事极其无聊：DPoS 27 个 Super Representative + EVM 兼容（TVM ≈ EVM）+ 抄袭 BitTorrent 团队。Justin Sun 个人风评糟糕，被 SEC 起诉，主流工程师 group 里提 Tron = 自动降智嫌疑。但你打开任何东南亚 OTC 商户的钱包、菲律宾外劳的汇款 app、阿根廷牛肉商人的结算——<strong>USDT-TRC20 流通量已超过 USDT-ERC20</strong>。$0.5 一笔的转账成本、几乎零拥堵、CEX 全支持。这是教科书级的"工程师不爱、用户离不开"案例。做支付/汇款/聚合器必须支持，做合规 DeFi 必须避开——成年人的世界，市场和合规两套账。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：技术上是 EVM 兼容（TVM ≈ EVM）+ DPoS 27 SR——没什么值得学的。但<strong>USDT-TRC20 流通量已超过 USDT-ERC20</strong>，东南亚/拉美/非洲/CIS 跨境结算实际跑在 Tron 上。工程师不爱、用户离不开——做支付/汇款/聚合器必须支持，做合规 DeFi 必须避开。</p>
 <h3 id="461">46.1 关键数据</h3>
 <table>
@@ -4947,6 +5054,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="47-hedera-agent-lab" id="ch50"><span class="chapter-num">Chapter 50</span><br>47 · Hedera：企业治理与 Agent Lab</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Leemon Baird 是空军学院密码学教授，2016 年发明 Hashgraph 共识算法（gossip-about-gossip + virtual voting）——并把它<strong>申请了专利</strong>。这在开源至上的区块链世界里被骂得狗血淋头："专利共识？算什么 Web3？" 但 Leemon 没在意，他把 Hedera 做成<strong>企业链</strong>：39 家全球企业（IBM、Google、波音、LG、McLaren）实体董事会治理，固定低 gas（$0.0001/tx），carbon-negative。普通工程师可能一辈子用不上 Hedera，但全球 RWA、企业供应链、合规稳定币这块市场，Hedera 是能数得上的几条链之一。2026-03 Agent Lab 上线后，是非 Solana 阵营第一条把 AI Agent 做成顶级产品的链。</p>
+</blockquote>
 <p><strong>心智迁移点</strong>：Solana 全开放、Cosmos 治理由 token 持有者投票；Hedera 由 <strong>39 家全球企业</strong>（IBM、Google、波音、LG、McLaren）组成实体董事会治理，以"企业可信度"换"非完全去中心化"。共识 Hashgraph（gossip-about-gossip + virtual voting）见模块 02 §22；<strong>算法是 Hedera 独家专利</strong>，这点与所有开源链截然不同。</p>
 <h3 id="471">47.1 服务体系</h3>
 <table>
@@ -5023,6 +5133,7 @@ $$</p>
 <h2 id="48-evm-sei-v2-berachain-v2" id="ch51"><span class="chapter-num">Chapter 51</span><br>48 · 并行 EVM 家族：Sei v2 / Berachain V2</h2>
 
 <blockquote>
+<p><strong>场景钩子</strong>：2024 年的市场共识曾是"EVM 已死"——Solana 涨疯、Sui/Aptos 来势汹汹、Monad/MegaETH 还在测试网。但 EVM 的网络效应（Solidity 工程师、ABI 标准、MetaMask 用户）大到让创新派不得不绕回来：<strong>既然心智模型杀不死，那我们就把执行层换掉</strong>。Sei 三代演进（纯 Cosmos → Cosmos+EVM 双栈 → 纯 EVM L1）是这个赌注的极端案例：2026-04 抛弃 Cosmos 栈、变成纯 EVM。Berachain V2 抛弃 Polaris、改用 BeaconKit 让 Geth/Reth/Erigon 任意接入。这是 2024-2026 链架构最大的主题：<strong>不是"取代 EVM"，是"用 Solana 风格的执行层包住 EVM 字节码"</strong>。</p>
 <p>2024-2026 最大主题。Monad 与 MegaETH 见 §49——同族的不同实现。共同主线：<strong>EVM 字节码兼容 + 并行执行</strong>，让 Solidity 生态享受 Solana/Aptos 风格的吞吐。</p>
 </blockquote>
 <h3 id="481-sei-v2-cosmos-evm">48.1 Sei v2：从 Cosmos 到纯 EVM</h3>
@@ -5138,6 +5249,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="49-monadmegaethhyperliquid" id="ch52"><span class="chapter-num">Chapter 52</span><br>49 · Monad、MegaETH、Hyperliquid</h2>
 
+<blockquote>
+<p><strong>场景钩子</strong>：Hyperliquid 是 2024-2026 加密圈最反共识的成功故事。两个哈佛 + Caltech 出身的高频交易工程师 Jeff Yan 和 iliensinc，<strong>自筹资金、不融 VC、不发 token 公募</strong>，硬生生为 perp DEX 做了一条专用 L1。所有验证人内存里维护同一份订单簿，user packet → fill &lt; 1 秒。2024 年底空投彻底改写"VC 通吃"叙事——大批散户拿了几百万美元，公链空投史上最大单。HIP-3（2025-10）让任何人质押 500k HYPE 就能部署 perp 市场，上市权完全 permissionless。这一章把 Hyperliquid、Monad（并行 EVM 第三例）、MegaETH（10ms 块时间）放一起：<strong>它们代表 2025-2026 加密"既要又要"——既要 EVM 兼容、又要 Solana 性能、还要应用专属链的极致定制</strong>。</p>
+</blockquote>
 <h3 id="491-monad-evm">49.1 Monad：并行 EVM 家族第三例</h3>
 <p>承接 §48 主线。Monad（2025-11 主网）相对 Sei/Berachain 的差异化是<strong>自研存储 + 异步执行</strong>：</p>
 <table>

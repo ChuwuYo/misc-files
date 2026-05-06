@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -682,6 +682,7 @@
 </section><section class="chapter">
 <h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 学习目标</h2>
 
+<p>2022 年 8 月 8 日，OFAC 把 Tornado Cash 列入 SDN 名单。一夜之间，「在区块链上保护隐私」从工程问题变成地缘问题——一段 Solidity 合约被宣布违法，开发者被捕，社区彻夜重估「合规友好的 ZK 是什么样的」。三年半后的 2026 年，答案叠加了一层：Aleo 主网跑着 Circle USDCx、Aztec Alpha 上线、SP1 Hypercube 用 16 张 RTX 5090 在 12 秒内证完一个 ETH L1 区块。ZK 不再是「学术兴趣」，是底层基础设施，是 OFAC 风暴之后隐私技术的工程归宿。</p>
 <p>前置：07-L2 与扩容（zkRollup 把 L2 状态转移正确性证给 L1，依赖的就是本模块）。</p>
 <p>具体到能力：跑完一遍 Circom Poseidon 原像电路、看完一份 Trail of Bits Halo2 audit、读懂一段 SP1 host 代码——这三件事任意一件落地，本模块的目标就达到了。</p>
 <p>读完并跑通本模块，你应当能：</p>
@@ -760,7 +761,7 @@
 </section><section class="chapter">
 <h2 id="3" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 数学预备</h2>
 
-<p>只讲到能看懂代码的程度。严格证明请翻 Justin Thaler <em>Proofs, Arguments, and Zero-Knowledge</em>。每个概念先给一个 Circom 或 SP1 里立即会撞到的工程现象，再给数学定义。</p>
+<p>打开 SP1 项目第一行报错：「expected element of BabyBear field」；第二天写 Circom 又被 「prime field overflow」 教做人。ZK 的数学不是装饰——它是工具链每一行报错背后的语言。本章只讲到能看懂代码的程度，把「时钟算术」「曲线点」「多项式插值」翻译成你下次报错时能秒懂的常识。严格证明请翻 Justin Thaler <em>Proofs, Arguments, and Zero-Knowledge</em>。每个概念先给一个 Circom 或 SP1 里立即会撞到的工程现象，再给数学定义。</p>
 <h3 id="31-f_p">3.1 有限域 F_p：把数关进时钟</h3>
 <p>类比：12 小时制时钟中 11 + 3 = 2（mod 12）。把 12 换成质数 p，得到<strong>有限域</strong> F_p。在有限域里：</p>
 <ul>
@@ -930,6 +931,7 @@
 </section><section class="chapter">
 <h2 id="4-kzgipafribrakedownwhirbinius" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 多项式承诺：KZG、IPA、FRI、Brakedown、WHIR、Binius</h2>
 
+<p>把多项式承诺（PCS）想成「电话号码本指纹」：你想让别人相信你拿着一本一万页的号码本，但又不能把整本寄过去。你把整本的内容压成一个 32 字节的指纹发给对方，事后对方说「翻到第 7531 页第 4 行」，你再寄一张「这一行确实在那本里」的小卡片。验证者从头到尾没看过整本——但只要任何一页造假，指纹就对不上。</p>
 <p>具体例子先行：你写了 PLONK 电路要把 witness 里的 <code>a/b/c</code> 三列「钉死」给 verifier。每列都是几万到几百万个 field 元素，直接发上去 prover 等于自杀。PCS 把每列压成一个 ~48 字节的曲线点（或 32 字节 Merkle root）发给 verifier，事后 verifier 想验「第 17 行的 a 等于多少」时，prover 再发一个短打开证明。本章给五大主流 PCS 的取舍。</p>
 <h3 id="41-pcs">4.1 多项式承诺（PCS）</h3>
 <p>PCS 是现代 ZK 的核心抽象，三个算法：</p>
@@ -1132,6 +1134,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="5-groth16-spartan" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 证明系统全谱：从 Groth16 到 Spartan</h2>
 
+<p>2024 年 zkSync Era 的一份审计报告里写着：「PlonKup verifier gas 优化到 32 万」。同一年 Tornado Cash fork 仍在用 Groth16，verifier 25 万 gas。同一年 Starknet 在评估从 Stone 切到 S-two——proof 30 KB 但抗量子。这三家用三种不同证明系统，不是因为某家"更先进"，而是因为「电路稳不稳定 / 要不要 setup / 抗不抗量子 / proof 大小要多小」答案不同。</p>
 <p>每个证明系统都是「算术化 + PCS + 验证协议」三件套的某种组合，差异主要在四个维度：proof 大小、verifier 时间、setup 模型、是否抗量子。本章按出现年代依次给每个系统的工程画像；§5.10 的总表是选型时直接查的那张表。</p>
 <h3 id="51-groth162016proof">5.1 Groth16（2016）：proof 最小</h3>
 <p>Proof 3 个曲线点 (A,B,C)，verifier 3 次配对。R1CS→QAP→KZG→配对验证。需要 circuit-specific phase 2 ceremony。</p>
@@ -1449,7 +1452,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="6-r1cs-vs-plonkish-vs-air" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 算术化方言：R1CS vs PLONKish vs AIR</h2>
 
-<p>写一行 Solidity <code>c = a * b</code> 怎么变成 ZK 约束？三种主流答案：R1CS 写成 (1·a)(1·b) = (1·c) 一个三元组；PLONKish 写成一行 <code>q_M·a·b - q_O·c = 0</code> 的门；AIR 写成「下一行的 c = 上一行的 a × 上一行的 b」状态转移。算术化就是把高层程序翻译成这种约束的过程，三种方言对应三类工具链。</p>
+<p>写一行 Solidity <code>c = a * b</code> 怎么变成 ZK 约束？这是 ZK 工程师每天要回答的最高频问题——比"哪个 PCS 更快"还高频。三种主流答案：R1CS 写成 (1·a)(1·b) = (1·c) 一个三元组；PLONKish 写成一行 <code>q_M·a·b - q_O·c = 0</code> 的门；AIR 写成「下一行的 c = 上一行的 a × 上一行的 b」状态转移。三种方言不是 「升级版」 关系——它们是不同直觉，分别从「线性代数视角」「自定义门 + 查表视角」「状态机视角」 切入同一件事。算术化就是把高层程序翻译成这种约束的过程，三种方言对应三类工具链。</p>
 <h3 id="61">6.1 三种方言一句话定义</h3>
 <ul>
 <li><strong>R1CS</strong>：每条约束是 (A·z) × (B·z) = C·z，每个约束最多一个乘法；</li>
@@ -1586,6 +1589,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="7-groth16" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 Groth16 深度剖析</h2>
 
+<p>为什么 Tornado Cash 即使 2022 年被 OFAC 制裁、2024 年 fork 林立，仍然死守 Groth16？答案就 200 字节——你向 verifier 合约发的 proof 只有 3 个椭圆曲线点，gas 250-300k，这是 2016 年至今 EVM 上最便宜的 SNARK 验证。代价是：电路改一行你就要拉 5-10 个不可勾结的合作者重做一次 phase 2 ceremony——所以 Tornado Cash 八年没改过电路，这就是「最小 proof + 最痛 ceremony」 的恶魔交易。</p>
 <p>Groth16 是 proof 最小的 SNARK（~200 B），Tornado Cash / Semaphore / zkSync Lite 直到现在仍在用它做主链验证，原因就是 EVM 上 250-300k gas 一次的硬指标。它与 PLONK 的根本差异在 circuit-specific trusted setup 与 R1CS→QAP 转换路径。</p>
 <h3 id="71-r1cs-qap">7.1 R1CS 到 QAP 的转换</h3>
 <p>QAP（Quadratic Arithmetic Program）是 Groth16 的核心算术化。给定 R1CS：</p>
@@ -1624,6 +1628,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="8-plonk" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 PLONK 深度剖析</h2>
 
+<p>2019 年 Gabizon 团队发的那篇 PLONK，名字玩了个学术冷笑话：<em>PLONK: Permutations over Lagrange-bases for Oecumenical Noninteractive arguments of Knowledge</em>——「一个普世的、基于拉格朗日基的置换论证」。"Oecumenical"（普世的）是这篇论文的关键词：第一个 universal 还能 updateable 的 SNARK——你用以太坊 KZG ceremony 的 final.ptau 就能跑任何 ≤ 2^28 容量的电路，不再需要 Groth16 那种 「改电路就重 ceremony」 的剧痛。</p>
 <p>PLONK 一次解决 Groth16 的两个痛点：电路改一行就要重 phase 2 ceremony；不原生支持 lookup（写 Keccak 几万条 R1CS 约束）。代价是 proof 从 200B 涨到 ~1KB、验证 gas 从 25 万涨到 30-40 万（fflonk 优化后回到 12-15 万）。</p>
 <h3 id="81-universal-updateable-srs">8.1 universal &amp; updateable SRS</h3>
 <p>PLONK 的 SRS = Powers of Tau 的前若干项，所有 ≤ 2^N 容量的电路共用。改电路只需重算 selector polynomial，<strong>无需重 ceremony</strong>。直接用以太坊 KZG ceremony 的 final.ptau 即可。「Updateable」=可追加贡献者，加第 14 万零 1 人不破坏既有安全性。</p>
@@ -1645,7 +1650,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="9-halo2" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 Halo2 深度剖析</h2>
 
-<p>Sean Bowe 等 Halo2（2020）回答的具体问题：Zcash 不想再做一次 phase 2 ceremony，能不能用透明 setup 跑 PLONK 风格？答案是 IPA + 累积方案——把每层递归 SNARK 验证 deferred 到最后一次性结清。Scroll、Taiko、Axiom、EZKL 后来把承诺换成 KZG，跑出了今天 zkEVM/zkML 的事实标准。</p>
+<p>2020 年 Sean Bowe 给 Zcash 写 Halo2 时，他有一个非常具体的痛点：Zcash 已经做过两轮 trusted setup（Sapling 2017、Sprout 2016），社区每次都担心 toxic waste，他不想做第三次。能不能在不做新 ceremony 的前提下还能跑 PLONK 风格的电路？答案是 IPA + 累积方案——把「验 proof」这件事像滚雪球一样累积到链路终点，最后一口气结清。这个看似学术的优化后来意外地成了 zkEVM 与 zkML 的事实底座：Scroll、Taiko、Axiom、EZKL 把 IPA 换成 KZG（依赖 ETH KZG ceremony），跑出了 PSE fork——今天你能在以太坊上跑「Solidity 写的合约自动生成 ZK proof」这件事，主要靠的就是这条路线。</p>
 <h3 id="91-accumulation-scheme">9.1 累积方案（Accumulation Scheme）</h3>
 <p>传统递归 SNARK：proof_2 验证 proof_1 → 每层都做完整 verifier（含配对）。Halo2 的 trick：把验证 deferred 到最后——每层只把当前 proof「加进 accumulator」，最后一次性把 accumulator 打开。</p>
 <p>类比：欠账每次记一笔，最后一起结——每笔「欠账动作」很便宜，递归代价远低于 cycle-of-curves 递归。</p>
@@ -1681,6 +1686,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="10-plonky2plonky3polygon-stark" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 Plonky2、Plonky3：Polygon 系 STARK</h2>
 
+<p>2022 年 Polygon 收购 Mir Protocol 时，他们瞄准的就是 Daniel Lubarov 和 Brendan Farmer 写的 Plonky2——一个把 PLONKish 跟 FRI 融在一起的怪物：既有 PLONK 的灵活性（custom gates）、又有 STARK 的抗量子，递归还能压到 200 ms 一层。四年后的 2026-03，Polygon 宣布 Plonky3 production-ready。这不是「下一代算法」——这是工具包：你想换域换哈希换 PCS？给你三个 trait 让你随便配。SP1 用 BabyBear + Poseidon2 + FRI，Polygon 自己用另一套，Valida 又是另一套——同一个 toolkit 跑出三种 zkVM。</p>
 <h3 id="101-plonky22022">10.1 Plonky2（2022）</h3>
 <p>Polygon Zero 2022 年开源：域 Goldilocks、PCS FRI、PLONKish + custom gates、内部递归 ~200 ms。Polygon Miden VM 基于 Plonky2。</p>
 <h3 id="102-plonky32026-03-production-ready">10.2 Plonky3（2026-03 production-ready）</h3>
@@ -1740,6 +1746,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="12-brakedownbiniuswhir" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 Brakedown、Binius、WHIR：前沿三剑客</h2>
 
+<p>如果说 KZG 是 2017、FRI 是 2018、IPA 是 2020，那么 2021 之后冒出来的三个新名字代表了 ZK 接下来 5 年的赌局：Brakedown 押「prover 必须线性时间」、Binius 押「未来 ASIC 时代二元域 GF(2^k) 通吃」、WHIR 押「verifier 几百微秒上链才便宜」。这三家分别由 a16z 投的研究团队（Setty/Thaler/Wahby）、Paradigm + Bain 投的 Irreducible（前 Ulvetanna）、EUROCRYPT 2025 的 Arnon-Chiesa-Fenzi-Yogev 推出——背后是不同实验室对「下一代 ZK 是 prover 王、硬件王、还是 verifier 王」的三种押注。</p>
 <p>§4.6-4.8 已给三者的核心定义与对比，本章只补 §4 之外的工程信息。</p>
 <h3 id="121-brakedown">12.1 Brakedown 在工程里的位置</h3>
 <p>Tensor encoding IOP，prover O(d) 线性（KZG/FRI 都是 O(d log d)），字段无关。代价：proof O(√d)、verifier 较慢。被用于 zkVM 内层或客户端证明，配合外层 SNARK wrap 上链。</p>
@@ -1779,6 +1786,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="13-bulletproofsmarlinsonicspartannova" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 Bulletproofs、Marlin、Sonic、Spartan、Nova</h2>
 
+<p>如果你 2018-2021 年混过 Monero / Grin 社区，肯定见过 Bulletproofs 这个名字——「机密交易的 64-bit range proof 只要 672 字节」就是它带来的。如果你看 Microsoft Research 的论文，会看到 Spartan 和 Nova——前者是 Setty 2020 的「PCS 可换 + multilinear + sumcheck」，后者把它推到了「两个 R1CS 折成一个，无需中间 SNARK」的折叠时代。这一章是 ZK 历史的「中间一代」：它们不再是主流，但每一个都为后来某个范式打了地基——没有 Bulletproofs 就没有 Halo2 的 IPA 选项，没有 Spartan 就没有 Nova / HyperNova / ProtoStar 的折叠系列。</p>
 <h3 id="131-bulletproofs2017range-proof">13.1 Bulletproofs（2017）：range proof 事实标准</h3>
 <p>Bünz-Bootle-Boneh-Poelstra-Maxwell-Wuille 2017。基于 IPA：</p>
 <ul>
@@ -1837,6 +1845,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="14-custom-gates-lookup" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 算术化方言再展开：custom gates 与 lookup</h2>
 
+<p>具体场景：你想给 Tornado Cash 改一版用 Keccak 做 commitment（与 EVM 兼容），跑 Circom 编译——R1CS 约束爆炸到 16 万条，Groth16 prover 跑了 4 分钟。同样的逻辑改写成 Halo2 + Plookup，约束从 16 万降到几百，prover 几秒钟搞定。这中间发生了什么？两件事：自定义门（custom gate）让一行电路打包做 5 列计算；查找表（lookup argument）让你免去对每个比特单独约束的代价。这一章解释为什么「lookup」 是 zkVM 性能的最大杠杆。</p>
 <p>§6 已给三种方言定义、§6.6 已介绍 Plookup / Lasso / Twist-Shout 的来源；本章给工程含义。</p>
 <h3 id="141-r1cs-sha256">14.1 为什么 R1CS 撑不住 SHA256</h3>
 <p>R1CS 每约束最多一次乘法：完整 SHA256 约 16 万条约束（Groth16 prover 几分钟）。PLONKish + lookup 把 SHA256 降到几千、Keccak 降到几百量级。</p>
@@ -1854,6 +1863,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="15-zkvm" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 zkVM 全景</h2>
 
+<p>2024 年 Jolt 团队在 a16z crypto 博客发了张图，把所有 zkVM 排在一起：SP1、Risc0、Jolt 都是 RISC-V，Cairo 是自定义 ISA，Lurk 是 Lisp。意思是说：「写普通 Rust，让编译器把它变成 RISC-V，然后 zkVM 自动把每条指令的执行做成 AIR 约束，最后吐出一个 proof。」 这是 ZK 工程从「电路工匠」到「应用程序员」的临界拐点——SP1 Hypercube 在 16 张 RTX 5090 上证一个 ETH L1 区块只要 12 秒，意味着「real-time proving」从论文术语变成生产里程碑。</p>
 <p>zkVM：写普通 Rust（或 C/Go）→ 编译成 RISC-V 字节码 → VM 把每条指令的执行轨迹做成 AIR 约束自动出 proof。代价是 prover 比手写电路慢一个数量级（2024-2026 已压到 3-5 倍）。抽象层次：<strong>手写电路 ≈ 汇编 ; zkVM ≈ C ; zkEVM ≈ 业务方根本不知道有 ZK</strong>。</p>
 <h3 id="152-risc-zero2022-">15.2 RISC Zero（2022-）</h3>
 <p>第一个开源 RISC-V zkVM。</p>
@@ -1922,7 +1932,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="16-zkevm-type-1-4" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 zkEVM 谱系：Type 1-4</h2>
 
-<p>zkEVM 是「把整个 EVM 状态机做成 ZK 电路」的工程，让业务方写 Solidity 就能享受 ZK 安全性。Vitalik 2022-08 <em>The different types of ZK-EVMs</em> 把 zkEVM 沿「EVM 兼容性 ↔ prover 效率」轴分成 4 Type。</p>
+<p>2022 年 8 月 Vitalik 发布 <em>The different types of ZK-EVMs</em> 那天，业界混乱程度达到顶峰：Polygon、zkSync、Scroll、Starknet 各自宣称「我们是最 EVM 兼容的 zkEVM」，但定义全不一样。Vitalik 一篇博文把这片混沌切成 4 类——从 Type 1（完全等价以太坊，连 Merkle Patricia Trie 都不改）到 Type 4（只兼容 Solidity 源码，跑自定义 VM）。三年半后的 2026 年这套分类仍是行业共同语言：Taiko 还在追 Type 1、Scroll/Linea 卡在 Type 2、zkSync Era 是 Type 4 的代表——而 Polygon zkEVM 主网 beta 即将于 2026-07 sunset。zkEVM 是「把整个 EVM 状态机做成 ZK 电路」的工程，让业务方写 Solidity 就能享受 ZK 安全性。Vitalik 2022-08 <em>The different types of ZK-EVMs</em> 把 zkEVM 沿「EVM 兼容性 ↔ prover 效率」轴分成 4 Type。</p>
 <h3 id="161-type-1">16.1 Type 1：完全等价以太坊</h3>
 <p>「不改任何 Ethereum 系统组件来加快证明」。优点：以太坊 L1 自身可以接入。缺点：prover 极慢（2024 年初约 16 分钟一个区块，2026 年降到几十秒）。</p>
 <p>代表项目：</p>
@@ -1971,6 +1981,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="17-zkvm-2026-04" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 zkVM 实测对比（2026-04 最新数据）</h2>
 
+<p>zkVM 性能竞赛的当代奇观：每周都有一家在博客刷新 benchmark，每月都有一家说自己是「fastest」。SP1 Hypercube 2025-05 实测以太坊 block 22309250（143 笔交易、3200 万 gas），16 张 RTX 5090 跑 10.8 秒——证明系统第一次跑得比一个 ETH slot（12 秒）还快。但<strong>所有数字都是 self-reported</strong>：Jolt 自报比 SP1 快 2×，但还是 alpha；Pico 自报世界最快但生态最窄。这一章给你一张 2026-04 的快照（明天就过时），更重要的是教你如何带着怀疑去看 benchmark。</p>
 <p>数据来源：a16z <code>a16z/zkvm-benchmarks</code>（2026-Q1 持续更新）+ Succinct <code>succinctlabs/zkvm-perf</code> + <code>zkbenchmarks.com</code> 社区面板 + Fenbushi 2025-06 横评（SP1/Risc0/OpenVM/Pico/ZKM/Jolt/Nexus/Novanet）+ 各家 release notes。</p>
 <h3 id="171-fibonacci-1000-cycles">17.1 Fibonacci 1000 万 cycles</h3>
 <p>下表均为各项目 self-reported，未经第三方独立复现，横向对比优先看上述社区聚合源。</p>
@@ -2125,6 +2136,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="18-zkrollup-zkoracle" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 18 章 应用版图：从 zkRollup 到 zkOracle</h2>
 
+<p>讲到这里基础设施齐备了，但你回头看会发现：迄今为止讲的全是「肌肉」——多项式、配对、AIR、FRI、folding——这些都不是 ZK 的「为什么」。ZK 的「为什么」 是 Worldcoin 用一颗 Orb 给 1800 万人做了 「proof of human」、是印度国家身份 Aadhaar 用 Anon Aadhaar 把 RSA 签名压成 200 字节 proof、是 Aleo 让 Circle 把 USDC 的隐私版搬上链给机构 payroll 用。这章把肌肉对应到「生产中的脏活」：zkRollup 压缩 L2、zkBridge 替代多签、zkID 替代密码、zkML 替代「相信我跑了 GPT-2」——七个真实战场。</p>
 <p>到此为止本模块讲完了 ZK 的「核心能力」（PCS + 证明系统 + 算术化 + zkVM）；下面把它们映射到真实生产场景。</p>
 <h3 id="181">18.1 应用全景图</h3>
 <p>ZK 在 Web3 的七大落地场景：</p>
@@ -2374,6 +2386,7 @@ verify(cm, z, v, π) -&gt; bool        // Verifier 只看 cm, z, v, π 就能判
 </section><section class="chapter">
 <h2 id="19-1circom-22-snarkjs-07" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 19 章 实战 1：Circom 2.2 + snarkjs 0.7 端到端</h2>
 
+<p>设想 Alice 的需求：她的钱包给 Tornado Cash fork 存了 1 ETH，现在想取出来到一个全新地址。她要向合约证明「我知道某个 secret，使 Poseidon(secret) 等于这棵 Merkle 树里的某个叶子」——但不能告诉合约这个 secret 是什么，否则别人就能撞库。这就是 ZK 隐私池的核心电路。本章把这个 Poseidon 原像证明从 0 跑到部署：Phase 1 ceremony → 编译 → 生成 witness → 出 proof → Solidity verifier 上 Anvil。30 分钟内你能在自家电脑上完成 Tornado Cash 之类项目用的同款流水线。</p>
 <p>目标：实现「我知道 x 使 Poseidon(x) = y」并把 verifier 部署到本地以太坊网络。完整代码在 <code>code/circom-poseidon/</code>。</p>
 <h3 id="191">19.1 环境准备</h3>
 <p>依赖：Node.js 22+、Rust 1.80+、circom 2.2.2、Foundry。</p>
@@ -2468,6 +2481,7 @@ forge<span style="color: #F8F8F8"> </span>create<span style="color: #F8F8F8"> </
 </section><section class="chapter">
 <h2 id="20-2noir-10" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 20 章 实战 2：Noir 1.0 等价实现 + 体验对比</h2>
 
+<p>写完 Circom 版本之后，把同一个 Poseidon 原像电路用 Noir 1.0 重写一遍——这是了解「ZK 工具链下一代是什么样」的最快路径。Aztec 自家协议电路 2024 起全部切到 Noir，2026-02 发布 1.0 pre-release，意味着语言级稳定性进入「发版前最后冲刺」。同样几行代码，错误提示从 Circom 的「constraint not satisfied at line 142」 变成 Rust-like 的 「expected Field, found u32」——这种"少几小时调试"的体验差，就是 Noir 在 2026 年成为新项目首选的原因。</p>
 <h3 id="201-noir">20.1 Noir 是什么</h3>
 <p>Noir 是 Aztec 力推的 ZK DSL，语法 Rust-like，后端可换（默认 Barretenberg 走 PLONK；也能输出到 Halo2、Plonky2）。<strong>2026-02 Noir 发布 1.0 pre-release</strong>，意味着语言级稳定性进入「发版前最后冲刺」。Aztec 自家协议电路已全部用 Noir 重写。</p>
 <h3 id="202-poseidon">20.2 等价 Poseidon 电路</h3>
@@ -2542,6 +2556,7 @@ bb<span style="color: #F8F8F8"> </span>write_solidity_verifier<span style="color
 </section><section class="chapter">
 <h2 id="21-3sp1-risc0-zkvm" id="ch22"><span class="chapter-num">Chapter 22</span><br>第 21 章 实战 3：SP1 / Risc0 zkVM 证明斐波那契</h2>
 
+<p>到这一章你已经手写过两个电路（Circom + Noir）——下一步是「不写电路」：直接写 Rust，让 zkVM 把 Rust → RISC-V → AIR 约束自动搞定。同样一段递归 <code>fib(20)</code> 在 SP1 与 Risc0 上能跑出几乎相同的代码——本章拿这个最小例子做对比，让你体感「zkVM 工程师」与「电路工程师」的工作流差异。SP1 v5 Hypercube 已是 ETH L1 real-time proving 的标杆，Risc0 R0VM 2.0 把 ETH 区块证明从 35 分钟压到 44 秒——他们的差异不在最简单的 Fibonacci 上，但工具链气质（host SDK / 远程证明 / 预编译）已经能感受到。</p>
 <h3 id="211-sp1">21.1 SP1 版本</h3>
 <p>完整代码在 <code>code/sp1-fib/</code>。核心两文件：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// program/src/main.rs（guest 端，编译成 RISC-V）</span>
@@ -2637,6 +2652,7 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="22_1" id="ch23"><span class="chapter-num">Chapter 23</span><br>第 22 章 练习</h2>
 
+<p>USENIX Security 2024 的 SoK 论文给了一个让人不安的数字：<strong>真实 ZK 漏洞中 ≈96% 来自 under-constrained</strong>——电路看起来跑通了、proof 生成了、verifier 接受了，但其实有一条约束漏写了，恶意 prover 可以伪造任意陈述。这一章的 4 道题不是用来「考试」的，是用来给你装一个「闻 under-constrained 味道」 的鼻子。每道题做完，你都会比 80% 的 ZK 简历强——因为那 80% 的人没真的找过漏洞。</p>
 <p>起始代码在 <code>exercises/</code> 下，每题独立一个目录。</p>
 <h3 id="221-1merkle-proof-poseidoncircom">22.1 练习 1：Merkle Proof + Poseidon（Circom）</h3>
 <p><strong>要求</strong>：写一个电路，证明「我知道一个叶子 leaf 和一条长度 20 的 Merkle path（兄弟节点 + 0/1 方向位），使得叶子 hash 到 root」。</p>
@@ -2667,6 +2683,7 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="23-ai-zkzkmlopmlai-zk" id="ch24"><span class="chapter-num">Chapter 24</span><br>第 23 章 AI × ZK：zkML、opML、AI 辅助 ZK 工程的边界</h2>
 
+<p>2025 年好几次出现一种营销话术：「让 LLM 帮你写 ZK 电路」。这听起来很美——但 USENIX Security 2024 的 96% under-constrained 事实告诉我们：LLM 写的电路 90% 概率有漏洞而<strong>它们都能跑通</strong>。AI 在 ZK 这条最后一英里的安全战场上，目前能做的事比能不能做的事更值得讲清楚。这一章不重复 §18 的 zkML / opML 选型，只讲两件人们容易搞错的事：(1) AI 反向辅助 ZK 工程能做到哪里？(2) 哪些事情你<strong>绝对不能</strong>让 AI 替你做？</p>
 <p>zkML / opML 的定义、性能现实、选型表已在 §18.7 / §18.8 给出，本章不重复，只补两个角度：AI 反向辅助 ZK 工程的现状（§23.3）；AI 在 ZK 上的红线（§23.4）。</p>
 <h3 id="233-ai-zk">23.3 AI 反向辅助 ZK 工程</h3>
 <p>到 2026 年这一领域早期但成型，分四个方向：</p>
@@ -2787,6 +2804,7 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="26-fheteempcgarbled-circuits" id="ch27"><span class="chapter-num">Chapter 27</span><br>第 26 章 隐私计算的兄弟姐妹：FHE、TEE、MPC、Garbled Circuits</h2>
 
+<p>ZK 不是隐私的全部答案——它是「证明 + 不泄密」一件事。如果你想让别人<strong>直接在密文上做计算</strong>而不解密？那是 FHE；想在 Intel 芯片的「黑盒小屋」里跑代码，连 OS 都看不到？那是 TEE；想 5 个人合作算一道题，谁也不知别人输入？那是 MPC；想把整张电路混淆成一次性的乱码？那是 Garbled Circuits。Vitalik 2020 写过 <em>A Quick Garbled Circuits Primer</em>——这一章把 ZK 放回它该在的位置：与 FHE / TEE / MPC / GC 并列的乐高积木之一，而不是隐私的全部答案。</p>
 <p>ZK 解决「我证明给你看且不泄密」，但完整的隐私 / 机密计算栈还包含 FHE（在密文上算）、TEE（在硬件保护区里算）、MPC（多方协作算且谁也不知全貌）、Garbled Circuits（一次性混淆电路）。这些技术经常<strong>互相组合</strong>而非互相替代。</p>
 <h3 id="261-fhefully-homomorphic-encryption">26.1 全同态加密 FHE（Fully Homomorphic Encryption）</h3>
 <p>FHE：<strong>直接在密文上做加减乘</strong>，解密后等于在明文上做同样运算。</p>
@@ -3046,6 +3064,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="27-nova-supernova-hypernova-protostar-sangria" id="ch28"><span class="chapter-num">Chapter 28</span><br>第 27 章 折叠方案展开：Nova / SuperNova / HyperNova / ProtoStar / Sangria</h2>
 
+<p>类比一句话讲完折叠是干什么的：信用卡用了一个月，每天单独算利息要算 30 次；但银行只在月底结算一次。Nova 给 ZK 这个领域打开了同样的逻辑：把 1000 步计算的 1000 个 R1CS 实例 <strong>折成</strong> 一个 relaxed R1CS，1000 步过程中<strong>根本不做 SNARK</strong>，最后才一次性 SNARK。Filecoin 的 SDR 文件 PoS 证明、Lurk Lisp zkVM、用户手机端隐私转账增量证明——这些"长链"应用之所以能跑起来，靠的就是折叠。</p>
 <p>第 13 章给了折叠方案的速览。本章展开——因为 2024-2026 折叠是 zkVM 加速、客户端证明、增量计算的核心。</p>
 <h3 id="271">27.1 为什么需要折叠</h3>
 <p>经典递归 SNARK 是「proof 套 proof」：layer N 的 proof 验证 layer N-1 的 proof，每层都要做完整 SNARK 验证（KZG 配对、IPA 内积、FRI query）。<strong>这每层都贵</strong>。</p>
@@ -3179,6 +3198,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="29-lurk-lisp-zkvm" id="ch30"><span class="chapter-num">Chapter 30</span><br>第 29 章 Lurk：内容寻址的 Lisp zkVM</h2>
 
+<p>设想 Filecoin 上有一段链下程序，它处理了几 GB 的私有数据，输出一个结果。你怎么向链上合约证明「这个结果确实是 hash X 对应的程序，对 hash Y 对应的输入跑出来的」？传统 zkVM 想做这件事得把整段程序 + 输入打包进 proof，太重。<strong>Lurk</strong> 用一种古老的语言哲学解决问题：Lisp 的 「代码即数据」 + Poseidon 哈希做内容寻址 = 程序和数据都是 hash，跑完链上只需验「(hash_program, hash_input, hash_output)」 这个三元组的关系。它本身就是给 IPFS / Filecoin 量身定做的 zkVM。</p>
 <h3 id="291-lurk">29.1 Lurk 是什么</h3>
 <p><strong>Lurk</strong>（Lambda, the Ultimate Recursive Knowledge）是 Filecoin / Protocol Labs 的 Chhi'mèd Künzang 设计的 <strong>静态作用域 Lisp dialect + 内容寻址 + 递归 zk-SNARK</strong>。</p>
 <p>设计哲学（Common Lisp + Scheme）：代码即数据（homoiconic）、Poseidon 哈希构建复合数据实现内容寻址、与 IPFS/IPLD 集成、整个执行轨迹可被递归 SNARK 证明。</p>
@@ -3209,6 +3229,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="30-aztec-penumbra-aleo2026-04" id="ch31"><span class="chapter-num">Chapter 31</span><br>第 30 章 Aztec / Penumbra / Aleo：隐私链主网状态盘点（2026-04）</h2>
 
+<p>2026 年初的三件大新闻一起改写了「隐私链」的定义：(1) Aztec Network 2026-03-31 上线 Alpha 主网——以太坊第一个支持完全私有智能合约的 L2；(2) Aleo 2026-01 拿下 Circle USDCx，2026-02 又拿下 Paxos USAD，机构级隐私稳定币第一次成型；(3) Penumbra 把 Cosmos 系隐私 DEX 跑了三年，2026 起把 IBC 桥到 50M+ shielded TVL。三条链各自有不同的隐私哲学（Aztec 靠 UTXO + Note + Noir、Penumbra 把 IBC 隐私化、Aleo 把记录加密给 KYC 留口子）——选哪条做你的隐私 dApp，得看你想隐私什么。</p>
 <p>第 18 章给了一行项目对比。要做隐私 dApp 必须知道的最新信息：每条链的主网状态、技术栈、当前限制、bug bounty。</p>
 <h3 id="301-aztec-network-l2">30.1 Aztec Network：「以太坊的私有 L2」</h3>
 <p><strong>主网状态</strong>：</p>
@@ -3458,6 +3479,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="32-zkbridge" id="ch33"><span class="chapter-num">Chapter 33</span><br>第 32 章 zkBridge 谱系展开</h2>
 
+<p>跨链桥被盗的累计金额在 2022-2024 年突破 $20 亿——Ronin $625M、Wormhole $326M、Nomad $190M、BNB $570M——每一次被盗，背后都是同一个故事：「m-of-n 多签人不勾结」 这个信任假设被打破。zkBridge 是这套信任假设的根本性升级：不再靠人，靠数学。链 A 出区块头 → ZK 证「这个头确实是链 A 共识层验过的」 → 链 B 验 proof。Polyhedra zkBridge 已支持 25+ 链、Succinct Telepathy 接入 LayerZero、Lagrange State Committees 给 OP rollup 提供快速 finality——本章给主流 zkBridge 项目的 2026-04 状态盘点。</p>
 <h3 id="321-zkbridge">32.1 zkBridge 解决什么</h3>
 <p>Light client + ZK 把链 A 区块头 / 事件存在性证给链 B。多签桥（Ronin $625M、Wormhole $326M、Nomad $190M）累计被盗 $20 亿+，是行业转向 ZK 桥的根本动因——信任假设从「m-of-n 多签人不勾结」降到「数学正确性 + 1 个诚实 prover」。</p>
 <h3 id="322-zkbridge-2026-04">32.2 主流 zkBridge 项目（2026-04）</h3>
@@ -3532,6 +3554,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="33-zkml-2026-04" id="ch34"><span class="chapter-num">Chapter 34</span><br>第 33 章 zkML 实测大对决（2026-04）</h2>
 
+<p>「证明这张图是 ResNet-50 在我的输入上跑出来的」 这句话在 2023 年是 Modulus Labs 一万个 GPU 小时的赌局；2025 年 Lagrange DeepProve 把同样的事情做到分钟级；2025 年下半年 DeepProve-1 第一次把整个 GPT-2 (1.5B 参数) 的 forward pass 完整 zk-proven——zkML 从「玩具」 跨进 「工业级 LLM 可证明推理」 这一里程碑就发生在你写这段话前 18 个月。但「能做」 不等于 「便宜」：千万参数 ResNet 上消费级 GPU 仍是分钟级、数十亿参数 LLM 仍走 layer 片段证明 + opML 的混合路线。本章给 2026-04 时点的实测数据 + 性能突破时间线。</p>
 <p>第 18.7 节给了框架对比；本章给 benchmark 数据 + 性能突破时间线。</p>
 <h3 id="331">33.1 关键里程碑</h3>
 <ul>
@@ -3732,6 +3755,7 @@ ORAM ：「连我访问哪儿你都不知道」 → 隐藏访问模式
 </section><section class="chapter">
 <h2 id="35-zk-2026" id="ch36"><span class="chapter-num">Chapter 36</span><br>第 35 章 ZK 工程师 2026 路线图</h2>
 
+<p>2026 年招聘市场上「ZK Circuit Engineer」 是 crypto 最稀缺的岗位，没有之一。Trail of Bits、Veridise、zkSecurity、Cantina——四家头部审计公司常年在挂招人，给的钱也是 crypto 圈最高的几档。但「难招」 不是因为工程师懒，而是因为 ZK 这条路有 6 个不同的能力级别（L0 入门到 L5 安全研究），每升一级都需要至少 6 个月。这一章是路线图——12 周的学习地图、6 级能力天花板、5 类岗位画像，给你看清楚自己现在在哪一格、下一格要去哪里。</p>
 <h3 id="351">35.1 学习地图</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Week 1-2  : 概念 + Vitalik 三连发 + 本模块第 1-3 章
 Week 3-4  : 跑通 Circom Poseidon + Noir 等价（第 19-20 章）
@@ -3797,6 +3821,7 @@ Week 11-12: 做一个端到端项目：zk-airdrop / proof-of-solvency / zkML dem
 </section><section class="chapter">
 <h2 id="36-zk-2026-2030" id="ch37"><span class="chapter-num">Chapter 37</span><br>第 36 章 ZK 路线图与开放问题（2026-2030）</h2>
 
+<p>ZK 是密码学领域过去十年最确定的赌局之一——但不是所有问题都解决了。后量子 SNARK 上链、zkML LLM 成本、客户端证明大众化、ASIC 时代二元域 vs 小素数域之争——这些问题决定了 2030 年的 ZK 长什么样。这一章把 2016-2026 已完成的里程碑串成时间线，再列出 7 个未解的开放问题——这是给「已经入门」的人看的路线图，告诉你接下来 5 年最值得押注的方向在哪里。</p>
 <h3 id="361">36.1 已完成的里程碑</h3>
 <ul>
 <li>2016：Groth16，工业级最小 SNARK；</li>
@@ -3834,6 +3859,7 @@ Week 11-12: 做一个端到端项目：zk-airdrop / proof-of-solvency / zkML dem
 </section><section class="chapter">
 <h2 id="37-powers-of-tau-ceremony-trusted-setup" id="ch38"><span class="chapter-num">Chapter 38</span><br>第 37 章 Powers of Tau 后续 ceremony 与 Trusted Setup 治理</h2>
 
+<p>14 万人——这是 2023 年初 Ethereum KZG ceremony 的参与人数，也是密码学历史上参与人数最多的 trusted setup。任何一个里面只要一个人销毁了自己的 τ_i，整套 SRS 就是安全的（1-of-N 信任假设）。两年后的今天，每个 Solidity 工程师写 PLONK 系电路时其实都在「免费蹭用」 这 14 万人累积的安全性——这是 ZK 工程的低估资产之一。本章讲 ETH KZG 之后还会有什么 ceremony、Perpetual Powers of Tau 怎么持续追加贡献、a16z 提出的 「On-Chain Trusted Setup Ceremony」 想法，以及为什么「自己跑 ceremony 给主网用」 几乎永远是错的。</p>
 <h3 id="371-eth-kzg-ceremony">37.1 ETH KZG ceremony 之后呢</h3>
 <p>以太坊 KZG ceremony（2023-Q1，~14 万人参与，目前规模最大的 trusted setup），输出 SRS 用于：</p>
 <ul>

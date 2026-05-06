@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -584,6 +584,11 @@
 </section><section class="chapter">
 <h2 id="1-l1-l2" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 历史与 L1 瓶颈：为什么必须 L2</h2>
 
+<blockquote>
+<p><strong>场景</strong>：2021-09 一个深夜，你想用 Uniswap 把 $200 USDC 换成 ETH——确认页 gas 费 <strong>$84</strong>。你点了取消、等到凌晨三点、再试一次：还是 $54。</p>
+<p>那一刻 Twitter 上一句话刷屏：「以太坊已经成了富人的玩具。」</p>
+<p>L2 不是技术爱好者的「锦上添花」——它是 L1 物理上压不下来成本后<strong>剩下的唯一出路</strong>。这一章把「为什么必须 L2」拆成你能复述给非技术朋友的三句话。</p>
+</blockquote>
 <p>2021-09 主网一笔 Uniswap swap gas $84；2026 年繁忙时段仍 $5–$30。模块 06 里 AMM、借贷、衍生品对高频低费的需求在 2021 把 L1 gas 推到三位数——L2 不是「锦上添花」，是 L1 物理上压不下来成本之后的唯一出路。</p>
 <h3 id="11-l1">1.1 L1 的三道物理墙</h3>
 <figure><img src="diagram-b43a4d5488.png" alt="mermaid diagram"></figure>
@@ -695,6 +700,12 @@
 <h2 id="2-rollup" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章 Rollup 谱系：核心定义与分类</h2>
 
 <blockquote>
+<p><strong>打个比方</strong>：把 Rollup 想成一座「<strong>法庭 + 工地</strong>」的双层结构。</p>
+<ul>
+<li><strong>L1 = 法庭</strong>：慢、贵、严谨——它不亲自盖楼，但所有人都信它的判决；</li>
+<li><strong>L2 = 工地</strong>：快、便宜——工人 24 小时干活，每天打包施工记录送进法庭备案；</li>
+<li><strong>Optimistic vs ZK = 法庭审计风格的两种</strong>：「先信任，事后抽查」（Optimistic）vs「每份记录附数学证明」（ZK）。</li>
+</ul>
 <p>这一章是后续所有章节引用的「Optimistic vs ZK 对照」单一权威源。第 3、4、9、10、17 章只引用本章 2.3 的对比表，不再重复。</p>
 </blockquote>
 <h3 id="21">2.1 一句话定义</h3>
@@ -791,9 +802,17 @@
 <h2 id="3-optimistic-fraud-proof" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 Optimistic 内核：fraud proof 工程</h2>
 
 <blockquote>
-<p>本章只解决一个问题：<strong>怎么在 L1 上以可承受成本仲裁一笔错误的 L2 状态根</strong>。</p>
+<p><strong>场景</strong>：你是 Arbitrum 用户，刚把 100 USDC 转给朋友。Sequencer 在 L2 上几秒确认。但 sequencer 同时往 L1 发了一份「这笔交易跑完后链上余额是 X」的状态根——<strong>而这个状态根可能是假的</strong>。</p>
+<p>现在问题来了：L1 不会重放整个 L2 batch（成本会炸到火星）。那如果 sequencer 撒谎，谁来抓？怎么抓？</p>
+<p>答案叫 <strong>fraud proof</strong>——一场 sequencer 与挑战者之间的「二分博弈」，最终把整批交易压缩到<strong>一条 EVM 指令</strong>让 L1 仲裁。本章只解决一个问题：<strong>怎么在 L1 上以可承受成本仲裁一笔错误的 L2 状态根</strong>。</p>
 </blockquote>
 <h3 id="31">3.1 核心机制：交互式二分博弈</h3>
+<p><strong>直觉</strong>：想象 sequencer 说「我把这 1000 笔交易跑完，最终状态是 X」。挑战者说「不对，应该是 Y」。直接让 L1 重跑 1000 笔成本不可接受——<strong>二分博弈</strong>的思路是：让两人不断把「分歧区间」对半切，最后切到一条具体指令——L1 只需仲裁这一条。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1000 笔 → 500 笔 → 250 笔 → 125 笔 → ... → 1 笔 → 1 条 EVM 指令
+        ↑          ↑          ↑          ↑
+        每轮挑战者和被挑战者各发一个 hash，看谁先&quot;露馅&quot;
+</code></pre></div>
+<p>10 轮二分就把 1000 笔交易压到 1 条指令——log₂(1000) ≈ 10。整个争议解决过程在 L1 上只写几十个 hash，不需要重放任何交易。</p>
 <p>直接在 L1 重放整个 batch 成本不可接受，解法是<strong>二分博弈</strong>（bisection game）：</p>
 <figure><img src="diagram-4d607dce9d.png" alt="mermaid diagram"></figure>
 
@@ -845,13 +864,17 @@
 <h2 id="4-zk-validity-proof" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 ZK 内核：validity proof 的数学</h2>
 
 <blockquote>
+<p><strong>场景</strong>：再回到那笔 100 USDC 转账。如果 Arbitrum 用 Optimistic，你提款回 L1 要等 7 天挑战期；如果换成 zkSync，几小时后资金到 L1——为什么？</p>
+<p>因为 ZK rollup 不需要「事后抽查」。每个 batch 上链时<strong>附一份数学证明</strong>：「我承诺，这批交易跑完结果就是这个状态根，错了概率小于 2 的负 100 次方」。L1 用 50 万 gas 验完证明——通过，资金立刻能动。</p>
+<p>「数学证明」听起来玄学，工程师实际只关心三件事：<strong>proof 多大？验证多贵？prover 多慢？</strong> 后两件直接决定用户费用，第一件决定 L1 占用。</p>
 <p>Optimistic 用「可能发生的挑战」约束 sequencer；ZK 用「每次提交附数学证明」彻底消除争议窗口。本章只关心 rollup 层取舍——电路与曲线的密码学原理在模块 08 展开。</p>
 </blockquote>
 <h3 id="41-zk">4.1 ZK 三件套：完备性、可靠性、零知识</h3>
+<p><strong>用一个例子先记住</strong>：你在游戏里抽到了限定皮肤。你想向朋友证明「我有这皮肤」但不想暴露账号密码。</p>
 <ul>
-<li><strong>Completeness（完备性）</strong>：命题真则诚实 prover 总能让 verifier 接受；</li>
-<li><strong>Soundness（可靠性）</strong>：命题假则恶意 prover 让 verifier 接受的概率可忽略；</li>
-<li><strong>Zero-knowledge（零知识）</strong>：verifier 除了「命题真」外学不到任何信息。</li>
+<li><strong>Completeness（完备性）</strong>：你<strong>真有</strong>皮肤时总能让朋友信——证明系统不会冤枉好人；</li>
+<li><strong>Soundness（可靠性）</strong>：你<strong>假装有</strong>皮肤时几乎不可能骗过朋友——伪造概率小到可忽略；</li>
+<li><strong>Zero-knowledge（零知识）</strong>：朋友除了「你确实有皮肤」之外，<strong>啥也学不到</strong>——账号密码不外泄。</li>
 </ul>
 <p>Rollup 场景里零知识不是必需的——只需 succinctness（证明短，验证快）。zkRollup 严格说叫「validity rollup」更准确，但行业沿用了 zk 这个名字。</p>
 <h3 id="42-snark-vs-stark">4.2 SNARK vs STARK</h3>
@@ -970,9 +993,12 @@
 <h2 id="5-darollup" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 数据可用性（DA）：rollup 的命门</h2>
 
 <blockquote>
-<p>不管 Optimistic 还是 ZK，安全底线只有一句话：<strong>原始交易数据必须可被任何人下载</strong>。本章拆解这句话的工程含义。</p>
+<p><strong>思想实验</strong>：假设某 L2 sequencer 偷偷干这件事——往 L1 提交了正确的状态根（甚至带 ZK 证明），但<strong>就是不公布原始交易数据</strong>。</p>
+<p>表面上链很正常——直到你想提款。提款需要构造一个「我账户余额是 X」的 Merkle 证明，但 Merkle 树需要原始交易数据来重建——你没有数据，sequencer 也不给。<strong>你的钱就这样冻在 L1 合约里</strong>。</p>
+<p>这不是理论。Validium 模式（ZK + 链下 DA）真的可能发生这场景，这正是 Validium 一直没成主流的根因。不管 Optimistic 还是 ZK，安全底线只有一句话：<strong>原始交易数据必须可被任何人下载</strong>。本章拆解这句话的工程含义。</p>
 </blockquote>
 <h3 id="51-da">5.1 DA 是什么、为什么是命门</h3>
+<p><strong>比喻</strong>：DA 就像银行流水。哪怕银行余额报表（状态根）漂亮，没有底层流水（原始交易数据），你也证明不了「这 100 块是我的」——更别说想从银行强制提款。</p>
 <p><strong>DA 问题</strong>：sequencer 公布状态根但藏起原始数据——没人能重构 L2 状态、写 fraud proof、强制提款。</p>
 <h3 id="52-da">5.2 DA 与执行的解耦</h3>
 <p>模块化区块链核心思想：<strong>执行、结算、共识、DA 是四件独立的事</strong>。</p>
@@ -1047,7 +1073,9 @@
 <h2 id="6-eip-4844-kzgblob" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 EIP-4844 与 KZG：blob 的内部结构</h2>
 
 <blockquote>
-<p>本章回答「blob 价格为什么能逼近 1 wei」——这要把 type-3 交易、KZG 承诺、point evaluation precompile 三件事拆开来看。</p>
+<p><strong>价格曲线</strong>：Dencun 升级（2024-03-13）上线那一刻，主流 L2 用户费用<strong>一夜之间从 $0.5 跌到 $0.05</strong>——10× 降本，没有一行 L2 代码改动。</p>
+<p>这是怎么做到的？答案是 EIP-4844 给以太坊新增了一个「<strong>临时存储仓库</strong>」：blob——128 KiB 一块，存约 18 天就丢，但价格几乎免费。Rollup 把 batch 数据塞进 blob，L1 只看 blob 的 32 字节哈希——存储成本骤降。</p>
+<p>但魔鬼藏在 KZG 承诺、point evaluation precompile、versioned hash 这堆细节里。本章回答「blob 价格为什么能逼近 1 wei」——这要把 type-3 交易、KZG 承诺、point evaluation precompile 三件事拆开来看。</p>
 </blockquote>
 <h3 id="61">6.1 时间线</h3>
 <p><a href="https://eips.ethereum.org/EIPS/eip-4844">EIP-4844</a>（Proto-Danksharding）2024-03-13 Dencun 升级上线，新增 <strong>type-3 blob-carrying transaction</strong>。</p>
@@ -1099,6 +1127,7 @@
 </tbody>
 </table>
 <h3 id="64-kzg">6.4 KZG 承诺</h3>
+<p><strong>直觉版</strong>：把 128KiB 的 blob 数据想成 4096 个 y 坐标，连成一条多项式曲线。KZG 就是给这条曲线<strong>拍一张 48 字节的合影</strong>——任何人想问「曲线在 x=42 时 y 是多少」，你给出 48 字节的「证明」+ 那个 y 值，验证者一个 pairing 就能确认你没骗他。</p>
 <p>Blob = 多项式 P(x) 的 4096 个采样值，压缩成 48 字节 KZG commitment（多项式在秘密点 τ 的椭圆曲线取值）。关键性质：承诺不泄漏系数（τ 未知）；48 字节 proof + 一个 pairing 即可验证「某点取某值」。</p>
 <p>2D KZG 多项式承诺是 Danksharding 的核心——每个 blob 单独承诺，多个 blob 在另一维度承诺，方便采样和恢复。</p>
 <h3 id="65-0x0a-precompile">6.5 0x0a precompile</h3>
@@ -1155,10 +1184,16 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="7-pectra-fusakablob" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 Pectra 与 Fusaka：blob 容量的爆炸</h2>
 
+<blockquote>
+<p><strong>数字爆炸</strong>：4844 上线时 blob target = 3。两年后（2026-01）BPO2 后 target = <strong>14</strong>——容量翻 4.6 倍，blob 价格依然趴在 1 wei。</p>
+<p>这背后是一次<strong>节点架构的悄悄革命</strong>：PeerDAS 让验证者只需采样 blob 的几列，不用下载全部。「单节点存所有数据」这条物理墙第一次松动。</p>
+<p>这一章的关键不是记 BPO 时间表，而是看懂一件事：<strong>Ethereum 给 rollup 留的弹药管够了</strong>——blob 容量未来五年都不会是瓶颈。</p>
+</blockquote>
 <h3 id="71-eip-7691-pectra-2025-05">7.1 EIP-7691 (Pectra, 2025-05)</h3>
 <p><a href="https://eips.ethereum.org/EIPS/eip-7691">EIP-7691</a> 把 blob target 3→6、max 6→9；<a href="https://eips.ethereum.org/EIPS/eip-7918">EIP-7918</a> 引入 reserve price。</p>
 <p>实测（<a href="https://ethpandaops.io/posts/eip7691-retrospective/">ethPandaOps</a>）：daily blobs 21,300→28,000、blob space 2.7→3.4 GB，<strong>供给已超过需求</strong>（rollup 需求未达 target 6）。</p>
 <h3 id="72-eip-7594-peerdas-da">7.2 EIP-7594 PeerDAS：分布式 DA 采样</h3>
+<p><strong>比喻</strong>：PeerDAS 让以太坊验证者从「<strong>全体读者</strong>」变成「<strong>抽样读者</strong>」——不用每人读完整本书，每个人随机翻几页，全网拼起来确认这本书没有缺页就行。</p>
 <p><a href="https://eips.ethereum.org/EIPS/eip-7594">EIP-7594 PeerDAS</a> 是 Fusaka 升级（2025-12-03）的核心，引入 1D Reed-Solomon 编码 + 列采样：</p>
 <figure><img src="diagram-a112e1e39b.png" alt="mermaid diagram"></figure>
 
@@ -1213,7 +1248,9 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <h2 id="8-l2beat-stage-rollup" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 L2BEAT Stage 评级：rollup 的「安全成绩单」</h2>
 
 <blockquote>
-<p>「DA 已解决」之后剩下的问题是「这条 rollup 还有多少 training wheels」——L2BEAT 给出业界标准答案。</p>
+<p><strong>场景</strong>：你点开 <a href="https://l2beat.com/scaling/summary">L2BEAT</a>，看到 Arbitrum 标着「Stage 1」、zkSync Era 标着「Stage 0」、Stage 2 一栏<strong>空着</strong>。</p>
+<p>这三个数字到底意味着什么？为什么截至 2026-04 没有一条主流 EVM L2 拿到 Stage 2？</p>
+<p>把它当<strong>驾照分级</strong>：Stage 0 是科目二（教练随时能踩刹车），Stage 1 是新手期（独立开车但有里程限制），Stage 2 是「老司机」（团队完全放手）。「DA 已解决」之后剩下的问题是「这条 rollup 还有多少 training wheels」——L2BEAT 给出业界标准答案。</p>
 </blockquote>
 <h3 id="81-stage">8.1 三个 Stage 的定义</h3>
 <figure><img src="diagram-61b38ee407.png" alt="mermaid diagram"></figure>
@@ -1275,6 +1312,8 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <h2 id="9-optimistic-l2" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 Optimistic L2 全景</h2>
 
 <blockquote>
+<p><strong>市场结构</strong>：截至 2026-04，<strong>Arbitrum + Base 合计占 L2 TVS 75%+</strong>。</p>
+<p>这不是技术差异决定的——OP Stack 已经赢了「框架战争」，新链几乎都基于它（Base、Mantle、Mode、Worldchain、Soneium、Ink、Unichain……）。差异在分发渠道与定位：Coinbase 把 Base 推给所有 App 用户；Arbitrum 用 Stylus + BoLD 守住技术深度；Blast 用「存款带息」走野路子；Mantle 押注 EigenDA。</p>
 <p>本章不为每条链铺垫「Stage / DA / TVL」——这些信息都在 9.8 的对照表里查；正文只讲<strong>这条链与其他 OP/Arbitrum 派系的差异点</strong>。所有数据用 <a href="https://l2beat.com/scaling/summary">L2BEAT</a> 实时复核。</p>
 </blockquote>
 <h3 id="91-arbitrum-one-op">9.1 Arbitrum One：技术领先但生态不如 OP</h3>
@@ -1549,6 +1588,9 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <h2 id="10-zk-l2" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 ZK L2 全景</h2>
 
 <blockquote>
+<p><strong>退役公告</strong>：2025-12，Polygon 官方宣布 zkEVM Mainnet Beta 将于 <strong>2026-07-01 关停</strong>——年损 $1M+，曾是 ZK 派的领头羊。</p>
+<p>教训简单粗暴：<strong>ZK L2 没有「先发就赢」这回事</strong>。Polygon zkEVM 输给了 Scroll（先达 Stage 1）、Linea（MetaMask 流量）、zkSync（生态飞轮）、Starknet（性能）——同一个赛道四个对手分走了它的午饭。</p>
+<p>这一章看 ZK 阵营时记一句话：<strong>没有绝对第一</strong>——zkSync TVL 高、Scroll Stage 最先进、Linea 工具链最易用、Starknet 性能最强。差异化已不是「能不能跑 EVM」，而是 prover 性能 + 生态飞轮 + 治理透明度。</p>
 <p>同样的体例：Stage / DA / TVL 看 10.11 表，正文只讲差异点。</p>
 </blockquote>
 <h3 id="101-zksync-era-zk-stack">10.1 zkSync Era：唯一可独立部署的 ZK Stack</h3>
@@ -1662,6 +1704,11 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="11-validium-volition" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章 Validium 与 Volition</h2>
 
+<blockquote>
+<p><strong>退场名单</strong>：Astar zkEVM（2024-03 上线 → 2025-03 退役，仅活了一年）；dYdX v3（StarkEx ZK rollup → 2024 迁出做 Cosmos 应用链）；Immutable X（StarkEx Validium → 2026 初合并到 Immutable Chain zkEVM）。</p>
+<p>三个旗舰 Validium 项目，三种不同的退场姿势。它们的共同悲剧：blob 价格塌到 1 wei，外部 DA 的成本优势消失了——但 Validium 的「DAC 不诚实你提不出钱」这条信任假设还在。</p>
+<p>Volition（zkSync 的「每笔交易自选模式」）是这条赛道唯一的存活路线——大额走 Rollup，小额走 Validium，让用户自己定。</p>
+</blockquote>
 <h3 id="111-validium">11.1 Validium 是什么</h3>
 <p><strong>Validium = ZK 证明 + 链下 DA</strong>。安全模型：ZK 数学正确 + DA 提供方诚实。</p>
 <figure><img src="diagram-0225adbbcd.png" alt="mermaid diagram"></figure>
@@ -1726,6 +1773,14 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="12-sequencer" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 Sequencer 架构演化</h2>
 
+<blockquote>
+<p><strong>真实故障</strong>：
+- <strong>Linea，2024-06</strong>：Velocore DEX 被攻击 $2.6M，Linea 团队<strong>手动暂停 sequencer</strong>——整条链停摆，连不相关的用户也不能交易。
+- <strong>Linea，2025-09</strong>：sequencer 卡死，主网停止出块 <strong>40+ 分钟</strong>。
+- <strong>Base，2025-08</strong>：active sequencer 落后，备用 sequencer 还没 provisioning 完成——<strong>33 分钟无法出块</strong>。</p>
+<p>这三件事都不需要黑客攻击——sequencer 自己宕机或团队主动按下暂停键就够了。<strong>绝大多数 L2 的 sequencer 是单一公司运行的单实例</strong>，这是当前 L2 中心化的最大来源。</p>
+<p>这一章讲 sequencer 的去中心化路线为什么走得慢——核心不是技术，是<strong>钱</strong>。</p>
+</blockquote>
 <h3 id="121-sequencer-l2">12.1 Sequencer 是 L2 的中央心脏</h3>
 <p>Sequencer 决定 L2 交易排序、出块、batch 提交——<strong>绝大多数 L2 的 sequencer 是单一公司运行的单实例</strong>，是当前 L2 中心化的最大来源。</p>
 <h3 id="122">12.2 演化路径：三步走</h3>
@@ -1826,6 +1881,15 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="13" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 桥与跨链消息</h2>
 
+<blockquote>
+<p><strong>场景</strong>：你在 Base 上有 1000 USDC，想转去 Arbitrum 玩某个新 DEX，<strong>只想等不超过 10 分钟</strong>。怎么走？</p>
+<ul>
+<li><strong>方案 A</strong>（Native Bridge）：Base → L1 → Arbitrum，等 7 天挑战期 ❌</li>
+<li><strong>方案 B</strong>（CCTP）：Circle 原生 USDC 跨链，~15 分钟、$3-5 ✅</li>
+<li><strong>方案 C</strong>（Across）：intent + 中继商垫付，~1-2 分钟、$1-2 ✅✅</li>
+</ul>
+<p>答案不是「用最便宜那个」——是<strong>根据信任假设、合规要求、流动性深度选</strong>。这一章把市面上 13 个主流桥协议的安全模型摆一起对比，让你下次看见「跨链桥被盗 $3 亿」的新闻时能秒判属于哪种漏洞。</p>
+</blockquote>
 <h3 id="131">13.1 一图概览</h3>
 <figure><img src="diagram-948292692d.png" alt="mermaid diagram"></figure>
 
@@ -1966,7 +2030,51 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <h2 id="14-5" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 桥事故复盘：必读的 5 起</h2>
 
 <blockquote>
-<p>桥是 Web3 最高风险板块：TVL 不到 DeFi 10%，但占被盗资金 50%+（<a href="https://www.zealynx.io/blogs/cross-chain-bridge-security-checklist">Zealynx</a>）。</p>
+<p><strong>被盗金额排行</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>项目</th>
+<th>损失</th>
+<th>一句话死因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2022-02</td>
+<td>Wormhole</td>
+<td><strong>$326M</strong></td>
+<td>Solana 端没校验 sysvar 是真的 sysvar</td>
+</tr>
+<tr>
+<td>2022-03</td>
+<td>Ronin</td>
+<td><strong>$625M</strong></td>
+<td>9 个验证者 5 个被钓鱼</td>
+</tr>
+<tr>
+<td>2022-08</td>
+<td>Nomad</td>
+<td><strong>$190M</strong></td>
+<td>升级时把根初始化成 0x00，<strong>所有人复制粘贴交易就能取钱</strong></td>
+</tr>
+<tr>
+<td>2023-07</td>
+<td>Multichain</td>
+<td><strong>$130M+</strong></td>
+<td>CEO 被监管带走，私钥跟着没了</td>
+</tr>
+<tr>
+<td>2024-01</td>
+<td>Orbit Bridge</td>
+<td><strong>$80M</strong></td>
+<td>7 个 KYC 验证者私钥同时失陷</td>
+</tr>
+</tbody>
+</table>
+<p><strong>合计 $1.35B+</strong>——这五起占了 Web3 桥事故损失的半壁江山。</p>
+<p>桥是 Web3 最高风险板块：TVL 不到 DeFi 10%，但占被盗资金 50%+（<a href="https://www.zealynx.io/blogs/cross-chain-bridge-security-checklist">Zealynx</a>）。这一章把每起事故的根因还原到合约代码——下一次轮到你审 PR 时，至少别让 Nomad 那种「mapping 零值 = true」的错再上演。</p>
 </blockquote>
 <h3 id="141">14.1 时间线总览</h3>
 <figure><img src="diagram-e708d36b18.png" alt="mermaid diagram"></figure>
@@ -2026,6 +2134,11 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="15-l3-app-rollup-raas" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 L3 / app-rollup / RaaS</h2>
 
+<blockquote>
+<p><strong>23 分钟实测</strong>：<a href="https://blockeden.xyz/forum/t/i-deployed-a-custom-op-stack-rollup-in-23-minutes-with-zero-infrastructure-experience-heres-my-step-by-step-raas-comparison-of-conduit-caldera-and-gelato/473">BlockEden 实测</a> 中，作者用 Conduit 部署一条自定义 OP Stack rollup——从注册到主网出块，<strong>23 分钟</strong>。</p>
+<p>三年前这同一件事要 6 个月、需要一支专职团队。现在 RaaS 让「起一条 rollup」和「部署一个智能合约」变成同一难度——你只需要回答：用什么栈？哪条 DA？sequencer 自营还是托管？跨链消息怎么走？</p>
+<p>这一章讲的不是「该不该自建 L3」，而是<strong>怎么在 OP Stack / Orbit / ZK Stack / Polygon CDK / Sovereign 五大框架之间做有数字依据的选型</strong>。</p>
+</blockquote>
 <h3 id="151-l3">15.1 L3 是什么</h3>
 <p><strong>L3 = 在 L2 上再起一条 rollup，settlement 用 L2 而非 L1。</strong></p>
 <figure><img src="diagram-d903c02e63.png" alt="mermaid diagram"></figure>
@@ -2221,6 +2334,17 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="16-re-staking-avs" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 Re-staking 与 AVS</h2>
 
+<blockquote>
+<p><strong>过山车</strong>：EigenLayer TVL 走过的路——</p>
+<ul>
+<li><strong>2024-04</strong>：主网启动，纯 points farming，<strong>TVL 一年涨到 $28B</strong>；</li>
+<li><strong>2025-04-17</strong>：slashing 真的上线，operator 第一次承担真实风险；</li>
+<li><strong>2025 年中</strong>：恐慌性赎回，<strong>TVL 跌到 $7B</strong>——4 倍腰斩；</li>
+<li><strong>2026-04</strong>：回升到 $18-19.5B，市场重新定价。</li>
+</ul>
+<p>这条曲线讲了一个故事：「<strong>赌空投</strong>」与「<strong>真承担风险</strong>」是两回事。Re-staking 是 2024-2025 最火也最被误解的赛道——它本质上是把已经质押给以太坊的 ETH <strong>再租给别人换收益</strong>，而「别人」可能罚你。</p>
+<p>这一章只讲工程师该懂的两件事：怎么设计一个 AVS（4 个问题）、什么场景该不该用 restaking 安全。</p>
+</blockquote>
 <h3 id="161-re-staking">16.1 Re-staking 是什么（核心思想）</h3>
 <figure><img src="diagram-97e658fa53.png" alt="mermaid diagram"></figure>
 
@@ -2332,6 +2456,14 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 </section><section class="chapter">
 <h2 id="17-l2" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 L2 经济学</h2>
 
+<blockquote>
+<p><strong>谁在自营 L2，为什么</strong>：
+- <strong>Coinbase</strong>（Base）：月 sequencer 收入 $1-3M（2025 高峰 $5M+）
+- <strong>Consensys</strong>（Linea）：MetaMask 用户直接导流
+- <strong>Sony</strong>（Soneium）、<strong>Kraken</strong>（Ink）、<strong>Uniswap</strong>（Unichain）：跟进</p>
+<p>你以为 L2 是基础设施情怀？它是<strong>理论 70-90% 净利率（实际 30-60%）的 SaaS 业务</strong>——和 Snowflake、Datadog 同档。</p>
+<p>这一章把同一笔 DEX swap 在 L1、Optimistic、ZK 上的真实成本算给你看；再把 sequencer 一天的收入与成本铺开——<strong>为什么 Coinbase 自建 Base 不是品牌秀，是现金牛</strong>。</p>
+</blockquote>
 <h3 id="171">17.1 单笔交易成本拆解：完整公式</h3>
 <p><strong>L2 单笔交易费 = execution_gas × L2_gas_price + DA_cost + proof_cost_per_tx</strong></p>
 <ul>
@@ -2340,6 +2472,7 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <li><code>proof_cost_per_tx = proof_generation_cost_per_batch ÷ tx_count_per_batch</code>（仅 ZK 系）</li>
 </ul>
 <h3 id="172-dex-swap">17.2 实际数字代入（一笔典型 DEX swap）</h3>
+<p><strong>场景设定</strong>：假设你是 Base 上的普通用户，刚发起一笔 Uniswap v3 USDC→ETH swap。从 sequencer 的视角看——你这笔交易给链贡献了多少收入、占了多少成本？我们把数字摆出来。</p>
 <p><strong>输入参数</strong>：</p>
 <ul>
 <li>swap 占 calldata 约 400 bytes，经 brotli 压缩到 ~200 bytes</li>
@@ -2460,6 +2593,7 @@ blob_base_fee ≈ 1 wei（截至 2026-04）
 <h2 id="18" id="ch19"><span class="chapter-num">Chapter 19</span><br>第 18 章 实战代码</h2>
 
 <blockquote>
+<p>看了 17 章理论是时候动手了——这一章把 4 个 demo 摆在桌上：把同一个合约部署到 5 条 L2 看 gas 差多少；用 OP Stack 原生桥跑 L1↔L2 消息；用 Hyperlane CLI 部署一个跨链 ERC20；用 viem 监听主网 4844 blob 交易看 rollup 数据是怎么落 L1 的。</p>
 <p>所有示例位于 <code>code/</code>（含 README）。本章给出每个 demo 的目标、原理图与关键代码片段。</p>
 </blockquote>
 <h3 id="181-demo-1-gas">18.1 Demo 1：多链部署 + gas 对比</h3>
@@ -2533,6 +2667,9 @@ hyperlane<span style="color: #F8F8F8"> </span>warp<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="19" id="ch20"><span class="chapter-num">Chapter 20</span><br>第 19 章 练习与答案</h2>
 
+<blockquote>
+<p>读完前 18 章，你会觉得「我懂了」——直到面试官让你算「Base 上一笔 swap 多少钱」、PM 让你写「我们要不要自建 L3」的方案。这一章三道题专治这种「<strong>懂了但写不出来</strong>」的尴尬：算成本、读评级、做架构选型。</p>
+</blockquote>
 <h3 id="191">19.1 练习总览</h3>
 <table>
 <thead>
@@ -2620,6 +2757,10 @@ hyperlane<span style="color: #F8F8F8"> </span>warp<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="20-ai" id="ch21"><span class="chapter-num">Chapter 21</span><br>第 20 章 AI 影响</h2>
 
+<blockquote>
+<p><strong>2025 年的真实场景</strong>：L2BEAT 的 ML 模型半夜发出告警——某 L2 sequencer 的 batch 提交频率突然偏离基线。值班工程师 30 秒内确认这是即将到来的中心化运营商故障的前兆，提前在 Twitter 警告用户。</p>
+<p>AI 在 L2 工程里<strong>已经在干活</strong>——不是在「设计 rollup」（它做不到），而是在监控、审计辅助、电路调试这些「夜班」位置上。这一章讲 AI 能做什么、做不了什么、L2 工程师该怎么用它。</p>
+</blockquote>
 <h3 id="201-ai-l2">20.1 AI 在 L2 工程中已落地</h3>
 <figure><img src="diagram-c8eedaf0ac.png" alt="mermaid diagram"></figure>
 

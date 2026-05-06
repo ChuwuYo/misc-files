@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -627,6 +627,11 @@
     <span class="toc-page">·</span>
   </div>
 </section>
+<blockquote>
+<p>2024 年 8 月，一位 NFT 巨鲸点了一下"出价"按钮，钱包弹出一段看似正常的 EIP-712 typed data，他签了。下一秒，几个高价 NFT 以 0.001 ETH 被扫光，损失 1100 万美元。钱包 UI 没把 royalty 字段渲染出来，而那个字段被改成了 <code>0xFFFF...FFFF</code>。</p>
+<p>同年全年，签名钓鱼吞掉了 4.94 亿美元、33.2 万受害者。这是 dApp 工程师每天战斗的战场。</p>
+<p>这个模块讲怎么活下来——也讲怎么活得漂亮：viem 的函数式设计为什么能在两年内把 ethers 拉下王座，Coinbase 怎么用 Passkey + 4337 让你妈也能用钱包，Vitalik 的 EIP-7702 怎么让旧 EOA "原地长出腿"，Stripe 为什么花钱买下 Privy。</p>
+</blockquote>
 <p>本模块把现代 dApp 前端栈逐层拆到协议字段级，配 <code>code/</code> 下可 <code>pnpm dev</code> 跑起来的 Next.js 15 项目。基线：Pectra 主网 2025-05-07 激活，EntryPoint v0.7 + EIP-7702 是 2026 事实组合（v0.8 在灰度，主网采用 &lt;15%）。前置 09-替代生态；后续 11-基础设施与工具。</p>
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
@@ -675,6 +680,9 @@
 </section><section class="chapter">
 <h2 id="1-dapp-web3js-viem" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. dApp 前端简史：从 web3.js 到 viem</h2>
 
+<blockquote>
+<p>2023 年初，wevm 团队发了一篇博客叫"Why viem"。当时 ethers 是绝对王者，没人觉得能打。两年后，wagmi 把整个 v2 重写在 viem 之上，RainbowKit、Permissionless、Reown AppKit 全部跟随，bundle 体积砍掉 7 倍——一场静悄悄的政变。</p>
+</blockquote>
 <p>工具链换代逻辑：web3.js（2014）callback/BN 时代 → ethers v5（2020）OO + BigNumber → ethers v6（2023）原生 bigint 但破坏兼容 → viem（2023）函数式 + 类型推导。viem 抓住 v5→v6 真空期上位，2026 已是事实标准。</p>
 <p>viem 的关键决定：</p>
 <ul>
@@ -875,6 +883,9 @@
 </section><section class="chapter">
 <h2 id="3-viem-2x" id="ch04"><span class="chapter-num">Chapter 04</span><br>3. viem 2.x 深度</h2>
 
+<blockquote>
+<p>把 viem 想象成一组乐高积木：<strong>Client</strong> 是底座，<strong>Action</strong> 是手要做的动作，<strong>Transport</strong> 是"消息怎么寄出去"的快递公司。你随便挑一辆快递（http / WebSocket / 用户的钱包），找一个底座（公共读 / 钱包写 / 本地测），再选一个动作（getBalance / writeContract）——三块拼起来就能干活。这种"客户端 × 动作 × 传输"的解耦，正是 viem 比 ethers 小 7 倍的根本原因：你只 import 你用到的那块积木，tree-shaker 把剩下的都丢掉。</p>
+</blockquote>
 <p>三类对象：<strong>Client</strong>（<code>PublicClient</code> / <code>WalletClient</code> / <code>TestClient</code>）、<strong>Action</strong>（纯函数，首参 client）、<strong>Transport</strong>（<code>http()</code> / <code>webSocket()</code> / <code>fallback()</code> / <code>custom(provider)</code>）。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createPublicClient</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">http</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">fallback</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;viem&#39;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">mainnet</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;viem/chains&#39;</span>
@@ -1007,6 +1018,10 @@
 </section><section class="chapter">
 <h2 id="4-wagmi-v2" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. wagmi v2 深度</h2>
 
+<blockquote>
+<p>假设你在做一个 Web2 用户引导流程：用户点 "Connect"，你想让他无论装的是 MetaMask、Rabby、Coinbase Smart Wallet 还是用 WalletConnect 扫码连接手机钱包，UI 都是同一套。这就是 wagmi 的价值——它把"和钱包说话"这件事抽成 React Hook，剩下的（多链状态、断线重连、SSR、cookie 持久化）都帮你做完。</p>
+<p>你写 <code>useAccount()</code>、<code>useReadContract()</code>、<code>useWriteContract()</code>，背后是 viem 的 action + react-query 的缓存 + connector 的事件总线在跑。</p>
+</blockquote>
 <p>viem 上的 React 层：Connector 把注入 / WalletConnect / Coinbase / Safe 统一成同一接口，Hooks 把 viem action 包成 react-query 查询，并管多链 / 多账户状态与持久化（localStorage / cookie）。</p>
 <h3 id="41-config">4.1 Config</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">http</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">createConfig</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">cookieStorage</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">createStorage</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
@@ -1181,6 +1196,10 @@
 </section><section class="chapter">
 <h2 id="5" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. 钱包连接全景与底层协议</h2>
 
+<blockquote>
+<p>早期 dApp 直接 <code>window.ethereum.request(...)</code>，谁注入晚谁覆盖前者，MetaMask + Coinbase Wallet 同装时打架是日常。EIP-6963 解决了这个混乱：dApp 喊一声"有钱包吗"，每个钱包都举手回报自己的名字图标，dApp 列给用户选——像点外卖时挑商家，而不是被算法塞一家。</p>
+<p>这一节把"钱包"这个抽象拆开看：浏览器扩展、移动端、硬件钱包、Smart Wallet 全都通过 EIP-1193 这条同一根管子和 dApp 说话，区别只是管子那头是私钥、Passkey 还是远程节点。</p>
+</blockquote>
 <h3 id="51-eip-1193provider">5.1 EIP-1193：Provider 协议</h3>
 <p>浏览器钱包注入对象的统一接口（常用 <code>request</code> 方法列于下表）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">interface</span><span style="color: #F8F8F8"> </span><span style="color: #000">EIP1193Provider</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1271,6 +1290,9 @@
 </section><section class="chapter">
 <h2 id="5a-evm-rpc" id="ch07"><span class="chapter-num">Chapter 07</span><br>5A. EVM 钱包 RPC 标准谱</h2>
 
+<blockquote>
+<p>EIP-1193 只是基础语法，像普通话；真要让用户按一下按钮就 "approve + swap" 一气呵成、还能让游戏 dApp 一小时内不再弹钱包，得靠它上面的方言扩展。这一节是钱包 RPC 标准的"年鉴"——从 2020 年的链切换，到 2025 年 Pectra 主网激活的 EOA 升级，时间轴拉直你就看见了 UX 是怎么一步步从"丑"走到"丝滑"的。</p>
+</blockquote>
 <p>1193 之上的扩展按用途分四组：<strong>链管理</strong>（3085/3326）、<strong>批量+sponsor+session</strong>（5792 / 7677 / 7715）、<strong>counterfactual 验签</strong>（6492）、<strong>EOA 升级</strong>（7702，§14）。下面按组速通字段，深入用法见后续小节交叉引用。</p>
 <h3 id="5a1-eip-3085-wallet_addethereumchain">5A.1 EIP-3085 <code>wallet_addEthereumChain</code></h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000">provider</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">request</span><span style="color: #000; font-weight: bold">({</span>
@@ -1381,6 +1403,10 @@
 </section><section class="chapter">
 <h2 id="6-walletconnect-v2-reown" id="ch08"><span class="chapter-num">Chapter 08</span><br>6. WalletConnect v2 / Reown 内部机制</h2>
 
+<blockquote>
+<p>想象你在咖啡馆，电脑打开 Uniswap，手机里只有 imToken。WalletConnect 像一个"中间人邮局"——dApp 把"求签名"的信封交给 relay，钱包到邮局取件，钱包写好"签好名的回执"再交回 relay，dApp 收件。整个过程信封内容用 dApp 和钱包共享的密钥加密，relay 看不到。</p>
+<p>这套机制 2024 改名 Reown（公司层），协议本身仍叫 WalletConnect v2。下面把"邮局"拆成三层抽象。</p>
+</blockquote>
 <p>手机钱包连接 dApp 的事实标准，2024 品牌升级为 Reown，协议名仍叫 WalletConnect v2。</p>
 <h3 id="61">6.1 三层抽象</h3>
 <figure><img src="diagram-1010af4123.png" alt="mermaid diagram"></figure>
@@ -1466,6 +1492,10 @@
 </section><section class="chapter">
 <h2 id="7-ui-rainbowkit-vs-reown-appkit-vs-connectkit" id="ch09"><span class="chapter-num">Chapter 09</span><br>7. 钱包 UI 套件：RainbowKit vs Reown AppKit vs ConnectKit</h2>
 
+<blockquote>
+<p>这一段你把它当"挑外卖"读：三家用的食材都一样（wagmi），区别在装盘和加料。RainbowKit 是清淡白盘，UI 干净跑得快；AppKit 是自助餐，邮件登录 / onramp / 跨链 USDC 一锅端，但碟子也大；ConnectKit 是文艺小馆，玻璃态大圆角，bundle 小一点儿，生态也小一点儿。</p>
+<p>选错的代价是真金白银——bundle 多 80KB，移动端转化率掉一截，已经有 dApp 团队复盘过这件事。</p>
+</blockquote>
 <p>三家均基于 wagmi。</p>
 <h3 id="71-rainbowkit-22x">7.1 RainbowKit 2.2.x</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">RainbowKitProvider</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">ConnectButton</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">getDefaultWallets</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">connectorsForWallets</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@rainbow-me/rainbowkit&#39;</span>
@@ -1490,6 +1520,10 @@
 </section><section class="chapter">
 <h2 id="8-privy-dynamic-web3auth-turnkey" id="ch10"><span class="chapter-num">Chapter 10</span><br>8. 嵌入式钱包与社交登录：Privy / Dynamic / Web3Auth / Turnkey</h2>
 
+<blockquote>
+<p>2025 年 6 月，Stripe 花了据传 11 亿美元买下 Privy。一家做支付的公司为什么要一家做钱包的公司？因为 Stripe 想让 Web2 商家收"稳定币"——而稳定币的世界里没有信用卡号，只有钱包地址。Privy 给商家的方案是："你客户用 Gmail 一键登录，我们后台帮他生成钱包，不用记助记词、不用装扩展，就像 Apple ID。"</p>
+<p>同年 Fireblocks 拿下 Dynamic、Consensys 拿下 Web3Auth。WaaS（Wallet-as-a-Service）赛道在 2025 完成了大部分整合。这一节是给你"造一条 Web2 用户引导通道"时的弹药库。</p>
+</blockquote>
 <p>WaaS：用邮箱/社交登录生成钱包，私钥托管或半托管。</p>
 <h3 id="81-privy">8.1 Privy</h3>
 <ul>
@@ -1574,6 +1608,10 @@
 </section><section class="chapter">
 <h2 id="9-siweeip-4361-nextauth" id="ch11"><span class="chapter-num">Chapter 11</span><br>9. SIWE（EIP-4361）与 NextAuth 集成</h2>
 
+<blockquote>
+<p>Web2 登录靠"邮箱+密码"，Web3 不一样：你的钱包地址就是你的身份证，"签个名"就是输密码。但是直接 <code>personal_sign("login")</code> 太天真——攻击者把同一段消息复制到他自己的网站，你今天在 dApp A 签的，明天就被拿去 dApp B 顶替你登录。</p>
+<p>SIWE（Sign-In With Ethereum）是 ENS 团队 2021 提出的解法：把 domain、chainId、nonce、过期时间全打包进签名内容里，让一段签名只能在特定 dApp 的特定时段用一次。这一节把 SIWE 全流程拆开，配 NextAuth v5 的可跑代码。</p>
+</blockquote>
 <h3 id="91-eip-4361">9.1 EIP-4361 消息格式</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>example.com wants you to sign in with your Ethereum account:
 0xabc...def
@@ -1646,6 +1684,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="10-eip-712" id="ch12"><span class="chapter-num">Chapter 12</span><br>10. EIP-712 类型化签名与防钓鱼</h2>
 
+<blockquote>
+<p>还记得开篇那位损失 1100 万美元的 NFT 巨鲸吗？他签的就是 EIP-712 typed data，钱包 UI 把 royalty 字段悄悄省略，他没看见。</p>
+<p>EIP-712 把签名从"一串 hex"升级为"一张表单"，让钱包能把字段名、字段值、合约地址、链 ID 全展示给用户。但<strong>展示得好不好，看钱包</strong>——Rabby 把 Permit2 翻译成"授权 X 在 Y 内可转走 Z"，老 Frame 直接显示 hash 让你瞎蒙。</p>
+<p>这一节讲协议本身，§16I/§20 讲怎么写 dApp 不让用户被钓。</p>
+</blockquote>
 <h3 id="101">10.1 为什么需要类型化签名</h3>
 <p><code>personal_sign</code> 只签字符串，复杂数据 keccak 后用户看 hex 无从判断。EIP-712 标准化结构 + 域分隔 + 类型，钱包可渲染为可读表单。</p>
 <h3 id="102">10.2 域分隔</h3>
@@ -1676,6 +1719,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="11-permit2-erc-20" id="ch13"><span class="chapter-num">Chapter 13</span><br>11. Permit2：下一代 ERC-20 授权</h2>
 
+<blockquote>
+<p>老 ERC-20 的 approve 设计有个原罪：你授权 router 一次，授权额度永远在那儿——除非你主动 revoke。这意味着六个月前你为了换 100 USDC 给某个老协议授权了 MaxUint256，今天那个协议出 0day，你的全部 USDC 就裸奔。</p>
+<p>Uniswap 2022 部署的 Permit2 是这个问题的"行业大手术"——把所有 ERC-20 授权统一收回到一个合约里，每次签 EIP-712 一次性 nonce，5 分钟过期。但同一个机制也成了 2024 年损失 4.94 亿美元的最大攻击面之一：钓鱼站只要骗你签一次 PermitTransferFrom，spender 就是攻击者地址。</p>
+<p>这一节讲 Permit2 怎么用、风险在哪、为什么新协议不应再写 approve 流程。</p>
+</blockquote>
 <h3 id="111-erc-20-approve">11.1 ERC-20 approve 的问题</h3>
 <p>经典 swap 需两笔 tx（approve + swap），两次签名两笔 gas，且无限授权遗留——router 漏洞时资产全暴露。</p>
 <h3 id="112-erc-2612-permit">11.2 ERC-2612 Permit</h3>
@@ -1750,6 +1798,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="12-4337-vs-7702" id="ch14"><span class="chapter-num">Chapter 14</span><br>12. 账户抽象：4337 vs 7702 一次到位</h2>
 
+<blockquote>
+<p>把 ERC-4337 想象成"交易代办"——你不用直接和以太坊说话，让 bundler 帮你说，路上还能蹭别人代付 gas、把多笔事一次办、用指纹/Face ID 代替助记词。</p>
+<p>把 EIP-7702 想象成"原地升级"——你的旧 EOA 地址不用搬家，签个 authorization，EVM 在执行那一刻把你 EOA 的代码"挂载"成一个智能合约，让你 EOA 长出腿。</p>
+<p>这俩不是替代关系，是互补：4337 给"刚 onboard 的 Web2 用户"造新 smart account；7702 给"链上活了五年的老 EOA"原地升级。Vitalik 2024 年提出 7702 时一句话点题："让 EOA 长出合约的腿"。</p>
+</blockquote>
 <h3 id="121-eoa">12.1 EOA 的局限与历史尝试</h3>
 <p>EOA 痛点：私钥丢即全丢、每笔必须 ETH 付 gas、无 batch、签名只能 secp256k1。修补路线：多签合约（Gnosis 2017，UX 差）→ EIP-86/2938（协议层 AA，弃）→ EIP-3074（2020，安全争议弃）→ <strong>ERC-4337</strong>（2023 协议外 AA，主流）→ <strong>EIP-7702</strong>（2025-05 Pectra 激活，主流）。</p>
 <h3 id="122">12.2 概念表</h3>
@@ -1847,6 +1900,10 @@ Resources:
 </section><section class="chapter">
 <h2 id="13-erc-4337-v07" id="ch15"><span class="chapter-num">Chapter 15</span><br>13. ERC-4337 v0.7 完整流程</h2>
 
+<blockquote>
+<p>一笔 4337 UserOp 在链上跑一圈，会经过 6 个角色：用户的 signer 签字，bundler 攒包，EntryPoint 单例合约（mainnet 上是 <code>0x0000...0329</code> 这个全网唯一地址）调用 smart account 的 validateUserOp，paymaster 决定要不要替你付钱，最后才 execute 你的真正业务调用。</p>
+<p>看着像"层层审批"，其实就两件事：<strong>先证明你是你（validate）</strong>，<strong>再做你想做的事（execute）</strong>。每一步都让你在 UX 上换来一点甜头——不用 ETH、可批量、可代付、可用 Passkey。</p>
+</blockquote>
 <h3 id="131">13.1 整体架构</h3>
 <figure><img src="diagram-417dd3bfc5.png" alt="mermaid diagram"></figure>
 
@@ -2005,6 +2062,11 @@ Resources:
 </section><section class="chapter">
 <h2 id="14-eip-7702-eoa" id="ch16"><span class="chapter-num">Chapter 16</span><br>14. EIP-7702：让 EOA 长出合约的腿</h2>
 
+<blockquote>
+<p>2024 年 5 月，Vitalik 在以太坊魔法师论坛发了一篇标题朴素到不像 Vitalik 的提案——"EIP-7702: Set EOA account code"。开头一段话翻译过来大概是："3074 我们想了好几年都不放心，干脆换个思路。"</p>
+<p>一年后的 2025 年 5 月 7 日，Pectra 主网激活——10:05:11 UTC 那一刻起，所有 EOA 都能签一份"授权书"，让自己的地址在执行那一笔交易时拥有任何合约的代码。一周内主网产生了 11000+ 个 7702 授权。MetaMask、Coinbase Smart Wallet、Ambire、Safe 都接了。</p>
+<p>危险也是同时出现的——3 周后第一例 7702 钓鱼，损失 70 万美元。这一节讲机制、讲怎么用、讲为什么 <code>chain_id == 0</code> 是必须默认拒签的红线。</p>
+</blockquote>
 <h3 id="141">14.1 来源与时间</h3>
 <ul>
 <li><strong>2024-05</strong>：Vitalik 提出 EIP-7702 替代因安全争议弃置的 EIP-3074。</li>
@@ -2076,6 +2138,11 @@ Authorization {
 </section><section class="chapter">
 <h2 id="15-erc-7579" id="ch17"><span class="chapter-num">Chapter 17</span><br>15. ERC-7579 模块化智能账户</h2>
 
+<blockquote>
+<p>早期 smart account 各做各的：Safe 有自己的 module 接口，Argent 有自己的 guardian 体系，Kernel 有自己的 plugin。结果就是 SessionKey 这种通用功能，每家都得各自实现一遍。</p>
+<p>ERC-7579 把模块标准化成"乐高块"——一个 SessionKey validator 写一次，能在 Kernel、Nexus、Safe7579 上通用。Rhinestone 这个团队顺势做了"模块市场"，开发者写完模块跨账户分发。</p>
+<p>这一节是"smart account 内部架构"的工业蓝图。</p>
+</blockquote>
 <p>各家 smart account 自定义模块接口，模块无法跨账户复用；7579 标准化后模块成为乐高，4337 与 7702 路线都可消费同一组模块。</p>
 <h3 id="152">15.2 四类模块</h3>
 <figure><img src="diagram-a9aff4d9cc.png" alt="mermaid diagram"></figure>
@@ -2236,6 +2303,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16a-bundler-pimlico-alchemy-stackup-etherspot-candide" id="ch20"><span class="chapter-num">Chapter 20</span><br>16A. Bundler 服务对比：Pimlico / Alchemy / Stackup / Etherspot / Candide</h2>
 
+<blockquote>
+<p>Bundler 是 4337 世界里"最累的中间人"——它要替 N 个用户先模拟 UserOp、过滤掉会上链失败的、把存活的打包成一笔 tx 调 EntryPoint，还得自付 base fee 兜底。如果它判断错了，自己亏 gas。</p>
+<p>这一节看市场——Stackup 退场了、Pimlico 成了开发者首选、Etherspot 在 v0.8 上抢跑、Candide 是想读懂源码的人最该 clone 的仓库。</p>
+</blockquote>
 <h3 id="16a1-bundler">16A.1 Bundler 是什么</h3>
 <p>Bundler 是 ERC-4337 链下角色：维护 alt-mempool 接收 <code>eth_sendUserOperation</code>、模拟 UserOp（调 EntryPoint <code>simulateValidation</code>）、把 N 笔 UserOp 打包成一笔普通 tx 调 <code>handleOps</code>。ERC-7562 规定 validation rules（禁读易变 storage、禁 banned opcodes），防止 UserOp mempool 通过但上链 revert 损耗 bundler。</p>
 <h3 id="16a2-pimlico">16A.2 Pimlico</h3>
@@ -2370,6 +2441,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16c-dapp" id="ch22"><span class="chapter-num">Chapter 22</span><br>16C. 钱包扩展生态全景（dApp 测试矩阵）</h2>
 
+<blockquote>
+<p>你的 dApp 上线第一天，会被 14 家钱包同时测试。MetaMask 渲染对了，OKX 报错；OKX 通了，Phantom 在 typed data 边界 case 上挂；Phantom 修了，Frame 那边 Permit2 batch 没语义化展示，钓鱼面瞬间变大。</p>
+<p>这一节列 14 家主流钱包扩展（不含 Smart Wallet 那种无扩展形态），最后给一个 6 家最低测试矩阵，帮你别上线就被骂"不支持我的钱包"。</p>
+</blockquote>
 <h3 id="16c1-metamask-smart-accounts">16C.1 MetaMask（含 Smart Accounts）</h3>
 <p>桌面浏览器扩展第一名；2025 用 EIP-7702 把 EOA 升级为 smart account（4337 + Snaps + Passkey 多签）；Snaps 平台允许第三方扩展功能（Cosmos/Solana 等）；EIP-712 渲染最完整，v12+ 内置 UserOp 展示。</p>
 <h3 id="16c2-rabby">16C.2 Rabby</h3>
@@ -2405,6 +2480,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16d-wallet-guard-pocket-universe-blockaid-scam-sniffer" id="ch23"><span class="chapter-num">Chapter 23</span><br>16D. 反钓鱼工具：Wallet Guard / Pocket Universe / Blockaid / Scam Sniffer</h2>
 
+<blockquote>
+<p>2025 年 9 月，一笔 PEPE 钓鱼吞掉 139 万美元——单笔。受害者点了 Twitter ads 上的"假 airdrop"链接，签了一个伪装成 Permit 的 setApprovalForAll。如果他装了 Blockaid 或 Pocket Universe，签名时会跳出红色弹窗。</p>
+<p>这一节是"如果用户不长记性，让钱包代他记"的工业方案。MetaMask、Coinbase、OKX、Rabby 早就默认接了 Blockaid，Wallet Guard / Pocket Universe 是浏览器侧的独立保险。dApp 工程师该知道这些工具长什么样、暴露什么 API，因为你的 dApp 自己就该接一个。</p>
+</blockquote>
 <p>签名钓鱼是 2025 年钱包资产损失第一原因（Chainalysis 估 5B+ USD/年）。这几家填补 dApp 与钱包之间的安全检查空隙。</p>
 <h3 id="16d1-blockaid">16D.1 Blockaid</h3>
 <p>transaction simulation + intent analysis；MetaMask/Coinbase/OKX/Rabby 默认集成；覆盖以太坊 + 11 条 EVM + Solana + Bitcoin；Ice Phishing 检测率行业最高。</p>
@@ -2440,6 +2519,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16f-erc-7521-erc-7683" id="ch25"><span class="chapter-num">Chapter 25</span><br>16F. ERC-7521 / ERC-7683：意图与跨链意图</h2>
 
+<blockquote>
+<p>"Transaction" 是用户告诉链"我要怎么做"，"Intent" 是用户告诉链"我要什么结果"——剩下的怎么做交给市场上的 solver 竞标。这是 2024–2026 链上交互的范式迁移，UniswapX、CowSwap、Across 全押在这上面。</p>
+<p>这一节看协议侧的 7521/7683，§16H 看到时候你怎么把它接进 dApp。</p>
+</blockquote>
 <h3 id="16f1-intent">16F.1 什么是 Intent</h3>
 <p>Transaction 是"做什么"，Intent 是"我想要什么"。Transaction 模式要求用户定所有参数（路由/滑点/过期）；Intent 模式用户只签"最多 250 USDC 换 0.1 ETH，5 分钟内"，solver 网络竞标执行。</p>
 <h3 id="16f2-erc-7521">16F.2 ERC-7521：通用智能账户意图</h3>
@@ -2465,6 +2548,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16g-onchainkit-coinbase-smart-wallet" id="ch26"><span class="chapter-num">Chapter 26</span><br>16G. OnchainKit / Coinbase Smart Wallet 完整集成</h2>
 
+<blockquote>
+<p>2024 年 6 月，Coinbase 在 Base 上推出了 Smart Wallet——没有助记词、没有扩展、用 Touch ID 或 Face ID 创建一个 ERC-4337 smart account 在浏览器 popup 里跑。OnchainKit 是配套的 React 工具箱，把"连接 + 身份 + 转账 + Swap + NFT mint"全部封装成开箱组件。</p>
+<p>假设你做一个 Web2 用户引导流程：邮箱注册 → 自动 Smart Wallet → Sponsor gas → 不弹钱包就完成第一笔交易。三行代码就能让用户绕开"什么是 gas、什么是助记词、什么是链 ID"的认知陷阱。这是 2026 消费级 dApp 上 Base 的事实路径。</p>
+</blockquote>
 <h3 id="16g1-onchainkit">16G.1 OnchainKit 是什么</h3>
 <p>Coinbase 2024-Q3 开源，把"钱包连接 + Smart Wallet + Sponsor gas + Basenames + Swap + NFT mint"做成开箱即用 React 组件（<code>@coinbase/onchainkit</code>），基于 wagmi + viem。与 RainbowKit 对比：</p>
 <table>
@@ -2560,6 +2647,10 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16h-dapp-ux" id="ch27"><span class="chapter-num">Chapter 27</span><br>16H. 多链 dApp UX：跨链桥与意图聚合</h2>
 
+<blockquote>
+<p>"用户 A 链有钱，要在 B 链花"——这句话简短，但实现起来曾经是 dApp 最难的一段 UX。早期方案：用户自己去 bridge 网站桥过去再回来；2024 后流行 aggregator + intent；2026 已经能做到"一次签名，资金底层从 Arbitrum 自动调到 Base"，用户全程感觉不到。</p>
+<p>这一节是"跨链 UX 速览图"——LI.FI 是中介、Across 是跨链鼻祖、Squid 接 Cosmos、ZeroDev Chain Abstraction 把跨链做成 SDK 一行调用。</p>
+</blockquote>
 <p>本节聚焦"用户 A 链有钱，要在 B 链花"，2026 主流方案是 intent + bridge aggregator。</p>
 <h3 id="16h1-lifi">16H.1 LI.FI</h3>
 <p>跨链 + DEX meta-aggregator；30+ 链、12+ 桥（Across/Stargate/Hop/CCTP/Connext 等）；<code>@lifi/sdk</code> 输入 fromChain/fromToken/toChain/toToken/amount 输出最优路由；MetaMask/Coinbase/Phantom/Rabby 等内置。<code>&lt;LiFiWidget&gt;</code> 一行接入或 SDK 自定义 UI。</p>
@@ -2578,6 +2669,11 @@ Authorization {
 </section><section class="chapter">
 <h2 id="16i-20242025" id="ch28"><span class="chapter-num">Chapter 28</span><br>16I. 钱包钓鱼与资产损失：2024–2025 实测数据</h2>
 
+<blockquote>
+<p>4.94 亿美元，33 万受害者——这是 2024 年 ScamSniffer 给签名钓鱼算的总账。Inferno 团伙占了 40–45% 市场份额，最大单笔 5540 万美元（一位机构用户在 Inferno 钓鱼站上签了一个伪装成 Permit 的 setApprovalForAll）。</p>
+<p>2025 全年下降到 8385 万美元（-83%），但攻击者改打高频小额——平均单笔从 1500 美元降到 790 美元，9 月那笔 PEPE 钓鱼一击 139 万美元只是几千笔小额里冒出来的尖峰。</p>
+<p>这一节是这个模块最"沉重"的部分——数据撑起后面 §20 防御 checklist 的每一行。读完你会理解为什么本模块从头到尾都在嗦"5 分钟 deadline、白名单 verifyingContract、永远 simulate"。</p>
+</blockquote>
 <p>签名钓鱼是 2024–2026 资产损失第一来源，本节用 ScamSniffer 年报 + Chainalysis 2024 Crypto Crime Report 数据撑起 §20 的防御 checklist。</p>
 <h3 id="16i1-2024">16I.1 2024 全年数据</h3>
 <ul>
@@ -2652,6 +2748,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="17-erc-7677-paymaster-web-service-gas" id="ch29"><span class="chapter-num">Chapter 29</span><br>17. ERC-7677 Paymaster Web Service 与 Gas 抽象</h2>
 
+<blockquote>
+<p>在 7677 出来之前，集成 paymaster 就是"换一家就重写"——Pimlico 一套接口，Alchemy 一套接口，CDP 又一套接口。dApp 工程师替谁打工？</p>
+<p>7677 把"问 paymaster 要 paymasterAndData"这件事标准化成两个 RPC，配合 EIP-5792 的 capabilities，钱包能自动找 paymaster 替用户付 gas，dApp 一行 capability 配置就行——这才是 "Sponsor gas 三行配" 的工程基础。</p>
+</blockquote>
 <p>各家 paymaster（Pimlico/Alchemy/CDP）RPC 各自为政，切换 provider 要重写。ERC-7677 标准化两个 RPC：<code>pm_getPaymasterStubData</code>（占位 paymasterAndData，用于 gas 估算）、<code>pm_getPaymasterData</code>（真实签名后的 paymasterAndData）。</p>
 <p>请求示例：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000; font-weight: bold">{</span>
@@ -2700,6 +2800,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="18-erc-5792-wallet-capabilities" id="ch30"><span class="chapter-num">Chapter 30</span><br>18. ERC-5792 Wallet Capabilities 与批量调用</h2>
 
+<blockquote>
+<p>Uniswap 老 swap 流程：弹钱包签 approve、等链上确认、再弹钱包签 swap。两次签名两次焦虑，用户中途流失率 30%+。</p>
+<p>ERC-5792 用一句话解决问题："dApp 把所有 call 一次性给 wallet，wallet 自己挑底层用 4337 还是 7702 batched tx 一气呵成。"用户体感是"一次签名搞定所有事"。Coinbase Smart Wallet 已默认走这条路，MetaMask 通过 7702 升级 EOA 后也能 atomic batch。</p>
+</blockquote>
 <p>批量写交易历来靠多次 popup（multicall 只读，Safe SDK 自成一套）。5792 把批量标准化进 EIP-1193 接口层，与 4337 / 7702 底层执行解耦——dApp 只调 <code>wallet_sendCalls</code>，wallet 自选用 UserOp 还是 7702 batched tx。</p>
 <h3 id="182-rpc">18.2 三个新 RPC</h3>
 <table>
@@ -2758,6 +2862,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="19" id="ch31"><span class="chapter-num">Chapter 31</span><br>19. 多链体验工程实践</h2>
 
+<blockquote>
+<p>你的 dApp 同时支持 Ethereum、Base、Arbitrum——日常调试就这三条链每天来回切。每次切，wagmi 都要去钱包问"你支持这条链吗"，钱包回"没添加"，wagmi 自动 fallback <code>wallet_addEthereumChain</code>，然后用户被弹三次窗。</p>
+<p>这一节讲怎么把多链 UX 做得像 Web2 那样无感：链切换的回退逻辑、Multicall3 把 N 次 RPC 合一次、跨链消息四家协议的取舍。</p>
+</blockquote>
 <h3 id="191">19.1 链切换</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">useSwitchChain</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">useChainId</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
 <span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">chains</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">switchChain</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">useSwitchChain</span><span style="color: #000; font-weight: bold">()</span>
@@ -2795,6 +2903,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="19a-dapp" id="ch32"><span class="chapter-num">Chapter 32</span><br>19A. dApp 性能优化工程</h2>
 
+<blockquote>
+<p>dApp 卡的根因 80% 不是渲染，是 RPC 太多。一个钱包 dashboard 屏蔽细节去看，每个 ERC-20 卡片至少触发 3 次 <code>eth_call</code>（balanceOf / decimals / symbol）；20 个 token 就是 60 次 RPC，并发不够还排队，首屏体感就崩了。</p>
+<p>这一节是"前端工程师 Chrome DevTools 网络面板每 P95 时刻都该想到"的工具箱：multicall 合并、react-query staleTime、SSR prefetch、fallback transport ranking、虚拟滚动。</p>
+</blockquote>
 <p>dApp 卡顿主要来自：RPC 调用过多、react-query 配置不当、列表无虚拟化。</p>
 <h3 id="19a1-rpc">19A.1 RPC 调用合并</h3>
 <p><code>useReadContract × N</code> = N 次 <code>eth_call</code>。改用 <code>useReadContracts</code>：</p>
@@ -2893,7 +3005,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="20" id="ch33"><span class="chapter-num">Chapter 33</span><br>20. 前端安全工程：钓鱼面与防御</h2>
 
-<p>§16I 是数据，本节是 dApp 工程师可执行的防御代码。</p>
+<blockquote>
+<p>§16I 把"4.94 亿美元"摊给你看，让你知道为什么紧张；这一节给你 8 行 checklist 和一段 hook 代码，让你的 dApp 别成为下一笔统计数字。</p>
+<p>一句话总结全节："永远 simulate、永远 white-list、deadline ≤ 5 分钟、永不 MaxUint256、永不 chain_id=0。"读完抄到 <code>AGENTS.md</code> 里给 AI 当硬约束。</p>
+</blockquote>
 <h3 id="201">20.1 攻击面</h3>
 <table>
 <thead>
@@ -2977,6 +3092,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="20a-farcaster-mini-apps-ton-connect-solana" id="ch34"><span class="chapter-num">Chapter 34</span><br>20A. 异构钱包接入：Farcaster Mini Apps / TON Connect / Solana</h2>
 
+<blockquote>
+<p>2024 年 Farcaster 跑出来 Frames、Telegram 跑出来 Notcoin / Hamster Kombat（亿级用户的小游戏）、Solana 长期以 Phantom 为口径。EVM dApp 工程师以前可以装作看不见，2026 年装不了——你的产品要么进 Farcaster Mini Apps，要么进 Telegram Mini Apps，要么接 Solana Wallet Standard，要么三个都要。</p>
+<p>这一节快速过一遍异构钱包的接入方法 + 一个"什么时候不要做异构"的诚恳建议。</p>
+</blockquote>
 <h3 id="20a1-farcaster-mini-apps-frames-v2">20A.1 Farcaster Mini Apps（前 Frames v2）</h3>
 <p>Farcaster 是 2024 起最火的去中心化社交协议；Mini Apps 是其内嵌 dApp 容器。2025-Q1 稳定：v2 从"5 个按钮"升级为完整 React app；内嵌 Farcaster Wallet，dApp 直调 EIP-1193，省去连接步骤；2025-Q4 支持 EIP-5792（<code>wallet_sendCalls</code>、batch + paymaster）。集成：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">sdk</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@farcaster/frame-sdk&#39;</span>
@@ -3046,6 +3165,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="21-ai-dapp" id="ch35"><span class="chapter-num">Chapter 35</span><br>21. AI 在 dApp 前端开发中的实测</h2>
 
+<blockquote>
+<p>AI 写 dApp 在 2026 已经是日常——v0.app 一句话出 RainbowKit 主题、Cursor 一秒生成 wagmi hooks、Vercel AI SDK 让 dApp 内嵌"签名解释器"翻译 EIP-712 typed data 给用户。</p>
+<p>但 AI 也有"高危盲区"——chain_id=0 的 7702 授权、漏 simulateContract、把 BigInt 当 number 算。这一节是实测笔记：哪儿能放心用、哪儿必须人工逐字 review、哪儿绝对不能让 AI 自动签名。</p>
+</blockquote>
 <h3 id="211">21.1 实测做得好的场景</h3>
 <p>v0.dev/Vercel AI/Cursor 的强项：UI 生成（自然语言→React+Tailwind，几秒）；ABI/EIP-712 自然语言摘要（Rabby Sign Helper 同思路）；把 viem BaseError 喂给模型得到 revert 解释；wagmi config 模板生成；Next.js + wagmi + RainbowKit 骨架几乎不用人写。</p>
 <h3 id="212-ai">21.2 AI 容易犯的错（不要无脑信）</h3>
@@ -3102,6 +3225,10 @@ Pectra 激活 5 周后第一例 7702 钓鱼。受害者签了 chain_id=0 的 aut
 </section><section class="chapter">
 <h2 id="22-code" id="ch36"><span class="chapter-num">Chapter 36</span><br>22. 实战项目导览（code/）</h2>
 
+<blockquote>
+<p>前面 21 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：<code>pnpm dev</code> 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。</p>
+<p>把它当作"读完前 21 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。</p>
+</blockquote>
 <h3 id="221">22.1 目录结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/
 ├── package.json                 # pin 全部版本
@@ -3293,6 +3420,10 @@ PIMLICO_API_KEY=pim_...
 </section><section class="chapter">
 <h2 id="23" id="ch37"><span class="chapter-num">Chapter 37</span><br>23. 习题与解答</h2>
 
+<blockquote>
+<p>这一节六道题是对前 22 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。</p>
+<p>不会做就回对应章节，做完再读参考解答能学到双倍。</p>
+</blockquote>
 <p>前 5 道带答案，第 6 道开放题。</p>
 <h3 id="1viem-ethers-v6-api">习题 1：viem 与 ethers v6 API 对照</h3>
 <p>下列 ethers v6 代码改写成 viem 2.x：</p>

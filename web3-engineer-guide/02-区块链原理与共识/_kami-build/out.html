@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -716,24 +716,27 @@
 <section class="chapter">
 <h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 序</h2>
 
+<p>2014 年 2 月，Mt.Gox 一夜蒸发 85 万 BTC。账本永远是对的，可托管它的人不是。这就是共识协议存在的理由——把"对账本的信任"从某家公司搬到一组互不信任的节点上。</p>
+<p>我们这一册要回答的问题很具体：N 个互不相识的节点，没有中央仲裁，怎么对一份一直在追加的日志达成同一份视图？Lamport 1978 年在 SMR 论文里把这道题正式提出来叫"复制状态机"，区块链是它的一个特例——日志是块、节点身份开放、状态转换函数事先写死。</p>
+<p>DDIA 第 9 章把这件事压成两句话：异步网络下要 linearizability 就得有 consensus；FLP 下要 consensus 就得放弃异步或确定性。本册接下来用这套词汇展开 19 个协议，你会发现每个协议都是同一道题在不同维度上的取舍——有人花电费换稳，有人押币换快，有人用数学证明换严格。</p>
+<p>阅读路径：第 1-2 章先把三条不能绕开的定理和谱系图摆出来；第 3-7 章 PoW；第 8-14 章 PoS 六派；第 15-19 章 BFT；第 20-25 章 DAG；第 26-28 章异类（Solana/Avalanche/Lightning）；第 29 章把概念辨析集中处理；第 30-35 章是六个真实事故的复盘；第 36-39 章动手写代码；第 40-54 章看路线图上还在排队的前沿议题；第 55 章交代本册边界。</p>
 <p>前置：模块 01《密码学基础》。SHA-256、ECDSA、Merkle 树本册作为工具直接调用。</p>
-<p>共识协议解决一个具体问题：N 个互不信任的节点，无中央仲裁，对一份不断追加的日志达成相同视图。这就是 Lamport 在 SMR 论文里定义的"复制状态机"问题，区块链是它的特例——日志是块、节点身份开放、状态转换函数确定。</p>
-<p>DDIA 第 9 章对此的总结：linearizability 在异步网络下需要 consensus；consensus 在 FLP 下需要部分同步或随机性。本册用这套词汇展开 19 个协议——每个协议都是同一道题不同维度上的取舍。</p>
-<p>章节顺序：第 1-2 章理论与谱系；第 3-7 章 PoW；第 8-14 章 PoS 六派；第 15-19 章 BFT；第 20-25 章 DAG；第 26-28 章异类（Solana/Avalanche/Lightning）；第 29 章概念辨析；第 30-35 章事故复盘；第 36-39 章实战与习题；第 40-54 章前沿主题；第 55 章模块边界。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. 三条不能绕开的定理</h2>
 
-<p>后面所有协议的差异都在于"在哪条定理下做了什么取舍"。这一节列出三条边界：3f+1、FLP、CAP。理解之后回看时不会被术语唬住。</p>
+<p>设计共识协议像在三堵墙之间画一条路径：3f+1 决定了多少人才够投票，FLP 告诉你不能既要异步又要确定性还要容错，CAP 提醒你分区时只能在一致和可用里选一个。后面所有协议的差异都在于"它在这三堵墙之间挑了哪条路"。先把这三堵墙看清楚，回头读任何一份共识论文都不会被术语唬住。</p>
 <h3 id="11-n-3f1">1.1 拜占庭容错下界：n ≥ 3f+1</h3>
-<p>Lamport-Shostak-Pease 1982。容忍 f 个任意作恶节点，集合至少 3f+1 大。直觉：n=3 时 C 给 A 说"退"、给 B 说"攻"，A 看到的只有 1:1，多数投票失效；n=4 时同样的攻击下 A 看到 2 攻 1 退，多数 = 攻。</p>
-<p>n=4/f=1、n=7/f=2、n=10/f=3 都是这条公式。本册所有 BFT 类协议（PBFT、Tendermint、HotStuff、Bullshark、Mysticeti）quorum 都是 2f+1，这是 3f+1 的直接推论：任意两个 quorum 至少在 f+1 个诚实节点上重叠。</p>
-<p>将军/传令兵的故事是这个定理的口语版，工程上直接对应"节点/网络消息/拜占庭节点"。</p>
+<p>Lamport、Shostak、Pease 1982 年那篇《The Byzantine Generals Problem》是用一个故事讲的：N 个将军围攻一座城，必须同时进攻或同时撤退才能赢，但其中可能有叛徒，会故意给不同的同袍传矛盾的命令。结论硬邦邦——要容忍 f 个作恶将军，总人数至少 3f+1。</p>
+<p>直觉很好懂。设想 n=3、f=1 的情形：将军 C 给 A 说"撤"、给 B 说"攻"，A 自己看到自己想"攻"、A 又听见 C 说"撤"——他看到的票数 1:1，多数投票失效。把人数加到 n=4 同样攻击下，A 看到 2 攻 1 撤，多数派 = 攻，决策得出来了。</p>
+<p>n=4/f=1、n=7/f=2、n=10/f=3，都是这条公式。本册所有 BFT 类协议（PBFT、Tendermint、HotStuff、Bullshark、Mysticeti）的 quorum 都是 2f+1——这是 3f+1 的直接推论：任意两个 quorum 至少在 f+1 个诚实节点上重叠，不会同时通过相互冲突的决议。</p>
+<p>将军/传令兵那个故事就是这条定理的口语版，工程上一一对应：将军 = 节点，传令 = 网络消息，叛徒 = 拜占庭节点。下次有人问你"为什么 BFT 链都是 4 节点起步"，告诉他这是 1982 年的论文给定的下界，不是工程师拍脑袋的选择。</p>
 <hr />
 <h3 id="12-flp">1.2 FLP：异步、确定性、容错三选二</h3>
-<p>Fischer-Lynch-Paterson 1985。异步网络 + 至少一个进程可能崩溃 + 确定性算法 → 不存在保证有限时间终止的共识。注意"保证有限时间"——共识仍能达成，只是没有时间上界。这点常被误读为"共识不可能"。</p>
-<p>绕过方式只有三种，每种放弃一项假设。本册所有协议都能塞进这张表：</p>
+<p>1985 年 Fischer、Lynch、Paterson 在 JACM 上发了一篇只有 6 页的论文，把所有想做异步共识的人都拍醒了：异步网络 + 至少一个进程可能崩溃 + 确定性算法 → 不存在能保证在有限时间内终止的共识协议。</p>
+<p>注意"保证有限时间"那五个字——共识仍然能达成，只是没人能给你一个时间上界。这一点经常被误读为"共识不可能"，FLP 其实没这么悲观。它说的是"在最坏的异步网络 + 最坏的崩溃时机 + 你又不许我抛硬币"这三件事同时发生时，时间无法封顶。</p>
+<p>绕过 FLP 的方式只有三种，每种放弃一项假设。这张表你之后会反复回来对照——本册 19 个协议无一例外都能塞进去：</p>
 <table>
 <thead>
 <tr>
@@ -756,15 +759,17 @@
 </tr>
 </tbody>
 </table>
-<p>读任何共识论文先翻 "System Model"。synchronous 意味着公网不适用；partial-synchronous 是工程主流（DLS 1988）；asynchronous 模型必须配 randomness。FLP 论文：https://www.cs.princeton.edu/courses/archive/spr22/cos418/papers/flp.pdf （2026-04-27）。</p>
+<p>读任何共识论文先翻 "System Model"——这是工程师能少踩坑的最便宜动作。synchronous 模型意味着公网不适用；partial-synchronous 是工程主流（DLS 1988）；asynchronous 模型必须配 randomness。FLP 原论文链接：https://www.cs.princeton.edu/courses/archive/spr22/cos418/papers/flp.pdf （2026-04-27）。</p>
 <h3 id="13-cap-flp">1.3 CAP ≠ FLP</h3>
-<p>两条定理时常混用。CAP（Brewer 2000）：网络分区时 C 与 A 二选一。FLP：异步 + 容错下确定性共识不终止。区块链的选择有两种：Tendermint/Cosmos 在分区时停链（CP）；Bitcoin/Ethereum 继续出块、事后重组（AP，但用更强的概率/经济最终性补偿）。</p>
-<p>DDIA 第 9 章对这两条定理的关系给了一个干净的角度：CAP 只考虑 linearizability + 分区一种故障，FLP 考虑所有异步故障。两者不冲突，CAP 是 FLP 在特定子模型下的工程化表述。</p>
+<p>CAP 和 FLP 这两条定理被混用的次数比正确使用还多。澄清一下：CAP（Brewer 2000）说的是网络分区时 C 与 A 二选一；FLP 说的是异步 + 容错下确定性共识不终止——这是两件事。</p>
+<p>落到区块链上，分区时的取舍有两条路。Tendermint/Cosmos 选 CP——分区时直接停链，宁可不出块也不让两边链各自往前长。Bitcoin/Ethereum 选 AP——分区时继续出块，事后让最重链规则把分叉合掉，用更强的概率最终性或经济最终性补偿安全。</p>
+<p>DDIA 第 9 章给了一个干净的视角：CAP 只考虑 linearizability + 分区这一种故障，FLP 考虑所有异步故障。两者不冲突——CAP 其实是 FLP 在特定子模型下的工程化表述。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="2" id="ch03"><span class="chapter-num">Chapter 03</span><br>2. 共识协议全景图</h2>
 
+<p>19 个协议听起来很多，但它们其实出自共同的祖先。这一节我们先画一棵谱系树，让你知道每个协议是从哪条枝上长出来的；再给一张横向比较表，把 15 条主流链按"安全来源 / 最终性 / 出块时间 / 部署规模"摆成一行——这两件物件之后会反复用到，建议这部分多停留一会儿。</p>
 <h3 id="21">2.1 谱系树</h3>
 <figure><img src="diagram-3cfde86ac2.png" alt="mermaid diagram"></figure>
 
@@ -909,8 +914,9 @@
 </section><section class="chapter">
 <h2 id="3-pow" id="ch04"><span class="chapter-num">Chapter 04</span><br>3. PoW 谱系导引</h2>
 
-<p>PoW 是区块链共识的零点。它绕过 FLP 的方式是放弃决定性最终性——块永远只有概率上的不可逆。后续 PoS / BFT 协议的几乎所有设计选择，都可以读作"对 PoW 某个方面的不满"：嫌电贵 → PoS；嫌 finality 慢 → BFT；嫌单链瓶颈 → DAG。</p>
-<p>PoW 安全的四个条件必须同时成立：哈希函数抗预映像、算力市场半开放、≥50% 算力诚实、网络延迟有概率上界。第三条在小币种链不成立，第 7 章 ETC 是反例。Bitcoin 的安全预算约等于年挖矿电费（2024 ~80 亿美元）——这是个粗暴但有效的"攻击者要花多少钱"的下界。PoS 后来用 slashing 风险替代电费充当同一角色。</p>
+<p>PoW 是整本书的零点。2008 年 10 月 31 日中本聪贴出那篇 9 页白皮书时，他要解决的不是"怎么发币"——是"在不信任任何人的前提下，怎么对一份账本达成共识"。他给的答案是：让节点烧电算哈希谜题，烧得最多那一支链就是真链。</p>
+<p>后续每一个 PoS / BFT / DAG 协议的设计选择，几乎都可以读作"对 PoW 某个方面的不满"。嫌电贵 → PoS（用币替代电）；嫌 finality 慢 → BFT（每块投票即时敲定）；嫌单链瓶颈 → DAG（让所有 validator 同时出块）。看 PoW 时记住这一点，后面 19 个协议每一个都是"假如 PoW 那条不行，我换这条试试"。</p>
+<p>PoW 的安全靠四条假设同时成立：哈希函数抗预映像、算力市场半开放、≥50% 算力诚实、网络延迟有概率上界。第三条在小币种链上根本不成立——第 7 章 ETC 就是活教材，攻击者花二十万美元就能买下半个网络。Bitcoin 自己的安全预算大约等于年挖矿电费（2024 ~80 亿美元），是个粗暴但有效的"攻击者要花多少钱"的下界。PoS 后来用 slashing 风险替代电费，扮演同一个角色。</p>
 <figure><img src="diagram-61489254f9.png" alt="mermaid diagram"></figure>
 
 <hr />
@@ -918,8 +924,9 @@
 </section><section class="chapter">
 <h2 id="4-pow-sybil" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. PoW 的核心思路：把 Sybil 转成电费</h2>
 
-<p>PoW 解决的不是"达成共识"，而是"谁有资格出块"。开放网络下任何人都能创建无穷多账号，"一人一票"立刻被 Sybil 攻击吃死。中本聪的破解思路：把投票权绑定到链外的稀缺资源——电力和硬件。1 万个假账号能伪造，但 1 万份电费做不了假。</p>
-<p>哈希谜题是这个绑定的具体形式。SHA-256 输出每位等概率 0/1，前 16 位全 0 的期望尝试次数 = 2^16 = 65536。求一个前 N 位全 0 的输入只能暴力试——抗预映像保证了这点。PoW 的技术内涵就这一句，剩下都是工程包装：难度自动调整把出块速率稳在 10 分钟（类似 TCP 拥塞控制的 AIMD）；最重链规则把"哪条是主链"约化成"哪条累计了最多 work"。</p>
+<p>设想一下，你要做一个匿名投票系统，所有人在线注册账号、一人一票决定下一笔交易合法不合法。问题立刻就来：我可以连夜注册一万个小号，把投票池灌爆。这就是 Sybil 攻击——名字来自一本写多重人格的书《Sybil》，意思是一个人伪装成无数个。</p>
+<p>中本聪的破解思路简洁到优雅：把投票权绑到链外的稀缺资源上。1 万个假账号能伪造，但 1 万份电费做不了假。你想多投一票？掏电表来。</p>
+<p>具体怎么做？让你证明你"算了一道难题"。SHA-256 的每一位输出都等概率 0/1，要找一个前 16 位全 0 的输入，期望尝试次数 = 2^16 = 65536。前 N 位全 0 只能暴力试——抗预映像保证了反推无门。PoW 的技术内涵其实就这一句，剩下都是工程包装：难度自动调整把出块速率稳在 10 分钟（思路与 TCP 拥塞控制的 AIMD 同源）；最重链规则把"哪条是主链"约化成"哪条累计了最多 work"。</p>
 <p><strong>反对意见与反驳</strong>。环保派批评 Bitcoin 年耗电堪比荷兰全国（剑桥比特币电力消耗指数）；PoW 派回应：电费就是安全预算，PoS 的 slash 风险必须证明能提供等价砸钱门槛。中心化派担忧 ASIC 把普通矿工挤出，矿池占大头；反驳是经济自检——攻击者自己持币，攻击成功币价崩，自损。</p>
 <p><strong>适用场景</strong>。Bitcoin 这类全球价值存储链是 PoW 主场；高频应用链 PoW 出块太慢；联盟链直接上 PBFT 更便宜；隐私链（Monero/Zcash）历史用 PoW，但近年向 PoS 漂移。</p>
 <hr />
@@ -927,7 +934,8 @@
 </section><section class="chapter">
 <h2 id="5-bitcoinpow" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. Bitcoin：PoW 的标准实现</h2>
 
-<p>Mastering Bitcoin 第 10 章把 Bitcoin 共识总结为四步：独立验证交易、独立组装区块、解 PoW、独立选择最重链。本节按这条主线展开，重点放在 Bitcoin 在工程上做了哪些妥协来支撑 17 年从未发生协议级 reorg。</p>
+<p>2009 年 1 月 3 日，中本聪在创世块的 coinbase 字段里嵌了一句话：「The Times 03/Jan/2009 Chancellor on brink of second bailout for banks」。这一句既是时间戳，也是态度——金融危机第二轮救市时，他启动了一个不需要银行的支付系统。17 年过去，Bitcoin 还在跑，从未发生过协议级 reorg。</p>
+<p>Mastering Bitcoin 第 10 章把 Bitcoin 共识总结成四步：独立验证交易、独立组装区块、解 PoW、独立选择最重链。本节就沿这条主线走，但我们的重点不是把这四步抄一遍——你应该已经在别的地方看过了。我们要看的是：Bitcoin 在工程上到底做了哪些保守取舍，才换来这 17 年零事故的纪录？</p>
 <h3 id="51">5.1 区块结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>┌─────────────────────────────────────────┐
 │  Block Header (80 bytes)               │
@@ -961,7 +969,8 @@
 <p>调整幅度限制 [0.25x, 4x]，防止单次跳变过大。</p>
 <p>Bitcoin 2024-04 第四次减半后，区块奖励从 6.25 BTC → 3.125 BTC。当前难度约 1.1 × 10¹⁴，全网算力 ~ 600 EH/s（Bitcoin Magazine Pro，2026-04）。</p>
 <h3 id="54-11">5.4 双花概率（白皮书 §11）</h3>
-<p>Alice（攻击者，算力比例 q）想骗 Bob（商家，等 z 个 confirmation）。</p>
+<p>让我们演一遍。Alice 是攻击者，掌握全网 q 比例的算力；Bob 是个咖啡店老板，对 Bitcoin 还半信半疑，决定收到 z 个 confirmation 才发咖啡。Alice 的如意算盘是：先把一笔付给 Bob 的钱广播出去，等链上确认了她拿到咖啡——这时她私下挖一条更长的、不包含这笔付款的链，凑够长度后广播替换。Bob 手里那笔钱就消失了。</p>
+<p>Alice 这套攻击成功的概率有多大？中本聪在白皮书附录里给了精确公式：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P(成功双花) ≈ Σ_{k=0..z} P(攻击者前 z 块挖了 k 块) × P(从领先 z-k 块追上)
 
 简化版：当 q &lt; 0.5 时
@@ -1069,7 +1078,8 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="6-litecoin" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. Litecoin：换哈希函数的变体</h2>
 
-<p>Litecoin 与 Bitcoin 的协议差异只有两处：哈希函数 SHA-256 → Scrypt，出块时间 10 min → 2.5 min；其余（UTXO 模型、4 年减半、最重链规则）原样照搬。这让它成了"控制变量法"的天然实验场，揭示一条规律：抗 ASIC 设计撑不过 3 年。</p>
+<p>2011 年 10 月 7 日，前 Google 工程师 Charlie Lee 把 Bitcoin 的代码 fork 一份，改了两个参数发布了 Litecoin。他的口号听起来非常温和——"Bitcoin 是金，Litecoin 是银"。后来 2017 年他在 SegWit 激活后清仓自己持有的所有 LTC，理由是"避免利益冲突"，这个动作至今在社区里有争议。</p>
+<p>Litecoin 与 Bitcoin 的协议差异只有两处：哈希函数 SHA-256 换成 Scrypt，出块时间 10 min 缩成 2.5 min。其余（UTXO 模型、4 年减半、最重链规则）原样照搬。控制变量法做得这么干净，让 Litecoin 意外成了一个天然实验场，给我们留下一条规律：<strong>抗 ASIC 设计撑不过 3 年</strong>。</p>
 <p>Scrypt（Colin Percival 2009，原用于反 rainbow table）是 memory-hard 函数：先生成长伪随机 buffer V[0..N-1] 占内存，再按上一步 hash 索引随机读取 V 做 XOR。ASIC 想加速必须同时砸 N MB SRAM，硅片成本不再线性下压。设想很优雅，2014 年仍出现了 Scrypt ASIC——优势只维持了 3 年。Ethash（Ethereum 1.0）撑了 ~3 年，Vertcoin 的 Lyra2REv3 更短。Monero 的反应是反向操作：每年硬分叉换算法（CryptoNight → RandomX 等），用社会工程让 ASIC 厂商不敢投流片成本——这是目前唯一持续有效的反 ASIC 路线。</p>
 <p>Litecoin 的真正生态价值是"BIP 试验田"：SegWit 2017-05 在 Litecoin 激活，4 个月后 Bitcoin 跟进；MWEB 2022 在 Litecoin 上线，Bitcoin 至今未跟。算力规模只有 Bitcoin 的 ~1%——理论上易被 51%，实践无大事故，但这份"运气"在 ETC 案例里就用完了。</p>
 <hr />
@@ -1077,9 +1087,10 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="7-ethereum-classic51" id="ch08"><span class="chapter-num">Chapter 08</span><br>7. Ethereum Classic：51% 攻击的活教材</h2>
 
-<p>Mastering Bitcoin 第 10 章把 51% 攻击描述为"控制 &gt;50% 算力的对手 fork 主链做双花"。教科书写得轻描淡写，是因为 Bitcoin 算力 600 EH/s 把这条曲线推到了经济不可行。但理论曲线对小币种链是真实的。ETC 在 19 个月内被攻击四次，每次都是同一个公式：算力市场流动性 ≫ 该链总算力。</p>
+<p>2016 年 6 月 17 日，一个匿名攻击者从 The DAO 这个智能合约里抽走 360 万 ETH——按当时价值 5000 万美元，相当于以太坊整个流通量的 14%。社区分裂了：一派主张硬分叉把钱退还给受害者；另一派咬牙说「Code is Law」，代码就是法律，写错了也认。两派吵了一个月，最终硬分叉派赢了，那条新链就是今天的 Ethereum；坚持原链的少数派留在了原地，那条链叫 Ethereum Classic。</p>
+<p>教科书写 51% 攻击通常很轻描淡写——"理论上控制超过半数算力的对手能 fork 主链做双花"。Bitcoin 凭 600 EH/s 把这条曲线推到经济不可行的另一头。但是，"经济不可行"对算力少的小币种链根本不成立。ETC 用 19 个月里 4 次被攻击的纪录给我们演示了同一道公式：<strong>当算力市场的可租赁流动性远超你这条链的总算力时，攻击就是一笔划算的生意</strong>。</p>
 <h3 id="71-vs">7.1 起源：社会层 vs 协议层的第一次撕裂</h3>
-<p>2016 年 The DAO 黑客事件后以太坊社区分裂：多数派硬分叉退还黑客资金 → ETH，少数派「Code is Law」拒绝退还 → ETC。这是区块链史上首次"社会层共识"与"协议层共识"的公开冲突——Lamport 的 BFT 论文没考虑社会层。Vitalik 后来反思："我们当时不敢相信 PoS 能扛 The DAO，所以选了硬分叉"，这成了他力推 PoS + slashing 的动机。</p>
+<p>The DAO 之后的硬分叉，是区块链史上"社会层共识"与"协议层共识"的第一次公开冲突——Lamport 的 BFT 论文里从来没考虑过社会层。Vitalik 后来在博客里反思："我们当时不敢相信 PoS 能扛 The DAO，所以选了硬分叉"。这次妥协后来变成他力推 PoS + slashing 的动机：如果作恶要付经济代价，社区就不必再被迫做"硬分叉退款"这样的政治决定。</p>
 <h3 id="72">7.2 四次攻击的经济账</h3>
 <table>
 <thead>
@@ -1134,11 +1145,12 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="8-pos" id="ch09"><span class="chapter-num">Chapter 09</span><br>8. PoS 谱系导引</h2>
 
-<p>把 PoW 翻译成 PoS 是简单的：算力 → 质押，电费 → slash 风险，Sybil 防御从"硬件稀缺"换成"代币稀缺"。难的是替换之后冒出三个 PoW 没有的问题，每个 PoS 协议都必须给出三份答案。</p>
-<p><strong>Nothing at Stake</strong>：链分叉成 A、B 时 PoW 矿工算力只能投一条，PoS 签名免费 → 两条都签稳赚。解法：slashing 把双签变得比诚实更亏。</p>
-<p><strong>Long-range attack</strong>：旧验证者私钥仍在手中，攻击者低价收购可伪造一条远古历史。解法：弱主观性 + checkpoint，让新节点拒绝接受太老的"另一条历史"；或 Cardano 的 chain density 判定（Genesis）。</p>
-<p><strong>Stake grinding</strong>：leader 选举依赖随机数，攻击者调整自己的签名/状态影响下一轮随机数。解法：VRF（私下掷骰子带证明）或外部 randomness beacon。</p>
-<p>下面六个流派的差异本质上就是三种问题各自怎么解：</p>
+<p>把 PoW 翻译成 PoS，听起来像换零件那么简单：算力换成质押，电费换成 slash 风险，Sybil 防御从"硬件稀缺"切到"代币稀缺"。Vitalik 2014 年第一次写 PoS 草案时也是这么想的，结果一发出来就被社区指出三个新问题——这三个问题在 PoW 世界里根本不存在，因为电费这件事天然把它们解掉了。</p>
+<p>后面六派 PoS 协议（Ethereum Gasper、Cosmos Tendermint、Cardano Ouroboros、Polkadot BABE+GRANDPA、Algorand、Tezos）的差异，本质就是它们各自怎么回答这三个问题。我们先把问题摆出来。</p>
+<p><strong>Nothing at Stake</strong>：链分叉成 A、B 两支时，PoW 矿工的算力只能投一条（投错了挖出来的块作废）；PoS 签名是免费的，两条都签稳赚不赔。解法：slashing——双签直接没收抵押，让"两面下注"比"老老实实选一条"更亏。</p>
+<p><strong>Long-range attack</strong>：已退出的验证者私钥还在他手里，攻击者只要肯出钱，可以低价回收一批旧私钥，从历史某点重写一条新链——签名免费嘛。解法两条：弱主观性 + checkpoint（让新节点拒绝接受太老的"另一条历史"），或 Cardano Genesis 的 chain density 判定（用块的密度差异区分真伪）。</p>
+<p><strong>Stake grinding</strong>：PoS 的 leader 选举依赖随机数，可万一随机数本身就来自 validator 的签名/状态——那 validator 就有动机调整自己的输入，让自己被选中的概率最大化。解法：VRF（让你私下掷骰子但能向别人证明你没作弊）或外部 randomness beacon（drand 这类）。</p>
+<p>下面六派的差异本质就是这三道题各自怎么解：</p>
 <table>
 <thead>
 <tr>
@@ -1192,7 +1204,8 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="9-ethereum-gasper-safety-liveness" id="ch10"><span class="chapter-num">Chapter 10</span><br>9. Ethereum Gasper：把 safety 与 liveness 拆到两层</h2>
 
-<p>Casper FFG（Buterin/Griffith 2017）和 LMD-GHOST（基于 Sompolinsky-Zohar 的 GHOST）是两个独立组件，Gasper 是把两者粘起来的胶水。<strong>核心设计选择</strong>：fork-choice 和 finality gadget 分层做不同取舍——LMD-GHOST 在分区时继续出块（liveness 优先），Casper FFG 在分区时拒绝 finalize（safety 优先）。这是 Ethereum 与 Tendermint 最深的分歧（后者两件事一起做，分区时直接停链）。Mastering Ethereum 第 14 章把 Casper 介绍为"hybrid PoW/PoS finality gadget"，2020 年后 PoW 部分被去掉，纯 PoS 版就是 Gasper。</p>
+<p>2022 年 9 月 15 日凌晨，以太坊 The Merge——从 PoW 切到 PoS。这次升级被称作"飞机上换发动机"：链一刻没停，矿工集体下岗。背后跑的共识协议就是 Gasper，由 Vitalik 和 Virgil Griffith 2017 年的 Casper FFG 论文 + Aviv Zohar 团队 GHOST 论文的 LMD-GHOST 拼起来。</p>
+<p>Gasper 的设计哲学有一句可以记住的话：<strong>把 safety 和 liveness 拆到两层做不同取舍</strong>。LMD-GHOST 这一层在分区时坚持继续出块（保 liveness），Casper FFG 那一层在分区时拒绝 finalize（保 safety）。这是 Ethereum 与 Tendermint 最深的分歧——后者把两件事捆在一起做，分区时直接停链。Mastering Ethereum 第 14 章里 Casper 还被介绍为"hybrid PoW/PoS finality gadget"，2020 年后 PoW 那部分被切掉，剩下的纯 PoS 版本就是今天的 Gasper。</p>
 <h3 id="92">9.2 时间结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>┌──────── 1 epoch = 32 slot = 384s = 6.4 min ────────┐
 │                                                      │
@@ -1243,8 +1256,9 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="10-cosmos-tendermint-cometbftbft-liveness" id="ch11"><span class="chapter-num">Chapter 11</span><br>10. Cosmos Tendermint / CometBFT：BFT 优先，liveness 让位</h2>
 
-<p>与 Gasper 相反，Tendermint 把 safety 一路硬到底——块 commit 后绝对不可逆，代价是网络分区时直接停链。这套取舍逻辑使它特别适合做"应用专属链"：100-200 个已知 validator，partial-sync 假设接近真实，停链可接受。Cosmos SDK 把它当默认共识引擎，开发者只写 Go 应用层。</p>
-<p>历史上叫 Tendermint Core（Buchman 2016；Buchman/Kwon/Milosevic 2018，arXiv:1807.04938），2023-02 原作者 Jae Kwon / AiB 停止支持后由 Informal Systems fork 并改名 <strong>CometBFT</strong>。v0.34 → v0.38 → v1.0（2025-02-03 v1.0.1）一脉相承，主流 Cosmos 链当前在 v0.38。</p>
+<p>2014 年，Cornell 博士生 Jae Kwon 在他的硕士论文里写了一份新协议——把 PBFT 改造成支持 PoS 的版本。他把它叫做 Tendermint。后来 Ethan Buchman 加入，两人 2016 年发了正式的论文，2018 年又和 Zarko Milosevic 一起把协议正式化（arXiv:1807.04938）。这个团队后来变成 Cosmos——一个把"应用专属链"理念做到工业化的项目。</p>
+<p>与 Gasper 选择"两层分别取舍"相反，Tendermint 把 safety 一路硬到底——块一旦 commit 绝对不可逆，代价是网络分区时直接停链。这套取舍非常适合"应用专属链"场景：100-200 个已知 validator，partial-sync 假设接近现实，停链可接受。Cosmos SDK 把它当默认共识引擎，开发者只关心 Go 写的应用层逻辑。</p>
+<p>2023 年 2 月有个戏剧性转折：原作者 Jae Kwon 离开后，AiB（All in Bits）停止支持 Tendermint Core。Informal Systems 把代码 fork 一份，改名叫 <strong>CometBFT</strong>。v0.34 → v0.38 → v1.0（2025-02-03 v1.0.1）一脉相承，主流 Cosmos 链当前还在 v0.38。</p>
 <h3 id="102">10.2 三阶段流程</h3>
 <figure><img src="diagram-8a3d70af72.png" alt="mermaid diagram"></figure>
 
@@ -1291,8 +1305,9 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="11-cardano-ouroborospraos-genesis-peras" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. Cardano Ouroboros（Praos / Genesis / Peras）</h2>
 
-<p>Tendermint 走 BFT 路线（每块多轮投票），Ouroboros 走 chain 路线（单 leader 出块、概率最终性），更接近 PoW 的形态。它的差异化点是<strong>学院派</strong>：第一个带形式化安全证明的 PoS 协议（Kiayias et al. 2017，CRYPTO），后续 Praos/Genesis/Peras 每版都附论文。</p>
-<p>工作方式：每个 epoch（5 天）开始时用上一 epoch 的随机数 + VRF 私下确定本 epoch 每个 slot 的 leader。leader 只有自己知道，slot 到来时出块并附 VRF proof，他人验证。"私下"这点和 Algorand 一脉相承（都用 VRF），但 Ouroboros 是 leader 单一出块，Algorand 是 committee 多人投票，是不同方向的工程化。</p>
+<p>希腊神话里 Ouroboros 是一条咬着自己尾巴的蛇——首尾相连。Cardano 选这个名字，是想强调它的协议在数学上自洽闭合。这背后是 Charles Hoskinson 的态度：他是以太坊 8 位联合创始人之一，2014 年因为治理理念分歧离开后创立 Cardano，定下"先有论文再写代码"的路线。第一篇 Ouroboros 论文（Kiayias et al. 2017）登上 CRYPTO——这是密码学三大顶会之一，区块链共识协议第一次拿到形式化安全证明。</p>
+<p>如果说 Tendermint 走 BFT 路线（每块多轮投票），Ouroboros 走的是 chain 路线（单 leader 出块、概率最终性），形态上更接近 PoW。它的差异化点是"学院派"：每一版（Praos / Genesis / Peras）都附正式论文。</p>
+<p>工作方式我们来演一遍：每个 epoch（5 天）开始时，用上一 epoch 的随机数 + VRF 私下确定本 epoch 每个 slot 的 leader。这个 leader 只有自己知道，等到他的 slot 到了再出块、附 VRF proof，其他人验证。"私下抽签"这套思路和 Algorand 一脉相承（都用 VRF），区别在 Ouroboros 是单 leader 出块，Algorand 是 committee 多人投票——同一个工具的两种工程化方向。</p>
 <h3 id="112-vrf">11.2 VRF 是什么</h3>
 <p>VRF（Verifiable Random Function）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>输入：私钥 sk, 消息 m
@@ -1389,7 +1404,8 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="12-polkadotbabe-grandpa" id="ch13"><span class="chapter-num">Chapter 13</span><br>12. Polkadot（BABE + GRANDPA）</h2>
 
-<p>Polkadot 把 Gasper 的"出块层 + finality gadget"分层做得更彻底。BABE 负责出块（VRF 选 primary slot leader，思路与 Ouroboros Praos 同源），GRANDPA 负责 finalize——但与 Casper FFG 不同，GRANDPA 一次能 finalize 一段链的最长公共前缀，不是单块。两层各自承担安全性的一部分：BABE 出概率块，GRANDPA 把任意时刻已稳定的链段一次性敲死。</p>
+<p>2016 年，Gavin Wood 离开以太坊基金会——他是当年那篇黄皮书的作者，把 Vitalik 的白皮书翻译成了 EVM 的形式化规范。他离开后做的第一件事是 Polkadot，目标是让多条链能共享安全性。这个项目的两个共识组件名字都很可爱：BABE（婴儿）负责出块，GRANDPA（祖父）负责 finalize。</p>
+<p>Polkadot 把 Gasper 的"出块层 + finality gadget"分层做得更彻底。BABE 负责出块（VRF 选 primary slot leader，思路与 Ouroboros Praos 同源），GRANDPA 负责 finalize——但和 Casper FFG 不同，GRANDPA 一次能 finalize 一整段链的"最长公共前缀"，不是单块。两层各司其职：BABE 出概率块，GRANDPA 把任意时刻已稳定的那段链一次性敲死。</p>
 <h3 id="122-grandpa">12.2 GRANDPA 全名</h3>
 <p><strong>G</strong>HOST-based <strong>R</strong>ecursive <strong>AN</strong>cestor <strong>D</strong>eriving <strong>P</strong>refix <strong>A</strong>greement：每次 finalize 一段链的"最长公共前缀"，不是单块。</p>
 <h3 id="123">12.3 工作流程</h3>
@@ -1452,8 +1468,9 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="13-algorandpure-pos-vrf-sortition" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. Algorand（Pure PoS + VRF Sortition）</h2>
 
-<p>Algorand（Micali 等人，2017）的核心赌注是"committee 私下选举"——每块抽出 ~1000 人 committee，成员公布 VRF proof 之前连自己都不知道被选上。这绕过了 nothing-at-stake 问题（链没有持续 fork 的窗口），代价是没有 slashing（丢私钥不赔钱），而是用 honest-majority 假设 + committee 每步换人来防御。这是与所有其他 PoS 链最大的差异：不靠经济惩罚，靠"攻击者根本不知道该攻击谁"。</p>
-<p>2024-09 起 Algorand 改为主动质押模型（之前 ALGO 自动在线），与其他 PoS 趋同；但 VRF sortition 这套核心机制保留。</p>
+<p>Silvio Micali 是图灵奖得主，零知识证明的奠基人之一。2017 年他 63 岁，发了一篇论文叫《Algorand: Scaling Byzantine Agreements》（SOSP 2017），把 PoS 共识彻底翻新——核心赌注是"committee 私下选举"。每出一块，从全体持币人里抽出 ~1000 人组成 committee，成员公布自己的 VRF proof 之前，连自己都不知道被选中了。</p>
+<p>这个设计的厉害之处在于绕开了 nothing-at-stake：链根本没有"持续 fork 的窗口"——committee 每块都换、每轮即终结，你想两面下注都来不及。代价是 Algorand 没有 slashing（丢私钥不赔钱），靠 honest-majority 假设 + committee 频繁换人防御作恶。所以它和其他所有 PoS 链最大的差异是：<strong>不靠经济惩罚，靠"攻击者根本不知道该攻击谁"</strong>。</p>
+<p>2024 年 9 月起 Algorand 改成主动质押模型（之前 ALGO 是自动在线参与），逐渐向其他 PoS 链趋同——但 VRF sortition 这套核心机制保留。</p>
 <h3 id="132-cryptographic-sortition">13.2 Cryptographic Sortition</h3>
 <p>每一块开始时：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>for each ALGO holder with key sk:
@@ -1498,7 +1515,8 @@ P ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
 </section><section class="chapter">
 <h2 id="14-tezosliquid-proof-of-stake-lpos" id="ch15"><span class="chapter-num">Chapter 15</span><br>14. Tezos（Liquid Proof of Stake / LPoS）</h2>
 
-<p>Tezos 与前面五个 PoS 的差异不在共识算法本身，而在<strong>经济模型 + 治理路径</strong>两层。委托不锁仓（"liquid"）、链上自动协议升级（无需硬分叉）——这两点把 Tezos 从纯共识协议变成"协议本身就能投票升级自己"的系统。2022 年 Tenderbake 升级后底层共识从 LPoS 变成 BFT 风格（基于 Tendermint），但治理与委托模型没动。</p>
+<p>Tezos 的故事一开始很糟糕：2017 年 Arthur 和 Kathleen Breitman 夫妇做了当时最大的 ICO，融了 2.32 亿美元，紧接着卷入与基金会主席的法律纠纷，主网延迟将近一年才上线。但项目在律师战中没死掉，2018 年成功上线，活到现在。它在共识协议史上的差异化不是算法本身，而是<strong>经济模型 + 治理路径</strong>两层。</p>
+<p>具体差异有两条：第一，委托不锁仓（这就是 "liquid" 的意思），钱还在你账户里，随时可以改委托对象；第二，链上自动协议升级，根本不需要硬分叉——协议本身就能投票升级自己。2022 年 Tenderbake 升级后底层共识从 LPoS 变成了 BFT 风格（基于 Tendermint），但治理与委托模型没动。Tezos 至今做了 18 次以上链上协议升级，全部由代币持有者投票完成——其他链梦想中的事情，它已经做了 8 年。</p>
 <h3 id="141">14.1 关键词</h3>
 <table>
 <thead>
@@ -1599,7 +1617,8 @@ baker / endorser 双签 → slash
 </section><section class="chapter">
 <h2 id="15-bft" id="ch16"><span class="chapter-num">Chapter 16</span><br>15. BFT 谱系导引</h2>
 
-<p>PoS 解决"谁出块"，BFT 解决"怎么快速 finalize"。本节后续协议（PBFT / HotStuff / Tendermint / Bullshark / Mysticeti）共享一套词汇——QC、view、lock——在第一次出现时定义，后面章节直接调用。</p>
+<p>到这里我们换个赛道。前面 PoS 六派回答的是"谁有资格出块"，接下来 BFT 协议要回答的是"出了块怎么快速 finalize 它"。这两件事可以合做也可以分做——Bitcoin 是合做（出块即概率最终性），Ethereum 是分做（LMD-GHOST 出块 + Casper FFG 终结）。BFT 派天生就是分做的死忠：你出你的，我投我的票。</p>
+<p>后面的协议（PBFT / HotStuff / Tendermint / Bullshark / Mysticeti）共享一套词汇——QC、view、lock。我们先把这三个词的意思讲清楚，后面章节直接调用就不重复解释了。</p>
 <p><strong>Quorum Certificate (QC)</strong>：≥2f+1 节点对同一消息的签名集合，1.1 节 3f+1 定理保证两个 QC 必有诚实重叠。集齐 QC 等于"网络已达 supermajority"的可转发证据。</p>
 <p><strong>View / Round</strong>：每个 view 一个 leader 负责提议，其他节点投票。leader 故障时 view-change 选新 leader——这是 BFT 协议处理 leader fail 的标准模式。</p>
 <p><strong>Lock</strong>：view-change 时为不丢已 prepared 的值，节点锁定某个 view 的提议；新 leader 必须保留这些锁。三阶段 BFT 协议（PBFT、HotStuff）的第三阶段就是为 lock 设计的——见 17.3 节。</p>
@@ -1626,9 +1645,10 @@ Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', '
 </section><section class="chapter">
 <h2 id="16-paxos-raftcrash" id="ch17"><span class="chapter-num">Chapter 17</span><br>16. Paxos 与 Raft：crash 共识的双经典</h2>
 
-<p>PBFT/HotStuff 的"提议-投票-提交"骨架直接来自 Paxos。两者只容 crash 故障（不容拜占庭）——不直接用于公链，但如果不懂 Paxos 的两阶段就读不懂 PBFT 三阶段为什么需要第三阶段。</p>
+<p>谈 BFT 之前我们要先看两个不容拜占庭、只容 crash 故障的协议——Paxos 和 Raft。它们和公链没关系，但谷歌搜索引擎、Kubernetes 配置、TiDB 数据库背后都跑着它们。更重要的是：PBFT/HotStuff 的"提议-投票-提交"骨架直接从 Paxos 抄来；不懂 Paxos 的两阶段，就读不懂 PBFT 三阶段里第三阶段是为什么存在的。</p>
 <h3 id="161-paxos1989-lamport">16.1 Paxos：1989 由 Lamport 发明</h3>
-<p>原型：希腊 Paxos 岛上的兼职议会。工程本质：N 个节点中容忍 f &lt; N/2 个 crash 故障（不是拜占庭）的共识协议。</p>
+<p>Lamport 1989 年第一次投这篇论文时被拒了。他改用希腊 Paxos 岛上"兼职议会"的故事重写，1998 年才正式发表，又过了几年大家才意识到这是分布式系统的奠基论文。Lamport 后来还专门写了一篇《Paxos Made Simple》自嘲："据说 Paxos 难懂，所以我用最简单的语言重新讲一遍"——结果这篇还是出名地难懂。</p>
+<p>工程本质：N 个节点中容忍 f &lt; N/2 个 crash 故障（注意是 crash，不是拜占庭）的共识协议。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>角色：
   proposer：提议者
   acceptor：决定接收哪个提议
@@ -1693,7 +1713,8 @@ Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', '
 </section><section class="chapter">
 <h2 id="17-pbft1999" id="ch18"><span class="chapter-num">Chapter 18</span><br>17. PBFT：1999 的工程里程碑</h2>
 
-<p>PBFT（Castro-Liskov 1999）是第一个 BFT 工程可用方案。在 PBFT 之前的 BFT 协议要么纯理论，要么在同步假设下，运行不动公网。PBFT 的贡献是：n=3f+1、三阶段（PRE-PREPARE/PREPARE/COMMIT）、客户端 5 阶段内得到回应、partial-sync 模型。所有现代区块链 BFT（Tendermint、HotStuff、Bullshark）都直接对照 PBFT 改进。</p>
+<p>1999 年 OSDI，MIT 的博士生 Miguel Castro 和导师 Barbara Liskov（图灵奖得主，CLU 语言之母）发了一篇论文——《Practical Byzantine Fault Tolerance》。"Practical"这个词很要紧：在他们之前所有 BFT 协议要么纯理论，要么假设同步网络（公网根本跑不动）。PBFT 是第一个能在真实网络下跑的 BFT 协议。</p>
+<p>PBFT 的贡献其实就这几条：n=3f+1、三阶段（PRE-PREPARE / PREPARE / COMMIT）、客户端 5 阶段内得到回应、partial-sync 模型。听起来轻描淡写，但所有现代区块链 BFT（Tendermint、HotStuff、Bullshark）都是直接对照 PBFT 做改进的——它是这条赛道的"Hello World"。</p>
 <h3 id="172">17.2 三阶段细节流程图</h3>
 <figure><img src="diagram-4f727d5533.png" alt="mermaid diagram"></figure>
 
@@ -1733,7 +1754,8 @@ Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', '
 </section><section class="chapter">
 <h2 id="18-hotstuff-on2-on-responsive" id="ch19"><span class="chapter-num">Chapter 19</span><br>18. HotStuff：把 O(n²) 压到 O(n)，并且 responsive</h2>
 
-<p>HotStuff（Yin et al. 2019，PODC best paper）相对 PBFT 做了两件事：①节点不再 all-to-all 广播投票，而是只发给 leader，leader 聚合成 QC 后再广播——通信从 O(n²) 降到 O(n)；②<strong>responsive</strong>——leader 收齐 n-f 投票即可推进，无需等已知最长网络延迟 Δ。PBFT 不 responsive，必须等 Δ。这两点让 HotStuff 成了所有 Diem 系（Aptos、Sui、Movement、Espresso）的母本。</p>
+<p>PBFT 在 100 个节点的链上跑一轮要发一万条消息——n=100 时 O(n²) = 10000，公网带宽根本扛不住。这成了 BFT 公链 20 年的瓶颈。直到 2019 年 PODC 上 VMware Research 的 Maofan Yin 等人发了 HotStuff，并拿了那年的 best paper。</p>
+<p>HotStuff 干的事其实很简单，两条：第一，节点不再 all-to-all 广播投票，而是只发给 leader，leader 聚合成 QC 后再广播——通信从 O(n²) 降到 O(n)；第二，<strong>responsive</strong>——leader 收齐 n-f 投票就能推进，不用再等已知最长网络延迟 Δ。PBFT 不 responsive，必须等 Δ。这两点让 HotStuff 一夜之间成了所有 Diem 系（Aptos、Sui、Movement、Espresso）的母本。Facebook 2019 年放出 Libra 项目时，共识层用的就是 HotStuff 的工程化版本 LibraBFT。</p>
 <h3 id="182-prepare-pre-commit-commit">18.2 三阶段（PREPARE / PRE-COMMIT / COMMIT）</h3>
 <p>阶段名与 PBFT 重叠但语义不同：HotStuff 每阶段都是 leader 中转聚合 QC（O(n)），不是 all-to-all（O(n²)）。第三阶段（COMMIT）的存在原因和 PBFT 一样——见 17.3 节关于 lock 的解释。</p>
 <figure><img src="diagram-192aab8517.png" alt="mermaid diagram"></figure>
@@ -1767,7 +1789,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="19-aptosbft-diem-hotstuff" id="ch20"><span class="chapter-num">Chapter 20</span><br>19. AptosBFT 与 Diem 系：HotStuff 工业化</h2>
 
-<p>HotStuff 是协议骨架，AptosBFT 是把骨架打磨成主网产品的 6 年工程链路。本章重点不再是"算法是什么"（已在第 18 章给出），而是"工业化过程中加了哪些非协议成分"——主动起搏器、reputation-based leader、Quorum Store mempool、prefix consensus。</p>
+<p>2019 年 6 月，Facebook 宣布 Libra（后改名 Diem）——一个全球稳定币计划，背后跑着 LibraBFT，HotStuff 的工程化版本。这件事被美国监管层猛批，Mark Zuckerberg 三次跑去国会作证，最后项目 2022 年初被迫关闭，团队带着代码和论文跑出来创立了 Aptos 和 Sui——同根，但两条路。</p>
+<p>HotStuff 是协议骨架，AptosBFT 是把骨架打磨成主网产品的 6 年工程链路。本章重点不再是"算法是什么"（已在第 18 章给出），而是"工业化过程中加了哪些非协议成分"——主动起搏器、reputation-based leader、Quorum Store mempool、prefix consensus。这些细节在论文里看不到，是工程师血泪。</p>
 <h3 id="191">19.1 系谱</h3>
 <figure><img src="diagram-e95ac446b5.png" alt="mermaid diagram"></figure>
 
@@ -1799,7 +1822,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="20-dag" id="ch21"><span class="chapter-num">Chapter 21</span><br>20. DAG 谱系导引</h2>
 
-<p>链式共识的瓶颈在 leader——任意时刻只一个节点出块，吞吐被该节点的网络/CPU/磁盘上限钉死。DAG 共识的破解思路是把分布式共识的两件事拆开：可靠传输（哪些 tx 已被网络收到）由所有 validator 并行处理；总序（按什么顺序提交）只在已传输的 DAG 上做轻量计算。链共识把两件事耦合在一起，DAG 共识把它们解耦。</p>
+<p>链式共识有个永远绕不开的瓶颈：leader。任意时刻只有一个节点出块，吞吐被那个节点的网络/CPU/磁盘上限钉死——你换 100 个 validator 也是一样，因为剩下 99 个都在等 leader。</p>
+<p>DAG 共识从根本上换了思路：把分布式共识本来要做的两件事拆开。可靠传输（哪些 tx 已被网络收到）让所有 validator 并行处理；总序（按什么顺序提交）只在已传输的 DAG 上做一遍轻量计算。链共识把这两件事捆在一起做，DAG 共识把它们解耦——这是过去 5 年共识研究最重要的一次思路解放。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>        ┌─→ A2 ─┐
   A1 ───┤        ├─→ A3
         └─→ B2 ─┤
@@ -1814,15 +1838,17 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="21-iota-tangle-dag" id="ch22"><span class="chapter-num">Chapter 22</span><br>21. IOTA Tangle：第一个 DAG，也是反面教材</h2>
 
-<p>IOTA 是第一个尝试 DAG 公链的项目，但它揭示的与其说是 DAG 共识的可能性，不如说是它的难度。每笔新交易必须引用 2 笔现有交易作 parent，构成无块、无矿工的 Tangle。理论上验证两笔上游 tx 就是发送成本，零 fee 适合 IoT。</p>
-<p>实际困境：2017-2023 IOTA 依赖中心化 Coordinator 防 fork——不算真 DAG 共识；零 fee 导致 spam 泛滥；IoT 场景从未大规模落地。Coordicide 升级（2023 起）用 Mana 声誉积分替代 Coordinator，至 2026-04 仍在迭代。叠加 2018 Curl-P 哈希函数漏洞争议（MIT PoC + 团队回应不当）、2020 Trinity 钱包种子词被盗（~$2M 损失），IOTA 整体信任受损。</p>
-<p>历史价值在于"DAG 共识能跑"是 IOTA 先证明的——后续 Hashgraph、Narwhal、Mysticeti 都在它的基础上修补具体缺陷。来源：IOTA Foundation 文档（2026-04-27）。</p>
+<p>2015 年 David Sønstebø 启动 IOTA，目标是给"物联网（Internet of Things）"做支付——没有手续费、节点轻、可以跑在路灯和冰箱里。技术上他选了 DAG，叫做 Tangle：每笔新交易必须引用 2 笔现有交易作 parent，构成无块、无矿工的有向无环图。理论上你发笔交易就顺手验证了两笔上游，零 fee。</p>
+<p>理想很美，现实很糙。2017-2023 这六年里 IOTA 依赖一个中心化的 Coordinator 节点防 fork——所谓"零 fee DAG 共识"其实是个有中央仲裁的系统。零 fee 的代价是 spam 泛滥；IoT 场景从未大规模落地。再叠加 2018 年 MIT 团队曝出 Curl-P 哈希函数有漏洞、IOTA 团队回应又非常糟糕；2020 年 Trinity 钱包种子词被盗损失约 200 万美元——一连串事故让 IOTA 整体信誉受损。Coordicide 升级（2023 起）想用 Mana 声誉积分替代 Coordinator，到 2026-04 仍在迭代。</p>
+<p>但 IOTA 的历史价值是真实的：<strong>"DAG 共识能跑"这件事，是 IOTA 第一个证明的</strong>。后续 Hashgraph、Narwhal、Mysticeti 都在它的基础上修补具体缺陷。来源：IOTA Foundation 文档（2026-04-27）。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="22-hashgraphgossip-about-gossip-virtual-voting" id="ch23"><span class="chapter-num">Chapter 23</span><br>22. Hashgraph：Gossip about Gossip + Virtual Voting</h2>
 
-<p>Hashgraph（Baird 2016）的核心招式是把"投票"完全消除：节点两两 gossip 交易时附带"我刚才和谁 gossip 过"的元信息，每个节点本地都能重建完整 gossip 历史 DAG，于是可以本地推演他人投票（virtual voting），不必发任何实际投票消息。这与 PBFT/HotStuff 的"显式投票 → 聚合 QC"路线完全相反——Hashgraph 把投票内化进通信结构本身。aBFT（asynchronous BFT）是它达到的最强等级，已被 Coq 形式化证明。</p>
+<p>Leemon Baird 是密码学博士，2016 年他想到一个怪招：把 BFT 协议里的"投票"这件事彻底消除掉。他叫这个协议 Hashgraph。</p>
+<p>具体怎么做？节点两两 gossip 交易时，顺便附带"我刚才和谁 gossip 过"的元信息（hash 自己之前的事件 + hash 对方的事件）。这样每个节点本地就能重建一份完整的 gossip 历史 DAG，然后<strong>本地推演</strong>他人会怎么投票（这叫 virtual voting）——不必发任何实际投票消息。这和 PBFT/HotStuff 的"显式投票 → 聚合 QC"路线完全相反，Hashgraph 把投票内化进通信结构本身了。</p>
+<p>aBFT（asynchronous BFT）是它达到的最强等级，已被 Coq 形式化证明。技术上几近完美——但因为算法长期受专利保护到 2030+，开源社区根本没法在它上面做研究，下一节我们会看到这件事的代价。</p>
 <h3 id="222-gossip-about-gossip">22.2 Gossip about Gossip 流程图</h3>
 <figure><img src="diagram-fa144fa3ed.png" alt="mermaid diagram"></figure>
 
@@ -1845,7 +1871,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="23-narwhal-bullshark-tusk" id="ch24"><span class="chapter-num">Chapter 24</span><br>23. Narwhal + Bullshark / Tusk</h2>
 
-<p>Narwhal 把第 20 章的"传输/总序解耦"做成了具体协议。每个 validator 持续把收到的 tx 打包成 batch（vertex），引用前一 round 至少 2f+1 个其他 validator 的 batch——所有 vertex 自然形成跨 round 的 DAG。传输持续进行，共识只在 DAG 上做轻量总序。来源：Danezis et al., "Narwhal and Tusk"（EuroSys 2022）。</p>
+<p>2022 年 EuroSys，George Danezis 等人发了一篇论文叫《Narwhal and Tusk》——独角鲸和象牙。Narwhal 是 mempool 协议（独角鲸的角形象地代表它头上顶着的 DAG），Tusk 是早期的总序协议。这俩名字到处被换：Bullshark（一种鲨鱼）后来取代 Tusk，Mysticeti（须鲸）成了下一代。整个 DAG 共识赛道的命名都跟海洋生物较劲。</p>
+<p>Narwhal 把第 20 章那个抽象的"传输/总序解耦"做成了具体协议。每个 validator 持续把收到的 tx 打包成 batch（一个 batch 叫 vertex），引用前一 round 至少 2f+1 个其他 validator 的 batch——所有 vertex 自然形成跨 round 的 DAG。传输这件事一直在跑，共识只在 DAG 上做一遍轻量总序。这套设计直接把吞吐推到了 100k TPS 量级。来源：Danezis et al., "Narwhal and Tusk"（EuroSys 2022）。</p>
 <h3 id="232-narwhal-mempool-dag">23.2 Narwhal：把 mempool 做成 DAG</h3>
 <p>每个 validator 持续把它收到的交易打包成 batch（叫 "vertex"），引用前一 round 至少 2f+1 个其他 validator 的 batch。所有 vertex 形成跨 round 的 DAG。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>round  1     2     3     4
@@ -1884,7 +1911,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="24-sui-mysticeti" id="ch25"><span class="chapter-num">Chapter 25</span><br>24. Sui Mysticeti</h2>
 
-<p>Mysticeti 在 Narwhal+Bullshark 基础上的核心改动是 <strong>uncertified DAG</strong>：Bullshark 要求每个 vertex 收齐 ≥2f+1 签名才能成为 DAG 节点（贡献 ~50% 延迟），Mysticeti 允许 uncertified vertex 直接入 DAG，commit 时再统一验证 quorum。这把 ~390ms 的 consensus 延迟（v1）进一步压到 ~250ms（v2，2025-11），代价是边复杂度上升。</p>
+<p>Sui 团队是从 Diem/Libra 跑出来的那批人——和 Aptos 同根。两个团队同样用 Move 语言，但共识路线选了完全相反的方向：Aptos 留在 HotStuff 单链单 leader，Sui 押注 DAG。2024 年 7 月 Sui 主网上线 Mysticeti（须鲸）共识，把 Narwhal+Bullshark 又推进了一大步。</p>
+<p>Mysticeti 的核心改动是一个看起来很激进的决定：<strong>uncertified DAG</strong>。Bullshark 原本要求每个 vertex 先收齐 ≥2f+1 签名才能成为 DAG 节点（这一步贡献了大约一半的延迟），Mysticeti 允许 uncertified vertex 直接入 DAG，等到 commit 时再统一验证 quorum。这把 v1 的 ~390ms 共识延迟进一步压到 v2 的 ~250ms（2025-11），代价是边复杂度上升、实现更复杂。</p>
 <h3 id="241">24.1 时间线与性能</h3>
 <ul>
 <li><strong>2023-05</strong>：Sui 主网上线，使用 Narwhal + Bullshark</li>
@@ -1911,6 +1939,7 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="25-block-stmpoh" id="ch26"><span class="chapter-num">Chapter 26</span><br>25. 易混误区：Block-STM、PoH 等"非共识"组件</h2>
 
+<p>招聘面试或者技术分享的常见翻车现场：候选人滔滔不绝讲 Solana PoH 多么先进、是 Solana 的"共识算法"——其实 PoH 根本不是共识，是个时间戳服务。这节我们专门把这些混淆点摆在一起，你以后听到"XXX 链的共识是 YYY"时能够先停一下问："YYY 是协议层还是别的什么？"</p>
 <h3 id="251-block-stmaptos">25.1 Block-STM：Aptos 的并行执行引擎</h3>
 <p>Block-STM 是<strong>执行引擎</strong>，不是共识。共识（AptosBFT v4/Raptr）决定顺序，Block-STM 在 commit 后乐观并行执行：先假设无冲突，检测到冲突则回滚串行重试。让 Aptos 在 Account 模型下拿到 25k+ TPS。</p>
 <h3 id="252-solana-poh">25.2 Solana PoH：易混组件</h3>
@@ -1974,7 +2003,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="26-solanapoh-tower-bft-alpenglow" id="ch27"><span class="chapter-num">Chapter 27</span><br>26. Solana：PoH + Tower BFT → Alpenglow</h2>
 
-<p>Solana 的设计选择和前面所有协议都不同：把"排事件顺序"和"共识"拆成两个独立组件。PoH 是全网一致的时间戳服务（不是共识），Tower BFT 是带 lockout 的 PBFT 变体（是共识）。这套架构 2026 年正在被 Alpenglow（Votor + Rotor）替换——Solana 自己也承认 PoH+Tower BFT 跑了 7 年，5 次以上停机暴露了"全局时间作为单点"的脆弱。</p>
+<p>2017 年，前 Qualcomm 工程师 Anatoly Yakovenko 在凌晨喝了几杯咖啡后发了一条推：他想到一个新办法可以把区块链做到 100 万 TPS。这条推后来变成了 Solana 的白皮书，里面提出 PoH（Proof of History）——不是共识，是个加密学时间戳服务。</p>
+<p>Solana 的设计选择和前面所有协议都不同：把"排事件顺序"和"共识"拆成两个独立组件。PoH 是全网一致的时间戳服务（不是共识），Tower BFT 是带 lockout 的 PBFT 变体（是共识）。这套架构跑到 2026 年正在被 Alpenglow（Votor + Rotor）替换——Solana 自己也承认 PoH+Tower BFT 跑了 7 年，5 次以上停机暴露了"全局时间作为单点"的结构性脆弱。9 年的押注，到了承认要换发动机的时候。</p>
 <h3 id="262-poh">26.2 PoH 是什么</h3>
 <p>leader 持续跑：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000">h</span><span style="color: #000; font-weight: bold">[</span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">some_seed</span>
@@ -2099,7 +2129,8 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </section><section class="chapter">
 <h2 id="27-avalanche-snow-metastable" id="ch28"><span class="chapter-num">Chapter 28</span><br>27. Avalanche Snow 系列：metastable 共识</h2>
 
-<p>Snow 系（Rocket et al. 2018）和前面所有 BFT 协议结构上不同。PBFT/HotStuff 每决定一块所有 n 节点都参与；Snow 让每个节点只随机问 k=20 个邻居就决定，依赖大数定律——类似选举民调。代价是放弃了 BFT 派的"≤1/3 拜占庭即安全"硬保证，换成 metastable 性质："网络绝大多数最终会偏好同一值"——这是个统计学性质，不是绝对 BFT 保证。这条路线学界至今仍有争议（Bern University 2024 报告）。</p>
+<p>2018 年一份匿名论文挂上 IPFS——作者署名 "Team Rocket"。论文叫《Snowflake to Avalanche》，提出一种全新的共识思路：每个节点不需要问全网所有人，只随机问 k=20 个邻居就能做决定。后来这个团队浮出水面是康奈尔的 Emin Gün Sirer 和他的学生们，2020 年正式发布 Avalanche 主网。</p>
+<p>Snow 系和前面所有 BFT 协议结构上完全不同。PBFT/HotStuff 决定一块时所有 n 节点都参与；Snow 让每个节点只随机抽样 k=20 个邻居，依赖大数定律——这思路像选举民调，调查 1000 人就能预测全国选民。代价是它放弃了 BFT 派"≤1/3 拜占庭即安全"的硬保证，换成 metastable 性质：<strong>"网络绝大多数最终会偏好同一值"</strong>——这是个统计学性质，不是绝对 BFT 保证。这条路线学界至今仍有争议（Bern University 2024 报告）。</p>
 <h3 id="272">27.2 协议演进</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Slush（不容拜占庭，只是个 toy）
    ↓
@@ -2141,9 +2172,11 @@ Avalanche（DAG 版本）
 </section><section class="chapter">
 <h2 id="28-bitcoin-lightning-network" id="ch29"><span class="chapter-num">Chapter 29</span><br>28. Bitcoin Lightning Network：通道而非共识</h2>
 
+<p>2015 年 Joseph Poon 和 Thaddeus Dryja 发了一份白皮书《The Bitcoin Lightning Network》。他们要解决的问题是个尴尬现实：你想用 Bitcoin 买一杯 5 美元的咖啡，结果手续费就是 5 美元，咖啡店老板表示拒绝。Bitcoin 7 TPS 的天花板让它根本做不了零售支付。</p>
 <p>Lightning 不是共识协议，而是绕开共识的工程方案——把高频小额转账从主链卸载到链下双方共识，只用主链做"开/关通道结算"。这条思路后来被 Ethereum L2（rollup）继承——见模块 07。</p>
 <h3 id="282">28.2 直觉：开个储值卡</h3>
-<p>假设 Alice 一天给 Bob 转 50 次，每次 0.001 BTC，每次手续费 ~ $5，一天 $250 fee，但只转了 ~ $50 价值——荒谬。<strong>Lightning 的解法</strong>：双方先共同质押 0.05 BTC 开"通道"，通道里随便转账（链下，免 fee），关通道时把"最终余额"上链——只 1 笔交易。</p>
+<p>我们演一遍。假设 Alice 一天给 Bob 转 50 次，每次 0.001 BTC，每次链上手续费 5 美元——一天 250 美元手续费，结果只转了 50 美元价值。这对吗？显然不对。</p>
+<p>Lightning 的解法像开一张储值卡：Alice 和 Bob 先共同在链上质押 0.05 BTC 开一个"通道"，然后通道里他俩随便转——链下完成、免 fee。等他俩不想再用了，关通道时把"最终余额"上链——总共只产生 2 笔链上交易（开 + 关）。</p>
 <h3 id="283-htlc">28.3 HTLC：让转账经过中间节点也安全</h3>
 <figure><img src="diagram-b0f8a6b7bc.png" alt="mermaid diagram"></figure>
 
@@ -2169,7 +2202,8 @@ Avalanche（DAG 版本）
 </section><section class="chapter">
 <h2 id="29" id="ch30"><span class="chapter-num">Chapter 30</span><br>29. 概念辨析专章</h2>
 
-<p>DDIA 第 9 章在讨论 consensus 时反复强调：每个保证都要追问"在什么模型下、需要什么前提"。区块链共识协议文档常把 confirmation / finality / safety / liveness 混用，工程决策时踩的坑大多源于此。本章统一定义。</p>
+<p>工程师踩坑最常见的来源不是不懂技术，是文档把术语混用。"我们的链有 finality"——什么 finality？probabilistic、economic、还是 absolute？这三个落到生产环境差几个数量级的风险敞口。</p>
+<p>DDIA 第 9 章在讨论 consensus 时反复强调一句话：每个保证都要追问"在什么模型下、需要什么前提"。区块链共识协议文档经常把 confirmation / finality / safety / liveness 混用——本章把这些术语集中起来辨析。读完这一节回头看任何一篇白皮书，你看到 "instant finality" 应该会先停一下问："哪种 finality？"</p>
 <h3 id="291">29.1 四种最终性</h3>
 <table>
 <thead>
@@ -2310,18 +2344,20 @@ Avalanche（DAG 版本）
 </section><section class="chapter">
 <h2 id="30-2010-08-bitcoin-bug" id="ch31"><span class="chapter-num">Chapter 31</span><br>30. 事故复盘之 2010-08 Bitcoin 通胀 bug</h2>
 
-<p>2010-08-15，Bitcoin 唯一一次协议级 reorg。<code>CTransaction::CheckTransaction</code> 对 output value 求和时未检查溢出，攻击者构造一个交易铸出 2 笔各 9.22 亿 BTC（远超 2100 万总量），上链于块 74638。</p>
+<p>2010 年 8 月 15 日上午 9:09 UTC，块 74638 上链——里面有一笔交易凭空铸出了两笔各 9 亿 2233 万 BTC，远远超过整个网络永远会发行的 2100 万总量。Bitcoin 历史上唯一一次协议级 reorg 就此开始。攻击者是谁？至今无人知道。</p>
+<p>代码上的 bug 简单到让人崩溃：<code>CTransaction::CheckTransaction</code> 对 output value 求和时漏检了溢出。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">int64_t</span><span style="color: #F8F8F8"> </span><span style="color: #000">sum</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #204A87; font-weight: bold">for</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">auto</span><span style="color: #CE5C00; font-weight: bold">&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #000">out</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">outputs</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000">sum</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+=</span><span style="color: #F8F8F8"> </span><span style="color: #000">out</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">value</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 没检查溢出</span>
 </code></pre></div>
-<p>时间线：0809 UTC 攻击块上链 → 0820 UTC Satoshi 在 Bitcointalk 发警报 → 0900 UTC 修复 patch v0.3.10 发布 → 1330 UTC 社区 reorg 53 块。整起事故 5 小时 21 分。</p>
-<p>整数溢出是数字货币经典 bug。此后 Bitcoin 所有 amount check 加溢出验证，Ethereum/Solidity 强制 SafeMath 是同根同源的反应。这次事故是中本聪此后极度保守对待 codebase 的来源——协议层稳，实现层脆弱，是所有共识协议的通用规律。</p>
+<p>时间线极度紧张。0809 UTC 攻击块上链；0820 UTC 中本聪本人在 Bitcointalk 发出警报，全网开发者集结；0900 UTC 修复 patch v0.3.10 发布；1330 UTC 社区协调好后做了一次 53 块的 reorg，把那条带 bug 的链丢掉。整起事故 5 小时 21 分。这是中本聪本人最后一次在 Bitcointalk 大量公开露面之一，几个月后他逐渐隐退。</p>
+<p>整数溢出是数字货币经典 bug。这次事故之后 Bitcoin 所有 amount check 都加上了溢出验证；Ethereum/Solidity 强制 SafeMath（后来 0.8 内置溢出检查）是同根同源的反应。这次事故也是中本聪此后极度保守对待 codebase 的来源——他给后来所有维护者立下的规矩是：协议层稳，实现层脆弱。这条规律对所有共识协议通用。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="31-2020-08-etc-51" id="ch32"><span class="chapter-num">Chapter 32</span><br>31. 事故复盘之 2020-08 ETC 三连 51%</h2>
 
-<p>详细时间线和经济账见第 7 章。本节只补充复盘维度的两点：</p>
+<p>2020 年 8 月那一个月，Ethereum Classic 被 51% 攻击了三次——8 月 1 日、8 月 6 日、8 月 29 日。每一次套路一模一样：攻击者在交易所充值 ETC，等链上确认后立刻提现 USDT/BTC，再广播秘密挖好的更长私链替换公链——自己充进去的 ETC 又回到自己钱包。三次累计损失约 1500 万美元，攻击成本一共大概 60 万美元。</p>
+<p>详细时间线和经济账已经在第 7 章给过。本节我们只补充复盘维度的两个观察点：</p>
 <p>①<strong>根因结构性</strong>：ETC 与 ETH 共用 Ethash，2020 年 ETC 算力仅占 Ethash 全网 ~5%——攻击者付几十万美元就够 51%。这不是实现 bug，是"算法兼容大币种 + 公共算力市场"的结构性脆弱。</p>
 <p>②<strong>应对反讽</strong>：2020-11 Thanos 升级把 Ethash epoch 翻倍 → ETChash 与 ETH 矿机解耦；2022-09 ETH 转 PoS 后 Ethash 矿机失业反而部分流入 ETC，算力翻倍。结构性安全的恢复来自 ETH 的协议变迁，而不是 ETC 自己的努力——共识协议安全有时由生态而非协议决定。</p>
 <hr />
@@ -2329,6 +2365,7 @@ Avalanche（DAG 版本）
 </section><section class="chapter">
 <h2 id="32-2021-2023-solana" id="ch33"><span class="chapter-num">Chapter 33</span><br>32. 事故复盘之 2021-2023 Solana 多次停机</h2>
 
+<p>2021 年 9 月 14 日下午，Solana 上线刚一年多，Grape Protocol 做 IDO——每秒 40 万笔交易瞬间涌入 mempool。leader 节点处理不过来，PoH tick 速率掉下去，全网失步。整个网络瘫了 17 个小时。这只是开始。后来两年里 Solana 又停了 5 次，最长一次 19 小时。每一次社区都得问同一个问题：你们到底解决问题了没？</p>
 <table>
 <thead>
 <tr>
@@ -2377,30 +2414,34 @@ Avalanche（DAG 版本）
 </section><section class="chapter">
 <h2 id="33-2022-05-beacon-chain-7-block-reorg" id="ch34"><span class="chapter-num">Chapter 34</span><br>33. 事故复盘之 2022-05 Beacon Chain 7-block reorg</h2>
 
-<p>slot 3,887,075 proposer 出块迟到 ~4 秒 + proposer boost 滚动升级不一致 + 部分客户端 fork-choice bug，三因合流导致 7 个 slot 内链分叉，7 块被 reorg。FFG finality 全程未受影响——这是 Gasper 双层设计（29.2 节）的实际验证：fork-choice 出错时 finality gadget 还在保 safety。</p>
+<p>2022 年 5 月 25 日，slot 3,887,075。Beacon Chain（以太坊 PoS 共识链，The Merge 之前已经独立运行 1 年半）发生了一次 7-block reorg——这在生产 PoS 链里相当罕见，整个 Ethereum 研究圈 Twitter 上炸开锅。Barnabé Monnot 后来写了一份精彩的可视化复盘（见第 42 章参考），把这次事故的每一个 slot 都画出来。</p>
+<p>根因是三件事合流：proposer 出块迟到 ~4 秒、proposer boost 在客户端滚动升级时配置不一致、部分客户端 fork-choice 有 bug。三因合流导致 7 个 slot 内链分叉、7 个块被 reorg。但你注意——FFG finality 全程未受影响。这正是 Gasper 双层设计（29.2 节）的现实验证：fork-choice 出错的时候，finality gadget 还在保 safety。</p>
 <p>应对：post-Merge 所有 fork-choice 修改必须打包进硬分叉，所有客户端同时切换。"软分叉式 fork-choice 修改"成为禁区。详细复盘见 <code>exercises/03_reorg_postmortem.md</code>。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="34-2023-04-ethereum-finality-stall" id="ch35"><span class="chapter-num">Chapter 35</span><br>34. 事故复盘之 2023-04 Ethereum finality stall</h2>
 
-<p>2023-04 mainnet 两次 finality 暂停（~25s）。无 reorg、无资金损失。根因：Prysm（占 40% stake）一个 bug 导致 attestation 延迟超截止线，FFG 凑不齐 2/3。</p>
+<p>2023 年 4 月，Ethereum 主网两次 finality 暂停（每次约 25 秒）。听起来不严重——没有 reorg、没有资金损失。但这是个非常危险的信号。</p>
+<p>根因：Prysm 客户端当时占了 40% 的 stake，它的一个 bug 导致 attestation 延迟超过截止线，于是 FFG 凑不齐 2/3 票，链就 finalize 不下去。25 秒内一切瘫痪。25 秒不长——但 Prysm 占 stake 多 1 个百分点的话，这就是个会持续到 inactivity leak 触发的灾难。</p>
 <p>事后客户端多样性运动推动 Prysm 降到 30%、Lighthouse 升至 40%。规律：单一客户端 stake &gt;33% = 系统性风险——这是 BFT 容错下界（1.1 节 3f+1）的另一种表现，对所有 PoS/BFT 链通用。客户端多样性不只是去中心化口号，是 finality 的硬保险。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="35-2022-tornado-cash-ofac" id="ch36"><span class="chapter-num">Chapter 36</span><br>35. 事故复盘之 2022 Tornado Cash 与 OFAC 制裁</h2>
 
-<p>2022-08-08 OFAC 把 Tornado Cash 合约地址列入 SDN 制裁名单。这不是技术故障，是社会层故障——部分美国 validator/builder 拒绝包含相关交易。制裁后 ~30 天 OFAC-compliant 块占 60%，高峰期 80%+（mevwatch.info，2026-04）。</p>
-<p>协议层应对是 Inclusion List（EIP-7547，2024）：proposer 强制要求"必须包含某些交易"，builder 即使不愿意也得包。这条路线把"抗审查"从社会层 reapproach 到协议层。Bitcoin 矿池在美国可能受类似压力，Solana validator 集中度更高风险也更高，Cosmos 各链独立分散风险。</p>
-<p>这一事件改变了 Ethereum 路线图——从"只解决技术问题"到"承认社会层威胁"。第 1 章 FLP/CAP 讨论的网络模型不包含监管模型，这是经典共识理论的盲区，本册第 44 章机制设计、第 46 章 ePBS 都在这个盲区里展开。</p>
+<p>2022 年 8 月 8 日，美国财政部 OFAC 把 Tornado Cash 这个混币器合约的地址直接列入 SDN 制裁名单——不是制裁哪家公司，是制裁一段开源代码。一周后开发者 Alexey Pertsev 在荷兰被捕。整个 Web3 行业第一次直面一个赤裸的事实：<strong>协议不可审查这件事，社会层会有人来打破它</strong>。</p>
+<p>技术上这不是故障——节点都在跑，块都在出，没有 reorg。但部分美国 validator 和 builder 开始主动拒绝包含 Tornado Cash 相关交易。制裁后 ~30 天，符合 OFAC 要求的块占了 60%，高峰期到过 80%+（mevwatch.info，2026-04）。Lamport 1982 年讨论的 BFT 模型里没有"政府"这个角色——这是经典共识理论的盲区。</p>
+<p>协议层的应对是 Inclusion List（EIP-7547，2024 年提出）：proposer 强制要求"必须包含某些交易"，builder 即使不愿意也得包。这条路线把"抗审查"这件事从社会层 reapproach 到协议层。同样的压力 Bitcoin 矿池在美国也可能遇到；Solana validator 集中度更高，风险也更高；Cosmos 各链独立运行，反而分散了这种风险。</p>
+<p>这一事件改变了 Ethereum 的路线图——从"只解决技术问题"切到"承认社会层威胁也要被协议层回应"。第 1 章讨论 FLP/CAP 时网络模型不包含监管模型，这是经典共识理论的盲区。本册第 44 章（机制设计）、第 46 章（ePBS）都是在这个盲区里展开的工作。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="36-pow" id="ch37"><span class="chapter-num">Chapter 37</span><br>36. 实战一：从零写最小 PoW 链</h2>
 
+<p>到这里你看了 35 章理论。现在停一下，关掉这个 PDF，自己从零写一条 200 行的 PoW 链。理论看再多，不动手永远是第二手知识。我们用 Python，因为它读起来近乎伪代码，你能把注意力留给共识本身而不是语言细节。</p>
 <h3 id="361">36.1 设计目标</h3>
-<p>&lt; 200 行，覆盖：区块、链、PoW、难度调整、最重链规则。不写：UTXO / 签名 / Merkle 树（见模块 01 / 03）。</p>
+<p>&lt; 200 行，覆盖：区块、链、PoW、难度调整、最重链规则。不写：UTXO / 签名 / Merkle 树（这些见模块 01 / 03）。</p>
 <h3 id="362">36.2 区块结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #5C35CC; font-weight: bold">@dataclass</span>
 <span style="color: #204A87; font-weight: bold">class</span><span style="color: #F8F8F8"> </span><span style="color: #000">Block</span><span style="color: #000; font-weight: bold">:</span>
@@ -2453,8 +2494,9 @@ python3<span style="color: #F8F8F8"> </span>pow_chain.py<span style="color: #F8F
 </section><section class="chapter">
 <h2 id="37-4-pbft" id="ch38"><span class="chapter-num">Chapter 38</span><br>37. 实战二：4 节点 PBFT 模拟</h2>
 
+<p>PoW 写完了你应该感觉良好——但那是单 leader、单链、概率最终性。现在换条路：BFT。我们用 4 节点演 PBFT，让你亲眼看到 view-change 是怎么触发的。这条 demo 跑起来会让你对第 17 章的三阶段有一种"原来如此"的感觉，比再读一遍论文管用十倍。</p>
 <h3 id="371">37.1 设计目标</h3>
-<p>n=4, f=1 的最小 BFT。演示正常路径 + 拜占庭主节点 + view-change。不模拟：真异步、消息丢失（教学简化）。</p>
+<p>n=4, f=1 的最小 BFT。演示正常路径 + 拜占庭主节点 + view-change。不模拟：真异步、消息丢失（这些是教学简化）。</p>
 <h3 id="372">37.2 节点数据结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #5C35CC; font-weight: bold">@dataclass</span>
 <span style="color: #204A87; font-weight: bold">class</span><span style="color: #F8F8F8"> </span><span style="color: #000">Node</span><span style="color: #000; font-weight: bold">:</span>
@@ -2513,6 +2555,7 @@ python3<span style="color: #F8F8F8"> </span>pbft_sim.py<span style="color: #F8F8
 </section><section class="chapter">
 <h2 id="38-cometbft-4" id="ch39"><span class="chapter-num">Chapter 39</span><br>38. 实战三：CometBFT 4 验证者本地测试网</h2>
 
+<p>37 章那个 PBFT 是教学玩具——现在我们玩点真的。CometBFT 是 Cosmos 全生态在跑的共识引擎，背后有 Osmosis、Celestia、dYdX v4 在用它支撑数十亿美元资产。你接下来 30 分钟会在自己电脑上启 4 个 validator，亲手把其中一个杀掉，看链能不能继续；再杀一个，看链怎么停下来。</p>
 <h3 id="381-pin-v03812">38.1 安装（pin v0.38.12）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># macOS</span>
 brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>cometbft
@@ -2559,6 +2602,7 @@ tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="39" id="ch40"><span class="chapter-num">Chapter 40</span><br>39. 习题（含解答）</h2>
 
+<p>到这里全册理论 + 实战都给完了。习题不是为了考你——是为了帮你把"看过"和"会用"之间那道沟填上。第 39.4 习题写一个蒙特卡洛模拟 51% 攻击的脚本，做完你会对中本聪那个公式有完全不同的理解。第 39.7 给三个真实的产品场景让你选共识——这才是工程师每天面对的问题。建议：每题先合上书自己想 5 分钟，再看答案对照差距。</p>
 <h3 id="391-1">39.1 习题 1：双花概率</h3>
 <p><strong>题目</strong>：Alice 算力 q=0.25，Bob 等 6 confirmation。Alice 攻击成功概率？</p>
 <p><strong>解</strong>：代入中本聪公式 λ = z·q/p = 6×0.25/0.75 = 2.0：</p>
@@ -2619,6 +2663,7 @@ tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="40-ai" id="ch41"><span class="chapter-num">Chapter 41</span><br>40. AI 影响：哪里能用，哪里不能用</h2>
 
+<p>每隔几个月就有人来问："能不能让 AI 自动设计共识协议？"短答：不能。长答见本节。</p>
 <p>AI 在共识层的角色是助教，不是主作者。能用的场景集中在"把工程师注意力收到正确窗口"——mempool 监控（bloXroute / Blocknative）、MEV 分类（Flashbots Inspect / EigenPhi）、共识异常告警（Beaconcha.in / Rated）、故障复盘日志检索、安全审计的模式匹配（Forta）。这些场景的最终判断仍由人做。</p>
 <p>不能用的是共识协议设计本身。三条结构性禁区：①共识出错爆破半径是全网，LLM 出错只影响一次会话；②形式化证明 LLM 做不到（Tendermint 用 Coq，HotStuff 用 TLA+）；③参数 trade-off 涉及社会维度（客户端多样性、治理流程），训练数据覆盖不到。工程师能切的方向是链下分析（mempool ML / MEV 量化）、节点运维预测、EIP 与代码 diff 对齐——不是自动生成共识协议、不是自适应调整核心参数、不是自动 fork resolution。</p>
 <hr />
@@ -2626,6 +2671,7 @@ tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="42-pin-2026-04-27" id="ch42"><span class="chapter-num">Chapter 42</span><br>42. 延伸阅读（pin 版本 / 链接附 2026-04-27 访问日期）</h2>
 
+<p>读到这里如果你想再往下深挖，下面是路线。我们把材料按优先级排：5 篇必读论文是地基，没有它们后面任何讨论都站不稳；推荐 8 篇是各派的代表作；在线资源是工程师每周要回去查的；参考实现是你看共识细节时绕不过的代码。建议从必读那 5 篇开始，每篇精读 2 小时。</p>
 <h3 id="421-5">42.1 论文（必读 5 篇）</h3>
 <ol>
 <li>Nakamoto, S. (2008). <em>Bitcoin: A Peer-to-Peer Electronic Cash System</em>. https://bitcoin.org/bitcoin.pdf</li>
@@ -2687,13 +2733,15 @@ tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="43" id="ch43"><span class="chapter-num">Chapter 43</span><br>43. 前沿主题导引</h2>
 
-<p>前 42 章是"协议是什么"。本节后续是"协议要往哪里走"——MEV 经济、ePBS、SSF、VDF、Restaking、状态/历史过期、Bitcoin Covenants 都在主网升级路线图上排队，但尚未沉淀进经典教科书。每章独立可读，与前 42 章交叉引用最多的是第 9 章（Gasper）、第 33 章（reorg）、第 34 章（finality stall）。</p>
+<p>前 42 章是"协议现在长什么样"。本节往后我们看的是"协议要往哪里走"——MEV 经济、ePBS、SSF、VDF、Restaking、状态/历史过期、Bitcoin Covenants 都在主网升级路线图上排队，但尚未沉淀进经典教科书。</p>
+<p>这部分有点像追剧：每个主题都还在更新，我们能给你的是一份截至 2026-04 的快照 + 阅读路径。每章独立可读，与前 42 章交叉引用最多的是第 9 章（Gasper）、第 33 章（reorg）、第 34 章（finality stall）。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="44-cryptoeconomics" id="ch44"><span class="chapter-num">Chapter 44</span><br>44. 共识中的机制设计与 cryptoeconomics</h2>
 
-<p>共识协议同时是博弈规则——让自利节点在追求利益最大化时恰好做出诚实行为（Hurwicz/Maskin/Myerson 2007 诺奖的核心思路）。区块链场景下这件事比传统机制设计困难，原因有三：参与者完全自利且匿名、随时进出、设计错误意味着协议断崖崩溃而非缓慢退化。</p>
+<p>2007 年诺贝尔经济学奖颁给了 Hurwicz、Maskin、Myerson 三人，理由是机制设计理论——核心问题是"怎么设计游戏规则，让追求利益最大化的玩家恰好做出我们想要的行为"。共识协议本质上就是这种规则，只是把它从经济学搬到了代码里。</p>
+<p>区块链场景下这件事比传统机制设计难三层：参与者完全自利且匿名、随时进出（不像选举那样人是固定的）、设计错误意味着协议断崖崩溃而非缓慢退化。设计一个分红条款错了，公司会损失几百万；设计一个共识机制错了，整条链立刻完蛋。</p>
 <p><strong>Incentive compatibility</strong>：诚实行为即最优策略。PoW 矿工跟最重链是最优（否则自己块作废）；PoS validator 诚实在线投票是最优（双签 → slash，不投 → inactivity leak）。MEV 是这套思路的 emergent failure——Ethereum 设计共识时没把"proposer 对 mempool 的独裁排序权"当成机制变量，结果排序权自己长出市场价值。第 45 章展开。</p>
 <p>Cryptoeconomics 的三块基石：①公开可验证（规则 = 代码 + 链上数据）；②可量化攻击成本（PoW = 算力成本，PoS = slash 成本）；③incentive compatibility。Token-based voting 不是民主——token 可被买、借、合约控制——所以 Vitalik 2025-09 提出 on-chain 治理分两层：execution 层（验证/提议，可用市场机制）和 value judgment 层（协议升级/应急救援，不能纯 token 投票）。替代方案：proof of personhood、quadratic voting、futarchy。</p>
 <p>设计 web3 协议时五个必问：①谁参与，动机是什么？②谁出钱，出钱方有否决权吗？③作恶的最便宜方式是什么？④作恶代价是否 ≥ 攻击收益？⑤完全自利假设下能否收敛到诚实？最后一项不成立则机制设计失败。来源：bitcoinworld.co.in 2025-09（2026-04-27）。</p>
@@ -2702,7 +2750,9 @@ tmux<span style="color: #F8F8F8"> </span>send-keys<span style="color: #F8F8F8"> 
 </section><section class="chapter">
 <h2 id="45-mev-boost" id="ch45"><span class="chapter-num">Chapter 45</span><br>45. MEV-Boost 经济学</h2>
 
-<p>MEV（Maximal Extractable Value，PoS 后从 Miner 改名）是 proposer 出块时排序权的市场价值。三种典型策略：①Frontrunning，看到 Bob mempool 大单买 ETH，抢在前面买、待 Bob 推高价格后卖出；②Sandwich，抢跑 + 反向收割，[Alice 买入][Bob 买入推高价][Alice 卖出]；③Back-running，Bob 推高某 DEX 价格后，Alice 立即跨池套利。三种策略都依赖 proposer 能完全控制 tx 顺序——这就是 MEV 的物理来源。</p>
+<p>2019 年研究员 Phil Daian 等人发了一篇论文《Flash Boys 2.0》——名字致敬 Michael Lewis 那本写华尔街高频交易的《Flash Boys》。文章里第一次量化了一个新名词 MEV：Miner Extractable Value，矿工因为对交易顺序的独裁排序权而能榨取的额外收益。这件事在 PoW 时代是个学术现象，到了 PoS 时代——M 从 Miner 改成 Maximal——成了一门 90 亿美元的生意。</p>
+<p>我们演一遍它怎么发生的。设想 Bob 在 Uniswap 上要花 100 万美元买 ETH，这单一旦执行价格会被推高 2%。Alice 监控 mempool 看到这单还没上链，她做三件事：①抢在 Bob 之前买 ETH（frontrun）；②等 Bob 的单执行把价格推高；③立刻卖掉自己的 ETH 套现差价。Alice 啥风险没担，凭"先看见交易"赚走 2%。这叫 sandwich attack。</p>
+<p>三种典型策略：①Frontrunning，看到 Bob mempool 大单买 ETH，抢在前面买、待 Bob 推高价格后卖出；②Sandwich，抢跑 + 反向收割（上面那个例子）；③Back-running，Bob 推高某 DEX 价格后，Alice 立即跨池套利。三种策略都依赖 proposer 能完全控制 tx 顺序——这就是 MEV 的物理来源。</p>
 <h3 id="453-pbs-mev">45.3 PBS：把 MEV 制度化</h3>
 <p><strong>PBS（Proposer-Builder Separation）</strong>：proposer 不自己排序，把出块权拍卖给 builder，谁出价最高用谁的块。</p>
 <h4 id="4531">45.3.1 三方角色</h4>
@@ -2731,7 +2781,8 @@ Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 
 </section><section class="chapter">
 <h2 id="46-epbs-eip-7732" id="ch46"><span class="chapter-num">Chapter 46</span><br>46. ePBS 与 EIP-7732</h2>
 
-<p>MEV-Boost 当前的三个弱点：relay 是中心化信任点（45.6 节）、proposer 可能两面派（拿 bid 后又自己出块）、builder 集中度高（两家占 90%+）。ePBS（enshrined PBS）的思路是把 PBS 角色和奖励直接写进协议消除 relay——builder slash 机制让"不披露完整块"在协议层就被惩罚。</p>
+<p>MEV-Boost 当前跑得稳，但有三个让人睡不着的弱点：relay 是中心化信任点（45.6 节）、proposer 可能两面派（拿了 bid 后又自己出块），builder 集中度高（两家占 90%+ 块）。Vitalik 和研究团队从 2022 年起就讨论怎么把这些信任点直接吞进协议——这个思路叫 ePBS（enshrined PBS）。</p>
+<p>ePBS 的招数：把 PBS 的角色和奖励直接写进协议消除 relay；builder slash 机制让"不披露完整块"在协议层就被惩罚。这件事的工程版本是 EIP-7732，目标是 2026 年的 Glamsterdam 升级。</p>
 <h3 id="462-eip-7732">46.2 EIP-7732 核心机制</h3>
 <ol>
 <li>builder 向 proposer 投标（仅提交头部 + bid）</li>
@@ -2792,7 +2843,8 @@ Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 
 </section><section class="chapter">
 <h2 id="47-ssf-3-slot-finality" id="ch47"><span class="chapter-num">Chapter 47</span><br>47. SSF 与 3-Slot Finality</h2>
 
-<p>Ethereum Gasper finality 12.8 min 是所有主流链最慢的——直接原因是 100 万验证者每 slot 出 200 万消息 / 12s = 17 万 msg/s 的签名聚合压力。SSF（Single Slot Finality）的目标是每 slot finalize ≈ 12s，但任何网络延迟波动就 timeout 停链。3SF（D'Amato et al. 2024，arXiv:2411.00558）是工程妥协方案：每 slot 1 轮投票，3 slot 内 finalize ≈ 36s，把 SSF 的 head+FFG 两轮合并为一轮减少聚合压力。来源：ethereum.org/roadmap/single-slot-finality（2026-04-27）。</p>
+<p>如果你做 DeFi 跨链桥，Ethereum 12.8 分钟才 finality 这件事会让你抓狂——别的链用户 3 秒就能继续操作，你这边等 13 分钟。Vitalik 自己也受不了了，2022 年提出 SSF（Single Slot Finality）的目标：每个 slot 就 finalize，约 12 秒。</p>
+<p>听起来简单，工程上是噩梦。100 万验证者每 slot 出 200 万消息 / 12s = 17 万 msg/s 的签名聚合压力——你只要网络抖一下就 timeout 停链。所以 D'Amato 等人 2024 年提了一个工程妥协方案叫 3SF（arXiv:2411.00558）：每 slot 1 轮投票，3 slot 内 finalize 约 36 秒——比 SSF 慢 3 倍但能跑得动。来源：ethereum.org/roadmap/single-slot-finality（2026-04-27）。</p>
 <h3 id="474-ssf-vs-3sf">47.4 SSF vs 3SF 对比</h3>
 <table>
 <thead>
@@ -2881,7 +2933,8 @@ Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 
 </section><section class="chapter">
 <h2 id="48-vdfverifiable-delay-functions" id="ch48"><span class="chapter-num">Chapter 48</span><br>48. VDF（Verifiable Delay Functions）</h2>
 
-<p>VDF 解决的是 PoS 中的 stake grinding 问题（8 章导引）：leader 选举依赖随机数，而随机数生成方能事后选择性丢弃不利的种子。VDF 让"生成"和"使用"之间强制一段无法压缩的延迟——必须串行计算 T 时间，但验证只需 O(log T)。三性质：串行（无法并行加速）、唯一（输入→唯一输出）、高效验证。这套思路与 PoH（26.2 节）相似但更严格：PoH 验证时间 = 计算时间 O(N)，严格不算 VDF。</p>
+<p>设想一下：你做 PoS 链的 RANDAO，validator 们每轮把自己的随机数贡献加进来组成下一轮的种子。但有个 validator 是聪明人——他先在本地计算一下"如果我贡献这个数会怎样、贡献那个数会怎样"，然后选个对自己最有利的——比如下一轮 leader 是自己。这就是 stake grinding。</p>
+<p>Boneh、Bonneau、Bünz、Fisch 2018 年提出 VDF（Verifiable Delay Functions）专治这件事：在"生成"和"使用"之间强制一段无法压缩的延迟——必须串行计算 T 时间才出结果，但验证只需 O(log T)。三个性质：串行（无法并行加速）、唯一（输入对应唯一输出）、高效验证。这套思路与 PoH（26.2 节）相似但更严格：PoH 验证时间 = 计算时间 O(N)，严格来说不算 VDF。</p>
 <h3 id="482-pietrzak-wesolowski">48.2 Pietrzak / Wesolowski 两种构造</h3>
 <p>共同基础：<code>y = x^(2^T) mod N</code>（T 步串行平方，无法并行）。
 - <strong>Pietrzak</strong>（2018）：proof O(log T)，验证 O(log T)
@@ -2899,7 +2952,8 @@ Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 
 </section><section class="chapter">
 <h2 id="49-restaking" id="ch49"><span class="chapter-num">Chapter 49</span><br>49. Restaking 经济学</h2>
 
-<p>Restaking 把"已质押"的 ETH 同时拿来保护其他协议（桥、Oracle、L2 sequencer），相当于一栋房子同时抵给多家银行、都同意违约时可没收。AVS（Actively Validated Service）= 任何借用 Ethereum stake 安全性的应用。这是机制设计上的重大试验——把"安全预算"做成可借贷资源。</p>
+<p>2023 年 6 月，前 AWS 工程师 Sreeram Kannan 上线 EigenLayer，给整个 web3 圈引爆了一个新概念——restaking。把已经质押在 Ethereum 上的 ETH，<strong>同时</strong>拿来保护其他协议（桥、Oracle、L2 sequencer）。相当于你拿一栋房子同时抵押给多家银行，每家都同意"违约时可以来没收"。</p>
+<p>AVS（Actively Validated Service）= 任何借用 Ethereum stake 安全性的应用。这是机制设计上的重大试验——把"安全预算"做成可借贷资源。但这套设计 2024 年很快引来一群担忧的声音：万一同一份抵押被多个 AVS 同时 slash，会不会像 2008 年金融危机的 rehypothecation（重复抵押）那样雪崩？我们看下面。</p>
 <h3 id="492-eigenlayer2026-04">49.2 EigenLayer（2026-04 数据）</h3>
 <p>TVL $15.26B，市占 93.9%，operator commission 10%，AVS 50+ 个。<strong>AVS（Actively Validated Service）</strong>：任何借用 Ethereum stake 安全性的应用（跨链桥 / Oracle / L2 sequencer / DA layer）。</p>
 <p>来源：abcmoney.co.uk 2025-06；blockeden.xyz 2026-03，访问 2026-04-27。</p>
@@ -2950,8 +3004,9 @@ Proposer（提议者，即 validator）：选最高 bid → 签头部 → block 
 </section><section class="chapter">
 <h2 id="50-long-range-attack-weak-subjectivity" id="ch50"><span class="chapter-num">Chapter 50</span><br>50. Long-Range Attack 与 Weak Subjectivity</h2>
 
-<p>第 8 章导引提到 long-range attack，本章展开。已退出的验证者（V_old）私钥仍在手，攻击者低价收购可从历史某点重写链——PoW 攻击者伪造历史必须重新挖矿（算力成本真实），PoS 签名免费，旧私钥就是定时炸弹。</p>
-<p>弱主观性是 Ethereum 的标准解法：新节点必须信任一个"不太老的 checkpoint"——信任来源主观（朋友/Etherscan/Lido）。Cardano Genesis（11.5 节）选择不同路线，用 chain density 判定避免外部信任。这两条是当前 PoS 长程攻击的两种主流方案。</p>
+<p>设想这样一个场景：你 5 年前做过 Ethereum validator，后来退出了，私钥还在你硬盘某个目录里。今天有个匿名的 OTC 买家来找你——出 1 ETH 收购你那把已经退役的私钥。你乐得卖。买家收了几百把这种旧私钥后，可以从 5 年前的某个 epoch 开始，凭那批旧私钥伪造一条假历史。</p>
+<p>这就是 long-range attack。PoW 不怕这个——攻击者要伪造历史就得重新挖矿，算力成本真实存在；PoS 签名免费，旧私钥就是一颗定时炸弹。第 8 章 PoS 谱系导引里提过这个问题，本章展开。</p>
+<p>弱主观性是 Ethereum 的标准解法：新节点必须信任一个"不太老的 checkpoint"——信任来源主观（朋友/Etherscan/Lido 提供的 hash）。Cardano Genesis（11.5 节）选择不同路线，用 chain density 判定避免外部信任。这两条是当前 PoS 长程攻击的两种主流方案。</p>
 <table>
 <thead>
 <tr>
@@ -3002,15 +3057,17 @@ prysm<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="colo
 </section><section class="chapter">
 <h2 id="51-pos-stake-liquidation" id="ch51"><span class="chapter-num">Chapter 51</span><br>51. PoS 链的 Stake Liquidation 风险</h2>
 
-<p>LST（Liquid Staking Token）= 把 ETH 质押给 Lido 等服务换得可流通的"质押凭证"（Lido stETH ~$30B / Coinbase cbETH / Rocket Pool rETH / Frax sfrxETH）。这是 50 章 long-range 担忧（Lido 28% stake 接近 33% 红线）的另一面——stake 不只过度集中，还在外层做了流动化包装。</p>
-<p>挂钩机制要分两层：协议层 stETH 永远 1:1（Lido 退出等 1-5 天队列）；二级市场（Curve/Uniswap）可波动到 0.93-1.00。Shapella 升级（2023-04）开放提取后套利让偏离通常 &lt;0.2%。但极端市场会破坏这条收敛——2022-05 Terra/Luna 崩盘 → DeFi 流动性枯竭 → 3AC 等抛售 stETH → Curve 上 stETH 跌到 ~0.93 ETH → Aave 抵押头寸清算 ~$180M。链上 stake 安全，LST 杠杆头寸不安全，是两件事。</p>
+<p>2022 年 5 月，Terra/Luna 一夜归零。DeFi 流动性枯竭，3AC（Three Arrows Capital）等机构开始抛售 stETH——他们手里有大量用 stETH 当抵押品借的头寸。Curve 上 stETH 价格短暂跌到 0.93 ETH，Aave 上一连串抵押头寸被清算，损失约 1.8 亿美元。链上 stake 一切正常，validator 都还在投票。但 LST 杠杆头寸不安全——这是两件事。</p>
+<p>LST（Liquid Staking Token）= 把 ETH 质押给 Lido 等服务换得可流通的"质押凭证"（Lido stETH ~$30B / Coinbase cbETH / Rocket Pool rETH / Frax sfrxETH）。这是第 50 章 long-range 担忧（Lido 28% stake 接近 33% 红线）的另一面——stake 不只过度集中，还在外层做了流动化包装。</p>
+<p>挂钩机制要分两层看清楚：协议层 stETH 永远 1:1（Lido 退出等 1-5 天队列）；二级市场（Curve/Uniswap）可波动到 0.93-1.00。Shapella 升级（2023-04）开放提取后套利让偏离通常 &lt;0.2%。但极端市场会破坏这条收敛——上面那个 2022-05 的故事就是例子。</p>
 <p>级联清算路径：deposit stETH → 借 ETH → 再 stake，Aave 上形成 $9.5B 抵押。stETH 跌 5% → 清算潮 → 二级市场压价 → 死亡螺旋。2024 起 LRT（Liquid Restaking Token）在 LST 上再加一层杠杆，底层 stETH 出问题 LRT 同时崩。运维规律：区分"协议层 1:1"与"二级市场价"；极端市场假设 LST 短期 -10% 提取队列延长 5x；LRT 清算路径不能循环依赖底层 LST。来源：dlnews.com（2026-04-27）。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="52-history-expiry-eip-4444" id="ch52"><span class="chapter-num">Chapter 52</span><br>52. History Expiry 与 EIP-4444</h2>
 
-<p>2026-04 Ethereum 全节点 ~1.2 TB、归档节点 ~18 TB，每年增长 400-600 GB。这是节点中心化的隐性源头——硬件门槛抬高，能跑节点的人变少，34 章 finality stall 的"客户端 stake &gt;33%"风险只会被放大。EIP-4444 的解法：节点不再需要 Merge 之前（2022-09）的区块数据，全节点存储减少 300-500 GB，2 TB 硬盘可流畅跑节点（2025-07-08 实施）。</p>
+<p>如果你在 2018 年同步过一个 Ethereum 全节点，你大概记得那是个让风扇狂转两天的过程。到 2026-04，Ethereum 全节点已经 ~1.2 TB、归档节点 ~18 TB，每年增长 400-600 GB。这是节点中心化的隐性源头——硬件门槛抬高，能在家跑节点的人变少，第 34 章 finality stall 那种"客户端 stake &gt;33%"的风险只会被放大。</p>
+<p>EIP-4444 给的解法很直接：节点不再需要 The Merge（2022-09）之前的区块数据，全节点存储减少 300-500 GB，2 TB 硬盘可以流畅跑节点。这条提案在 2025-07-08 实施。</p>
 <h3 id="522">52.2 客户端实施</h3>
 <table>
 <thead>
@@ -3052,7 +3109,7 @@ prysm<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="colo
 </section><section class="chapter">
 <h2 id="53-state-expiry-verkle-trees" id="ch53"><span class="chapter-num">Chapter 53</span><br>53. State Expiry 与 Verkle Trees</h2>
 
-<p>History 可删（52 章 EIP-4444），state（账户余额、合约存储）是共识必需，不能简单删。2026-04 Ethereum state ~250 GB 且增长，10 年后 1+ TB。经济上不可持续：用户付一次 SSTORE，节点永远存——这是 SSTORE 当前定价模型的结构性 bug。</p>
+<p>History 可以删（52 章 EIP-4444），但 state（账户余额、合约存储）是共识必需，不能简单删。2026-04 Ethereum state ~250 GB 且仍在增长，按目前速度 10 年后会到 1+ TB。这件事经济上不可持续：用户付一次 SSTORE 的 gas 费，全网节点要永远存这个 storage slot——这就是 SSTORE 当前定价模型的结构性 bug，存储成本被一次性外化给了所有 validator。</p>
 <p>Verkle Trees 用 vector commitment（Pedersen/KZG）替换 Merkle Patricia Trie，state proof 缩小 ~30 倍（32 KB → 1-2 KB / 账户）。2025-12-03 Fusaka 升级已部署主网。stateless client 思路：每块附带 ~1 MB Verkle witness（本块涉及账户的 proof），节点无需存 state 即可验证。节点门槛 1.2 TB → 50 GB，同步时间天 → 小时。</p>
 <p>EIP-7736 在 Verkle 之上加 state expiry：长期未访问的 state（2 年没动的合约存储槽）被标记 expired，节点可删除；复活时提交 Verkle 证明 + 复活费。来源：notes.ethereum.org/@vbuterin/verkle_and_state_expiry_proposal、ethereum.org/roadmap/verkle-trees（2026-04-27）。</p>
 <h3 id="535">53.5 路线图、挑战与对照</h3>
@@ -3064,7 +3121,8 @@ prysm<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="colo
 </section><section class="chapter">
 <h2 id="54-bitcoin-covenant" id="ch54"><span class="chapter-num">Chapter 54</span><br>54. Bitcoin Covenant 提案</h2>
 
-<p>Covenant = 限制 UTXO 未来只能怎么花的脚本约束。当前 Bitcoin 脚本做不到，社区用 presigned transactions 凑合（繁琐、易丢、不可升级）。Covenant 解锁的用例：vault（timelock 防丢私钥）、支付池（多人共享 UTXO）、拥堵控制、L2/Drivechain。</p>
+<p>设想你想给 Bitcoin 写一个保险柜：100 BTC 锁在里面，平时只能转账给我自己；万一私钥被偷，触发 24 小时 timelock 后用恢复密钥找回。Bitcoin 当前的脚本系统做不到——它只能验证签名，不能限制"未来这笔 UTXO 只能怎么花"。</p>
+<p>Covenant 就是要解决这件事：限制 UTXO 未来只能怎么花的脚本约束。当前 Bitcoin 社区用 presigned transactions 凑合（繁琐、易丢、不可升级），Lightning Network 也是在这种缺乏 covenant 的约束下硬撑出来的。Covenant 解锁的用例：vault（timelock 防丢私钥）、支付池（多人共享 UTXO）、拥堵控制、L2/Drivechain。</p>
 <p>主要提案对照：</p>
 <table>
 <thead>
@@ -3103,6 +3161,8 @@ prysm<span style="color: #F8F8F8"> </span>--checkpoint-sync-url<span style="colo
 </section><section class="chapter">
 <h2 id="55" id="ch55"><span class="chapter-num">Chapter 55</span><br>55. 本册划界</h2>
 
+<p>读到这里你应该已经能看着任何一篇共识协议白皮书，先翻 System Model 那一节、再去找它怎么解 nothing-at-stake / long-range / grinding 这三道题、最后看它在 safety vs liveness 上选了什么。这是工程师该有的姿态——不是记住每个协议的细节，是建立判断框架。</p>
+<p>本册划清边界：</p>
 <table>
 <thead>
 <tr>

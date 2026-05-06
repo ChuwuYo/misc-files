@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -527,34 +527,44 @@
     <span class="toc-page">·</span>
   </div>
 </section>
-<p>前置：模块 03（EVM 执行模型、storage 布局、gas 计量）。完成后你能读懂 Uniswap V4 / Aave V4 / Morpho / Lido 源码、为之写补丁与不变量测试，并对每一行代码说出它会编译成什么 opcode、写到哪个 slot、为什么不能换序。</p>
-<p><strong>版本基线</strong>：Solidity 0.8.28（EVM target = cancun）、forge-std v1.9.5、OpenZeppelin Contracts v5.5.0、Solady v0.1.26。汇编 <code>TSTORE/TLOAD</code> 在 0.8.24+ 可用，<code>transient</code> 高层语法在 0.8.29+ 才落地（仅值类型，1.7 节示例独立标注 0.8.29）。0.8.28–0.8.33 的 <code>via_ir = true</code> 有清空高危 bug（2026-02-11 披露），本仓库默认 <code>via_ir = false</code>，生产建议升 0.8.34+。</p>
+<p>2022 年 10 月，Audius 的 governance proxy 被升级。新实现合约「无意」地把一个 <code>bool</code> 字段加在了状态变量列表前面，老的 <code>votingPeriod</code> slot 因此被解释成 0 ——治理脚本顺着这个 0 投了一票，攻击者拿走 ~$6M。三个月前，一家审计公司用同样的姿势把 PoolTogether 的 v3 代理拍死过。</p>
+<p>为什么同一个错误反复发生？因为 Solidity 把状态变量按声明顺序铺到 32 字节的 storage slot——编译器不记你的字段名字，只数字节。<strong>写 Solidity 的人，必须能把任何 <code>.sol</code> 文件翻译成 slot 表</strong>。</p>
+<p>这正是本模块的目的。前置是模块 03（EVM 执行模型、storage 布局、gas 计量）。学完之后，你应该能：读 Uniswap V4 / Aave V4 / Morpho / Lido 的源码不卡壳；为它们写补丁和不变量测试；对每一行代码说出它编译成什么 opcode、写到哪个 slot、为什么不能换序。</p>
+<p><strong>版本基线</strong>：Solidity 0.8.28（EVM target = cancun）、forge-std v1.9.5、OpenZeppelin Contracts v5.5.0、Solady v0.1.26。汇编 <code>TSTORE/TLOAD</code> 在 0.8.24+ 可用，<code>transient</code> 高层语法要等 0.8.29+（仅值类型，1.7 节示例独立标注 0.8.29）。提醒一句：0.8.28–0.8.33 的 <code>via_ir = true</code> 有清空高危 bug（2026-02-11 披露），本仓库默认 <code>via_ir = false</code>，生产建议升 0.8.34+。别踩这颗雷。</p>
 <hr />
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>章节路径图</h2>
 
 <figure><img src="diagram-71a1e3f020.png" alt="mermaid diagram"></figure>
 
-<p>四条验收线：① 见任何合约即能画出 storage layout 与 ABI；② 见攻击场景即能归类（重入 / 溢出 / 经济攻击 / 升级风险 / 签名重放 / front-run）并给修复；③ 接到「砍 30% gas」要求，能在 storage 打包 / SSTORE2 / Solady / 汇编中挑工具；④ 写出 NatSpec 完整、不变量测试到位、storage 文档化、升级路径无歧义的代码。</p>
+<p><strong>四条验收线</strong>——读完这本模块之后，下面四件事你应该都能闭着眼做：① 拿到任何合约，都能在脑子里画出它的 storage layout 和 ABI；② 看到攻击场景，能立刻归类（重入 / 溢出 / 经济攻击 / 升级风险 / 签名重放 / front-run），并说出怎么修；③ 老板让你「砍 30% gas」，你知道该动 storage 打包、SSTORE2、Solady 还是汇编；④ 你写出来的代码：NatSpec 完整、不变量测试到位、storage 文档化、升级路径没有歧义。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>第 1 章 类型系统：从二进制讲起</h2>
 
-<p>先看一段会让任何代理合约崩盘的代码：</p>
+<p>把开篇那段事故重新读一遍，这次盯着代码看：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// V1 实现</span>
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">TokenV1</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">totalSupply</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>balanceOf<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
 
 <span style="color: #8F5902; font-style: italic">// V2「热心」开发者把新字段加在前面</span>
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">TokenV2</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">newOwner</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">totalSupply</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>balanceOf<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p>升级后，proxy 的 slot 0 仍然是上一版的 <code>totalSupply</code>，但 V2 把它解释成 <code>newOwner</code>——<code>balanceOf</code> 错位、totalSupply 凭空变成某个地址，资产瞬间归零。问题不在语法，而在 Solidity 把状态变量按声明顺序排进 32 字节的 storage slot，编译器没记你的名字，只数字节。</p>
-<p>要预测、调试、升级合约，就必须能把任何 <code>.sol</code> 文件<strong>翻译成 slot 表</strong>——这正是本章的目的。语法只是壳，真正决定行为的是底层 layout。</p>
+<p>V1 部署后，proxy 的 slot 0 装着 <code>totalSupply</code>。开发者升级到 V2，proxy 还是同一份 storage，slot 0 的字节没动过——但 V2 现在把这 32 字节解释成 <code>newOwner</code>（一个 address）。<code>totalSupply</code> 跑到了 slot 1，原来 slot 1 的 <code>balanceOf</code> 表头则跳到了 slot 2。一连串多米诺：mapping 算 <code>balances[user]</code> 时用错 slot，所有人余额"归零"；某个用户 transfer 一次，下一秒 totalSupply 凭空变成了一个奇怪的地址。</p>
+<p>错的不是语法。语法层面 V2 完全合法。错在没人提醒这位开发者：Solidity 编译器看代码时只数字节，不记字段名。状态变量是按声明顺序铺到 32 字节 slot 里的，每加减、每换序、每改类型，都是在重排你的硬盘扇区。</p>
+<p>所以本章不教你「怎么声明变量」——那是 docs 第一页就有的事。本章教你<strong>把任何 <code>.sol</code> 文件翻译成 slot 表</strong>。语法只是壳，真正决定运行时行为的是底层 layout。</p>
 <h3 id="11-storage-slot-32">1.1 为什么 storage slot 是 32 字节？</h3>
-<p>keccak256/ECDSA 以 256 位为操作单位，EVM 选同样的字宽避免拆位运算。代价是存一个 <code>bool</code> 也烧 32 字节 SSTORE——除非编译器把它和邻居打包到同一 slot。</p>
+<p>简单答案：因为 Vitalik 当年抄了 keccak256 和 ECDSA 的作业。这两个原语都以 256 位为操作单位，EVM 选同样的字宽就不用拆位运算了。</p>
+<p>代价你已经能猜到——存一个 <code>bool</code> 同样要烧 32 字节 SSTORE，除非编译器能把它和邻居打包进同一个 slot。这件事我们 1.4 节会算账。先看四个数据区怎么分工。</p>
 <figure><img src="diagram-4cd7d63616.png" alt="mermaid diagram"></figure>
 
-<p><strong>类比</strong>：storage 像硬盘（贵、慢、持久）；memory 像 RAM（中价、快、tx 内）；calldata 像只读 ROM（便宜、最快、不可改）；stack 像 CPU 寄存器（极快、容量有限）。</p>
+<p><strong>记住这个类比，后面所有 gas 直觉都从这里来</strong>：</p>
+<ul>
+<li><strong>storage 是合约的硬盘</strong>——贵、慢、持久。每次写一个新 slot 烧 22100 gas（差不多够一笔以太坊转账了）。改一个已经写过的 slot 也要 5000。读冷 slot 2100，热 slot 100。</li>
+<li><strong>memory 是 RAM</strong>——临时、便宜、按字节寻址。但只增不减，函数内分配的内存一直占着，直到 tx 结束。</li>
+<li><strong>calldata 是只读 ROM</strong>——最便宜、最快、连改都不让你改。external 函数的引用类型参数不写 calldata 是把油钱往火堆里扔。</li>
+<li><strong>stack 是 CPU 寄存器</strong>——极快，但只能装 1024 个 32 字节的字，访问深度超过 16 直接报 <code>StackTooDeep</code>。</li>
+</ul>
 <h3 id="12">1.2 值类型完整列表</h3>
 <table>
 <thead>
@@ -633,6 +643,7 @@
 </tbody>
 </table>
 <p><strong>陷阱深度框 #1：bool 不是 bit</strong></p>
+<p>每个新人都至少踩一次：以为 <code>bool</code> 占 1 bit，于是写一堆 bool 字段以为很省。事实是 bool 占 1 整字节（<code>uint8</code> 的体面别名）。看这段：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">BoolPacking</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 0, offset 0, 占 1 字节</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">b</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 0, offset 1, 占 1 字节</span>
@@ -641,8 +652,19 @@
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">d</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 1, offset 0, 新开一个 slot</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p>要 1 bit 的存储，请用 OZ 的 <code>BitMaps</code>（位图）或自己用位运算。</p>
+<p>真要 1 bit 的存储（比如几千人的白名单），用 OZ 的 <code>BitMaps</code> 或 Solady 的 <code>LibBitmap</code>。256 个布尔挤进 1 个 slot，一次 SSTORE 翻盘。</p>
 <h3 id="13">1.3 引用类型与数据位置</h3>
+<p>下面这道题，几乎每个新人都答错过。先猜：执行 <code>bad()</code> 之后链上余额会变吗？</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">struct</span><span style="color: #F8F8F8"> </span><span style="color: #000">User</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">balance</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">lastSeen</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
+
+<span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span>User<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>users<span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">bad</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span>User<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">memory</span><span style="color: #F8F8F8"> </span>u<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>users<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">];</span>
+<span style="color: #F8F8F8">    </span>u<span style="color: #000; font-weight: bold">.</span>balance<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>答：不会。<code>User memory u = users[...]</code> 是<strong>复制</strong>——把两个 slot 读到 memory，新建一个独立副本。你在副本上 <code>+= 100</code>，函数返回后副本被丢掉，链上 storage 一字未动。要真改链上，得用 <code>User storage u = users[...]</code>，那才是别名/指针。</p>
 <p>引用类型必须显式声明 <code>storage</code> / <code>memory</code> / <code>calldata</code>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">processOrders</span><span style="color: #000; font-weight: bold">(</span>
 <span style="color: #F8F8F8">    </span>Order<span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>calldata<span style="color: #F8F8F8"> </span>orders<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8">           </span><span style="color: #8F5902; font-style: italic">// 推荐：只读、不复制、最便宜</span>
@@ -650,17 +672,14 @@
 <span style="color: #F8F8F8">    </span>Order<span style="color: #F8F8F8"> </span>storage<span style="color: #F8F8F8"> </span>firstOrder<span style="color: #F8F8F8">           </span><span style="color: #8F5902; font-style: italic">// 从外部 mapping/数组借的引用</span>
 <span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">/* ... */</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p><strong>规则</strong>：</p>
+<p><strong>三条规则记牢</strong>：</p>
 <ol>
-<li>external 函数的引用类型参数 <strong>永远</strong> 用 <code>calldata</code>，不要用 <code>memory</code>（除非你要修改）；</li>
-<li>internal 函数的引用类型参数用 <code>memory</code> 或 <code>storage</code>，看是否要持久化修改；</li>
+<li>external 函数的引用类型参数 <strong>永远</strong> 用 <code>calldata</code>，除非你必须修改它（一笔 swap 路由的数组参数省 200~ 上千 gas，量大就显眼）；</li>
+<li>internal 函数的引用类型参数用 <code>memory</code> 或 <code>storage</code>，看你是否要持久化修改；</li>
 <li><code>storage</code> 赋给 <code>memory</code> 是<strong>复制</strong>（烧 gas）；赋给 <code>storage</code> 是<strong>指针别名</strong>（几乎免费）。</li>
 </ol>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">struct</span><span style="color: #F8F8F8"> </span><span style="color: #000">User</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">balance</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">lastSeen</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
-
-<span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span>User<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>users<span style="color: #000; font-weight: bold">;</span>
-
-<span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">bad</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<p>完整对照：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">bad</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span>User<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">memory</span><span style="color: #F8F8F8"> </span>u<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>users<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">];</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 复制：读两个 slot 到 memory</span>
 <span style="color: #F8F8F8">    </span>u<span style="color: #000; font-weight: bold">.</span>balance<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">                  </span><span style="color: #8F5902; font-style: italic">// 改 memory，不改链上状态！</span>
 <span style="color: #000; font-weight: bold">}</span>
@@ -671,8 +690,15 @@
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <h3 id="14-storage-layout">1.4 storage layout 的二进制级推导</h3>
-<p>状态变量按声明顺序铺到 slot 0、1、2…。每个变量从当前 slot 的下一个空 byte 开始放（左低位、右高位），如果当前 slot 剩余空间不够它，则换新 slot。继承的父合约状态变量在子合约前面排。<code>immutable</code> / <code>constant</code> 不参与 slot 分配，值反映在 deployedBytecode（编译期内联 / runtime code 区）而非 <code>forge inspect storage-layout</code> 的 JSON 输出。</p>
-<p>来推导一个真实例子：</p>
+<p>铺 slot 的规则其实只有四条：</p>
+<ol>
+<li>状态变量按<strong>声明顺序</strong>铺到 slot 0、1、2…</li>
+<li>每个变量从当前 slot 的下一个空字节开始放（左低位、右高位）</li>
+<li>如果当前 slot 剩余空间塞不下它，换新 slot（不会跨 slot 拼接）</li>
+<li>继承的父合约状态变量在子合约前面排（这就是为什么菱形继承可能炸）</li>
+</ol>
+<p><code>immutable</code> / <code>constant</code> 不占 slot——它们的值被嵌进 deployedBytecode（PUSH32 立即数），不会出现在 <code>forge inspect storage-layout</code> 的 JSON 里。这是 1.6 节的伏笔。</p>
+<p>下面这段代码考的就是上面四条规则——拿张纸自己先画一遍，再看下面的"标准答案"：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Layout</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint128</span><span style="color: #F8F8F8"> </span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// slot 0, offset 0, 占 16 字节</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint128</span><span style="color: #F8F8F8"> </span><span style="color: #000">b</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// slot 0, offset 16, 占 16 字节 → slot 0 满</span>
@@ -700,8 +726,9 @@
 <span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">]</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p><strong>4 个 slot</strong>（反例写法需 9 个 slot）。每多一个 slot 部署多花 ~20000 gas（首次 SSTORE）+ 运行时多一笔 SLOAD（冷读 2100 gas）。</p>
+<p><strong>4 个 slot</strong>——反例（每个变量一行随手写下来）会膨胀到 9 个 slot。算账：每多一个 slot，部署多花 ~20000 gas（首次 SSTORE），运行时每读一次多一笔 SLOAD（冷读 2100，热读 100）。一笔 swap 多读 5 个 slot 是 ~10000 gas，挂着 100 万笔 swap 看，存户分摊就是真金白银。</p>
 <h3 id="15-mapping">1.5 mapping、动态数组、字符串的位置算法</h3>
+<p>如果说定长字段是顺序排到货架上，<strong>mapping 就是用 keccak 当哈希索引</strong>——存哪儿全靠算。这个算法你必须能心算出来，不然审计 mapping 状态、调试代理升级、写汇编访问都会卡。</p>
 <p><strong>mapping(K =&gt; V)</strong>：占一个 slot 但 <strong>slot 本身不存东西</strong>（永远是 0）。元素 <code>m[k]</code> 的位置是 <code>keccak256(abi.encode(k, slot))</code>。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Mapping</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">                                    </span><span style="color: #8F5902; font-style: italic">// slot 0</span>
@@ -741,7 +768,8 @@ using<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight:
 </code></pre></div>
 <p>适合：单位类型（USD/WEI/Seconds/Block）、ID 类型（UserId/PoolId/OrderId）。ABI 里它退化为底层类型（<code>uint256</code>），只在「编译期单位安全」收益大于「ABI 可读性损失」时使用。</p>
 <h3 id="17-cancun-transient-storage">1.7 Cancun 之后的 transient storage（必看）</h3>
-<p>EIP-1153（Cancun, 2024-03）引入 <code>TSTORE</code> / <code>TLOAD</code>：<strong>事务内有效、事务结束自动清零</strong>，gas 仅 100/op（与 warm storage 持平）。</p>
+<p>Uniswap V4 团队第一次 demo <code>unlock(callback)</code> 模式时，全场审计师集体懵——这种可重入风险拉满的写法，怎么过得了 Trail of Bits？答案是 EIP-1153：他们用了一种新的存储层，<strong>事务内有效、事务结束自动清零</strong>，写一次 100 gas，跟 warm SSTORE 持平。</p>
+<p>这就是 transient storage。Cancun（2024-03）随它一起到的还有 EIP-5656（MCOPY）和大家盼了多年的 PUSH0。但 transient 是其中改动最深远的——它让 reentrancy lock 从 ~10000 gas 降到 ~200，让 V4 的 hooks 架构成为可能。本节讲它的语法、四种生产模式、和那些教科书还来不及更新的坑。</p>
 <table>
 <thead>
 <tr>
@@ -811,7 +839,7 @@ using<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight:
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p><strong>经典用例</strong>：<code>ReentrancyGuard</code> 锁。OZ v5.2+ 的 <code>ReentrancyGuardTransient</code> 把每次调用开销从 ~5000 gas 降到 ~200。Uniswap V4 hooks 大量使用 transient storage 缓存 swap 中间状态。</p>
-<p><strong>踩坑</strong>：transient 不跨外部调用清零（同 tx 子调用仍能读到上层值），所以「锁」可行，「缓存」要防污染。编译器<strong>不会自动清零</strong> transient 变量——需在函数末尾手动写 0 或依赖 tx 结束（注意嵌套 call）。</p>
+<p><strong>踩坑</strong>：transient 不跨外部调用清零（同 tx 子调用仍能读到上层值），所以「锁」可行，「缓存」必须防污染。还有一个最容易被忘记的事——<strong>编译器不会自动清零</strong> transient 变量。在你的函数末尾忘记写 0，下一个 modifier 可能撞上脏数据。要么手动清，要么彻底依赖 tx 结束（嵌套 call 时格外小心）。</p>
 <h3 id="171-transient-storage">1.7.1 transient storage 的四种生产模式</h3>
 <p><strong>模式 A：reentrancy lock</strong></p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">modifier</span><span style="color: #F8F8F8"> </span>nonReentrant<span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -915,6 +943,7 @@ cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="2-abi" id="ch03"><span class="chapter-num">Chapter 03</span><br>第 2 章 内存模型与 ABI 编码</h2>
 
+<p>2018 年的 Parity multisig hack 从一个细节开始：攻击者构造的 calldata 让初始化函数把 <code>owner</code> 写到了一个意想不到的位置。要看懂这种漏洞，要构造 <code>delegatecall</code> 的 calldata，要在汇编里跳过 ABI 解码读字段——你必须能心算每个字节的归宿。本章讲两件事：memory 怎么分区、ABI 编码到字节级的样子。</p>
 <h3 id="21-memory">2.1 Memory 的区段</h3>
 <p>EVM memory 是按字节寻址的线性空间（非稀疏 keyed map），编译器约定布局：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x00 - 0x3F  : scratch space（临时计算用，hash 输出等）
@@ -931,7 +960,7 @@ cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </spa
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p><strong>陷阱</strong>：汇编里直接 <code>mstore(0x80, ...)</code> 不更新 <code>0x40</code>，下一行 Solidity 分配 memory 时会覆盖写入。</p>
+<p><strong>陷阱</strong>：汇编里直接 <code>mstore(0x80, ...)</code> 不更新 <code>0x40</code>，下一行 Solidity 分配 memory 时会从 <code>0x40</code> 指的位置（仍然是 0x80）开始覆盖写。你的"临时 buffer" 转眼就成了别人新 string 的字节。这种 bug 找半天找不到，因为它是<strong>间歇性的</strong>——只在某条调用路径触发分配时才暴露。</p>
 <h3 id="22-abi">2.2 ABI 编码：函数选择器与参数布局</h3>
 <p>函数调用在 EVM 层：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>calldata = bytes4(keccak256(&quot;functionName(type1,type2,...)&quot;)) || abi.encode(arg1, arg2, ...)
@@ -965,9 +994,11 @@ abi<span style="color: #000; font-weight: bold">.</span>encodeWithSelector<span 
 abi<span style="color: #000; font-weight: bold">.</span>encodeCall<span style="color: #000; font-weight: bold">(</span>IERC20<span style="color: #000; font-weight: bold">.</span>transfer<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>amt<span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// 0.8.11+，类型安全，推荐</span>
 abi<span style="color: #000; font-weight: bold">.</span>decode<span style="color: #000; font-weight: bold">(</span>data<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8">            </span><span style="color: #8F5902; font-style: italic">// 解码</span>
 </code></pre></div>
-<p><strong>陷阱</strong>：<code>abi.encodePacked(a, b)</code> 当 <code>a</code>、<code>b</code> 都是动态类型时会碰撞（<code>("ab","cd")</code> 与 <code>("a","bcd")</code> 输出相同）。签名 input 用 <code>abi.encode</code>，不用 packed。</p>
+<p><strong>陷阱</strong>（出过事故的真坑）：<code>abi.encodePacked(a, b)</code> 在 <code>a</code>、<code>b</code> 都是动态类型时会<strong>哈希碰撞</strong>。<code>("ab","cd")</code> 和 <code>("a","bcd")</code> 拼接出来的字节流完全一样——<code>"abcd"</code>。任何把它当签名输入的合约都会被这个等价签名重放。</p>
+<p><strong>铁律</strong>：签名/messageHash 输入永远用 <code>abi.encode</code>（带长度前缀）；<code>abi.encodePacked</code> 只在你能严格确认输入边界时用，比如固定长度类型拼接。</p>
 <h3 id="23-eip-712">2.3 EIP-712：结构化签名</h3>
-<p>用于<strong>链下签名链上验证</strong>，核心公式：</p>
+<p>2024 年钱包钓鱼的主力武器之一：诱骗用户签一个长得像普通 transfer 的 EIP-712 消息——实际上是 Permit2 的 <code>permitTransferFrom</code>，签完瞬间被搬空。这种攻击成立的关键是 EIP-712 太通用了，任何人都能定义自己的"消息类型"，钱包 UI 又往往只展示字段不展示语义。</p>
+<p>但同样这把双刃剑也是 Permit、Uniswap 限价单、Seaport 订单簿、CowSwap MEV 保护、4337 UserOperation 的共同基础。学会它，你拿到了 Web3 的离线协作语法。核心公式：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>sign(keccak256(&quot;\x19\x01&quot; ‖ domainSeparator ‖ hashStruct(message)))
 </code></pre></div>
 <p>其中：</p>
@@ -995,12 +1026,18 @@ abi<span style="color: #000; font-weight: bold">.</span>decode<span style="color
 <span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">digest</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;\x19\x01&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>domainSeparator<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>structHash<span style="color: #000; font-weight: bold">));</span>
 <span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">signer</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>ecrecover<span style="color: #000; font-weight: bold">(</span>digest<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>v<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>r<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>s<span style="color: #000; font-weight: bold">);</span>
 </code></pre></div>
-<p><strong>设计要点</strong>：<code>chainId</code> 防跨链重放；<code>verifyingContract</code> 防同链不同合约重放；<code>nonce</code> 防消息重放（OZ <code>Nonces</code> 自增）；<code>deadline</code> 防永久有效。OZ v5 的 <code>EIP712.sol</code> + <code>ERC20Permit.sol</code> 已封装，本模块 <code>MyToken.sol</code> 直接继承。</p>
+<p><strong>为什么字段是这些？每一个都对应一种重放攻击</strong>：
+- <code>chainId</code> — 你在 mainnet 签的转账，没它就会在 BSC 上被重放（chainId=1 vs chainId=56）
+- <code>verifyingContract</code> — 没它，A 合约的签名能被 B 合约接受，逻辑漏洞瞬间放大
+- <code>nonce</code>（OZ <code>Nonces</code> 自增） — 没它，同一签名可被无限次提交
+- <code>deadline</code> — 没它，半年前签的"小测试"在你忘记之后还活着</p>
+<p>OZ v5 的 <code>EIP712.sol</code> + <code>ERC20Permit.sol</code> 已经把上面四件事都封好，本模块的 <code>MyToken.sol</code> 直接继承——你不需要自己拼 hash，但要看得懂它在拼什么。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="3" id="ch04"><span class="chapter-num">Chapter 04</span><br>第 3 章 函数：可见性、可变性、修饰符</h2>
 
+<p>把这一章想成"函数签名上每个修饰词都在帮你或者坑你"。<code>public</code> 偷偷复制 calldata 进 memory，多花几百 gas；<code>view</code> 不是真的承诺"不写状态"——它只是编译期检查；<code>modifier</code> 里写 <code>return</code> 是个看似合法的语义炸弹。一行小词，账单上能差出三位数。</p>
 <h3 id="31-visibility">3.1 可见性（visibility）</h3>
 <table>
 <thead>
@@ -1071,7 +1108,7 @@ abi<span style="color: #000; font-weight: bold">.</span>decode<span style="color
 </tr>
 </tbody>
 </table>
-<p><strong><code>view</code> 不是真保证不写</strong>：仅编译期检查；目标合约的 <code>view</code> 若用汇编绕过限制仍可写状态，审计时追每个外部调用。<code>pure</code> 额外不能读 <code>block.*</code>、<code>msg.*</code>、<code>tx.*</code>、其他合约状态。</p>
+<p><strong><code>view</code> 不是真保证不写</strong>——这一点你必须刻进 DNA。<code>view</code> 是<strong>编译期</strong>检查，不是运行时强制。一个用汇编 <code>sstore</code> 的合约可以挂着 <code>view</code> 标签照样写状态。所以审计别人的合约时，看到 <code>view</code> 不要松懈，要追每个外部调用看它真在做什么。<code>pure</code> 比 <code>view</code> 严格一档：连 <code>block.*</code>、<code>msg.*</code>、<code>tx.*</code>、其他合约状态都不让你读。</p>
 <h3 id="33-modifier">3.3 修饰符（modifier）</h3>
 <p>修饰符是<strong>代码注入</strong>，<code>_</code> 表示函数体展开位置：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">modifier</span><span style="color: #F8F8F8"> </span>onlyOwner<span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1089,17 +1126,23 @@ abi<span style="color: #000; font-weight: bold">.</span>decode<span style="color
 </code></pre></div>
 <p><strong>陷阱深度框 #2：modifier 里写 <code>return</code> 是反模式</strong></p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">modifier</span><span style="color: #F8F8F8"> </span>maybeSkip<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #F8F8F8"> </span><span style="color: #000">skip</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>skip<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ⚠ 编译通过，但函数体不执行、返回值全是默认零值——几乎一定是 bug</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>skip<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 编译通过——但函数体根本不执行</span>
 <span style="color: #F8F8F8">    </span>_<span style="color: #000; font-weight: bold">;</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p>要中止只能 revert（不调用 <code>_</code> 会导致返回值为默认值）。<strong>反模式</strong>：在 modifier 里写状态变更（重入锁、Pausable 除外）。OZ v5 已有 <code>Ownable / AccessControl / Pausable / ReentrancyGuard</code>，不要重发明。</p>
+<p>读起来好像"跳过这次执行"。实际上：函数没跑，但<strong>也没 revert</strong>——所以返回值是该类型的零值。<code>uint256</code> 返回 0，<code>bool</code> 返回 false，<code>address</code> 返回 0x0。调用方收到一个看起来"成功"的零值响应，状态啥也没变。下游逻辑依赖这个返回值时（比如"返回 true 才允许提现"），漏洞瞬间放大。</p>
+<p>要中止流程，只有 revert 这一条路。modifier 里写状态变更也基本是反模式（重入锁、Pausable 这种基础设施除外）——OZ v5 的 <code>Ownable / AccessControl / Pausable / ReentrancyGuard</code> 都是审计过的，别在生产合约里重发明。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="4-c3" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 继承与 C3 线性化</h2>
 
-<p>OZ v5 ERC20 继承 <code>Context, IERC20, IERC20Metadata, IERC20Errors</code>，加 <code>ERC20Permit / ERC20Burnable / AccessControl</code> 后是 8 层菱形继承。<code>super._update()</code> 究竟调谁？写错了升级时 storage 错位、虚函数调到老版——本章把 C3 算法和 storage 排布当成一道证明题来做。</p>
+<p>打开任何一个用 OZ 的项目，你都能看到这种诡异的继承列表：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">MyToken</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>ERC20<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>ERC20Burnable<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>ERC20Permit<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>AccessControl<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>四个父类还看得出哪个干嘛。展开看：ERC20 自己继承了 <code>Context, IERC20, IERC20Metadata, IERC20Errors</code>，加上 <code>ERC20Permit / ERC20Burnable / AccessControl</code> 各自的链路，<strong>这是一个 8 层的菱形继承</strong>。</p>
+<p>问题来了。当你 override <code>_update</code>，并且写 <code>super._update()</code>——它调的是谁？答错的代价：升级时 storage 字段错位（父类 layout 变了你没发现），虚函数被调到了老版本，资金按错的 fee 计算。</p>
+<p>C3 线性化（和 Python 的 MRO 是同一个东西）就是答这个问题的算法。本章把它当作一道证明题做：先看几何图形，再走一遍合并步骤，最后告诉你为什么 OZ 文档要按"基类在前、扩展在后"的顺序写继承列表。</p>
 <h3 id="41-c3">4.1 菱形继承与 C3 算法</h3>
 <p>多重继承用 <strong>C3 线性化</strong>（与 Python MRO 相同）决定 <code>super.foo()</code> 调谁。</p>
 <p><strong>菱形继承示例</strong>：</p>
@@ -1187,7 +1230,9 @@ L[D] = [D, B, C, A]
 </section><section class="chapter">
 <h2 id="5-require-revert-error-panic" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章 错误处理：require / revert / error / panic</h2>
 
-<p>错误处理决定三件事：用户在钱包里看到什么、前端能否解码原因、字节码占多少字节。<code>require(c, "ERC20: transfer amount exceeds balance")</code> 把这串字符串编进 bytecode、每次调用从 storage 读出来——这就是 OZ v5 整个库迁到自定义错误的原因。</p>
+<p>回想一下你 MetaMask 里最近一次失败的 tx——那个让人摸不着头脑的红字弹窗。你看到的是 <code>"ERC20: transfer amount exceeds balance"</code> 还是 <code>0xe450d38c</code> 这种十六进制？两者技术上是同一回事，体验天差地别。</p>
+<p>错误处理决定三件事：① 用户在钱包里看到什么；② 前端能否解码出原因；③ 字节码占多少字节（贵的 bytecode 是开发者自掏的钱）。</p>
+<p><code>require(c, "ERC20: transfer amount exceeds balance")</code> 这串字符串会被编进 bytecode，部署一次永久占着，每次调用还要把它复制出来。OZ v5 把整个库切换到自定义错误，省的就是这个钱——<code>InsufficientBalance(addr, bal, needed)</code> 编出来 4 字节 selector + 几个机器可读的字段，前端按需翻译，钱包按需展示。</p>
 <h3 id="51-revert">5.1 三种 revert 方式</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 1. require（旧风格）</span>
 <span style="color: #204A87; font-weight: bold">require</span><span style="color: #000; font-weight: bold">(</span>amount<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;amount must be positive&quot;</span><span style="color: #000; font-weight: bold">);</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 字符串占字节码，~200-400 gas</span>
@@ -1281,9 +1326,10 @@ error<span style="color: #F8F8F8"> </span>AccessControlUnauthorizedAccount<span 
 </code></pre></div>
 <p><strong>只能用于</strong>：外部合约调用、<code>new Contract(...)</code> 创建、低层 <code>call/delegatecall/staticcall</code>。同一合约内部函数的 revert 直接冒泡，不能 catch。</p>
 <p><strong>陷阱深度框 #3：catch 默认仍然消耗 gas</strong></p>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>try<span style="color: #F8F8F8"> </span>x<span style="color: #000; font-weight: bold">.</span>foo<span style="color: #000; font-weight: bold">{</span>gas<span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">50</span>_000<span style="color: #000; font-weight: bold">}()</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{}</span><span style="color: #F8F8F8"> </span>catch<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{}</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 限制 50k gas</span>
+<p>很多人以为 <code>try/catch</code> 是免费的"试错"。它不是。被调方按 EIP-150 拿走你剩余 gas 的 63/64，即使最后 revert，catch 块拿到的也只剩可怜的零头。一个恶意被调方可以故意烧光 gas，让你的 catch 后续逻辑跑不动。</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>try<span style="color: #F8F8F8"> </span>x<span style="color: #000; font-weight: bold">.</span>foo<span style="color: #000; font-weight: bold">{</span>gas<span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">50</span>_000<span style="color: #000; font-weight: bold">}()</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{}</span><span style="color: #F8F8F8"> </span>catch<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{}</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 显式限 50k</span>
 </code></pre></div>
-<p>不限 gas 时被调方可耗尽 63/64 的 gas，让 catch 后无力继续。OZ <code>Address.functionCall</code> 建议显式限 gas。</p>
+<p>OZ <code>Address.functionCall</code> 默认就建议显式限 gas。养成习惯：调外部合约要么相信它要么限 gas，没有"我先试一下不行就 catch"。</p>
 <h3 id="54-control-flow">5.4 自定义错误进阶：嵌套与 control flow</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>error<span style="color: #F8F8F8"> </span>InsufficientBalance<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">account</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">needed</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">available</span><span style="color: #000; font-weight: bold">);</span>
 error<span style="color: #F8F8F8"> </span>TransferFailed<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">from</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>bytes4<span style="color: #F8F8F8"> </span>reason<span style="color: #000; font-weight: bold">);</span>
@@ -1519,7 +1565,7 @@ Counterexample:
 </section><section class="chapter">
 <h2 id="6" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章 事件与日志</h2>
 
-<p>storage 一字节 SSTORE 5000+ gas，一条 LOG3 同样大小不到 1500——前端能扫的状态用 event，链上要读的才用 storage。这条经验法则就是本章。</p>
+<p>把 event 当作"链下能看见、链上不能读"的廉价存档系统。一字节 SSTORE 要 5000+ gas，同样的字节用 LOG3 写到日志里不到 1500——价格相差 3 倍多。所有"用户看，合约不看"的数据都该走 event：转账历史、订单状态、参数变更、治理投票。这条经验法则贯穿本章。</p>
 <h3 id="61-evm">6.1 EVM 日志层</h3>
 <p><code>LOG0</code>~<code>LOG4</code> 对应 0~4 个 topic，<code>event</code> 声明编译为 <code>LOGN</code>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">event</span><span style="color: #F8F8F8"> </span><span style="color: #000">Transfer</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>from<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">value</span><span style="color: #000; font-weight: bold">);</span>
@@ -1542,7 +1588,8 @@ emit<span style="color: #F8F8F8"> </span>LogString<span style="color: #000; font
 </section><section class="chapter">
 <h2 id="7-assembly-yul" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章 assembly / Yul 深度章</h2>
 
-<p>业务代码 99% 不需要写汇编。但 OZ <code>MerkleProof._efficientHash</code>、Solady <code>SafeTransferLib</code>、Uniswap V4 的 transient lock 全是汇编块；不读懂它们，你的审计报告止步于「调了某库」。本章目的是让你能改、能审、能在必要时手写一段不会自爆的 Yul。</p>
+<p>打开任何一个生产级 Solidity 项目的依赖目录：OZ 的 <code>MerkleProof._efficientHash</code>、Solady 的 <code>SafeTransferLib</code>、Uniswap V4 的 transient lock——全是 <code>assembly { }</code> 块。你写业务代码 99% 不会自己写汇编，但那 1% 的库决定了 99% 的 gas 账单和 100% 的安全边界。</p>
+<p>读不懂这些汇编，你的审计报告永远止步于"调了某个库"。本章目的不是把你训练成 Yul 大师，而是让你<strong>能读、能审、必要时能改</strong>——并且当你真的不得不手写一段时，知道哪些线不能踩。</p>
 <h3 id="71-yul">7.1 Yul 是什么</h3>
 <p>Yul 是 Solidity 的 IR 兼内联汇编语法，比 EVM opcode 多了局部变量（<code>let x := ...</code>）、函数、if/switch/for 控制流，但<strong>无类型系统</strong>——一切是 256 位字，一对一映射到 EVM opcode。</p>
 <h3 id="72">7.2 内联汇编基础</h3>
@@ -1780,13 +1827,15 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 <span style="color: #000; font-weight: bold">}</span>
 <span style="color: #8F5902; font-style: italic">// 如果你的函数是 (bytes calldata) 而不是 (uint256)，0x04 是 offset 不是 value</span>
 </code></pre></div>
-<p><strong>审计 + 测试是唯一安全网</strong>：每个 assembly 块要有专门测试覆盖正常路径 + 边界（length=0、超长、对齐错误）。</p>
+<p><strong>审计 + 测试是唯一安全网</strong>：每个 assembly 块都要有专门测试覆盖正常路径 + 边界（length=0、超长、对齐错误）。手写汇编没有 checked 算术、没有边界检查、没有类型系统——所有传统编译器替你兜底的事，全得自己写测试覆盖。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="8-openzeppelin-solady-solmate" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 库与生态：OpenZeppelin / Solady / Solmate</h2>
 
-<p>新合约的第一行不该是 <code>pragma</code>，是 <code>import {ERC20} from "@openzeppelin/..."</code>。自己实现 transferFrom 是面试题，不是生产代码——本章梳理三大库的定位差异，以及哪些工具应该混用、哪些坚决不能混。</p>
+<p>我面试过的 Web3 工程师里，能完整背出 ERC20 实现的不少。能告诉我"为什么生产合约里<strong>不该</strong>自己写 transferFrom"的，少得多。</p>
+<p>答案是：你写的版本没经过 5 亿美金 TVL 验证、没被 Trail of Bits / OpenZeppelin / Spearbit 各审三遍、没修过 USDT 不返回 bool 的暗坑、没考虑 fee-on-transfer token 的差额、也没人告诉你 ERC-777 hook 会让你的"安全转账"暗中递归回来。</p>
+<p>新合约的第一行不该是 <code>pragma</code>，应该是 <code>import {ERC20} from "@openzeppelin/..."</code>。自己写 transferFrom 是面试题，不是生产代码。本章梳理三大库的定位差异，告诉你哪些应该混用、哪些坚决不能。</p>
 <h3 id="81">8.1 三大库定位</h3>
 <table>
 <thead>
@@ -1851,7 +1900,7 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p><strong>省 ~30% gas</strong>，但可读性归零。审计过的基础合约用 Solady，应用层用 SafeERC20。</p>
+<p><strong>省 ~30% gas</strong>，可读性彻底归零。这就是 Solady 的哲学：把"基础设施级"的库压到极致，让所有应用合约共享性能红利。审计过的基础合约用 Solady，业务层逻辑用 OZ SafeERC20——读得懂、改得动比省那一点 gas 更重要。</p>
 <h4 id="832-fixedpointmathlib">8.3.2 <code>FixedPointMathLib</code></h4>
 <p>mulDiv/sqrt/ln/exp 高性能实现，比 OZ <code>Math.sol</code> 快 2-5 倍，Compound/Aave 利率计算标配。</p>
 <h4 id="833-sstore2-sstore3">8.3.3 <code>SSTORE2</code> / <code>SSTORE3</code></h4>
@@ -1945,9 +1994,21 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 </section><section class="chapter">
 <h2 id="9" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 设计模式</h2>
 
-<p>每种模式都对应一类已被打过的漏洞或一种已被压榨过的 gas。下面 12 种模式按「重入 → 资金流 → 部署 → 升级 → 授权」的因果链组织，不是平铺枚举。</p>
+<p>每种模式背后都是一桩血案，或者一笔被榨干的 gas。</p>
+<ul>
+<li>The DAO（2016, $60M）→ CEI、Pull-over-Push</li>
+<li>Parity Multisig 双连击（2017，先 $30M、后 $280M 永久冻结）→ initializer 检查、UUPS 改良</li>
+<li>各种 deflationary token 让 transferFrom 失效 → SafeERC20</li>
+<li>USDT 长期不返回 bool → SafeTransferLib 汇编版</li>
+<li>Audius governance（2022, $6M）→ ERC-7201 namespace storage</li>
+<li>老 token 不支持 permit → Permit2 单例</li>
+<li>EOA 想批量执行 → EIP-7702</li>
+<li>合约超 24KB → Diamond / 模块拆分</li>
+</ul>
+<p>下面 12 种模式按"<strong>重入 → 资金流 → 部署 → 升级 → 授权</strong>"的因果链组织——不是字母序的菜单，是实际工程演化路径。</p>
 <h3 id="91-ceichecks-effects-interactions">9.1 CEI（Checks-Effects-Interactions）</h3>
-<p>先检查参数、再改状态、最后外部调用。<strong>违反 CEI 是 90% 重入漏洞的根源</strong>。</p>
+<p>2016 年 6 月 17 日凌晨，TheDAO 的余额每 60 秒被掏空 ~$2M。攻击者用了一个简单到令人脸红的招式：在收到 ETH 的 fallback 里再调一次 withdraw。合约更新余额的那行代码永远到不了——因为外部调用先于状态写入。</p>
+<p>那笔事故让以太坊硬分叉，让 ETC/ETH 永久分家。它也让 CEI 三个字母刻进每个 Solidity 工程师的肌肉记忆：<strong>Checks → Effects → Interactions</strong>。先检查参数、再改状态、<strong>最后</strong>做外部调用。违反它是 90% 重入漏洞的源头。</p>
 <p>错例：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">withdraw</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">bal</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>balances<span style="color: #000; font-weight: bold">[</span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">];</span>
@@ -1967,7 +2028,8 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <h3 id="92-pull-over-push">9.2 Pull-over-Push</h3>
-<p>不主动给用户打钱，让他们来取。</p>
+<p>第一年做 airdrop 的人都犯过同一个错：写一个循环 <code>for (i in users) users[i].transfer(amount)</code>，结果某个用户的智能合约钱包 fallback 默认 revert，整个 airdrop 卡死，所有人骂你。</p>
+<p>经验总结成一句口诀：<strong>不主动给用户打钱，让他们来取。</strong></p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>pendingWithdrawals<span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">distributeRewards</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>calldata<span style="color: #F8F8F8"> </span>users<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>calldata<span style="color: #F8F8F8"> </span>amounts<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>onlyOwner<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1985,7 +2047,8 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 </code></pre></div>
 <p>循环 <code>transfer</code> 时某个用户合约 revert 会卡死整个分发（DoS）。Pull 模式让坏邻居只能伤害自己。</p>
 <h3 id="93-factory-create2">9.3 Factory + CREATE2</h3>
-<p>确定性部署（Uniswap V3 pool、Safe wallet 的基础）：</p>
+<p>Uniswap V3 一个池子的地址，你在它部署之前就能算出来。Safe 钱包同样地址在所有链上一致。LayerZero、Permit2、Across——所有"跨链同地址"的合约都是这个魔法。</p>
+<p>魔法的名字叫 CREATE2：地址 = <code>keccak256(0xff || factory || salt || keccak256(initcode))[12:]</code>。给定 factory、salt、initcode，地址完全确定。换句话说——你可以<strong>先把地址写进客户端代码，然后再部署合约</strong>。这是 Web3 工程的"未来已来"时刻。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">VaultFactory</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">event</span><span style="color: #F8F8F8"> </span><span style="color: #000">VaultDeployed</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">indexed</span><span style="color: #F8F8F8"> </span>vault<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>IERC20<span style="color: #F8F8F8"> </span>indexed<span style="color: #F8F8F8"> </span>asset<span style="color: #000; font-weight: bold">);</span>
 
@@ -2009,6 +2072,8 @@ assembly<span style="color: #F8F8F8"> </span><span style="color: #000; font-weig
 </code></pre></div>
 <p><strong>预测地址</strong>：<code>addr = keccak256(0xff || factory || salt || keccak256(initcode))[12:]</code>，部署前可链下预知地址。</p>
 <h3 id="94-proxy">9.4 Proxy 三件套</h3>
+<p>2017 年 7 月，Parity Multisig 出过一桩诡异事故：有人调用了一个本该是 <code>library</code> 的合约的 <code>initWallet</code>，把自己设成了所有 Parity 钱包的 owner——然后他不小心 selfdestruct 了这个 library。<strong>3000 个多签钱包，5.4 亿美金，永久冻结</strong>。</p>
+<p>Proxy 模式存在的意义就是这种"代码可改、状态不丢"的需求。但代理本身就是一个全是脚的房间——slot collision、初始化竞态、selectorrr clash、storage layout 演化、admin 权限隔离，每一处都能炸。本节把三个主流方案放在同一张桌上比较。</p>
 <table>
 <thead>
 <tr>
@@ -2062,7 +2127,7 @@ ERC1967._ADMIN_SLOT          = 0xb53127...（hash 槽）
 <h4 id="943-selector-clash">9.4.3 Selector clash 推导</h4>
 <p>Transparent 的 selector clash 解法：<strong>msg.sender 路由</strong>（admin 走 admin 函数，其他全部 delegatecall），代价每次多 1 SLOAD。UUPS 把 upgrade 函数放进 implementation，proxy 只做 delegatecall，<strong>不存在 selector clash</strong>。</p>
 <h3 id="95-multicall">9.5 Multicall</h3>
-<p>让用户在一个 tx 里打包多次调用：</p>
+<p>让用户在一个 tx 里打包多次调用——前端每次调链都心疼用户多签一次的痛点解药：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>abstract<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Multicall</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">multicall</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span>calldata<span style="color: #F8F8F8"> </span>data<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #000; font-weight: bold">[]</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">memory</span><span style="color: #F8F8F8"> </span>results<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">        </span>results<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #000; font-weight: bold">[](</span>data<span style="color: #000; font-weight: bold">.</span>length<span style="color: #000; font-weight: bold">);</span>
@@ -2077,9 +2142,10 @@ ERC1967._ADMIN_SLOT          = 0xb53127...（hash 槽）
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p><strong>陷阱</strong>：<code>delegatecall</code> 里 <code>msg.sender</code> 仍是原始调用者（好事），但 <code>msg.value</code> 每个子调用都看到完整值——不能在 payable 子函数里累加 <code>msg.value</code>（1 ETH 调 5 次合约以为收到 5 ETH）。OZ v5 <code>Multicall.sol</code> 已修复此问题。</p>
+<p><strong>陷阱</strong>（这个坑爆过几个项目）：<code>delegatecall</code> 里 <code>msg.sender</code> 仍是原始调用者（这是好事），但 <code>msg.value</code> 每个子调用都看到<strong>完整值</strong>。如果你的 payable 子函数里写 <code>totalReceived += msg.value</code>，攻击者发送 1 ETH 调用 5 次，合约会以为收到 5 ETH——然后吐回 5 ETH 给攻击者，亏 4 ETH。OZ v5 <code>Multicall.sol</code> 已修复，自己写 multicall 一定要意识到这点。</p>
 <h3 id="96-permiteip-2612">9.6 Permit（EIP-2612）</h3>
-<p>用 EIP-712 签名替代 <code>approve</code>，省一笔 tx：</p>
+<p>每个写过 dapp 的人都被这件事烦过：用户买一次代币要先 <code>approve</code>（一笔 tx，等 ~12 秒），再 <code>swap</code>（又一笔 tx，再等 ~12 秒）。Uniswap V2 时代这是常态，新人因此流失，留存数据难看。</p>
+<p>Permit 是答案。用 EIP-712 签名替代 onchain approve——签名免费、即时、不上链。一笔 tx 同时完成"授权 + 转账"：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 用户离线签名（前端用 viem signTypedData）</span>
 <span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span>owner<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>spender<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>value<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>nonce<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>deadline<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #F8F8F8">   </span><span style="color: #A40000; border: 1px solid #EF2929">↓</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">签名得</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>v<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>r<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>s<span style="color: #000; font-weight: bold">)</span>
@@ -2089,9 +2155,12 @@ token<span style="color: #000; font-weight: bold">.</span>permit<span style="col
 token<span style="color: #000; font-weight: bold">.</span>transferFrom<span style="color: #000; font-weight: bold">(</span>owner<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>spender<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>value<span style="color: #000; font-weight: bold">);</span>
 </code></pre></div>
 <p>OZ v5 <code>ERC20Permit</code> 已实现，本模块 <code>MyToken.sol</code> 直接继承。</p>
-<p><strong>陷阱</strong>：<code>permit</code> 易被 front-run。攻击者抢先用相同签名调 <code>permit</code>，让 <code>transferFrom</code> 失败（nonce 已用）。<strong>修复</strong>：把 <code>permit + transferFrom</code> 打包同一笔 tx（Multicall 或路由合约），不单独广播 <code>permit</code>。</p>
+<p><strong>陷阱</strong>（已被打过）：<code>permit</code> 极易被 front-run。攻击者监听 mempool，看到你的 permit 签名后<strong>抢先</strong>用同一签名调 <code>permit</code>——nonce 用掉，你接下来的 <code>transferFrom</code> 直接 revert。看起来"只是 DoS"，但场景一换就是大问题：你的合约依赖 permit 成功才执行核心逻辑，front-run 一次让流程卡死。</p>
+<p><strong>修复</strong>：永远把 <code>permit + transferFrom</code> 打包在同一笔 tx 里（用 Multicall 或路由合约一次执行），<strong>不单独广播 permit</strong>。这是 OZ Wizard 默认生成的代码也强调的事。</p>
 <h3 id="97-permit2uniswap">9.7 Permit2（Uniswap 的通用授权层）</h3>
-<p>EIP-2612 硬伤：<strong>只对内置 <code>permit</code> 的 token 有效</strong>（USDT、WBTC 等老 token 不支持）。Permit2 在每条主流链上都通过 CREATE2 部署在同一确定性地址（<code>0x000000000022D473030F116dDEE9F6B43aC78BA3</code>），把「signed approval」变成 token 自身以外的通用基础设施。</p>
+<p>EIP-2612 有一个尴尬的硬伤：<strong>它需要 token 自己实现 <code>permit</code></strong>。USDT、WBTC、DAI 之前的几乎所有老 token 都不支持。这意味着 EIP-2612 永远只覆盖一部分用户。</p>
+<p>Uniswap 团队 2022 年想了一个更激进的办法：把 permit 抽出来，做成一个<strong>所有 token 通用</strong>的中间层。Permit2 在每条主流链上通过 CREATE2 部署在同一个确定性地址 <code>0x000000000022D473030F116dDEE9F6B43aC78BA3</code>——你可以把它当成 EVM 世界的"USB-C"。</p>
+<p>代价是用户多一次性 onchain 操作：先 <code>token.approve(Permit2, MAX_UINT)</code>，然后所有未来交互都通过 Permit2 签名。但这一次性授权撬动了所有协议共享的离线签名生态。Uniswap 自己的 universal-router、CowSwap、1inch、Across 都已迁过去。</p>
 <p>「同一地址」是部署确定性，<strong>不是跨链</strong>。每条链上的 Permit2 是独立合约，allowance / nonce 状态各链互不可见。同时 Permit2 的取舍是用户必须先把 token <code>approve(Permit2, MAX_UINT)</code>（一次性 onchain tx），后续才能用签名授权——这是 vs EIP-2612「token 内置 permit、零 approve」的关键区别。</p>
 <figure><img src="diagram-24aab98093.png" alt="mermaid diagram"></figure>
 
@@ -2123,8 +2192,8 @@ ISignatureTransfer<span style="color: #F8F8F8"> </span><span style="color: #204A
 </code></pre></div>
 <p>新项目（DEX 路由器、跨链桥、聚合器）应直接基于 Permit2，不要求 token 实现 EIP-2612。</p>
 <h3 id="98-eip-7702eoa">9.8 EIP-7702（EOA 临时变合约）</h3>
-<p>Pectra 升级（2025-Q2 主网）：<strong>EOA 通过签名授权将自己的 code 设为某合约</strong>，一笔 tx 内执行合约逻辑。账户抽象的轻量版，无需 4337 bundler。</p>
-<p><strong>用例</strong>：batched approval+swap+stake（3 tx → 1 tx）；gas 赞助（付费者与执行者分离）；session keys（一次签名授权一段时间的动作集合）。</p>
+<p>四年前 Vitalik 提出 ERC-4337 时，账户抽象需要一整套 bundler/paymaster/entrypoint 基础设施。EIP-7702 是更轻量的回答——Pectra 升级（2025-Q2 主网）让你的 EOA <strong>通过签名"附身"成某个合约</strong>：一笔 tx 内执行合约逻辑，无需 4337，无需 bundler。</p>
+<p>用例每天都在涌现：批量授权+swap+stake（3 tx → 1 tx）；gas 赞助商（付 gas 的人和签 tx 的人分离）；session keys（一次签名授权一段时间的动作集合）。但安全模型的颠覆程度让所有审计师都紧张——特别是 <code>chainId = 0</code> 那个雷，本节最后会展开。</p>
 <p><strong>Solidity 工具链支持</strong>（截至 2026-04）：</p>
 <ul>
 <li><strong>Foundry</strong>：<code>vm.sign</code> + <code>vm.attachDelegation</code> cheatcodes 支持 EIP-7702 授权签名</li>
@@ -2140,7 +2209,8 @@ ISignatureTransfer<span style="color: #F8F8F8"> </span><span style="color: #204A
 <li><strong><code>chainId = 0</code> 是工具链最高危的字段</strong>：authorization tuple 允许 chainId = 0 表示「在任意链上生效」。攻击者一旦诱骗用户签 chainId=0 的 7702 auth，可在所有 EVM 链上重放、把 EOA 在每条链上都 delegate 到 sweeper。<strong>钱包/dApp 必须默认使用具体 chainId、显示拒绝 chainId=0</strong>。详见 05 模块 §11.4 攻击案例</li>
 </ol>
 <h3 id="99-eip-2535-diamond">9.9 EIP-2535 Diamond</h3>
-<p>把合约拆成多个 facet，通过中央 dispatcher 路由 selector → facet：</p>
+<p>Aavegotchi 把合约写大到了超过 24KB——以太坊单合约部署上限。怎么办？拆成多个"facet"，通过一个中央 dispatcher 按 selector 路由请求。这就是 Diamond 模式（EIP-2535）的诞生场景。</p>
+<p>它确实优雅：突破 24KB、selector 粒度的精细升级、多团队并行开发。但代价不轻——<code>forge inspect</code> 算不出 Diamond 的完整 storage layout，DiamondCut 缺 access control 时全合约可被劫持，每次调用多 1 SLOAD（查路由表）。新项目应该先问"我真的需要 Diamond 吗"，章节末有决策树。</p>
 <figure><img src="diagram-2513f42584.png" alt="mermaid diagram"></figure>
 
 <p><strong>Diamond Storage</strong>：每个 facet 用独立 keccak256 hash 作起点，互不冲突：</p>
@@ -2200,10 +2270,11 @@ interface<span style="color: #F8F8F8"> </span>IDiamondLoupe<span style="color: #
 </code></pre></div>
 <p><code>_asyncTransfer</code> 把钱放进 escrow，受益人调 <code>withdrawPayments</code> 自取，彻底隔绝 push 转账的 reentrancy 风险。</p>
 <h3 id="911-eip-1167-minimal-proxyclones">9.11 EIP-1167 Minimal Proxy（Clones）</h3>
-<p>批量便宜部署完全相同合约，使用 EIP-1167 minimal proxy（"clone"）：</p>
+<p>Argent、Safe、Zerion 这些智能钱包平台每天部署上千个用户钱包，每个钱包都是一个新合约。完整 ERC20-ish 合约部署要 500k-1.5M gas，乘以一千个用户就是天文数字。</p>
+<p>EIP-1167 minimal proxy（业内俗称 "clone"）就是为这个场景而生：<strong>45 字节固定 bytecode</strong>，硬编码 implementation 地址做 delegatecall。部署成本 ~32k gas——比完整合约便宜一个数量级。代价是没有升级能力（implementation 改了影响不到已部署 clone），但很多场景本来就不需要每个 clone 都能升级。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x363d3d373d3d3d363d73&lt;implementation&gt;5af43d82803e903d91602b57fd5bf3
 </code></pre></div>
-<p><strong>仅 45 字节</strong>固定 bytecode，硬编码 implementation 地址做 delegatecall。无升级能力，部署成本极低：</p>
+<p>实际成本对照：</p>
 <table>
 <thead>
 <tr>
@@ -2302,7 +2373,12 @@ interface<span style="color: #F8F8F8"> </span>IDiamondLoupe<span style="color: #
 </section><section class="chapter">
 <h2 id="10-foundry" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章 Foundry 测试体系</h2>
 
-<p>单元测试只能证明你想到的输入；fuzz 能找意外输入；不变量能找意外<strong>序列</strong>。本章按这个层次组织，最后才是工具表——先理解每层在防什么 bug。</p>
+<p>让我把单元/fuzz/invariant 三种测试用一句话说清楚：</p>
+<blockquote>
+<p><strong>单元测试只能证明你想到的输入；fuzz 能找意外输入；不变量能找意外序列。</strong></p>
+</blockquote>
+<p>The DAO 的重入漏洞，所有单元测试都通过了——开发者根本没想到"在 fallback 里再调一次 withdraw"这种序列。CompoundV3 的某个 edge case，是 fuzz 用 <code>amount = 1</code> 碰出来的——人写测试不会想到 1。Aave 某个清算 bug，是 invariant fuzzer 用 200 步随机调用序列碰出来的——任何人手写都不会写这种序列。</p>
+<p>本章按"防什么 bug"的层次组织：单元 → fuzz → invariant → fork → symbolic（Halmos）。最后才是工具速查表。</p>
 <h3 id="101">10.1 四种测试形态</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</span><span style="color: #F8F8F8"> </span>--match-test<span style="color: #F8F8F8"> </span>test_initialState<span style="color: #F8F8F8">           </span><span style="color: #8F5902; font-style: italic"># 单元</span>
 forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</span><span style="color: #F8F8F8"> </span>--match-test<span style="color: #F8F8F8"> </span>testFuzz_<span style="color: #F8F8F8">                   </span><span style="color: #8F5902; font-style: italic"># 模糊</span>
@@ -2473,7 +2549,8 @@ forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</spa
 </tbody>
 </table>
 <h3 id="103-handler">10.3 Handler 模式（不变量测试核心）</h3>
-<p>直接 <code>targetContract(myContract)</code> 会有大量「必 revert」路径。Handler 模式：写 wrapper short-circuit 无效路径。</p>
+<p>不变量测试的第一次实战通常长这样：你写好不变量，运行 <code>forge test</code>，结果 256 轮中 240 轮都是 <code>revert</code>——fuzzer 用各种乱七八糟的输入触发了你合约的所有边界 require，没几次真正进入业务逻辑。看起来"测试通过"，实际等于啥也没测。</p>
+<p>Handler 模式是答案：写一个 wrapper 合约，把不可能成立的输入 short-circuit 掉，让 fuzzer 的每一步都进得到核心代码。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">CounterHandler</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>Test<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span>Counter<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>counter<span style="color: #000; font-weight: bold">;</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">constructor</span><span style="color: #000; font-weight: bold">(</span>Counter<span style="color: #F8F8F8"> </span>_c<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span>counter<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>_c<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
@@ -2933,7 +3010,8 @@ forge<span style="color: #F8F8F8"> </span>inspect<span style="color: #F8F8F8"> <
 </section><section class="chapter">
 <h2 id="11" id="ch12"><span class="chapter-num">Chapter 12</span><br>第 11 章 部署与运维</h2>
 
-<p>测试通过的合约要能被复现地部署、被 Etherscan 自动验证、被多签升级、被 anvil 在本地复现 mainnet 状态。这一章是把上面 10 章产物推到链上的工具表。</p>
+<p>代码写完不算交付，<strong>部署上链且能被人验证</strong>才算。我见过 testnet 上跑得风生水起的协议，mainnet 部署时 etherscan 验证失败——用户看到的是一坨 bytecode，没人敢交互。</p>
+<p>这一章是把上面 10 章产物推到链上的工具表：可复现的部署脚本、Etherscan 自动验证、Safe 多签升级流程、anvil 本地复现 mainnet 状态。每一项都有踩坑成本，能省就省。</p>
 <h3 id="111-forge-script">11.1 forge script</h3>
 <p>部署逻辑写成 Solidity 脚本：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">DeployScript</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>Script<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -3028,7 +3106,8 @@ anvil<span style="color: #F8F8F8"> </span>--gas-price<span style="color: #F8F8F8
 </section><section class="chapter">
 <h2 id="12-gas" id="ch13"><span class="chapter-num">Chapter 13</span><br>第 12 章 Gas 优化清单</h2>
 
-<p>只在 <code>forge test --gas-report</code> 指认了瓶颈之后再优化。按 ROI 排序：</p>
+<p>我见过一个项目花两周时间用汇编重写了一个查询函数，省了 800 gas——结果用户根本不调那个函数。也见过另一个项目把所有 <code>require</code> 改成自定义错误，单笔交互省了 4000 gas，每月省下数千刀的用户开支。</p>
+<p><strong>经验法则：永远先 profile 再优化</strong>。打开 <code>forge test --gas-report</code>，看哪个函数被调最多 + 单次 gas 最高，那才是 ROI 入口。下面按 ROI 从高到低排：</p>
 <h3 id="tier-1">Tier 1：必做</h3>
 <ol>
 <li><code>external</code> + <code>calldata</code> 替代 <code>public</code></li>
@@ -3072,6 +3151,7 @@ testFuzz_transfer_conserves (runs: 256, μ: 105_872, ~: 106_244)
 </section><section class="chapter">
 <h2 id="13_1" id="ch14"><span class="chapter-num">Chapter 14</span><br>第 13 章 框架选型与备选语言生态</h2>
 
+<p>2018 年大家用 Truffle，2020 年迁到 Hardhat 2，2022 年开始 Foundry，2025 年又出了 Hardhat 3——Web3 工具链每两年地壳运动一次。本章不告诉你"必选哪个"，而是告诉你各家<strong>什么情况下选什么</strong>，以及哪些语言/框架现在已经退场（Brownie）、哪些是只在特殊场景才用（Huff、Stylus）。</p>
 <h3 id="131-foundry-vs-hardhat-32026">13.1 Foundry vs Hardhat 3（2026 现状）</h3>
 <p>Hardhat 3（2025-12 production-ready beta）重写了 Rust 核心，支持原生 Solidity 测试、原生 fuzz、多链/OP Stack 模拟。</p>
 <table>
@@ -3337,6 +3417,8 @@ testFuzz_transfer_conserves (runs: 256, μ: 105_872, ~: 106_244)
 </section><section class="chapter">
 <h2 id="14-ai" id="ch15"><span class="chapter-num">Chapter 15</span><br>第 14 章 AI 辅助开发：实际生产力增益</h2>
 
+<p>2024 年出过一桩名为 "AI rugged me" 的事故：开发者复制粘贴 ChatGPT 给的 ERC20 实现，缺 <code>onlyOwner</code>，部署 5 分钟后被人 mint 走全部 supply。这不是个例——AI 生成的合约里<strong>最常见的 bug 是访问控制缺失</strong>，第二常见是 <code>transferFrom</code> 不包 SafeERC20，第三是 <code>tx.origin</code> 当鉴权。</p>
+<p>但禁用 AI 也不是答案。模型在样板代码、测试铺量、注释翻译这些事上能让你快 3 倍。问题是要知道<strong>它在哪些事上靠谱、哪些事上一定要审视</strong>。</p>
 <h3 id="141-ai-2026">14.1 AI 增益（2026）</h3>
 <p>模型不知道你升级了 OZ v5，也不会跑 <code>forge test --gas-report</code>。<strong>加速</strong>：样板代码（OZ 继承）、测试铺量、接口草稿、注释改写、fork test 脚手架、批量重构。<strong>不可信</strong>：安全设计决策、协议深度集成（常用过时 ABI）、gas 优化（不跑 benchmark）、不变量设计。</p>
 <h3 id="142-ai-5">14.2 AI 生成代码最常见的 5 类错误</h3>
@@ -3573,7 +3655,8 @@ aderyn<span style="color: #F8F8F8"> </span>.<span style="color: #F8F8F8"> </span
 <span style="color: #000; font-weight: bold">-</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">run</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">halmos --function testFuzz_</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># symbolic（可选，慢）</span>
 </code></pre></div>
 <h3 id="146-uniswap-v2-pair-walkthrough">14.6 Uniswap V2 Pair walkthrough</h3>
-<p>源码：<a href="https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol">Uniswap/v2-core/UniswapV2Pair.sol</a>，2020 年部署，约 200 行，是「最小完整 AMM」的教科书实现。</p>
+<p>读源码是最被低估的学习方式。Uniswap V2 Pair 是我推荐每个新人精读三遍的那一份：<strong>约 200 行，2020 年部署后 5 年没改一行代码，处理过数千亿美金交易</strong>。它的每一行都有"为什么这么写"的故事——为什么 reserve 用 uint112、为什么有个 "MINIMUM_LIQUIDITY=1000" 的常量、为什么 swap 先转账后检查 K。</p>
+<p>源码：<a href="https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol">Uniswap/v2-core/UniswapV2Pair.sol</a>，是"最小完整 AMM"的教科书实现。下面我们逐节拆。</p>
 <h4 id="1461-storage">14.6.1 Storage 解读</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">UniswapV2Pair</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>UniswapV2ERC20<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span>using<span style="color: #F8F8F8"> </span>SafeMath<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">for</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint</span><span style="color: #000; font-weight: bold">;</span>
@@ -3675,6 +3758,7 @@ aderyn<span style="color: #F8F8F8"> </span>.<span style="color: #F8F8F8"> </span
 </section><section class="chapter">
 <h2 id="15" id="ch16"><span class="chapter-num">Chapter 16</span><br>第 15 章 实战项目</h2>
 
+<p>读到这里，理论部分已经走完。下面这套代码你可以 clone 下来，跑一遍 <code>make test</code>，亲手感受 fuzz/invariant/fork 三层测试如何配合，UUPS 升级在 Foundry 里如何端到端验证。骨架小但麻雀俱全：ERC20 + Permit + Burnable + AccessControl + UUPS——和 OZ Wizard 一键生成的同结构。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>04-Solidity开发/code/
 ├── foundry.toml          # solc 0.8.28, evm cancun, fuzz/invariant 默认参数
 ├── remappings.txt        # OZ / forge-std / solady 别名
@@ -3761,8 +3845,10 @@ Ran 2 invariant tests for test/invariant/CounterInvariant.t.sol:CounterInvariant
 </section><section class="chapter">
 <h2 id="16" id="ch17"><span class="chapter-num">Chapter 17</span><br>第 16 章 习题与参考解答</h2>
 
-<p>共 6 道题，难度递增，骨架在 <code>exercises/</code> 目录，建议先自己做再查看参考解答。</p>
+<p>下面 6 道题不是为了考你——是把前 15 章的概念压成 6 个手感场景。从 ERC4626 inflation attack 到 UUPS 5 个不易察觉的安全坑、从重入修复到 Solady benchmark，每题都有"为什么这么做"的答辩。骨架在 <code>exercises/</code> 目录，建议先自己做再查参考解答——卡 30 分钟比直接看答案多记 10 倍。</p>
 <h3 id="1erc-4626">习题 1（基础）：ERC-4626 收益金库</h3>
+<p>ERC-4626 第一年公开后，多位审计师独立报告了同一个攻击：<strong>inflation attack</strong>。攻击者在你的金库刚部署、totalSupply=0 的瞬间存 1 wei，然后直接给金库地址 <code>transfer 1e18</code> underlying。等下一个真用户存 100 USDC 时，份额计算 <code>100e6 * 1 / 1e18 = 0</code> 取整为 0——用户钱进去了，份额是 0，攻击者全吞。</p>
+<p>防御办法是 OZ ERC4626 的 <code>_decimalsOffset()</code>——把份额放大 1eN 倍，攻击者要把比例操纵到能"吃掉"用户份额，捐款金额会涨到经济不可行。本题让你实操一遍。</p>
 <p>基于 OZ v5 <code>ERC4626</code> 实现 <code>YieldVault</code>：① 任意 ERC20 资产；② <code>_withdraw</code> 收 0.5% 提现费；③ <code>_decimalsOffset()</code> 返回 6 防 inflation attack；④ 测试覆盖：单元（deposit/withdraw/mint/redeem）+ 模糊（单调性）+ 不变量（totalAssets &gt;= sum(balanceOf)）。</p>
 <p><strong>骨架</strong>（完整版在 <code>exercises/01-erc4626-vault/</code>）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">YieldVault</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>ERC4626<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -3880,6 +3966,7 @@ Ran 2 invariant tests for test/invariant/CounterInvariant.t.sol:CounterInvariant
 </code></pre></div>
 <p>从 50 slot 减到 ~26 slot，部署省 24×22100=~530k gas，一次性写省等量 gas。</p>
 <h3 id="3_1">习题 3（基础）：修复重入</h3>
+<p>亲手写一次攻击合约比读 100 篇 The DAO 复盘都管用。这题让你站在攻击者视角，用 <code>receive()</code> 递归把一个看起来人畜无害的 bank 抽干，然后用三种方式修——CEI、OZ ReentrancyGuard、ReentrancyGuardTransient——并用 invariant 测试证明修复有效。</p>
 <p>见 <code>exercises/03-reentrancy-fix/</code>，写攻击合约 + 三种修复 + 不变量测试。<strong>攻击合约</strong>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Attacker</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span>VulnerableBank<span style="color: #F8F8F8"> </span>bank<span style="color: #000; font-weight: bold">;</span>
@@ -3991,6 +4078,7 @@ Ran 2 invariant tests for test/invariant/CounterInvariant.t.sol:CounterInvariant
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <h3 id="5uups">习题 5（中等）：UUPS 升级安全题</h3>
+<p>这道题在 RareSkills 的 audit bootcamp 上被反复使用——它在 30 行代码里同时藏了 5 个真实出过事故的坑。请你扮演审计师角色：</p>
 <p>下面的升级有什么问题？</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// V1</span>
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">TokenV1</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>UUPSUpgradeable<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>Initializable<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -4084,6 +4172,7 @@ Ran 2 invariant tests for test/invariant/CounterInvariant.t.sol:CounterInvariant
 </section><section class="chapter">
 <h2 id="17" id="ch18"><span class="chapter-num">Chapter 18</span><br>第 17 章 延伸阅读</h2>
 
+<p>读完这本模块只是起点——Solidity 生态每个月都有新 EIP、新审计案例、新工具。下面这份清单按"先看哪个最高 ROI"的顺序排：官方文档保证准确性，必读源码教你工业实践，课程帮你系统补缺，工具表是你日常工作流。每个链接都是我自己最近一年内查阅过的，不是凑数的列表。</p>
 <h3 id="171">17.1 官方文档</h3>
 <ul>
 <li><a href="https://docs.soliditylang.org/en/v0.8.28/">Solidity 0.8.28 docs</a>（2024-10）</li>

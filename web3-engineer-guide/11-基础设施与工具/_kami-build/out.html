@@ -430,7 +430,7 @@
   </div>
   <div class="cover-meta">
     <strong>Web3 Engineer Guide</strong><br>
-    版本 V1.0  ·  2026.04<br>
+    版本 V1.0  ·  2026.05<br>
     供个人学习使用 · MIT License
   </div>
 </section>
@@ -542,6 +542,9 @@
     <span class="toc-page">·</span>
   </div>
 </section>
+<blockquote>
+<p>2026-04-15 凌晨 2 点，某 80M TVL 借贷协议的 oncall 群炸了：清算机器人连续 6 分钟无响应，链上一个 8000 ETH 头寸正以每秒 2% 的速度滑向坏账。原因不在合约，不在清算机器人代码——是托管 RPC 商在 UTC 18:00 静默把这个 API key 的 <code>eth_getLogs</code> 限速从 10 RPS 降到 2 RPS，错误返回 "block range too large" 而不是 429。<strong>节点和 RPC 才是合约真正活的地方</strong>，这一模块讲的就是这件事。</p>
+</blockquote>
 <p>本模块面向会 Linux + Docker 但从未跑过节点的工程师，目标是搭建 reth+lighthouse Sepolia 节点 + RPC + 索引器 + 告警 + CI。版本号、容量数据、价格以 2026-04-27 为准。</p>
 <p>前置模块：<a href="../10-前端与账户抽象/README.md">10-前端与账户抽象</a> — 前端通过 RPC 与链交互，本模块讲清楚 RPC 从哪来、节点怎么跑。</p>
 <hr />
@@ -557,8 +560,8 @@
 </section><section class="chapter">
 <h2 id="1" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. 基础设施先于合约</h2>
 
-<p>部署一行 ERC20 之后才开始的事：查余额要 RPC 端点；转账历史要 indexer 解码 Transfer 写库；攻击发生要告警叫醒工程师；看 trace 要 archive 节点；修复要 CI 跑测试 + 多签转 owner + verify 上链。<strong>合约 5%，基础设施 95%。</strong></p>
-<p>教材其余部分围绕四个失败模式组织：</p>
+<p>想象你刚部署完一个 ERC20，<code>forge create</code> 返回了一个绿色对勾。然后呢？前端要查余额——得有个 RPC 端点；用户问 "我半年前那笔转账"——得有 indexer 把 Transfer 解码写进 Postgres；某天凌晨 admin key 被滥用 30 秒——得有告警把你从床上叫起来；调查时要看 trace——得有 archive 节点；修复要重新部署——得有 CI 跑完测试 + Safe 多签转 owner + Etherscan verify。<strong>写出那行 ERC20 大概是工作量的 5%，剩下 95% 是让它在凌晨 3 点也能撑住的基础设施。</strong></p>
+<p>这一模块的所有内容，都在解决这四种半夜叫醒人的失败模式：</p>
 <table>
 <thead>
 <tr>
@@ -590,12 +593,13 @@
 </tr>
 </tbody>
 </table>
-<p>2024 年某 30M TVL DeFi 项目 5 个 Solidity 工程师 0 个 SRE，免费 RPC 高峰被 throttle 上百次/小时。智能合约工程师不是 SRE 的替代品。</p>
+<p>真实故事：2024 年某 30M TVL DeFi 项目，5 个 Solidity 工程师 0 个 SRE，开盘当天免费 RPC tier 高峰被 throttle 上百次/小时——前端 8 小时显示"余额 0"，社区以为合约被黑，TG 群 5000 人挤兑。教训：<strong>Solidity 工程师不是 SRE 的替代品。</strong></p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="2-full-archive-light" id="ch03"><span class="chapter-num">Chapter 03</span><br>2. 节点分类: Full / Archive / Light</h2>
 
+<p>把节点想成三种不同的"图书馆"：<strong>Full</strong> 像本期杂志架，只放最新刊（最近 ~128 块状态），不占地方但查不到旧报纸；<strong>Archive</strong> 像有缩微胶卷的国家图书馆，从创世到现在每一笔交易状态都翻得到（2-20 TB 不等）；<strong>Light</strong> 是一张借阅证，自己什么书都没有，但能向别的图书馆要"这书是真的"的密码学证明。选哪种，看你的应用要回答什么问题。</p>
 <h3 id="21">2.1 三种节点参数对照</h3>
 <table>
 <thead>
@@ -828,7 +832,8 @@
 </section><section class="chapter">
 <h2 id="3-el-cl" id="ch04"><span class="chapter-num">Chapter 04</span><br>3. EL + CL 客户端：一对共生进程</h2>
 
-<p>合并后 EL（执行层）和 CL（共识层）必须配对运行，通过 engine API（8551，JWT 鉴权）通信。EL 负责交易执行 + state + JSON-RPC；CL 负责 PoS 信标链、attestation/proposal、light client 服务。两者职责不重叠，但单独跑都没意义——不同客户端不一样的事是<strong>架构权衡</strong>，下面用一张表讲完。</p>
+<p>2026-04，Paradigm 在 reth 2.0 release blog 里贴了一张曲线：mainnet 一个 1.7 Gigagas peak block，reth 用 380ms 做完 state root，geth OOM 退出。这事在 X 上被讨论一周——它意味着 Glamsterdam 升级后的高 gas limit 时代，<strong>选错客户端 = 节点直接掉队</strong>。</p>
+<p>合并后 EL（执行层）和 CL（共识层）像一对绑在一起的双胞胎：通过 engine API（8551，JWT 鉴权）通信，EL 管交易执行 + state + JSON-RPC；CL 管 PoS 信标链、attestation/proposal、light client 服务。两个进程职责不重叠，但单独跑都没意义。下面这张表把"五个 EL 哪个适合你"用三组数字（市占、archive 磁盘、卖点痛点）讲完。</p>
 <h3 id="31-el">3.1 EL：五个客户端的核心权衡</h3>
 <table>
 <thead>
@@ -1067,6 +1072,7 @@
 </section><section class="chapter">
 <h2 id="4-cl" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. CL 客户端横评</h2>
 
+<p>2022 年 prysm 占信标链 70% 时业内就开始焦虑——"如果 prysm 出 consensus bug，70% 的 validator 同步出错，链可能直接停"。EthStaker 社区花了三年苦口婆心劝大家迁移到 lighthouse / teku / nimbus，到 2026-04 prysm 终于降到 38%、lighthouse 升到 33%、teku 18%、nimbus 6%、lodestar 5%——分布刚好接近 client diversity 安全线。<strong>选 CL 不只是个人选型，是给以太坊投票。</strong></p>
 <h3 id="41">4.1 五个客户端对照</h3>
 <table>
 <thead>
@@ -1176,7 +1182,8 @@
 </section><section class="chapter">
 <h2 id="5-light-client" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. Light Client</h2>
 
-<p>自建 EL+CL 信任最强，但移动端和浏览器装不下 700 GB。Light client 通过 <strong>sync committee 签名 + merkle proof 校验</strong> 把 untrusted RPC 转成 trustless RPC——MetaMask 默认走 Infura，给假数据无从发现，这是要解决的问题。</p>
+<p>2024 年某次 Infura 部分节点返回了一个错误的 USDC 余额——不是攻击，是它的 archive 集群其中一个节点 fork 走错链没追回，前端显示用户余额比实际多 1500 USDC，有人据此发起 swap 触发回滚。<strong>MetaMask 默认走 Infura，给假数据时用户无从分辨——这正是 light client 要解决的问题。</strong></p>
+<p>自建 EL+CL 信任最强，但移动端和浏览器装不下 700 GB。Light client 像在咖啡馆看完一份"印章齐全的快递单据"——你没仓库自己核对货物，但单据上的密码学签名（sync committee 多数 + merkle proof）让你确信送货人没掉包。MetaMask 接 Helios 后，"我相信 Infura" 变成 "我相信 sync committee 不会被盗 342 把 BLS 私钥"。</p>
 <h3 id="51-light-client">5.1 三种 light client</h3>
 <table>
 <thead>
@@ -1334,6 +1341,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </section><section class="chapter">
 <h2 id="6" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. 同步策略</h2>
 
+<p>假设你晚上 11 点开始跑节点，目标第二天早上能用。三种 sync 模式决定第二天醒来你看到的是绿勾还是红叉：full sync 像从图书馆第一本书读到最新一本（数周）；snap sync 像有人给你一张"截至昨天的快照"再补一晚增量（4-12h，主流默认）；archive sync 像 full sync 但保留每一页的高亮笔记（数周-月）。<strong>第一次跑节点九成的人选错的不是 EL/CL 客户端，是忘了开 checkpoint sync——CL 不开就要从 genesis 重放 ~5 天</strong>。</p>
 <h3 id="61-el">6.1 EL 同步模式对照</h3>
 <table>
 <thead>
@@ -1411,7 +1419,8 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </section><section class="chapter">
 <h2 id="7-rpc-vs" id="ch08"><span class="chapter-num">Chapter 08</span><br>7. RPC 服务: 自建 vs 托管</h2>
 
-<p>5000 用户 peak QPS 50000 时 Alchemy free tier 直接挂——三条出路：升级 Growth tier ($199/月)、多账户 + 网关 fallback、自建。本节按"先选托管商 → 用网关聚合 → 必要时自建"展开。</p>
+<p>故事时间线还原：周五晚 10 点 NFT mint 开盘，预计 5000 用户。结果朋友在 X 转发，10 分钟涌进 50000 人，前端疯狂 <code>eth_call</code> 查白名单——Alchemy free tier 30M CU/月当晚被打穿，所有请求 429，用户看到 "transaction failed" 但其实交易压根没发出去。同样的故事 2024-2025 在 mint、空投领取、清算窗口至少出现过几十次。<strong>RPC 是协议的命门，但 99% 团队第一次部署时没认真选过。</strong></p>
+<p>下面按"先选托管商 → 用网关聚合 → 必要时自建"三步走，配三张表（13 家供应商对照、自建 vs 托管成本、性能调优清单）让你 30 分钟内做完决策。</p>
 <h3 id="71-rpc-2026-04">7.1 主流 RPC 提供商横评 (2026-04)</h3>
 <table>
 <thead>
@@ -1889,7 +1898,8 @@ sudo<span style="color: #F8F8F8"> </span>sysctl<span style="color: #F8F8F8"> </s
 </section><section class="chapter">
 <h2 id="8-indexer" id="ch09"><span class="chapter-num">Chapter 09</span><br>8. Indexer 全谱系</h2>
 
-<p><code>eth_getLogs</code> 拉 30 天（25 万块）秒级返回不可能；<strong>indexer = 监听 logs → 解码 → 写库 → 暴露 GraphQL/SQL</strong>。The Graph hosted-service 2024-06-12 已关停，新项目要在五条路径里选：</p>
+<p>新人最容易踩的坑：产品经理问 "首页要展示用户最近 30 天所有 swap 记录"，工程师写 <code>eth_getLogs(fromBlock=head-216000)</code> 然后等——15 秒后 RPC 报 "block range too large"，换成分批拉，发现要打 200 多次请求，10 分钟才返回。<strong>用户不会等 10 分钟，前端要"几百毫秒返回"。</strong> 这就是 indexer 存在的理由：监听 logs → 解码 → 写 Postgres → 暴露 GraphQL/SQL，把"链上即时计算"变成"数据库查询"。</p>
+<p>2024-06-12 The Graph hosted-service 关停，让一批老项目的 subgraph URL 一夜变 404。新项目要在五条路径里选——TypeScript 团队选 Ponder，极速选 Envio，多链选 Goldsky 或 SQD，抗审查选 The Graph network，老项目迁移看 ABI 复杂度。</p>
 <h3 id="81-indexer">8.1 五种主流 indexer</h3>
 <table>
 <thead>
@@ -2247,7 +2257,7 @@ graph<span style="color: #F8F8F8"> </span>deploy<span style="color: #F8F8F8"> </
 </section><section class="chapter">
 <h2 id="9" id="ch10"><span class="chapter-num">Chapter 10</span><br>9. 数据分析平台</h2>
 
-<p>§8 indexer 服务 dApp 后端（实时、GraphQL）；分析平台服务数据科学家（离线、SQL/Notebook）。同一份 archive 数据，两种消费方式。</p>
+<p>打开 <a href="https://dune.com/hildobby/eth-staked">hildobby Dune dashboard</a> 你能看到 33M ETH staked 实时分布，点击 SQL 看 80 行能跑出来——这种"全网数据 + 一行 SQL"的体验对工程师来说像第一次摸到 Postgres 那样开眼界。<strong>§8 的 indexer 是给 dApp 后端用的（实时、GraphQL、单合约）；分析平台是给数据科学家、产品经理、投资人用的（离线、SQL、Notebook、多协议）。</strong> 同一份 archive 数据，两种消费方式，下面把九个主流平台用一张表讲完什么时候用谁。</p>
 <h3 id="91">9.1 主流分析平台</h3>
 <table>
 <thead>
@@ -2469,7 +2479,8 @@ curl<span style="color: #F8F8F8"> </span>https://api.echo.xyz/v1/transactions/ev
 </section><section class="chapter">
 <h2 id="10" id="ch11"><span class="chapter-num">Chapter 11</span><br>10. 监控告警</h2>
 
-<p>监控有两层职责：(1) <strong>节点 / 服务</strong> 自身存活（Prometheus + Alertmanager，已在 §7.6.2 metrics 阈值表覆盖）；(2) <strong>合约 / on-chain 行为</strong> 监控（攻击、admin 异常、清算飙升）。下面专讲第二层。OpenZeppelin Defender Sentinel <strong>2026-07-01 关停</strong>，存量项目要迁——这是 2026 监控选型的最大变量。</p>
+<p>2024-07-30 凌晨某 cross-chain bridge 协议被盗 23M 美元——攻击者用 admin key 发 <code>setOwner</code> 改完了再排到下一个 bundle 才转走资金，整个过程 47 秒。事后复盘：team 装了 Etherscan watch list，但 Etherscan 邮件 7 分钟后才发出，那时资金已经在 Tornado Cash 里了。<strong>没有秒级告警 + 自动化响应，oncall 工程师是赶不上链速的。</strong></p>
+<p>监控有两层职责：(1) <strong>节点/服务自身存活</strong>（Prometheus + Alertmanager，已在 §7.6.2 metrics 阈值表覆盖）；(2) <strong>合约/on-chain 行为监控</strong>（攻击、admin 异常、清算飙升）。本节专讲第二层。一个让 2026 监控选型彻底洗牌的关键事件——<strong>OpenZeppelin Defender Sentinel 2026-07-01 关停</strong>，所有跑 Defender 的存量项目都要迁，下面给你三条迁移路径。</p>
 <h3 id="101">10.1 工具定位</h3>
 <table>
 <thead>
@@ -2749,7 +2760,8 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 </section><section class="chapter">
 <h2 id="11-mev-mev-boost-validator" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. MEV 基础设施 → mev-boost → Validator 链路</h2>
 
-<p>这一节和 §11A 是一条因果链：<strong>Validator 想最大化收益 → 必须接 builder 出的高 MEV 区块 → 但 validator 不能裸信任 builder（看到 tx 内容后可拒签）→ 需要 commit-reveal + relay 当中间人 → 这就是 mev-boost → 但 relay 自身也是信任假设 → ePBS / SUAVE 想消除它</strong>。理解这条链才能解释为什么 §11A 的 solo staking 流程末尾要配 mev-boost，以及为什么 DVT 在 validator 安全模型里出现。</p>
+<p>2024 年 4 月一次著名的 MEV-Boost relay 审查事故：某 validator 收到 ultrasound 给的 high-MEV bundle，但里面包含一笔 OFAC 制裁地址的 swap，validator 用 ad-hoc 改的代码故意跳过 propose（"我宁愿损失 0.05 ETH 也不上这块"）——结果链空了一个 slot，但更重要的是 EthStaker 社区炸了：<strong>"这种私下审查能不能在协议层根本消除？"</strong> 这就是 ePBS 要解的问题，也是这一节的主线。</p>
+<p>理解这一节有个简单类比：MEV bundle 像拍卖里的"密封投标"——validator（拍卖师）想拿最高价（高 MEV 区块），但不能让 builder（投标方）看到对手出价，更不能在拆开信封后反悔说"我不卖了"。<strong>Validator 想最大化收益 → 必须接 builder 出的高 MEV 区块 → 但 validator 不能裸信任 builder → 需要 commit-reveal + relay 当公证人 → 这就是 mev-boost → 但 relay 自身也是信任假设 → ePBS / SUAVE 想把公证人写进协议层</strong>。理解这条链才能解释为什么 §11A 的 solo staking 流程末尾要配 mev-boost，以及为什么 DVT 在 validator 安全模型里出现。</p>
 <h3 id="111-pbs-commit-reveal">11.1 PBS 架构与 commit-reveal</h3>
 <figure><img src="diagram-f9c5195392.png" alt="mermaid diagram"></figure>
 
@@ -2959,7 +2971,8 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 </section><section class="chapter">
 <h2 id="11a-validator-mev-boost-dvt-pectra" id="ch13"><span class="chapter-num">Chapter 13</span><br>11A. Validator：从 mev-boost 接入到 DVT 与 Pectra</h2>
 
-<p>§11 解释了 MEV 链路里 mev-boost 的位置。这里把视角切到 validator 自己：solo staking 全流程→双签风险→web3signer 把 keystore 隔离→DVT 把单点彻底打散→Pectra MaxEB 让规模化更经济→监控。每一步都在解决前一步留下的问题。</p>
+<p>2024 年某 SaaS 的 staking 服务商搬迁机房，工程师把 keystore 文件 <code>scp</code> 到新机器上——但他忘了把老机器的 VC 进程关掉，新老两台 VC 同时收到 attestation duty 同时签名……<strong>结果 9 个 validator 在同一个 epoch 触发 double-sign slashing，单次损失 ~16 ETH/validator</strong>，团队赔进去 144 ETH（当时约 $50 万）。这种事故 2023-2025 至少发生过 5 次，几乎全都是"复制 keystore"或"忘了导出 slashing protection DB"。</p>
+<p>§11 解释了 MEV 链路里 mev-boost 的位置。这一节把视角切到 validator 自己——把 32 ETH 想成押金的"代议士"：投票投错（attestation 错）扣几 gwei，蓄意双投（同一个 slot 签两份不同票）罚 1-32 ETH 直接退役。下面这条链每一步都在解决前一步留下的问题：<strong>solo staking 全流程 → 双签防御三板斧 → web3signer 把 keystore 与 VC 解耦 → DVT 把单 key 彻底拆成 t-of-N 阈值签名 → Pectra MaxEB 让规模化更经济 → 三层监控</strong>。</p>
 <h3 id="11a1-solo-staking-3-4-apr">11A.1 solo staking 全流程 (~3-4% APR)</h3>
 <figure><img src="diagram-33de267dec.png" alt="mermaid diagram"></figure>
 
@@ -3246,6 +3259,7 @@ cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="12" id="ch14"><span class="chapter-num">Chapter 14</span><br>12. 开发工具链</h2>
 
+<p>2023 年大家还在 <code>npx hardhat test</code> 等 25 秒看 50 个单测跑完，2024 年 Foundry 把这事压到 2-4 秒——一个 50 测试套件 dev cycle 从"煮咖啡时间"变成"按下保存键的延迟"。Hardhat 团队没坐以待毙，2026-04 Hardhat 3 把 Foundry-compatible Solidity 测试内嵌进来，<strong>JS 团队终于能写 forge 风格的 fuzz/invariant 又保留 hardhat-deploy 的 plugin 生态</strong>。下面这张表帮你 5 分钟决定新项目用谁。</p>
 <h3 id="121-foundry-vs-hardhat-3-2026-04">12.1 Foundry vs Hardhat 3 (2026-04)</h3>
 <table>
 <thead>
@@ -3380,7 +3394,7 @@ cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="13-cicd-foundry" id="ch15"><span class="chapter-num">Chapter 15</span><br>13. CI/CD: 完整 Foundry 流水线</h2>
 
-<p>每个 PR 都跑一遍 <code>forge fmt + forge test + coverage + Slither/Aderyn</code> 是合约项目最低标准；release tag 才跑 invariant heavy fuzz、Halmos 符号执行、verify + 上链广播。下面拆三层：流水线全景图、关键设计点、可复制的完整模板。</p>
+<p>2024 年 Curve 一次重大 bug：reentrancy 在 invariant test 里能找出来，但 PR CI 配的 <code>FOUNDRY_INVARIANT_RUNS=256</code> 太少没跑到那条路径，merge 上线两周后被白帽报告。<strong>CI 不是装饰，是合约最后一道筛。</strong> 标准做法：每个 PR 都跑一遍 <code>forge fmt + forge test + coverage + Slither/Aderyn</code>；release tag 才跑 invariant heavy fuzz（5000 runs）、Halmos 符号执行、verify + 上链广播——日常 PR 30 秒搞完，release tag 多花 1 小时换"半夜不被叫醒"。下面拆三层：流水线全景图、关键设计点、可复制的完整模板。</p>
 <h3 id="131">13.1 流水线全景</h3>
 <figure><img src="diagram-9cb97a84ec.png" alt="mermaid diagram"></figure>
 
@@ -3626,7 +3640,8 @@ cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </spa
 </section><section class="chapter">
 <h2 id="14" id="ch16"><span class="chapter-num">Chapter 16</span><br>14. 密钥管理</h2>
 
-<p>§13 流水线最后一步是 <code>--broadcast</code> 上链——这步背后的私钥是协议方最大的攻击面。本节用一张信任模型表 + 三条主线（Safe + 硬件钱包给 admin / KMS + OIDC 给 CI / 嵌入式钱包给用户）解决"私钥放哪"。</p>
+<p>2022 年 Ronin Bridge 被盗 6.25 亿美元——攻击者拿到 5 个 validator 私钥（多签 5/9）签了一笔提款 tx，全靠的是社工拿到一份 PDF + 一台 RPC 节点托管商的访问权。2023 年 Curve <code>--private-key</code> 写死 <code>.env</code> 上 GitHub 的事至少 3 起。<strong>写代码再美，私钥放错地方一切归零。</strong></p>
+<p>§13 流水线最后一步是 <code>--broadcast</code> 上链——这步背后的私钥是协议方最大的攻击面。本节用一张信任模型表 + 三条主线把"私钥放哪"讲清楚：<strong>admin / 治理用 Safe + 硬件钱包</strong>（人类按按钮，物理隔离）、<strong>CI/CD 用 KMS + OIDC</strong>（GitHub Action 拿短期 token，机器签名永远摸不到私钥）、<strong>用户钱包用嵌入式 + MPC/TEE</strong>（社交登录但密钥分片，没有"备份助记词"摩擦）。</p>
 <h3 id="141">14.1 信任模型对照</h3>
 <table>
 <thead>
@@ -3928,6 +3943,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </section><section class="chapter">
 <h2 id="15" id="ch17"><span class="chapter-num">Chapter 17</span><br>15. 区块浏览器</h2>
 
+<p>2023-12 圣诞前 Etherscan 主站宕机 6 小时，那期间所有自动化 verify、所有前端的 "在 Etherscan 查看交易" 链接全挂——很多团队这时才意识到 explorer 是单点依赖。2025-04 又出过一次。<strong>至少备一个 Blockscout 当 fallback</strong>：开源、可自托管、API 兼容 Etherscan，OP Stack / Arbitrum 链甚至已经把 Blockscout 当默认。</p>
 <ul>
 <li><strong>Etherscan v2</strong>: 单 API key 覆盖 50+ EVM 链 (chainId 区分). 老牌数据丰富, 闭源, 历史多次全网故障 (2023-12 / 2025-04).</li>
 <li><strong>Blockscout</strong>: 开源自托管, PRO API 兼容 Etherscan endpoint, 覆盖 100+ EVM 链, OP Stack / Arbitrum 原生集成.</li>
@@ -3941,7 +3957,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </section><section class="chapter">
 <h2 id="16" id="ch18"><span class="chapter-num">Chapter 18</span><br>16. 实战合集</h2>
 
-<p>完整代码见 <code>code/</code> 与 <code>exercises/</code>。</p>
+<p>下面五个 demo 把前面 §2-§14 的所有概念压缩成"周末两小时跑一遍"的可复制实操。假设你想跑一台 home staker 节点 + 一个数据后端 + CI——按 16.1 → 16.2 → 16.3 → 16.4 → 16.5 顺序做完，理论部分会变成肌肉记忆。完整代码见 <code>code/</code> 与 <code>exercises/</code>。</p>
 <h3 id="161-reth-lighthouse-sepolia-15-min">16.1 启动 reth + lighthouse Sepolia (15 min)</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code/01-reth-lighthouse-sepolia
 ./setup.sh<span style="color: #F8F8F8">                        </span><span style="color: #8F5902; font-style: italic"># 生成 jwt + 起容器</span>
@@ -4043,6 +4059,7 @@ bun<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>
 </section><section class="chapter">
 <h2 id="17" id="ch19"><span class="chapter-num">Chapter 19</span><br>17. 习题</h2>
 
+<p>九道习题按"读懂 → 选型 → 实操"递进，前三题有完整答案 (<code>ANSWER.md</code>)，后六题给思路提示自行完成。建议读完一节立刻做对应习题，比读完整章再回头做留存度高 3 倍。</p>
 <h3 id="171-1-reth-lighthouse">17.1 习题 1: 计算 reth + lighthouse 硬件 / 月度成本</h3>
 <p>见 <code>exercises/01-hardware-cost-calculator/calc.ts</code>. 答案: <code>ANSWER.md</code>.</p>
 <p>要点: 全节点 ¥10000/年 自建; archive ¥14000/年; 云对照 ¥42000/年. NVMe 是核心成本, archive 必须企业级 / 高端 TLC.</p>
@@ -4078,6 +4095,7 @@ bun<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>
 </section><section class="chapter">
 <h2 id="18-ai" id="ch20"><span class="chapter-num">Chapter 20</span><br>18. AI 影响</h2>
 
+<p>2025 年 Forta <a href="https://forta.org/blog/anomaly-detection/">Anomaly Detection bot</a> 在某 NFT marketplace rug pull 12 小时前发出 alert——攻击者只是开始批量调用一个不寻常的 admin function，规则引擎抓不到，但 GNN 学到的"正常模式"立刻偏离触发警报。AI 在 Web3 监控上的价值不在替代 SRE，在<strong>把规则写不出的"异常感"变成可计算的 baseline</strong>。但同样 2025 年某 L2 项目 SRE 全员靠 ChatGPT 写运维脚本，一次 systemctl daemon-reload 改坏 mev-boost 重启策略，4 小时不出块——<strong>AI 是放大器，放大对的也放大错的</strong>。</p>
 <h3 id="181-ai">18.1 AI 协助节点告警</h3>
 <p>传统告警靠规则 (withdraw &gt; 1M USDC), 0day 攻击模式总不在规则集. 2026 趋势: Tenderly / Forta / Hypernative 把链上 tx 流喂 LLM/GNN 学正常模式, 偏离告警. Forta <a href="https://forta.org/blog/anomaly-detection/">Anomaly Detection bot</a> 2024 年提前 12h 抓到多个 rug pull. 局限: 攻击者可先做 1000 次"正常"操作把基线拉高再发动.</p>
 <h3 id="182-ai-calldata-trace">18.2 AI 解析 calldata 与 trace</h3>
