@@ -1,0 +1,5 @@
+flowchart LR
+    A[discover<br/>找已有 query] --> B[fork<br/>复制到自己空间]
+    B --> C[改 SQL<br/>调阈值/链/时间窗]
+    C --> D[publish<br/>dashboard + iframe]
+    D --> E[订阅推送<br/>Telegram / webhook]

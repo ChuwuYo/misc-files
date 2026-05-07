@@ -1,5 +1,7 @@
 # 第 17 章 · Agent 开发：从 ReAct 到多 Agent 协作
 
+> 一个失控的 Agent run 能在十几分钟内烧掉 $20-100；2026 年的 Agent 项目里，过半最终被退化成 workflow——这章的目标是让你少掉进这两个坑。
+
 > 写在前面：2025 年下半年到 2026 年，"AI Agent" 成了所有创投 PPT 的 C 位。这章我不会跟着热度吹。我会把 Agent 拆成三件事——决策循环、工具接口、记忆——讲清楚每件事的工程边界，然后用一套真实可跑的代码（从零实现 ReAct、PR Review Agent、Supervisor 多 Agent）把方法论钉死。最后给一张决策表：什么场景该用 Agent，什么场景上 Agent 是工程灾难。
 >
 > 上一章（第 16 章）讲 RAG 时，提到了 Agentic RAG——让模型自己决定"是否检索、检索结果够不够、要不要改写查询"。那一节其实就是把 Agent 当作 RAG 的一个外壳。本章反过来：把 Agent 当作主角，RAG 只是它众多工具中的一个。理解这个视角切换，才不会把 Agent 与 RAG 混为一谈。
@@ -70,6 +72,27 @@ Answer: Cupertino, California
 ```
 
 就这么三个标签——Thought / Action / Observation——交替出现，循环直到模型输出 Answer。
+
+```
+┌──────────┐
+│ 用户提问 │
+└────┬─────┘
+     ▼
+┌────────────┐
+│  LLM 思考  │ ← 上下文（含历史 thought/observation）
+└─────┬──────┘
+      │
+ ┌────┴─────┐
+ │ 要调工具? │
+ └────┬─────┘
+ 是 │  │ 否
+    ▼  ▼
+调工具  输出最终答案
+    │
+ 观察结果回写
+    │
+    └──→ 回到 LLM 思考
+```
 
 ReAct 的精髓在于把 reasoning 和 acting 编织在一起：reasoning 帮模型规划下一步动作并应对异常，acting 让模型从外部环境获取它本来没有的信息。这一招直接干掉了纯 Chain-of-Thought 在事实性问题上的幻觉问题。
 
@@ -401,6 +424,14 @@ if __name__ == "__main__":
     print(run_agent("Python 创始人是谁？把他的姓的字符数乘以 7。"))
 ```
 
+预期 stdout 样例：
+
+```
+[step 0] tool_use: web_search(query="python 创始人")
+[step 1] tool_use: calculator(expression="6 * 7")
+[step 2] final: Python 创始人 Guido van Rossum，姓 "Rossum" 共 6 个字符，乘以 7 = 42。
+```
+
 跑一下你会看到模型先调 `web_search` 拿到 "Guido van Rossum"，再调 `calculator` 算 `len("Rossum") * 7 = 42`，最后给出文字答案。
 
 这 130 行包含了 ReAct 的全部本质：循环、工具调用、终止判定、并行收集、错误兜底。任何更复杂的 Agent 框架本质上都是在这之上加抽象。
@@ -512,6 +543,8 @@ CREATE INDEX ON agent_memory USING hnsw (embedding vector_cosine_ops);
 > **术语提醒**：本节"多 Agent"讲的是"多个 LLM agent 之间的任务协作与消息传递"，和第 10 章的"分布式训练"不是一个东西——10 章的"分布式"指多 GPU/多节点之间切分模型/梯度/数据来一起训一个模型，本章的"多 Agent"指多个独立运行的推理实例之间分工协作。两者都涉及"多个进程协同"，但目标、协议、瓶颈完全不同。混淆这两个概念是新人最常见的概念过载之一。
 
 先说结论：**绝大多数自称"多 Agent"的系统其实是工作流，单 Agent 加几个工具就够了**。真正需要多 Agent 的场景比想象中少。但还是有几个模式值得掌握。
+
+> **【小白速读】** 多 Agent 的四种模式（Supervisor / Swarm / Router / Critic）本质都在回答同一个问题：**多个 LLM 怎么分工**。Supervisor = 一个老板派活；Swarm = 同事互相转手；Router = 前台分诊；Critic = 一个写、一个挑刺。下面四节按这四种展开。
 
 ### 17.7.1 Supervisor / Hierarchical
 

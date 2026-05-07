@@ -503,37 +503,42 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">14</span>
-    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">附录 A. 12 类漏洞详细分类</a></span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">故事 3：CEX 攻击全景（按攻击面分层）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">15</span>
-    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">附录 B. Halmos / Echidna / Certora 配置</a></span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">附录 A. 12 类漏洞详细分类</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">16</span>
-    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 C. Bybit $1.46B 完整复盘</a></span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 B. Halmos / Echidna / Certora 配置</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">17</span>
-    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">附录 D. 其余真实事件 Postmortem</a></span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">附录 C. Bybit $1.46B 完整复盘</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">18</span>
-    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">附录 E. 审计流程模板</a></span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">附录 D. 其余真实事件 Postmortem</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">19</span>
-    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">附录 F. 形式化验证深入</a></span>
+    <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">附录 E. 审计流程模板</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">20</span>
-    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">附录 G. 重入的形式化定义</a></span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">附录 F. 形式化验证深入</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">21</span>
+    <span class="toc-title"><a href="#ch21" style="color:inherit;text-decoration:none">附录 G. 重入的形式化定义</a></span>
     <span class="toc-page">·</span>
   </div>
 </section>
@@ -621,9 +626,14 @@
 <td>S3 供应链 + 盲签</td>
 </tr>
 <tr>
+<td>故事 3</td>
+<td>CEX 攻击全景（2014-2025）</td>
+<td>私钥/合约/挤兑/监管 4 层</td>
+</tr>
+<tr>
 <td>附录 A</td>
 <td>12 类漏洞详细分类</td>
-<td>SWC 全谱</td>
+<td>SWC 全谱（含 honeypot/rug 检测）</td>
 </tr>
 <tr>
 <td>附录 B</td>
@@ -770,6 +780,42 @@
 <p><strong>漏洞 = 找到打破不变量但合约不 revert 的路径。</strong> 写出 invariant → fuzz/形式化证明 → 找到漏掉的状态修改路径。</p>
 <figure><img src="diagram-19eb968aaf.png" alt="mermaid diagram"></figure>
 
+<h3 id="14">1.4 攻击事件后的反追踪剧本</h3>
+<blockquote>
+<p><strong>TL;DR</strong>：被攻击不是终点，是另一场战役的开始。防守 = 链上溯源 + 出口归因 + 公开归因，把攻击者的资金路径和身份"钉死"在公开记录里，把链下世界的回收和制裁通道打开。基于 Bybit / Munchables / Curve Vyper / Radiant 公开复盘抽出的四步骨架。</p>
+</blockquote>
+<p>工程师的"防守"不是只写 <code>nonReentrant</code>，事件发生后的 24 小时内，谁能先把资金漏斗画出来、谁能先把出口归因发到 X，往往决定能不能追回。下面是一套可复用的剧本。</p>
+<p><strong>Step 1：攻击 tx → trace 资金漏斗</strong></p>
+<p>拿到攻击 tx hash，第一件事是把内部调用栈和资金流向全展开。</p>
+<ul>
+<li><code>cast run &lt;txHash&gt; --rpc-url &lt;archive&gt;</code> 看 stack trace 与 revert 原因；<code>cast trace --rpc-url ...</code> 跑历史 tx 拓扑。</li>
+<li><a href="https://phalcon.blocksec.com/explorer">Phalcon Block</a>：把整个攻击 tx 拆成"profit graph"，谁拿到多少、走到哪里，可视化最快。</li>
+<li><a href="https://tenderly.co/transaction-simulator">Tenderly Debugger</a>：单步执行 EVM，定位"哪一行 storage 写错"。</li>
+<li>跨多 tx：用 [Etherscan Transactions Action Tab] + [Arkham Visualizer] 画"漏斗树"，攻击者首笔出口地址 = 0xattacker0；接下来的拆分地址按代际命名 0xattacker1.x 便于团队对齐。</li>
+</ul>
+<p><strong>Step 2：cross-chain bridge / Tornado Cash / peel chain 出口归类</strong></p>
+<p>资金漏斗一展开，下游必走三类出口之一：</p>
+<ul>
+<li><strong>Cross-chain bridge</strong>：Wormhole / Stargate / cBridge / Across / THORChain。按 destination chain + token 拆账；Bybit 14.6 亿 ETH 主要走 THORChain → BTC。</li>
+<li><strong>Tornado Cash / 隐私池</strong>：deposit hash 必留 onchain，配合 [Chainalysis Storyline] 或 [Pessimistic.io demixer] 反推 deposit↔withdraw 关联。</li>
+<li><strong>Peel chain</strong>：每跳剥少量到新地址，看似分散实则同一控制者。Nansen "smart money" + 链上聚类（gas funder / 共同 nonce 模式 / 同一时区活跃）能把一束 peel 收敛回一根。</li>
+</ul>
+<p><strong>Step 3：CEX 入金归因</strong></p>
+<p>资金最后要"变现"——这是反追踪最关键的一环：</p>
+<ul>
+<li>[Etherscan public tags] + [Arkham entity tags] + [Nansen smart money labels]：覆盖 Binance / OKX / Bybit / Coinbase / Kraken 大部分热钱包。</li>
+<li>私链聚类：按 <code>gas 出资者</code>、<code>首笔来源</code>、<code>常用 contract approve 池</code>、<code>签名时区分布</code> 给地址画指纹。</li>
+<li>拿到 CEX 归因后立刻发 incident report 给该 CEX 的 [Travel Rule] 联系人 + 合规邮箱（先邮件锁定 KYC 数据，再走法律流程）。</li>
+</ul>
+<p><strong>Step 4：公开归因 + Travel Rule 通报 + Reactor + ZachXBT 方法论</strong></p>
+<ul>
+<li><strong>公开归因</strong>：在 X / Mirror / 自家博客发详尽 postmortem，附 tx 列表 + 攻击者地址清单。公开 = 让其他协议的 risk team 把这些地址加入黑名单 → 攻击者每多一个出口就多一道墙。</li>
+<li><strong>Travel Rule 通报</strong>：FATF Travel Rule 要求 ≥ 1000 美元 VASP 间转账带身份信息；通报后 CEX 必须冻结。</li>
+<li><strong>Chainalysis Reactor / TRM Forensics</strong>：商用工具一键画图、追踪到法币入金。</li>
+<li><strong>ZachXBT 方法论</strong>：通过 OSINT 对接攻击者真实身份——Twitter 句法、Discord 时区、Github commit time、ENS 注册邮箱、Telegram phone hash。Bybit 案 FBI 6 天定性 TraderTraitor，社区 OSINT 同步推进。</li>
+</ul>
+<p><strong>实例链路（Bybit 14.6 亿）</strong>：401k ETH → 50+ 中转地址 peel chain → THORChain swap → BTC → Lazarus 多链分散（Tron / BSC / Bitcoin）→ FBI / Sygnia / Wiz 联合归因 TraderTraitor (UNC4899) → Safe / Tether / Coinbase 协同冻结 4000 万美元。Lazarus 净洗白 86% 用了一个月（Ben Zhou 2025-03-20 公告）。<strong>工程师启示：防守 = 复盘 + 公开 + 监控相似攻击面</strong>——你的协议下一次能自动检测出"S3 JS 哈希漂移"，靠的是别人写完的 postmortem。</p>
+<p>工具速查：<a href="https://phalcon.blocksec.com">Phalcon Block</a>、<a href="https://tenderly.co">Tenderly</a>、<a href="https://arkhamintelligence.com">Arkham</a>、<a href="https://nansen.ai">Nansen</a>、<a href="https://www.chainalysis.com/reactor/">Chainalysis Reactor</a>、<a href="https://www.trmlabs.com">TRM Labs</a>、<a href="https://misttrack.io">MistTrack</a>、<a href="https://x.com/zachxbt">ZachXBT 公开调查</a>。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1586,7 +1632,148 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <hr />
 
 </section><section class="chapter">
-<h2 id="a-12" id="ch14"><span class="chapter-num">Chapter 14</span><br>附录 A. 12 类漏洞详细分类</h2>
+<h2 id="3cex" id="ch14"><span class="chapter-num">Chapter 14</span><br>故事 3：CEX 攻击全景（按攻击面分层）</h2>
+
+<blockquote>
+<p><strong>TL;DR</strong>：从 Mt.Gox 到 Bybit，十一年 CEX 攻击不是"合约漏洞"一种死法。把所有大额事件按攻击面分四层——私钥 / 智能合约 / 挤兑 / 监管——你会发现合约层只是冰山一角，下面三层才是真正决定一家所交易所生死的边界。</p>
+<p><strong>钩子</strong>：2014 年 Mt.Gox 损失 85 万 BTC 时，Solidity 还没诞生；2025 年 Bybit 损失 14.6 亿美元，Solidity 早就是必修课——但攻击向量从"内部 SQL 直接改余额"换成了"S3 桶里的一段 JS"，<strong>钱依然在三秒内消失</strong>。中心化交易所的安全边界一直延伸到 AWS IAM、HR 招聘、托管服务商和宏观监管周期。</p>
+</blockquote>
+<h3 id="4-2-3">三栏分层对照表（4 类 × 2-3 案例）</h3>
+<h4 id="1_1">1. 私钥泄漏 / 内部欺诈</h4>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>规模</th>
+<th>攻击面</th>
+<th>教训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2014-02-24 <strong>Mt.Gox</strong></td>
+<td>85 万 BTC（约 4.5 亿美元当时；2025 估值 &gt; 800 亿）</td>
+<td>tx malleability + 内部 SQL 直改余额 + 长期失窃未察觉（2011 起持续被掏）</td>
+<td>链上 ≠ 链上账本；交易所不能用单一 hot wallet + 内部数据库做账</td>
+</tr>
+<tr>
+<td>2016-08-02 <strong>Bitfinex</strong></td>
+<td>12 万 BTC（约 7200 万美元）</td>
+<td>BitGo 多签 hot wallet 被穿（co-signer 签名服务被绕）</td>
+<td>"多签"不等于"多人独立签"；签名链路任何单点 = 单签</td>
+</tr>
+<tr>
+<td>2023-09-12 <strong>CoinEx</strong></td>
+<td>5400 万美元</td>
+<td>私钥泄漏（Lazarus 归因）</td>
+<td>hot wallet 大额迁移必须冷热分层 + Travel Rule 出金</td>
+</tr>
+<tr>
+<td>2024-05-31 <strong>DMM Bitcoin</strong></td>
+<td>$305M（4502 BTC）</td>
+<td>Lazarus / TraderTraitor 长线社工 → 开发机被植入</td>
+<td>同 Bybit 同攻击家族；签名前必须独立终端解码</td>
+</tr>
+<tr>
+<td>2024-07-18 <strong>WazirX</strong></td>
+<td>2.35 亿美元</td>
+<td>Liminal Custody 多签 UI 被劫，盲签放大</td>
+<td>托管服务商也是攻击面；UI 完整性必须独立验证</td>
+</tr>
+</tbody>
+</table>
+<p><strong>共性</strong>：从 2014 到 2024，"私钥被偷"的本质从"操作系统层 RAT"演化为"前端 UI 注入"——但<strong>最后一公里仍是一个人按下了"签名"</strong>。</p>
+<h4 id="2_1">2. 智能合约层</h4>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>规模</th>
+<th>攻击面</th>
+<th>教训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2025-02-21 <strong>Bybit</strong></td>
+<td>14.6 亿美元（401k ETH）</td>
+<td>Safe{Wallet} S3 供应链 + 盲签（Developer1 macOS RAT → AWS session token → 仅对 Bybit cold wallet 注入恶意 JS）</td>
+<td><strong>唯一一例 CEX 智能合约层巨亏</strong>——但根因仍是供应链而非 Solidity bug。访问控制边界延伸到 AWS IAM + 招聘流程</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为何只此一例</strong>：CEX 大头资产在冷钱包，签名走多签；合约层攻击需要诱使运维"批量签恶意 calldata"，门槛远高于直接钓私钥。Bybit 是这条路径第一次成功。详见 §4.5 + 附录 C。</p>
+<h4 id="3_1">3. 交易所挤兑（自爆 / 杠杆螺旋）</h4>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>规模</th>
+<th>攻击面</th>
+<th>教训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2022-06 <strong>3AC</strong></td>
+<td>1000 亿+ AUM 归零，传染连锁</td>
+<td>GBTC 折价套利 + stETH 杠杆 + Luna depeg 同时引爆</td>
+<td>中心化对手方 = 零地址透明度，无法链上监控暴雷</td>
+</tr>
+<tr>
+<td>2022-11-08 <strong>FTX</strong></td>
+<td>80 亿+ 客户资金缺口，FTT 跳水 95%</td>
+<td>FTT 抵押套娃 + Alameda 借 FTT 自融 + CZ 一条 tweet 引爆挤兑 → SBF 25 年监禁（2024-03-28 判决，<a href="https://www.justice.gov/usao-sdny/pr/samuel-bankman-fried-sentenced-25-years-orchestrating-multiple-fraudulent-schemes">DOJ</a>）</td>
+<td>平台币不能当抵押品；客户资金必须 segregated 钱包；POR 必须独立审计 + Merkle 证明</td>
+</tr>
+</tbody>
+</table>
+<p><strong>共性</strong>：不是"被攻击"是"自我崩塌"。挤兑触发条件是宏观（Luna / 美联储加息）+ 微观（CZ tweet）的合流，工程师能做的是 <strong>POR (Proof of Reserves) 透明化</strong>——Kraken / Binance / Bybit 在 FTX 后都接入 zk-POR，让客户能链上验证负债侧 = 资产侧。</p>
+<h4 id="4_2">4. 监管挤兑（合规真空 / 银行通道）</h4>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>规模</th>
+<th>攻击面</th>
+<th>教训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2023-03-10 <strong>SVB → USDC</strong></td>
+<td>$3.3B Circle 储备困在 SVB → USDC 短脱钩至 $0.87</td>
+<td>美国地区银行倒闭 → 法币储备无法赎回 → 链上稳定币恐慌脱锚</td>
+<td>法币储备必须分散托管多家银行；储备透明度按周披露不是按季</td>
+</tr>
+<tr>
+<td>2023-06-05 <strong>Binance.US</strong></td>
+<td>SEC 起诉 + 美区法币通道断裂 → BUSD 退场</td>
+<td>SEC v. Binance + Coinbase 同期诉讼 → BNB Chain 流动性收缩</td>
+<td>单一司法辖区合规真空 = 资金通道随时被切；多 jurisdiction + 多托管是底线</td>
+</tr>
+</tbody>
+</table>
+<p><strong>共性</strong>：监管挤兑里，工程师"写得对"也救不了——但<strong>储备的透明度和可分散性可以工程化</strong>：Chainlink Proof of Reserves、Circle 多家银行分散、USDC 的赎回 API 必须能链上 mirror。</p>
+<h3 id="_7">攻击面汇总（按损失累计排序）</h3>
+<figure><img src="diagram-b479e1d76e.png" alt="mermaid diagram"></figure>
+
+<h3 id="_8">防守工程师的清单</h3>
+<ol>
+<li><strong>冷热分层</strong>：hot wallet ≤ 1% 资产；大额签名走 timelock + 独立解码终端。</li>
+<li><strong>前端 / 供应链入审计 scope</strong>：S3 / DNS / NPM 锁版本 + SRI；CDN 文件 hash 进 CI 校验。</li>
+<li><strong>多签 ≠ 多人</strong>：每个签名者必须用独立工具解码 calldata。</li>
+<li><strong>POR 链上化</strong>：Merkle + zk 证明负债侧；储备多家银行分散，按周披露。</li>
+<li><strong>托管服务商威胁建模</strong>：BitGo / Fireblocks / Liminal / Copper 都进过事件名单。</li>
+<li><strong>监控相似攻击面</strong>：Bybit 后所有 CEX 都跑 S3 JS hash diff 监控，这就是公开 postmortem 的工程价值。</li>
+</ol>
+<blockquote>
+<p>完整 Bybit 攻击链见 §4.5 + 附录 C；其余事件见附录 D；私钥盗 → 反追踪剧本见 §1.4。</p>
+</blockquote>
+<hr />
+
+</section><section class="chapter">
+<h2 id="a-12" id="ch15"><span class="chapter-num">Chapter 15</span><br>附录 A. 12 类漏洞详细分类</h2>
 
 <p>本附录基于 SWC Registry 和 Ethereum Smart Contract Best Practices 扩展分类，方便审计时快速对照。</p>
 <table>
@@ -1815,10 +2002,64 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 </tr>
 </tbody>
 </table>
+<h3 id="a8-honeypot-rug-pull">A.8 honeypot / rug pull 静态检测</h3>
+<blockquote>
+<p><strong>TL;DR</strong>：Token 合约 95% 的"杀猪盘"都能通过链上读 + API 在用户签 approve 之前发现。集成 GoPlus + Honeypot.is 就能拦掉绝大多数 honeypot；rug pull 信号靠 owner 权限 + blacklist mapping + transferable 检查。</p>
+</blockquote>
+<p><strong>GoPlus Token Security API</strong>（<a href="https://docs.gopluslabs.io/reference/api-overview">官方文档</a>）：行业最广覆盖（30+ 链），免费版 30 QPS。三个核心端点：</p>
+<ul>
+<li><code>tokenSecurity(chainId, address)</code>：返回 <code>is_honeypot</code>、<code>buy_tax</code>、<code>sell_tax</code>、<code>cannot_sell_all</code>、<code>hidden_owner</code>、<code>is_blacklisted</code> 等 30+ 字段。</li>
+<li><code>addressSecurity(address)</code>：返回地址是否在制裁名单 / cybercrime / phishing 库（OFAC SDN + 自有情报）。</li>
+<li><code>approvalSecurity(chainId, contract)</code>：返回 token approve 目标合约是否高危（已被盗 / 钓鱼合约）。</li>
+</ul>
+<p>集成示例（前端 dApp 在 swap 前拦截）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">preflightCheck</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">chainId</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">number</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">token</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">fetch</span><span style="color: #000; font-weight: bold">(</span>
+<span style="color: #F8F8F8">    </span><span style="color: #4E9A06">`https://api.gopluslabs.io/api/v1/token_security/${</span><span style="color: #000">chainId</span><span style="color: #4E9A06">}?contract_addresses=${</span><span style="color: #000">token</span><span style="color: #4E9A06">}`</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">).</span><span style="color: #000">then</span><span style="color: #000; font-weight: bold">((</span><span style="color: #000">x</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">x</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">json</span><span style="color: #000; font-weight: bold">());</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">result</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">token</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">toLowerCase</span><span style="color: #000; font-weight: bold">()];</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">is_honeypot</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">throw</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #C00; font-weight: bold">Error</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;Honeypot detected&#39;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">Number</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0.1</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`卖出税 ${</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">*</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span><span style="color: #4E9A06">}%`</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">cannot_sell_all</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">throw</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #C00; font-weight: bold">Error</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;合约禁止全额卖出&#39;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">hidden_owner</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">can_take_back_ownership</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;owner 权限可被收回，疑似 rug pull&#39;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p><strong>Honeypot.is</strong>（<a href="https://honeypot.is">honeypot.is</a>）：轻量在线检测，模拟 buy → sell 走完一遍交易路径，专测 sell 锁。CLI / API：<code>GET https://api.honeypot.is/v2/IsHoneypot?address=0x...&amp;chainID=1</code>。适合用户侧浏览器插件即时弹窗。</p>
+<p><strong>TokenSniffer / RugCheck / De.Fi</strong>：</p>
+<ul>
+<li><a href="https://tokensniffer.com">TokenSniffer</a>：评分 0-100；侧重 Solidity 代码模式（蜜罐已知签名匹配）。</li>
+<li><a href="https://rugcheck.xyz">RugCheck</a>：Solana / SPL token 专用，覆盖 <code>freeze authority</code> / <code>mint authority</code> 是否 renounce。</li>
+<li><a href="https://de.fi/shield">De.Fi Shield</a>：覆盖广，含合约审计史 + Twitter sentiment 综合分。</li>
+</ul>
+<p><strong>链上信号（不依赖第三方 API 也能查的硬指标）</strong>：</p>
+<ul>
+<li><strong>transferable 检查</strong>：<code>call</code> 一笔 dry-run <code>transfer(self, 0)</code> 看是否 revert，识别 paused / blacklisted token。</li>
+<li><strong>修改 owner 防护</strong>：读 <code>owner()</code> 是否 = <code>address(0)</code> 或 timelock；hidden owner 通过非标准 slot 写入，需扫所有 storage event。</li>
+<li><strong>blacklist mapping 检查</strong>：扫合约 storage 找 <code>mapping(address =&gt; bool)</code> 类似 slot；调用 <code>eth_call</code> 模拟 victim address 是否被列入。</li>
+<li><strong>流动性锁</strong>：读 LP token 的 owner / lock contract（unicrypt / pinklock）；流动性未锁 = rug pull 倒计时。</li>
+<li><strong>owner 持仓占比</strong>：top 10 持有者 &gt; 50% 必警告；&gt; 80% 视为 rug 高危。</li>
+</ul>
+<p><strong>集成示例（router 调用前 preflight）</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">safeSwap</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">chainId</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">number</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenIn</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">...)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ① GoPlus 拒绝 honeypot</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">preflightCheck</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">chainId</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">tokenIn</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ② Honeypot.is 双重确认（防 GoPlus 误报 / 漏报）</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">hp</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">fetch</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`https://api.honeypot.is/v2/IsHoneypot?address=${</span><span style="color: #000">tokenIn</span><span style="color: #4E9A06">}&amp;chainID=${</span><span style="color: #000">chainId</span><span style="color: #4E9A06">}`</span><span style="color: #000; font-weight: bold">).</span><span style="color: #000">then</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">r</span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #000">r</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">json</span><span style="color: #000; font-weight: bold">());</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">hp</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">honeypotResult</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">isHoneypot</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">throw</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #C00; font-weight: bold">Error</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;Honeypot.is flagged&#39;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ③ 链上信号</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">owner</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">readContract</span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">address</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">tokenIn</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">abi</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">functionName</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;owner&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">});</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">owner</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!==</span><span style="color: #F8F8F8"> </span><span style="color: #000">ZERO_ADDR</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000">isTimelock</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">owner</span><span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8"> </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;owner 未 renounce&#39;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ④ 全部通过，正常 swap</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #000">router</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">swap</span><span style="color: #000; font-weight: bold">(...);</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p><strong>真实拦截案例</strong>：2024 年某 BSC meme token 上线 30 分钟，GoPlus 检测到 <code>cannot_sell_all=1</code> + <code>sell_tax=99%</code>，PancakeSwap 前端 (聚合器) 拦截 1.2 万次买入，避免约 800 万美元损失。结论：<strong>"用户教育"永远不够，preflight API 才是工程级答案</strong>。</p>
 <hr />
 
 </section><section class="chapter">
-<h2 id="b-halmos-echidna-certora" id="ch15"><span class="chapter-num">Chapter 15</span><br>附录 B. Halmos / Echidna / Certora 配置</h2>
+<h2 id="b-halmos-echidna-certora" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 B. Halmos / Echidna / Certora 配置</h2>
 
 <h3 id="b1-halmos-033">B.1 Halmos 0.3.3</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>pip<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>halmos
@@ -1867,7 +2108,7 @@ echidna<span style="color: #F8F8F8"> </span>MyTest.sol<span style="color: #F8F8F
 <hr />
 
 </section><section class="chapter">
-<h2 id="c-bybit-146b" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 C. Bybit $1.46B 完整复盘</h2>
+<h2 id="c-bybit-146b" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 C. Bybit $1.46B 完整复盘</h2>
 
 <p>来源：<a href="https://www.sygnia.co/blog/sygnia-investigation-bybit-hack/">Sygnia</a>、<a href="https://www.wiz.io/blog/north-korean-tradertraitor-crypto-heist">Wiz</a>、<a href="https://www.ic3.gov/psa/2025/psa250226">FBI IC3 PSA 250226</a>、<a href="https://www.nccgroup.com/research/in-depth-technical-analysis-of-the-bybit-hack/">NCC Group</a>。</p>
 <h3 id="c1">C.1 逐分钟时间线</h3>
@@ -1964,7 +2205,7 @@ echidna<span style="color: #F8F8F8"> </span>MyTest.sol<span style="color: #F8F8F
 <hr />
 
 </section><section class="chapter">
-<h2 id="d-postmortem" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 D. 其余真实事件 Postmortem</h2>
+<h2 id="d-postmortem" id="ch18"><span class="chapter-num">Chapter 18</span><br>附录 D. 其余真实事件 Postmortem</h2>
 
 <h3 id="d1-2022-2026">D.1 完整大额事件年表（2022-2026）</h3>
 <table>
@@ -2126,7 +2367,7 @@ echidna<span style="color: #F8F8F8"> </span>MyTest.sol<span style="color: #F8F8F
 <hr />
 
 </section><section class="chapter">
-<h2 id="e" id="ch18"><span class="chapter-num">Chapter 18</span><br>附录 E. 审计流程模板</h2>
+<h2 id="e" id="ch19"><span class="chapter-num">Chapter 19</span><br>附录 E. 审计流程模板</h2>
 
 <h3 id="e1-stride-defi">E.1 STRIDE-DeFi 威胁建模</h3>
 <table>
@@ -2269,7 +2510,7 @@ contract Attacker { receive() external payable { vault.withdraw(); } }
 <hr />
 
 </section><section class="chapter">
-<h2 id="f" id="ch19"><span class="chapter-num">Chapter 19</span><br>附录 F. 形式化验证深入</h2>
+<h2 id="f" id="ch20"><span class="chapter-num">Chapter 20</span><br>附录 F. 形式化验证深入</h2>
 
 <h3 id="f1">F.1 三种工具定位</h3>
 <table>
@@ -2417,7 +2658,7 @@ contract Attacker { receive() external payable { vault.withdraw(); } }
 <hr />
 
 </section><section class="chapter">
-<h2 id="g" id="ch20"><span class="chapter-num">Chapter 20</span><br>附录 G. 重入的形式化定义</h2>
+<h2 id="g" id="ch21"><span class="chapter-num">Chapter 21</span><br>附录 G. 重入的形式化定义</h2>
 
 <p>主线 §2.1 给的是直觉解释，这里补上数学表达。设 $s_t$ 为时刻 $t$ 的合约状态，$v(s_t)$ 为基于 $s_t$ 计算出的待转值（如可提余额）。漏洞合约的执行序列为：</p>
 <p>$$

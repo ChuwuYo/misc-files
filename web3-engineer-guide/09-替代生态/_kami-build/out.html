@@ -796,6 +796,11 @@
     <span class="toc-title"><a href="#ch72" style="color:inherit;text-decoration:none">53.x 来源（2026-04 实测，按引用频次排序）</a></span>
     <span class="toc-page">·</span>
   </div>
+  <div class="toc-item">
+    <span class="toc-num">73</span>
+    <span class="toc-title"><a href="#ch73" style="color:inherit;text-decoration:none">附录 X · 中文圈替代生态现实（2026-04）</a></span>
+    <span class="toc-page">·</span>
+  </div>
 </section>
 <p><strong>前置模块</strong>：<a href="../08-零知识证明/">08-零知识证明</a>——ZK 技术在本模块频繁出现（IBC Eureka ZK light client、Citrea zkRollup、cNFT ZK Compression、Move Prover、Mithril SNARK、zkLogin），建议先完成该模块。</p>
 <p><strong>配套代码</strong>：<code>code/{solana, cosmos, move, bitcoin}/</code>；配套练习：<code>exercises/{...}/</code>。</p>
@@ -2155,6 +2160,123 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <blockquote>
 <p>Q1：Solana Mobile 的 dApp Store 跳过 Apple/Google 抽成——这种独立分发渠道在 iOS 主导市场可行吗？</p>
 <p>Q2：SVM 外延（Eclipse、Sonic、Magicblock）对开发者意味着什么？是不是让 Solana 开发者技能更可迁移？</p>
+</blockquote>
+<h3 id="117-solana-meme-launchpad">11.7 Solana meme 经济与 launchpad 工程</h3>
+<blockquote>
+<p><strong>场景钩子</strong>：截至 2026-04，Solana 主网 <strong>50%+ 的交易笔数来自 meme 相关合约</strong>（Pump.fun + Raydium + Jupiter aggregator + 各 launchpad），Pump.fun 月活创造者数十万。这个比例在所有公链历史上都没出现过——以太坊在 ICO 高峰期、BSC 在土狗高峰期都没达到。Solana 等于把"meme 发行 + 交易"做成了链级原语。工程师可以鄙视 meme，但不能不懂它的工程结构——做钱包、做聚合器、做安全工具、做 indexer 全都绕不开。</p>
+</blockquote>
+<h4 id="pumpfun-bonding-curve">Pump.fun bonding curve 工程</h4>
+<p>Pump.fun 的核心创新不是"再 fork 一个 launchpad"，而是把 token issuance + price discovery 合并成<strong>一个无审批、无 LP 提供者</strong>的合约：</p>
+<p><strong>虚拟储备 bonding curve</strong>：</p>
+<p>token 发行总量固定（典型 1B），合约维护两个虚拟储备 <code>reserve_token</code> / <code>reserve_sol</code>，价格由 <code>x * y = k</code> 决定（虚拟 AMM）。每次买入 SOL 换 token：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>新 token = reserve_token - k / (reserve_sol + sol_in × 0.99)
+</code></pre></div>
+<p>费用 1% 抽成：约 0.5% 给协议、0.5% 给创作者（2025-Q4 后引入 creator fee 切换开关）。</p>
+<p><strong>典型仓位划分</strong>（一个标准 Pump.fun token）：</p>
+<table>
+<thead>
+<tr>
+<th>段位</th>
+<th>比例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bonding curve 内可买池</td>
+<td>≈ 75%（800M 个）</td>
+</tr>
+<tr>
+<td>Migration 时迁到 AMM 的储备</td>
+<td>≈ 25%（200M 个）</td>
+</tr>
+<tr>
+<td><strong>dev / creator 自留</strong></td>
+<td><strong>0%</strong>（合约层面禁止 creator 在 migration 前自买）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Migration 阈值</strong>：当 bonding curve 内市值（virtual 估值）达到 <strong>≈ $69k</strong>（约 85 SOL 在曲线里），合约自动：</p>
+<ol>
+<li>销毁 bonding curve 合约里剩余的 token；</li>
+<li>把储备 SOL + 200M token 注入 <strong>Raydium V4 / 后续 PumpSwap V2</strong> 创建标准 AMM 池；</li>
+<li><strong>Burn LP token</strong>（永久无人能撤池）；</li>
+<li>切换到标准 AMM 滑点曲线，价格不再由 bonding curve 决定。</li>
+</ol>
+<blockquote>
+<p><strong>anti-snipe 工程</strong>：creator 在 migration 之前不能买自己的 token（合约硬阻止）；很多新 launchpad（Believe、Moonshot、LetsBonk）都抄了这个设计——它解决了 2021 BSC 时代"creator 自买拉盘 + dump"的经典 rug 路径。</p>
+</blockquote>
+<p><strong>Fee 路由（2026-04 当前版本）</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>单笔 swap 1% fee
+  ├── 0.40% → Pump.fun 协议金库
+  ├── 0.30% → token creator（可由 creator 关闭，关闭后归协议）
+  ├── 0.20% → Raydium 兼容层 / 流动性激励
+  └── 0.10% → Jito tip（MEV 防护）
+</code></pre></div>
+<h4 id="launchpad">其他主要 launchpad 速览</h4>
+<table>
+<thead>
+<tr>
+<th>Launchpad</th>
+<th>链</th>
+<th>差异点</th>
+<th>2026-04 状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pump.fun</strong></td>
+<td>Solana</td>
+<td>bonding curve + Raydium / PumpSwap migration</td>
+<td>月度 fee revenue 头部，竞争对手抄无可抄</td>
+</tr>
+<tr>
+<td><strong>Moonshot</strong></td>
+<td>Solana</td>
+<td><strong>Apple Pay / Google Pay 法币入金</strong>直接铸 meme</td>
+<td>2025 黑马，绕开 web3 钱包 onboarding</td>
+</tr>
+<tr>
+<td><strong>Believe</strong></td>
+<td>Solana</td>
+<td>前 Clanker 联创 2025 创立；强调 creator-first / 推特绑定</td>
+<td>2025-Q4 上线，月活几万</td>
+</tr>
+<tr>
+<td><strong>LetsBonk / Daos.fun</strong></td>
+<td>Solana</td>
+<td>DAO + meme 混合：贡献金库换 token</td>
+<td>DAO meme 子赛道头部</td>
+</tr>
+<tr>
+<td><strong>Sun.io</strong></td>
+<td><strong>Tron</strong></td>
+<td>Tron 自家 meme 发行平台</td>
+<td>2025 上线；面向中文 Tron meme 用户</td>
+</tr>
+<tr>
+<td><strong>Clanker</strong></td>
+<td>Base</td>
+<td>自然语言"@clanker 给我发个币" → on-chain</td>
+<td>EVM 阵营对标产品，2024 爆款</td>
+</tr>
+</tbody>
+</table>
+<h4 id="honeypot-rug">Honeypot / rug 检测</h4>
+<p>Solana meme 的"rug 模式"不是 EVM 那种 mint authority 留 backdoor（Pump.fun 自动 burn LP 后这条路堵死），而是：</p>
+<ol>
+<li><strong>Wash trading + 拉盘 dump</strong>：creator 用多个钱包 wash trading 制造热度 → migration 后短时间内集中卖出；</li>
+<li><strong>Insider sniping</strong>：migration 前几秒钟用 leaked address 抢跑；</li>
+<li><strong>Fake migration</strong>：仿冒 Pump.fun UI 但合约不是 Pump.fun 主合约。</li>
+</ol>
+<p><strong>检测工具（与模块 05 附录交叉引用）</strong>：</p>
+<ul>
+<li><strong>RugCheck.xyz</strong>（Solana 专属）：检查 mint / freeze authority、LP burn、holder 分布、wash 检测；</li>
+<li><strong>GoPlus Token Security</strong>：跨链通用；</li>
+<li><strong>Honeypot.is</strong>：EVM 主战场，有 Solana 实验性支持；</li>
+<li><strong>Bubble maps（Bubblemaps.io）</strong>：可视化关联钱包簇——一眼看出 dev 隐藏多签发行。</li>
+</ul>
+<blockquote>
+<p><strong>工程师推论</strong>：做钱包 / 聚合器 / 交易终端，<strong>集成 RugCheck + Bubblemaps API 是 2026 标配</strong>——用户在 Solana 上点 swap 之前必看这两项。</p>
 </blockquote>
 <hr />
 
@@ -4701,10 +4823,204 @@ $$</p>
 </tr>
 </tbody>
 </table>
+<h3 id="385-telegram-mini-app-tonconnect">38.5 Telegram Mini App + TonConnect 工程栈</h3>
+<p>TON 的真正杀手锏不是 actor 模型，而是 <strong>5 亿月活的 Telegram 用户原地变成 web3 用户</strong>——Mini App 不需要装钱包、不需要切链、不需要复制助记词。</p>
+<p><strong>典型流程</strong>：</p>
+<figure><img src="diagram-0f932aee14.png" alt="mermaid diagram"></figure>
+
+<p><strong><code>window.Telegram.WebApp</code> 关键 API</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>字段 / 方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>initData</code></td>
+<td>服务端验签的源串（含 user / auth_date / hash）</td>
+</tr>
+<tr>
+<td><code>initDataUnsafe</code></td>
+<td>客户端可直接读的解析对象（<strong>不可信</strong>，仅 UI 渲染用）</td>
+</tr>
+<tr>
+<td><code>themeParams</code></td>
+<td>自适应 Telegram 深 / 浅色主题</td>
+</tr>
+<tr>
+<td><code>MainButton.show()</code></td>
+<td>Telegram 自带的底部主按钮（系统级 UI）</td>
+</tr>
+<tr>
+<td><code>HapticFeedback</code></td>
+<td>振动反馈</td>
+</tr>
+<tr>
+<td><code>openLink()</code> / <code>openTelegramLink()</code></td>
+<td>跳出 Mini App 到外链</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>initData</code> 验签（重点 / 必须做）</strong>：</p>
+<p>WebView 任何来自客户端的 user 字段都可被伪造。服务端必须用 bot token 做 HMAC-SHA256 校验：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createHmac</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;crypto&quot;</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">export</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">verifyInitData</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">initData</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">botToken</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">boolean</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">params</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">URLSearchParams</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">initData</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">hash</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">params</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;hash&quot;</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">params</span><span style="color: #000; font-weight: bold">.</span><span style="color: #204A87; font-weight: bold">delete</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;hash&quot;</span><span style="color: #000; font-weight: bold">);</span>
+
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 1. 排序后用 \n 拼成 dataCheckString</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">dataCheckString</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[...</span><span style="color: #000">params</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">entries</span><span style="color: #000; font-weight: bold">()]</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sort</span><span style="color: #000; font-weight: bold">(([</span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">],</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">b</span><span style="color: #000; font-weight: bold">])</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">localeCompare</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">b</span><span style="color: #000; font-weight: bold">))</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">map</span><span style="color: #000; font-weight: bold">(([</span><span style="color: #000">k</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">v</span><span style="color: #000; font-weight: bold">])</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">`${</span><span style="color: #000">k</span><span style="color: #4E9A06">}=${</span><span style="color: #000">v</span><span style="color: #4E9A06">}`</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">join</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;\n&quot;</span><span style="color: #000; font-weight: bold">);</span>
+
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 2. secret = HMAC-SHA256(&quot;WebAppData&quot;, botToken)</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">secret</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">createHmac</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;sha256&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;WebAppData&quot;</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">update</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">botToken</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">digest</span><span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 3. 计算的 hmac 必须等于 hash</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">computed</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">createHmac</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;sha256&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">secret</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">update</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">dataCheckString</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">digest</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;hex&quot;</span><span style="color: #000; font-weight: bold">);</span>
+
+<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// 4. 校验 auth_date（≤ 24h）防重放</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">authDate</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">parseInt</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">params</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;auth_date&quot;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;0&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">10</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">Date</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">now</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">/</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1000</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span><span style="color: #000">authDate</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">86400</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">false</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #000">computed</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #000">hash</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<blockquote>
+<p><strong>生产事故惯例</strong>：很多 Mini App 直接信任 <code>initDataUnsafe.user.id</code> 当用户 ID 用、签发 JWT，导致<strong>遍历 user_id 偷资产</strong>；正确做法是只信服务端 <code>verifyInitData(initData)</code> 后的解析结果。</p>
+</blockquote>
+<p><strong>TonConnect SDK 工作流</strong>（与 EVM 的 wagmi 类似但走 BoC / cell 签名）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">TonConnectUI</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@tonconnect/ui&quot;</span><span style="color: #000; font-weight: bold">;</span>
+
+<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">tc</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">TonConnectUI</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">manifestUrl</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;https://yourapp.com/tonconnect-manifest.json&quot;</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #000; font-weight: bold">});</span>
+
+<span style="color: #8F5902; font-style: italic">// 1. 连接钱包（弹出 Tonkeeper / @wallet 列表）</span>
+<span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">tc</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">openModal</span><span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #8F5902; font-style: italic">// 2. 发交易（cell 编码而非 EVM tx）</span>
+<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">result</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">tc</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sendTransaction</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">validUntil</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">Math.floor</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">Date</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">now</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">/</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1000</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">360</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000">messages</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">address</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;EQxxx...&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 目标合约</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">amount</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;10000000&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8">   </span><span style="color: #8F5902; font-style: italic">// 1e7 nanoTON = 0.01 TON</span>
+<span style="color: #F8F8F8">      </span><span style="color: #000">payload</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;te6cck...&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// base64 cell（合约方法编码）</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">],</span>
+<span style="color: #000; font-weight: bold">});</span>
+
+<span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;BoC:&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">result</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">boc</span><span style="color: #000; font-weight: bold">);</span>
+</code></pre></div>
+<p><strong>Stars 支付（Telegram 自家虚拟货币）</strong>：</p>
+<ul>
+<li>Stars ↔ Toncoin 官方兑换（1 Star ≈ $0.013，2026-04）；</li>
+<li>Mini App 内调用 <code>Telegram.WebApp.openInvoice(url)</code> 触发系统级支付；</li>
+<li><strong>关键</strong>：Stars 走 Telegram 自家账，不用 TonConnect、不用钱包——苹果 / 谷歌抽 30% 跨过不去（这就是为什么 Hamster Kombat 等游戏全部转向 Stars 而不是 Toncoin）。</li>
+</ul>
+<h3 id="386-tap-to-earn">38.6 Tap-to-Earn 三大案例复盘</h3>
+<p>2024 是 TON 的"Tap-to-Earn 元年"，三个标志性产品集体把 web3 用户基数推到亿级，同时给工程师留下了一堆教科书级教训。</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>时间线</th>
+<th>用户峰值</th>
+<th>TGE 后表现</th>
+<th>留存教训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Notcoin</strong></td>
+<td>2024-01 启动 / 2024-05 TGE</td>
+<td>5000 万</td>
+<td>TGE 估值 ~$2B；空投惠及 600 万钱包；后续 -70%</td>
+<td><strong>拉取期短（4 个月）+ 空投预期清晰</strong> = 用户体感正面</td>
+</tr>
+<tr>
+<td><strong>Hamster Kombat</strong></td>
+<td>2024-Q2 / 2024-09 TGE</td>
+<td><strong>3 亿</strong>（Q3 2024 峰值）</td>
+<td>TGE 后 <strong>崩盘 90%+</strong>，用户流失 80%</td>
+<td>拉取期太长（6 个月）+ 空投打分公式临时改 = 信任崩塌</td>
+</tr>
+<tr>
+<td><strong>Catizen</strong></td>
+<td>2024-Q3 / 2024-Q4 TGE</td>
+<td>5000 万</td>
+<td>TGE 表现中等；2025 转型多游戏发行平台存活</td>
+<td>游戏化机制本身有留存（小游戏 + NFT 猫）；TGE 后转型救命</td>
+</tr>
+</tbody>
+</table>
+<p><strong>工程教训（不重复别人的坑）</strong>：</p>
+<ol>
+<li><strong>拉取期不要超过 4 个月</strong>——用户耐心是消耗品；</li>
+<li><strong>空投打分公式 TGE 前 1 个月内不可改</strong>——改一次信任永久受损；</li>
+<li><strong>Sybil 防护是产品级别问题</strong>：Hamster 没做 Sybil 检测，导致 1 个真人 100 个号；2026 趋势是<strong>集成 World ID（Worldcoin proof of personhood）</strong>或 Telegram 自家的 phone-number-uniqueness 做去重；</li>
+<li><strong>TGE 时机</strong>：用户增长曲线 <strong>拐点出现前 30 天</strong>就是最佳 TGE 窗口（晚了热度过期、早了流量不足）；</li>
+<li><strong>Tokenomics 留 30% 给二阶段激励</strong>——光靠 TGE 一次性空投留不住人。</li>
+</ol>
+<h3 id="387-telegram-bot">38.7 Telegram bot 工程通用模式</h3>
+<p>Telegram bot 是 Mini App 之外的<strong>另一条用户入口</strong>，三类 bot 在工程上设计差异巨大：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>代表</th>
+<th>钱包模型</th>
+<th>关键风险</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>托管钱包 bot</strong></td>
+<td>@wallet（Telegram 官方），TON 链</td>
+<td>Telegram 自家托管，KYC 可选</td>
+<td>平台 freeze；地区合规变化</td>
+</tr>
+<tr>
+<td><strong>Tip bot / 社区打赏</strong></td>
+<td>TipBot、TonTip</td>
+<td>共享 hot wallet 或子地址</td>
+<td>bot 主私钥泄漏 = 全部用户余额</td>
+</tr>
+<tr>
+<td><strong>Trading bot</strong></td>
+<td>Maestro、BonkBot、Banana Gun（<strong>Solana 主战场</strong>，但 Telegram 是入口）</td>
+<td>服务端代签，私钥服务器持有</td>
+<td>bot 跑路 / 服务器被黑 / 滑点欺诈</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Hot wallet 架构（trading bot / tip bot 通用）</strong>：</p>
+<figure><img src="diagram-c1bf7b8ecb.png" alt="mermaid diagram"></figure>
+
+<p><strong>典型事故 1（2023-2024 BonkBot 事件 + 多个无名 tip bot）</strong>：bot 主私钥放在普通 EC2 → 被入侵 → 几千用户的 SOL 余额一夜清零 → 团队跑路。<strong>教训</strong>：主私钥进 KMS / HSM；任何线上服务读不到全私钥（只调签名 API）。</p>
+<p><strong>典型事故 2</strong>：Trading bot 在 Solana 上做"用户 deposit → 帮买 meme"——meme migration 阶段被 sniper 抢跑（bot 自己抢用户的 tx）。<strong>教训</strong>：bot 私钥与"路由器策略账户"必须严格分开，<strong>Squads V4 多签 + program-derived address (PDA)</strong> 隔离。</p>
+<p><strong>抗 Phishing 三件套</strong>：</p>
+<ol>
+<li><strong>Deep link 验证</strong>：<code>https://t.me/yourbot?start=xxx</code> 必须服务端校验 token，避免恶意 link 直进 Mini App；</li>
+<li><strong>签名前显示原文</strong>：TonConnect / Tonkeeper 会展示原始 cell 解码后的 method + args，bot 内的"代签 UI"必须让用户看到这一层；</li>
+<li><strong>限额触发二次确认</strong>：单笔 &gt; $50 / 单日累计 &gt; $200 强制 Telegram 内 OTP 或 wallet 内人脸（@wallet 支持）。</li>
+</ol>
 <h3 id="38x-38">38.x 思考题（章 38）</h3>
 <blockquote>
 <p>Q1：TON 的 actor 模型异步消息相比 EVM 同步 call 有何优劣？</p>
 <p>Q2：Tact 与 FunC：什么时候选哪个？</p>
+<p>Q3：<code>initData</code> 服务端验签的细节里，为什么必须用 <code>HMAC-SHA256("WebAppData", botToken)</code> 当 secret，而不是直接用 botToken？</p>
+<p>Q4：Hamster Kombat TGE 崩盘的根本原因是"打分公式临时改"还是"拉取期太长"？两者结合时谁是因谁是果？</p>
 </blockquote>
 <hr />
 
@@ -5486,9 +5802,195 @@ $$</p>
 </tr>
 </tbody>
 </table>
+<h3 id="463-energy-bandwidthtron">46.3 Energy / Bandwidth：Tron 资源模型</h3>
+<p>Tron 的 gas 模型不像 EVM 那样"一笔费用一把梭"，而是<strong>两套配额 + 一套燃烧</strong>——这是为什么菲律宾外劳给老家汇 USDT 时手续费几乎为零的真实机制。</p>
+<p><strong>三种资源</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>资源</th>
+<th>用途</th>
+<th>每日免费额度</th>
+<th>不够怎么办</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bandwidth Points</strong></td>
+<td>每笔交易的字节数（≈ tx size × 1）</td>
+<td>每账户 <strong>1500 points/天</strong>（约够 5 笔普通转账）</td>
+<td>燃 TRX（每 byte ≈ 0.001 TRX）或质押 TRX 获取</td>
+</tr>
+<tr>
+<td><strong>Energy</strong></td>
+<td>合约执行的"算力"（USDT 转账 ≈ 64,285 energy）</td>
+<td><strong>0</strong>（必须自己搞）</td>
+<td>燃 TRX（每 energy ≈ 0.00021 TRX，约 $0.5/笔）或质押/租赁</td>
+</tr>
+<tr>
+<td><strong>TRX 燃烧</strong></td>
+<td>兜底：上面都没有就直接烧 TRX 抵</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Stake 2.0（2023 升级，2026 仍在用）</strong>：把 TRX 冻结在合约里换出 Energy / Bandwidth，<strong>资源以"份额"形式发放、可委托给其他地址、解冻 14 天可领回</strong>。比 Stake 1.0 灵活得多，也是 energy 租赁市场的底层基础。</p>
+<p><strong>Energy 租赁市场（2026-04 仍是 Tron 生态最活跃的子赛道之一）</strong>：</p>
+<ul>
+<li><strong>TronEnergy.market、FeeFreeing.io、Energy.Market、TRX.Market</strong>——撮合"质押方（出借 energy）"与"用户（短期借用，付一点 TRX）"。</li>
+<li>一笔 USDT 转账正常燃 TRX 要 ≈ $1.5–3，<strong>租 5 分钟 energy 只要 $0.1–0.3</strong>——这就是"Tron 转 USDT 几乎零成本"的真相。</li>
+<li>CEX（Binance/OKX/Bybit）的 USDT-TRC20 提币按这套机制底层走 energy 租赁池，用户完全无感。</li>
+<li>工程师如果做钱包 / 聚合器，在 Tron 主网"建议用户先租 energy 再发 tx"是非常有商业价值的 UX 优化。</li>
+</ul>
+<p><strong>dApp 后端实践</strong>（典型流程）：</p>
+<ol>
+<li>用 <code>triggerConstantContract</code>（dry-run）估算交易要消耗的 energy；</li>
+<li>查 <code>getAccountResource(address)</code> 拿用户当前 <code>EnergyLimit</code> / <code>EnergyUsed</code> / <code>freeNetUsed</code>；</li>
+<li>不够则自动调起租赁合约（如 TronEnergy.market 的 <code>rentResource(address, amount, duration)</code>）；</li>
+<li>租到后再发实际 USDT transfer。</li>
+</ol>
+<p><strong>最小例子（Python <code>tronpy</code>）</strong>：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">tronpy</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">Tron</span>
+<span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">tronpy.keys</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">PrivateKey</span>
+
+<span style="color: #000">client</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">Tron</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">network</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #4E9A06">&quot;mainnet&quot;</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">addr</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #4E9A06">&quot;TRxxxx...&quot;</span>
+<span style="color: #000">pk</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">PrivateKey</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">bytes</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">fromhex</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;YOUR_PK_HEX&quot;</span><span style="color: #000; font-weight: bold">))</span>
+
+<span style="color: #8F5902; font-style: italic"># 1. 查余额 + 资源</span>
+<span style="color: #000">account</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get_account</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">trx_balance</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get_account_balance</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">)</span>        <span style="color: #8F5902; font-style: italic"># TRX 余额</span>
+<span style="color: #000">res</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get_account_resource</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">energy_avail</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">res</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;EnergyLimit&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-</span> <span style="color: #000">res</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;EnergyUsed&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">bw_avail</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">res</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;freeNetLimit&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">1500</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-</span> <span style="color: #000">res</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;freeNetUsed&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #204A87">print</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">f&quot;TRX={</span><span style="color: #000">trx_balance</span><span style="color: #4E9A06">}, energy={</span><span style="color: #000">energy_avail</span><span style="color: #4E9A06">}, bandwidth={</span><span style="color: #000">bw_avail</span><span style="color: #4E9A06">}&quot;</span><span style="color: #000; font-weight: bold">)</span>
+
+<span style="color: #8F5902; font-style: italic"># 2. 估算 USDT transfer 需要的 energy</span>
+<span style="color: #000">USDT_TRC20</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #4E9A06">&quot;TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&quot;</span>
+<span style="color: #000">contract</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">get_contract</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">USDT_TRC20</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #000">need_energy</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">65_000</span>  <span style="color: #8F5902; font-style: italic"># USDT transfer 经验值</span>
+
+<span style="color: #8F5902; font-style: italic"># 3. 不够就先租（伪代码：调用某个 energy 租赁合约的 rentResource）</span>
+<span style="color: #204A87; font-weight: bold">if</span> <span style="color: #000">energy_avail</span> <span style="color: #CE5C00; font-weight: bold">&lt;</span> <span style="color: #000">need_energy</span><span style="color: #000; font-weight: bold">:</span>
+    <span style="color: #8F5902; font-style: italic"># 实际生产：调 TronEnergy.market / FeeFreeing 的 SDK</span>
+    <span style="color: #8F5902; font-style: italic"># 或直接：质押 TRX 自己换（FreezeBalanceV2）</span>
+    <span style="color: #000">txn</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">trx</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">freeze_balance</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">100_000_000</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #4E9A06">&quot;ENERGY&quot;</span><span style="color: #000; font-weight: bold">)</span>
+                <span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">build</span><span style="color: #000; font-weight: bold">()</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sign</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">broadcast</span><span style="color: #000; font-weight: bold">())</span>
+    <span style="color: #204A87">print</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;staked 100 TRX for energy:&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">txn</span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;txid&quot;</span><span style="color: #000; font-weight: bold">])</span>
+
+<span style="color: #8F5902; font-style: italic"># 4. 发实际 USDT 转账</span>
+<span style="color: #000">txn</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #000">contract</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">functions</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">transfer</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;TRyyyy...&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">10_000_000</span><span style="color: #000; font-weight: bold">)</span>  <span style="color: #8F5902; font-style: italic"># 10 USDT</span>
+       <span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">with_owner</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">fee_limit</span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">30_000_000</span><span style="color: #000; font-weight: bold">)</span>
+       <span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">build</span><span style="color: #000; font-weight: bold">()</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sign</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">broadcast</span><span style="color: #000; font-weight: bold">())</span>
+<span style="color: #204A87">print</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;usdt sent:&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">txn</span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;txid&quot;</span><span style="color: #000; font-weight: bold">])</span>
+</code></pre></div>
+<blockquote>
+<p><strong>工程师陷阱</strong>：<code>fee_limit</code> 是 TRX 燃烧上限（防 energy 不够 + 没租到 时无限烧 TRX）；很多新手忘加，账户被某个 buggy 合约烧空过案例不少。</p>
+</blockquote>
+<h3 id="464-sunswapjustlend-usddtron-defi">46.4 SunSwap、JustLend 与 USDD：Tron DeFi 三件套</h3>
+<p>Tron 链上 DeFi 长期被嘲"全是 SunIO 自家系"，但东南亚 / 大陆华人圈的 USDT 实际跑量基本都靠这三件套撑底层，工程师做支付 / 聚合器无法绕开。</p>
+<table>
+<thead>
+<tr>
+<th>协议</th>
+<th>类比 EVM</th>
+<th>2026-04 状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SunSwap V3</strong>（原 JustSwap）</td>
+<td>Uniswap V3（fork）</td>
+<td>TVL ≈ $200M；USDT-TRX、USDD-USDT 是主交易对</td>
+</tr>
+<tr>
+<td><strong>JustLend DAO</strong></td>
+<td>Compound（fork + 改 DPoS 模型）</td>
+<td>TVL ≈ $5B（多数是 TRX 借贷池，给 SR 投票套利用）</td>
+</tr>
+<tr>
+<td><strong>USDD</strong></td>
+<td>DAI / 早期 UST 混合体</td>
+<td>由 TRX 超额抵押 + PSM；2022 年短暂脱锚后稳住，但<strong>不被主流 CEX 当一类资产</strong>，使用面窄</td>
+</tr>
+<tr>
+<td><strong>stUSDT</strong></td>
+<td>RWA 货币基金</td>
+<td>由 JustLend 发行、对接美债，<strong>Tron 上最大 RWA 资产</strong>，~$2B AUM</td>
+</tr>
+</tbody>
+</table>
+<p><strong>为什么大陆华人圈"USDT 转账走 Tron"是默认选项</strong>：</p>
+<ol>
+<li><strong>CEX 提币费</strong>：Binance / OKX 提 USDT-ERC20 ≈ $5、TRC20 ≈ $1（且 energy 租赁后近乎零）；</li>
+<li><strong>OTC 商户惯性</strong>：早期场外人民币换 USDT 商户 KPI 全跑在 Tron 上，链上对账软件（Trongrid + 第三方 indexer）成熟；</li>
+<li><strong>App 内置默认</strong>：钱包（imToken / TokenPocket / TronLink / OKX Wallet）默认推 TRC20 链；</li>
+<li><strong>教程惯性</strong>：抖音 / B 站 / X 中文区做的"币圈入门"教程清一色用 Tron 演示。</li>
+</ol>
+<blockquote>
+<p><strong>工程师推论</strong>：你做面向中文用户的钱包 / 支付 / 工资发放，<strong>Tron 必须是默认链之一</strong>。做合规出海产品则反向——多数美 / 欧 / 日合规要求"客户禁用 Tron"。</p>
+</blockquote>
+<h3 id="465-tron-usdt">46.5 Tron USDT 的现实定位与合规风险地图</h3>
+<blockquote>
+<p>与 <a href="../06-DeFi与稳定币/">模块 06 §2.5</a> 的 USDT 跨链流通图交叉引用：USDT 在 Tron 是"事实跨境美元"，但合规边界极其敏感。</p>
+</blockquote>
+<p><strong>主战场地图（2026-04 经验数据，按交易笔数密度排序）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>区域</th>
+<th>主要用途</th>
+<th>替代方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>东南亚</strong>（菲、越、印尼、泰、马）</td>
+<td>外劳汇款、跨境贸易结算、灰色赌博出入金</td>
+<td>极少（Solana USDC 起步）</td>
+</tr>
+<tr>
+<td><strong>大陆华人圈</strong>（OTC + 海外华人转账）</td>
+<td>场外换汇、海外购物代付、个人储蓄</td>
+<td>极少（少数走 BSC）</td>
+</tr>
+<tr>
+<td><strong>拉美</strong>（阿、委、巴、墨）</td>
+<td>通胀避险、跨境贸易、收外贸单</td>
+<td>USDC-Solana 增长快</td>
+</tr>
+<tr>
+<td><strong>非洲</strong>（尼日利亚、肯尼亚、加纳、南非）</td>
+<td>外汇管制规避、freelancer 收款</td>
+<td>M-Pesa 衔接、Bitnob (Lightning)</td>
+</tr>
+<tr>
+<td><strong>CIS / 俄罗斯</strong></td>
+<td>制裁规避、能源贸易结算</td>
+<td>USDT-ERC20 部分回流</td>
+</tr>
+<tr>
+<td><strong>中东</strong>（土耳其、伊朗灰色市场）</td>
+<td>法币贬值避险、灰色贸易</td>
+<td>USDT-ERC20、稳定币本地结算所</td>
+</tr>
+</tbody>
+</table>
+<p><strong>合规风险（工程师 / 创业者必须心里有数）</strong>：</p>
+<ul>
+<li><strong>OFAC / FinCEN</strong>：USDT-TRC20 长期是被点名的 "high-risk corridor"——做美 / 欧 KYC 友好产品时，Tron 入金常被默认归"高风险"评分；</li>
+<li><strong>Tether 自身冻结</strong>：Tether 公司可远程冻结任意地址（2024-2026 累计冻结额超 $5B），意味着 Tron USDT <strong>不是无许可资产</strong>——做 DeFi / RWA 时必须接受这个事实；</li>
+<li><strong>Justin Sun 合规风评</strong>：2023-03 SEC 对 Sun + TRX/BTT 的诉讼仍未完全和解（2026-04 状态），任何"主动建在 Tron 上的项目"在美 / 欧合规审查里都会被加额外问询；</li>
+<li><strong>大陆 9.24 通知</strong>：在大陆境内为 Tron 项目工作 / 持仓 / 提供技术服务都属于"金融违法风险敞口"——见<strong>附录 X</strong>。</li>
+</ul>
+<p><strong>结论</strong>：Tron 是工程师<strong>必须能读、能转、能聚合</strong>，但<strong>少主动建产品</strong>的链。把它当 USDT 的"运输管道"用，别当"创业平台"用。</p>
 <h3 id="46x-46">46.x 思考题（章 46）</h3>
 <blockquote>
 <p>Q1：Tron 的合规风险与"事实使用量"——工程师该如何看待这种"非主流但巨大"的市场？</p>
+<p>Q2：Energy 租赁市场是 Tron "几乎零费"假象的真实底层；如果监管要求"所有手续费必须由用户原生支付"，这套机制会出什么问题？</p>
+<p>Q3：USDT-TRC20 与 USDT-ERC20 都是同一份发行储备的两个"链上分身"，但合规评分截然不同——你的支付产品如果要做"币种兼容、链中立"，会怎么设计？</p>
 </blockquote>
 <hr />
 
@@ -6510,6 +7012,307 @@ $$</p>
 <li><a href="https://www.mexc.com/news/583975">MegaETH Mainnet Launch 35K TPS (MEXC)</a></li>
 </ul>
 <p>注：本模块版本号、TVL、TPS 等数字均为成稿时（2026-04）公开数据。链上世界变化飞快，实际开发请以官方最新文档为准。</p>
+<hr />
+
+</section><section class="chapter">
+<h2 id="x-2026-04" id="ch73"><span class="chapter-num">Chapter 73</span><br>附录 X · 中文圈替代生态现实（2026-04）</h2>
+
+<blockquote>
+<p><strong>场景钩子</strong>：09 模块前面所有内容都假定"工程师身处合规友好地区"；但中文圈工程师面对的是另一套现实——大陆 9.24 通知、香港 HKMA 稳定币条例、新加坡 / 迪拜 / 巴厘的"灰色合规带"、华人创立公司的隐性人脉网络。这套现实不写在任何一份英文 spec 里，但决定了你能做什么、不能做什么、以及在哪做。</p>
+</blockquote>
+<h3 id="x1-dev-924">X.1 大陆 dev 现实（9.24 通知后的合规边界）</h3>
+<p>2021-09-24 中国央行等十部委联合通知后，大陆境内的"虚拟货币业务"被明确归为"非法金融活动"。但工程师群体并未消失——而是迁移到一套<strong>心照不宣的边界规则</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>合规风险</th>
+<th>实际状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>在大陆境内为海外 web3 公司<strong>远程</strong>写代码</td>
+<td>灰色（个税申报正常 + 不主动持有 token）</td>
+<td>极常见，主流路径</td>
+</tr>
+<tr>
+<td>在大陆境内<strong>自己发 token / 运营 DeFi 协议</strong></td>
+<td><strong>明确违法</strong></td>
+<td>高风险，2024-2026 多起被追溯案例</td>
+</tr>
+<tr>
+<td>在大陆境内做<strong>安全审计 / 工具开发</strong>（不直接接触资产）</td>
+<td>灰色</td>
+<td>可做，慎接陆境付费客户</td>
+</tr>
+<tr>
+<td>大陆境内<strong>领空投 / 持仓</strong></td>
+<td>灰色（无明确刑事条款，但金融账户审查会注意）</td>
+<td>多数选择"持仓在境外钱包 / 海外 KYC 交易所"</td>
+</tr>
+<tr>
+<td>翻墙<strong>学习 / 阅读 web3 内容</strong></td>
+<td>不构成虚拟货币业务</td>
+<td>普遍</td>
+</tr>
+</tbody>
+</table>
+<p><strong>工程师典型选择</strong>：</p>
+<ol>
+<li><strong>远程在大陆，雇主在境外</strong>：薪资走 USDC → 香港 / 新加坡银行账户 → 必要时少量结汇；</li>
+<li><strong>不主动在国内地址持仓</strong>：所有头寸放海外 CEX / 自托管硬件钱包；</li>
+<li><strong>不在国内做线下 web3 meetup 主讲 / 拉群运营</strong>：这是 2024-2026 多起被找谈话案例的共同路径。</li>
+</ol>
+<h3 id="x2-web3-2024-2025">X.2 香港 Web3 制度（2024-2025 立法周期）</h3>
+<p>香港 2022 年 10 月发布 <em>Virtual Asset Policy Statement</em>，2024-2025 进入立法收口期，是中文圈<strong>唯一</strong>走"明确许可证 + 合规通道"路线的地区：</p>
+<table>
+<thead>
+<tr>
+<th>制度</th>
+<th>时间</th>
+<th>工程师相关度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HKMA 稳定币条例</strong></td>
+<td>2024-12 立法 / <strong>2025-08-01 生效</strong></td>
+<td>在港发行 / 推广法币挂钩稳定币需 HKMA 牌照（首批 OSL / 京东币链 / 渣打入围测试）</td>
+</tr>
+<tr>
+<td><strong>SFC 1 / 7 / 9 号牌</strong></td>
+<td>2024-2025 持续发牌</td>
+<td>1 号 = 证券交易；7 号 = 自动化交易服务；9 号 = 资产管理；做合规 trading 系统 / 资管产品需对应牌照</td>
+</tr>
+<tr>
+<td><strong>HashKey / OSL / VDX</strong></td>
+<td>持牌交易所</td>
+<td>香港散户合规出入金主通道</td>
+</tr>
+<tr>
+<td><strong>Liquid Staking 香港试点</strong></td>
+<td>2025-Q3 启动（HKMA 沙盒）</td>
+<td>ETH / SOL liquid staking 在港首次进入试点白名单</td>
+</tr>
+<tr>
+<td><strong>数字债券 / RWA 试点</strong></td>
+<td>2024-2026 持续</td>
+<td>HKMA 数字绿色债券、汇丰代币化存款</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>工程师推论</strong>：做合规 web3 产品并面向中文用户，<strong>香港是唯一同时具备"法律明确 + 中文母语 + 与大陆人才市场打通"</strong>的法域。新加坡更国际化、迪拜更激进、但都不如香港在中文工程师配套上自然。</p>
+</blockquote>
+<h3 id="x3-web3">X.3 出海路径（华人 web3 创业的法域选择）</h3>
+<table>
+<thead>
+<tr>
+<th>法域</th>
+<th>牌照</th>
+<th>适合</th>
+<th>痛点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>新加坡</strong></td>
+<td>PSA（DPT 数字支付代币）/ MAS</td>
+<td>资管、合规交易、稳定币发行</td>
+<td>MAS 2024 起明显收紧零售产品；牌照成本高</td>
+</tr>
+<tr>
+<td><strong>迪拜</strong></td>
+<td>VARA</td>
+<td>衍生品 / perp DEX / token 发行</td>
+<td>监管框架新，落地实操还在磨合</td>
+</tr>
+<tr>
+<td><strong>巴厘 / 清迈 / 布达佩斯</strong></td>
+<td>无</td>
+<td>远程节点、低成本 dev base</td>
+<td>不能做 2C 业务；签证不稳定</td>
+</tr>
+<tr>
+<td><strong>开曼 / BVI</strong></td>
+<td>离岸公司</td>
+<td>token issuer 主体、基金主体</td>
+<td>银行开户越来越难；需配实际运营地</td>
+</tr>
+<tr>
+<td><strong>塞舌尔 / 马绍尔</strong></td>
+<td>DAO 友好</td>
+<td>链上 DAO 法律实体壳</td>
+<td>资本市场不认；银行配套差</td>
+</tr>
+<tr>
+<td><strong>日本</strong></td>
+<td>JFSA</td>
+<td>合规 token / 资管</td>
+<td>监管最严之一；2025 Web3 White Paper 后稍松</td>
+</tr>
+<tr>
+<td><strong>韩国</strong></td>
+<td>FSC</td>
+<td>合规交易所 / KYC 要求</td>
+<td>DAXA 五大所垄断、新进入难</td>
+</tr>
+</tbody>
+</table>
+<p><strong>典型出海架构</strong>（2026-04 大量华人创业团队在用）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>开曼 token issuer（合约持有 + 发行主体）
+   ├── BVI / Cayman SPV（基金 / 投资主体）
+   ├── 新加坡 / 香港运营公司（雇佣 + 商业合同）
+   ├── 巴厘 / 清迈 / 北京远程 dev 团队（实际写代码）
+   └── 美国 / 欧洲非运营子公司（合规友好门面）
+</code></pre></div>
+<h3 id="x4">X.4 华人创立 / 主导的代表性公司（不完全列表）</h3>
+<p>工程师在中文圈找工作 / 找投资人 / 选合作伙伴，绕不开这些名字：</p>
+<table>
+<thead>
+<tr>
+<th>公司</th>
+<th>创始人</th>
+<th>赛道</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Conflux</strong></td>
+<td>龙凡</td>
+<td>L1 公链</td>
+<td>上海树图研究院孵化、2024 与中国移动 BSIM 合作</td>
+</tr>
+<tr>
+<td><strong>Plasma Labs</strong></td>
+<td>（华人创始团队，新加坡注册）</td>
+<td>稳定币基础设施</td>
+<td>2025 主网</td>
+</tr>
+<tr>
+<td><strong>GoPlus Security</strong></td>
+<td>（华人安全团队）</td>
+<td>链上安全 / 风险评分 API</td>
+<td>跨链、被多数主流钱包集成</td>
+</tr>
+<tr>
+<td><strong>Bitget</strong></td>
+<td>Gracy Chen 等</td>
+<td>CEX</td>
+<td>派生品强、东南亚 + CIS 主战场</td>
+</tr>
+<tr>
+<td><strong>OKX</strong></td>
+<td>徐明星等（已淡出）</td>
+<td>CEX + Web3 钱包</td>
+<td>全球前三大所</td>
+</tr>
+<tr>
+<td><strong>Bybit</strong></td>
+<td>Ben Zhou</td>
+<td>CEX</td>
+<td>衍生品 + 全球零售</td>
+</tr>
+<tr>
+<td><strong>Cobo</strong></td>
+<td>神鱼（Discus Fish）</td>
+<td>机构托管 / MPC 钱包</td>
+<td>香港 + 新加坡，机构客户首选</td>
+</tr>
+<tr>
+<td><strong>SafeHeron</strong></td>
+<td>（华人创始团队）</td>
+<td>MPC 钱包 / 自托管</td>
+<td>偏机构、企业级</td>
+</tr>
+<tr>
+<td><strong>Babylon Labs</strong></td>
+<td>张翼</td>
+<td>BTC staking</td>
+<td>见 §34</td>
+</tr>
+<tr>
+<td><strong>HashKey</strong></td>
+<td>肖风 / 邓超等</td>
+<td>香港持牌交易所 + 投资</td>
+<td>香港合规 web3 头部</td>
+</tr>
+<tr>
+<td><strong>Movement / Initia</strong> 等</td>
+<td>（部分核心 dev 华人）</td>
+<td>Move 系 L1 / L2</td>
+<td>见模块 03 + 09 §C</td>
+</tr>
+<tr>
+<td><strong>imToken / TokenPocket</strong></td>
+<td>何斌 / Mike Yu</td>
+<td>钱包</td>
+<td>中文圈月活最高的两个钱包</td>
+</tr>
+</tbody>
+</table>
+<h3 id="x5">X.5 中文圈常用社区与媒体</h3>
+<table>
+<thead>
+<tr>
+<th>名字</th>
+<th>类型</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HiFi（嗨范）</strong></td>
+<td>投研社区</td>
+<td>高质量中文研报、机构友好</td>
+</tr>
+<tr>
+<td><strong>Web3Caff</strong></td>
+<td>行业媒体</td>
+<td>偏深度内容，编辑团队专业</td>
+</tr>
+<tr>
+<td><strong>链闻 ChainNews</strong></td>
+<td>综合媒体</td>
+<td>老牌中文 web3 新闻</td>
+</tr>
+<tr>
+<td><strong>律动 BlockBeats</strong></td>
+<td>综合媒体</td>
+<td>资讯 + 专栏 + 投研</td>
+</tr>
+<tr>
+<td><strong>DeThings</strong></td>
+<td>行业媒体</td>
+<td>偏 East-Asia 视角</td>
+</tr>
+<tr>
+<td><strong>PANews</strong></td>
+<td>综合媒体</td>
+<td>中英双语，机构关注度高</td>
+</tr>
+<tr>
+<td><strong>Foresight News</strong></td>
+<td>行业媒体</td>
+<td>与 Foresight Ventures 关联</td>
+</tr>
+<tr>
+<td><strong>Odaily 星球日报</strong></td>
+<td>综合媒体</td>
+<td>中文老牌资讯站</td>
+</tr>
+<tr>
+<td><strong>Decentralized.co</strong>（dt.co）</td>
+<td>投研</td>
+<td>偏研究、英文，中文圈热度上升</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>工程师推论</strong>：用 X / Twitter 看 alpha、用 HiFi / Web3Caff / 律动 看深度中文研报、用 OK 投研 / Foresight 看机构视角——三层信息源缺一不可。中文 web3 信息生态独立运作，不是英文世界的延迟翻译。</p>
+</blockquote>
 <hr />
 <p><strong>END OF MODULE 09</strong></p>
 <hr />

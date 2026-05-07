@@ -8,6 +8,12 @@
 >
 > 这两件事是本章的起点。RAG 不是"塞文档进 prompt"那么简单。它是**一个有十层以上的 pipeline，每一层都可以独立把准确率从 90% 砍到 30%**。本章的目标，是把这十层全部摊开来讲，并给出一套从 Naive RAG 到 Agentic RAG 的可跑代码。
 
+> **【小白速读】**
+> 别被下面满屏术语吓到。RAG 本质就两件事：
+> 1. **切**：把所有文档切成一段段小碎片（叫 chunk）。
+> 2. **找**：用户提问时，把问题和所有碎片做相似度比较，把最像的几片塞进 prompt 给 LLM。
+> 其他所有花哨名词（embedding、reranker、HyDE、contextual retrieval、GraphRAG）都是在「切得更准」或「找得更对」上做优化。先记住这两步，每读一节问自己：这是在优化"切"还是优化"找"？
+
 ---
 
 ## 0. RAG 是什么、何时用 RAG vs 微调
@@ -72,7 +78,19 @@ Anthropic 的 contextual retrieval 博客明确说了：**知识库小于 20 万
 4. 把 top-k 拼进 prompt → 调 LLM → 输出
 ```
 
+> 名词速通 · **embed（嵌入）**：把一段文字变成一串数字（向量），近义文字得到的向量在空间里也接近。这一步让"找相似文本"变成"找最近的向量"。
+
 四步，60 行代码，第一周就能跑起来。但 Naive RAG 在生产里几乎一定会翻车，原因后面慢慢拆。先把骨架立起来：
+
+**跑这段代码前你要做的 3 件事**：
+
+```bash
+pip install openai chromadb
+export OPENAI_API_KEY=sk-...
+echo "Python 中 list 是可变的，tuple 是不可变的..." > python-tutorial.txt
+```
+
+跑起来你会看到 LLM 输出一段中文回答，里面引用了你刚写的那行文本。
 
 ```python
 # naive_rag.py — 一份能跑的最简 RAG
@@ -247,7 +265,7 @@ for node in tree.root_node.children:
 ### 3.1 Embedding 模型的核心指标
 
 - **维度**：通常 256-4096。维度越高表达能力越强，但存储和查询成本同步上升。
-- **上下文窗口**：能编码多长的文本。通常 512-8192 tokens，BGE-M3 / Qwen3 系列做到 8K。超长则截断，影响很大。
+- **上下文窗口**：能编码多长的文本。通常 512-8192 tokens，BGE-M3 / Qwen3 系列做到 8K。超长则截断，影响很大。（**BGE-M3** 是智源研究院开源的中英双语 embedding 模型，本节后面会展开，记住这是中文 RAG 的事实标准开源选项之一。）
 - **多语言能力**：纯英文模型（OpenAI 老版）在中文文档上排序经常失序。
 - **MTEB / C-MTEB 排名**：[MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) 是最权威的多任务榜单，C-MTEB 是中文专版。
 
@@ -441,6 +459,8 @@ def hybrid_search(query: str, top_k: int = 10):
 
 向量检索的本质是**双塔（bi-encoder）**：query 和 doc 各自独立编码，最后做点积。这种结构便宜——doc embedding 可以离线算好——但牺牲了 query 和 doc 的交互。
 
+> 名词速通 · **bi-encoder vs cross-encoder**：bi-encoder 是"两个人各自看完题、对答案"——查询和文档分别变成向量再算距离，可以离线预算好，便宜但粗。cross-encoder 是"两人坐一桌一起读"——把 query+doc 拼起来一次过模型出分数，准但只能在线跑。RAG 工程里"先粗排再精排"就是 bi-encoder 召回 + cross-encoder 重排。
+
 重排器是**交叉编码（cross-encoder）**：把 query 和 doc 拼成一个序列，过一个完整 transformer，输出相关度分数。这样能捕捉细粒度交互，准确率显著高于双塔。**代价是不能预计算**——必须 online 跑，所以只对 top-N 做（N 通常 50-200）。
 
 ```
@@ -523,6 +543,8 @@ def rerank(query: str, candidates: list[str], top_k: int = 5):
 ### 6.1 HyDE：用假答案找真文档
 
 [Gao et al. 2022 · Precise Zero-Shot Dense Retrieval without Relevance Labels](https://arxiv.org/abs/2212.10496)。
+
+> 名词速通 · **HyDE（Hypothetical Document Embeddings）**：直译"假设性文档嵌入"。问句和答句的语言风格不同，直接用问句去匹配文档容易找偏；HyDE 让 LLM 先写一段"假装是答案"的文字，再用这段文字去检索，匹配率更高。
 
 **问题**：用户的查询是问句（"如何取消订阅"），文档是陈述（"订阅终止流程"）。两者在 embedding 空间天然有距离。
 
@@ -643,6 +665,8 @@ LlamaIndex 的 [Auto-Merging Retriever](https://docs.llamaindex.ai/en/stable/exa
 
 [Sarthi et al. 2024 · Stanford](https://arxiv.org/abs/2401.18059)。
 
+> 名词速通 · **RAPTOR**：把所有 chunk 自下而上做"摘要的摘要"，构建一棵摘要树。具体问题去叶子层找细节，全局问题去高层找概览——解决"一本书的中心思想是什么"这类纯 chunk 答不了的问题。
+
 **问题**：用户问「这本 200 页的书的核心论点是什么？」——任何一个 chunk 都答不了，需要全局视角。
 
 **RAPTOR 解法**：自底向上构建一棵摘要树：
@@ -663,6 +687,8 @@ Level 2: 摘要的摘要
 ### 6.6 Contextual Retrieval（Anthropic 2024-09）
 
 [Anthropic 博客](https://www.anthropic.com/news/contextual-retrieval) 提出，是过去两年 RAG 改进里**ROI 最高的单点优化之一**。
+
+> 名词速通 · **Contextual Retrieval（上下文检索）**：每个 chunk 入库前，让 LLM 给它写一句"我在原文档里是讲什么的"前缀，再去 embed。代价是 ingest 时多调一次 LLM，收益是失败率显著下降。本质上是"切之前先给每片碎片贴个便签"。
 
 **问题**：chunk 被切出来后失去上下文。一句"它的销售额比上季度增长 12%"，没有"它"指什么、"上季度"是哪个季度。embedding 出来的向量含义不清。
 
@@ -1637,6 +1663,12 @@ L3 特别值得注意：Claude 的 prompt cache 让不变的部分（system prom
 ---
 
 ## 12. 章节小结：决策清单
+
+> **【本章核心收获】**
+> 1. **RAG = 切 + 找 + 拼**。所有技术都在优化"切"或"找"。
+> 2. **准确率 ROI 排序**（按 Anthropic 实验数据）：reranker 单点收益最大 → contextual retrieval 次之 → hybrid (BM25+dense) 再次之 → 换 embedding 模型最后才考虑。
+> 3. **没有评估集等于没在做工程**。50 条手标 golden set + ragas，是 RAG 工程师的"心电图"。
+
 
 读到这里，下次接到 RAG 需求，先按这个顺序问自己：
 

@@ -1,0 +1,7 @@
+flowchart LR
+    User[用户提币请求] --> Risk[风控引擎]
+    Risk -->|< 5 ETH| Hot[热钱包<br/>HSM/MPC 自动签]
+    Risk -->|5-100 ETH| Warm[温钱包<br/>3/5 multisig]
+    Risk -->|> 100 ETH 或<br/>批量出币需补水| Cold[冷钱包<br/>离线签名]
+    Cold -->|定期补水| Warm
+    Warm -->|定期补水| Hot

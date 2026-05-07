@@ -12,7 +12,7 @@
 
 ## 章节地图
 
-**主线**（§1-§18）→ **附录**（A-H 按需深入）。前八节是"能跑起来"的最小闭环，§9 起是把它运营好的工程化。
+**主线**（§1-§19）→ **附录**（A-I 按需深入）。前八节是"能跑起来"的最小闭环，§9 起是把它运营好的工程化，§14 是 CEX 工程视角。
 
 ```mermaid
 flowchart TD
@@ -23,14 +23,15 @@ flowchart TD
     MEV --> Idx[§6 Indexer<br/>Ponder 一例]
     Idx --> Net[§7 测试网 vs 主网]
     Net --> CI[§8 CI/CD<br/>Foundry GitHub Actions]
-    CI --> Data[§9 数据分析平台<br/>Dune/Flipside/Allium]
-    Data --> Mon[§10 监控告警<br/>Tenderly/OZ Monitor/Forta]
+    CI --> Data[§9 数据分析平台<br/>Dune/Flipside/Allium + OSINT]
+    Data --> Mon[§10 监控告警<br/>Tenderly/OZ Monitor/Forta + OSINT]
     Mon --> Tool[§11 开发工具链<br/>Foundry/Hardhat 3]
     Tool --> Pipe[§12 完整 CI/CD 流水线]
-    Pipe --> Key[§13 密钥管理<br/>AWS KMS / Fireblocks]
-    Key --> Exp[§14 区块浏览器]
-    Exp --> Lab[§15 实战合集 / §16 习题]
-    Lab --> AI[§17 AI 影响 / §18 延伸阅读]
+    Pipe --> Key[§13 密钥管理 + KYT/AML<br/>AWS KMS / Fireblocks / Chainalysis]
+    Key --> CEX[§14 CEX 工程实战<br/>充提 / 三层钱包 / 机构托管]
+    CEX --> Exp[§15 区块浏览器]
+    Exp --> Lab[§16 实战合集 / §17 习题]
+    Lab --> AI[§18 AI 影响 / §19 延伸阅读]
     AI --> App[附录 A-I<br/>reth 内部 · CL 横评 · Validator<br/>DVT · MEV 详 · Ponder schema · Slashing · Pectra · Light Client/RPC/Indexer]
 ```
 
@@ -662,6 +663,100 @@ curl https://api.echo.xyz/v1/transactions/evm/pending/0xVITALIK \
 
 Allium 在 reorg 处理上更严谨, 适合给监管报数。Dune 适合产品 & marketing。
 
+### 9.5 自建 Dune dashboard 全流程（OSINT 入门）
+
+前面四小节给的是"平台横评"——这里给一条具体的、能在 30 分钟内端到端跑通的工作流。Dune 的 OSINT 价值在于：**任何人都能 fork 别人的 query / dashboard、改 SQL、再 publish 出来**——是链上数据领域最像 GitHub 的协作平面。
+
+#### 工作流四步
+
+```mermaid
+flowchart LR
+    A[discover<br/>找已有 query] --> B[fork<br/>复制到自己空间]
+    B --> C[改 SQL<br/>调阈值/链/时间窗]
+    C --> D[publish<br/>dashboard + iframe]
+    D --> E[订阅推送<br/>Telegram / webhook]
+```
+
+1. **discover**：搜索已有 query / dashboard（如 `@hildobby/staking`、`@21co` 系列），优先 fork 高 star 的；
+2. **fork**：右上角 "Fork query"——你拿到一份可改的 SQL 副本，参数可暴露成 `{{var}}`；
+3. **改 SQL**：常用三张大表见下；
+4. **publish + iframe**：每个 query 都有一个 `https://dune.com/embeds/<id>/<vis>` 链接，直接嵌入 README、Notion、内部门户。
+
+#### Dune SQL 关键大表（DuneSQL / Trino 方言）
+
+| 表 | 用途 | 关键列 |
+|---|---|---|
+| `ethereum.transactions` | 全链 tx | `hash`, `from`, `to`, `value`, `gas_used`, `block_time`, `success` |
+| `ethereum.logs` | 全链 event log | `address`, `topic0`, `topic1..3`, `data`, `block_time`, `tx_hash` |
+| `ethereum.traces` | internal tx | `from`, `to`, `value`, `call_type`, `error`, `tx_hash` |
+| `prices.usd` | 历史 USD 价（多链 token） | `contract_address`, `blockchain`, `price`, `minute` |
+| `tokens.erc20` | ERC20 元数据 | `contract_address`, `symbol`, `decimals` |
+| `dune.<wizard>.result_<id>` | 引用别人的 query 结果 | 任意 |
+
+> Solana / Bitcoin / Cosmos 链对应 `solana.transactions`、`bitcoin.transactions`、`cosmos.<chain>.txs`。
+
+#### 模板 query 1：大额 USDC 转账（>$1M 阈值）
+
+```sql
+-- 过滤夜间噪声：只看 Transfer event value > $1M 的转账
+SELECT
+    block_time,
+    "from"  AS sender,
+    "to"    AS recipient,
+    value / 1e6 AS usdc_amount,
+    tx_hash
+FROM erc20_ethereum.evt_Transfer
+WHERE contract_address = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48  -- USDC
+  AND value > 1000000 * 1e6                                          -- $1M
+  AND evt_block_time > now() - interval '24' hour
+ORDER BY block_time DESC
+LIMIT 200
+```
+
+#### 模板 query 2：CEX 钱包归集（识别热钱包）
+
+```sql
+-- 把 24h 内向 Binance hot wallet 转账 > $100k 的地址列出来
+SELECT
+    "from"   AS depositor,
+    SUM(value) / 1e6 AS total_usdc,
+    COUNT(*) AS tx_count,
+    MIN(evt_block_time) AS first_seen
+FROM erc20_ethereum.evt_Transfer
+WHERE contract_address = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+  AND "to" IN (
+      0x28C6c06298d514Db089934071355E5743bf21d60,  -- Binance 14
+      0x21a31Ee1afC51d94C2eFcCAa2092aD1028285549,  -- Binance 15
+      0xDFd5293D8e347dFe59E90eFd55b2956a1343963d   -- Binance 16
+  )
+  AND evt_block_time > now() - interval '24' hour
+GROUP BY 1
+HAVING SUM(value) / 1e6 > 100000
+ORDER BY total_usdc DESC
+```
+
+#### 模板 query 3：ETH 质押率（生态指标）
+
+```sql
+-- beacon chain 总质押 ETH ÷ 总供应
+WITH staked AS (
+    SELECT SUM(amount) / 1e9 AS eth_staked
+    FROM ethereum.beacon_deposits
+)
+SELECT
+    eth_staked,
+    eth_staked / 120000000.0 AS staking_ratio
+FROM staked
+```
+
+#### 嵌入与推送
+
+- **iframe**：`<iframe src="https://dune.com/embeds/123456/789012" width="100%" height="400"></iframe>` 直接贴 README；
+- **Telegram bot webhook**：Dune Pro 支持 query 调度（每 5 min/1 h），结果 POST 到 webhook，配 Bot Father 创建机器人转发；
+- **API 拉取**：免费 tier 1000 calls/月，`GET /api/v1/query/{id}/results` 给后端定时任务。
+
+> OSINT 进阶（Arkham 实体追踪 / Whale Alert / 追资金剧本）见 §10.6。
+
 ---
 
 ## 10. 监控告警
@@ -817,6 +912,61 @@ flowchart TD
     B -->|是| E[OpenZeppelin Monitor 开源版 + 自有 dispatcher]
     B -->|否| F[Tenderly Alert]
 ```
+
+### 10.6 OSINT 全网监听
+
+§10.1-§10.5 偏"自家协议防御"——配置 alert 监控**自己合约**的异常调用。但在攻防实战里，工程师更需要**全网监听**：别家协议被打的 5 分钟内能否同步发现？某个聪明钱地址刚刚动了仓？某交易所储备金正在异常下降？这一节给三条可立即起跑的免费/平价线，外加一份"追资金完整剧本"。
+
+#### 三条免费 OSINT 线（零代码起步）
+
+| 工具 | 类型 | 你能拿到什么 | 价格 | 起跑速度 |
+|---|---|---|---|---|
+| **Forta 公共 bot 网络** | 链上 bot 网络 | 异常 tx / suspicious contract / phishing 的 finding 流 | 免费查询 | 5 min |
+| **Whale Alert** | webhook + Twitter | 链上 > $1M 转账的实时推送 | 免费 Twitter / $$$ webhook | 1 min |
+| **Arkham Alert** | 实体级 alert | 某个 entity（个人/机构/CEX）的资金异动 | 免费基础 / $$ 高级 | 3 min |
+
+**集成示例**：Forta + Telegram bot —— 订阅 Forta GraphQL `alerts(severity: HIGH, chainIds: [1])`，把 finding 转发到 Telegram 群，5 分钟搭好"全网攻击早报"。Whale Alert webhook 直接 POST JSON 到 Slack，关键字段 `amount_usd / from.owner / to.owner / blockchain`。
+
+#### Etherscan 工程化用法（常被忽略的细节）
+
+Etherscan 不只是"查 tx"——它有四个**工程化**功能：
+
+1. **Public Name Tag**：地址的全网公认标签（如 `Binance 14`、`Tornado.Cash Router`）。批量查询时 join 上 name tag 等于免费的"实体识别层"。
+2. **Private Notes**：登录后给任意地址写私有备注，自动出现在自己看的所有 tx 页面——做调查时给"嫌疑地址"做笔记。
+3. **Watch List**：收藏一组地址，邮件 / push 推送 in/out tx。免费 tier 限 30 个地址，够个人 oncall 用。
+4. **Token Approvals 视图**（对照 [revoke.cash](https://revoke.cash)）：列出地址当前所有 ERC20/721 approvals，撤销面板。这是钓鱼防御 #1 工具。
+
+#### Arkham Intelligence 实体追踪
+
+Arkham 把**地址**抽象成**实体**（Entity，如 "Justin Sun"、"Three Arrows Capital"、"FTX bankruptcy estate"）——背后是一套人工 + ML 标注的图谱。
+
+| 功能 | 用途 | 免费/付费 |
+|---|---|---|
+| **Entity 页** | 看某实体的所有钱包、净值、近期动作 | 免费 |
+| **Visualizer** | 资金流向图（节点 = 地址，边 = tx），交互式追溯 | 免费 |
+| **Alert** | 实体级 alert（如 "Justin Sun 任一钱包 deposit > $5M 到 CEX"） | 免费基础 |
+| **Ultra**（赏金市场） | 公开悬赏 "把 X 地址的 owner 标出来"，社区竞标 | 付费 |
+
+实体追踪典型用法：调查 SAFE 钱包时把所有 signers 拖到 Visualizer，发现其中两个 signer 共同给 Tornado Cash 做过 deposit——这是**复合身份**信号，给安全团队多一条线索。
+
+#### 追资金完整剧本（4 步）
+
+收到"协议被盗"告警后，资金溯源标准流程：
+
+1. **黑客地址 → exploit tx**：从 Tenderly / Etherscan 看 root tx，找到 attacker EOA。
+2. **资金分支映射**：Arkham Visualizer 输入 attacker，按 hop 展开，标注每条分支的"目的地类型"（CEX / mixer / bridge / 长期持有）。
+3. **跨链追踪**：如果走 bridge（LayerZero / Axelar / Across），跨链 source tx → dest tx 的关联通过 `messageHash` / `nonce`；Allium 的 `bridge.transfers` 表直接给映射。
+4. **CEX 入金锁定**：如果分支落到 CEX hot wallet，截图 + 时间戳 + 金额，发邮件给 CEX 安全团队（Binance/Coinbase 都有 abuse@）申请冻结。具体取证方法交叉参考 [模块 05 §1.3 链上取证](../05-智能合约安全/README.md)。
+
+> 五大 mixer / privacy 工具（Tornado Cash / Railgun / Aztec / Privacy Pools / FixedFloat）追踪难度依次递减，详见模块 05。
+
+#### 应用三件套（OSINT 商业化）
+
+1. **DeFi 攻击溯源**：Forta + Arkham 组合，自动化产出"被打协议 + 黑客资金路径"——这是 SecOps / DAO Treasury 团队的日常需求。
+2. **巨鲸 / 聪明钱跟单**：Arkham Entity Alert + Nansen Smart Money（付费）+ Whale Alert，组合成"top 100 trader 跟单信号源"——Crypto Twitter 上很多账号靠这个流量起家。
+3. **交易所 PoR + 负债侧攻击面**：交叉参考 [模块 08 PoR](../08-合规与监管/README.md)——Etherscan/Arkham 看 CEX 储备地址，Dune query 看 24h 净流入流出，配合 PoR Merkle proof，能在 CEX "半夜偷偷搬家"前 2-6 小时提前警报（FTX 倒闭前几天链上数据已发出信号）。
+
+> Arkham vs Nansen：Arkham 偏"实体识别 + 资金流向图"，UI 友好免费多；Nansen 偏"标签 + 聪明钱信号"，订阅 $150-1500/月。两者搭配是机构 OSINT 标配。
 
 ---
 
@@ -1296,9 +1446,263 @@ flowchart LR
 
 Frame 比直接 ledgerhq 集成体验好太多。部署 Foundry script 配 Frame, 几乎零摩擦。
 
+### 13.8 合规节点服务与 KYT/AML API
+
+§3.4 erpc 网关里 `bloxroute.regulated` 这一行经常被读者忽略——它代表的是一整个**合规节点服务 + KYT/AML API**生态：在 tx 落到 mempool 前先做一道筛查。Travel Rule（FATF）落地、OFAC SDN 制裁名单扩张、欧盟 MiCA 全面生效（2025-12）后，CEX、合规 prime broker、被监管 stablecoin 发行方**几乎都强制接入** KYT/AML 服务。下面给三家主流的对比、三层集成位、以及一段可直接抄的 Forta SAR-ready 数据吐出代码。
+
+#### KYT/AML API 三家对比（2026-04）
+
+| 厂商 | 核心能力 | 链覆盖 | 集成方式 | 客户画像 | 价格梯度 |
+|---|---|---|---|---|---|
+| **Chainalysis KYT** | 实时 tx 风险评分、地址聚类、SAR 报告导出 | 25+ 链（含 BTC/ETH/Solana/Tron） | REST API + webhook | CEX / 银行 / 监管机构 | 企业级，年合同 $50k+ |
+| **TRM Labs** | 地址聚类、风险标签（黑客/制裁/勒索/混币）、Travel Rule 集成 | 30+ 链 | REST API + GraphQL | CEX / DeFi 协议 / 政府 | $$ 中位 |
+| **Elliptic Lens** | 链上行为分析、AML 报告、调查 case 管理 | 20+ 链 | REST + UI 调查台 | 银行 / 调查机构 | $$$ 高位 |
+
+> 三家都参与了 2024-2025 北朝鲜 Lazarus / Bybit hack 资金溯源——是机构调查的事实标准。开源替代极少（GraphSense 最接近，但标签库远不如商业）。
+
+#### 三层集成位（前端 / 后端 / 链上）
+
+```mermaid
+flowchart TD
+    User[用户钱包连接] -->|① 前端拦截| FE[钱包连接前调 KYT API<br/>地址在 OFAC SDN 直接拒绝]
+    FE --> BE[后端 tx 准入]
+    BE -->|② 后端筛查| KYT[tx submit 前调 TRM /<br/>Chainalysis API 评分]
+    KYT --> Chain[链上提交]
+    Chain -->|③ 链上 hook| Contract[合约 modifier 调<br/>Chainalysis SanctionsList 合约]
+    Contract --> Pool[流动性池 / Vault]
+```
+
+1. **前端钱包连接拦截**（最低成本一层）：dApp 在 `wallet.connect()` 后立刻调一次 KYT API，地址命中 OFAC SDN / 高风险评分（> 7/10）→ 直接 disconnect + UI 提示。这一层 USDC 发行方 Circle 自家 dApp 标配，也是 Uniswap Frontend 2022 年起做的事。交叉参考 [模块 10 §合规章](../10-前端与账户抽象/README.md)。
+2. **后端 tx submit 前筛查**：私有 mempool / 合规 relayer（如 bloXroute.regulated、Flashbots Protect 的合规通道）在打包 tx 前调 KYT，命中规则的 tx 直接丢弃。
+3. **链上 hook**（最严格但 gas 贵）：合约 modifier 里调 [Chainalysis Sanctions Oracle](https://go.chainalysis.com/chainalysis-oracle-docs.html)（mainnet 部署的 `SanctionsList` 合约）—— Aave V3、Circle USDC 的 transferFrom 内嵌过此调用。链上调用每次约 2k-3k gas。
+
+#### Forta agent 输出 SAR-ready 数据（实战代码）
+
+合规团队需要 **Suspicious Activity Report (SAR)** 格式的 finding——固定字段 + 可审计 trail。下面这段 Forta agent 把 SAR 关键字段直接放进 finding metadata：
+
+```typescript
+// agent.ts — Forta SAR-ready transfer monitor
+import { Finding, FindingSeverity, FindingType,
+         HandleTransaction, TransactionEvent, ethers } from '@fortanetwork/forta-bot';
+
+const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+const SDN_LIST = new Set([
+  '0x...tornado-cash-router',
+  '0x...lazarus-attributed-1',
+]); // 从 OFAC SDN 同步, 实战接 TRM API
+
+export const handleTransaction: HandleTransaction = async (tx: TransactionEvent) => {
+  const findings: Finding[] = [];
+  const transfers = tx.filterLog(
+    'event Transfer(address indexed from, address indexed to, uint256 value)',
+    USDC,
+  );
+
+  for (const t of transfers) {
+    const { from, to, value } = t.args;
+    const usd = Number(ethers.formatUnits(value, 6));
+    const hit = SDN_LIST.has(from.toLowerCase()) || SDN_LIST.has(to.toLowerCase());
+    if (!hit && usd < 10_000) continue;          // SAR 阈值: $10k+ 或 SDN 命中
+
+    findings.push(Finding.fromObject({
+      name: 'SAR-ready USDC transfer',
+      description: `${usd.toFixed(0)} USDC ${from} -> ${to}`,
+      alertId: 'SAR-USDC-1',
+      severity: hit ? FindingSeverity.Critical : FindingSeverity.Info,
+      type: FindingType.Suspicious,
+      metadata: {
+        // SAR / FinCEN Form 111 关键字段
+        reportingTime: new Date().toISOString(),
+        txHash: tx.hash,
+        blockNumber: String(tx.blockNumber),
+        originator: from,
+        beneficiary: to,
+        amountUSD: usd.toFixed(2),
+        currency: 'USDC',
+        chain: 'ethereum',
+        sdnHit: String(hit),
+        kytProvider: 'pending',                // 后端再调 TRM/Chainalysis 补完
+      },
+      labels: hit
+        ? [{ entity: from, entityType: 1, label: 'sdn-hit', confidence: 1.0 }]
+        : [],
+    }));
+  }
+  return findings;
+};
+```
+
+合规团队拿到 finding 后，把 `metadata` 字段平铺进 SAR PDF 模板，附 tx Etherscan link，提交监管。**Forta finding 的 alertId / labels 是这套链路里最便宜的"机器可读 SAR 上游"**。
+
+> bloXroute.regulated / Eden Network 的合规 mempool 现在都内嵌了 Chainalysis 实时筛查；自托管 RPC + 合规筛查的组合见 §3.4 erpc 配置 + 这一节的三层集成。
+
 ---
 
-## 14. 区块浏览器
+## 14. CEX 工程实战：充提 / 三层钱包 / 机构托管选型
+
+模块 11 前 13 章把"链/合约/RPC/索引/监控/CI/密钥"讲透了——但全书最缺的视角是 **CEX 工程**。CEX 不写合约，但它跑着比一般 DeFi 协议**大两个数量级**的工程系统：每秒数千笔充值 webhook、跨 5+ 链的扫块 + reorg 处理、热/温/冷三层资金流转、机构托管 + MPC 钱包决策。CEX 工程师面试也最缺好资料。这一章给你一份"如果明天去 CEX 报到，第一周该看的图谱"。
+
+> 业务交叉：模块 04 中心化交易所；模块 08 合规与监管 PoR 章；模块 13 §合规节点服务（本模块上一节）。
+
+### 14.1 多链充提系统
+
+充提系统是 CEX 工程"看起来最简单实际最容易出血的"系统——一个 reorg、一个 memo 漏读、一个扫块器 lag，就是真金白银的损失。
+
+#### 14.1.1 deposit address 池：HD 派生 vs 单一汇集 + memo
+
+| 模型 | 链典型 | 用户体验 | 工程复杂度 | 风险点 |
+|---|---|---|---|---|
+| **HD 派生（每用户一地址）** | EVM 链、BTC、Solana | 直接转账即可 | 中（地址管理 + 扫块全派生） | 用户错链转账损失 |
+| **单一汇集 + memo/tag** | XRP、Stellar、EOS、TON | 必须填 memo/tag | 高（缺 memo 客服处理） | 用户漏填 memo → 资金混入主账户 |
+| **混合（一地址多用户）** | 早期 ETH | 充值无法关联到用户 | 低 | 强依赖 tx hash 对账 |
+
+> XRP / Stellar / EOS / TON 是行业里 memo/tag 模型的"老大难"——用户漏填 memo 占客服工单 #1。规模大的 CEX 都做了"memo missing detector"——24h 内未匹配的入金按金额 + 时间窗口启发式归还。
+
+#### 14.1.2 扫块器：5 链对比
+
+| 链 | 拉取方式 | 推荐工具 | reorg 频率 | 备注 |
+|---|---|---|---|---|
+| **EVM (ETH/Polygon/BSC/Base)** | `eth_getLogs` (Transfer event) vs `trace_block` (internal tx) | reth 自建 + erpc | 较低（PoS 后） | internal tx（合约转账给用户）必须用 trace |
+| **Solana** | websocket `commitment=processed → confirmed → finalized` | RPC 自建 + Yellowstone gRPC | 极少 fork | finalized 之前不能 credit；Helius / Triton 商业 |
+| **Tron** | HTTP event server (TRC-20 Transfer) | java-tron full | 极少（19 SR finality） | TRC-20 USDT 是充值量 #1 资产 |
+| **BTC** | trusted explorer + 6 confirmation | bitcoind + electrs | 偶发深 reorg | 按 vout 解析、UTXO 模型 |
+| **Cosmos / Tendermint** | tx events (`recipient.module`) | tendermint RPC + cosmos-sdk grpc | 极少 | 不同 chain 字段差异大 |
+
+#### 14.1.3 reorg buffer 深度策略（user-credit confirmation）
+
+| 链 | 推荐 confirmation | finality 模型 | 历史最深 reorg |
+|---|---|---|---|
+| **BTC** | 6 conf | PoW 概率 finality | 24 块（早期）/ 6 块（成熟期） |
+| **ETH** | 64 conf（约 2 epoch） | Casper FFG 64 块强 finality | 7 块（合并前）/ 后罕见 |
+| **Polygon PoS** | 256 块（heimdall checkpoint） | checkpoint 入 ETH | 157 块（2022 春） |
+| **BSC** | 35 conf | 21 验证人 PoSA | 11 块（2024 偶发深 reorg） |
+| **Tron** | 19 SR finality | 19 SR 中 13 SR 签名 | 极少 |
+| **Solana** | rooted（32 slot） | Tower BFT + voting | fork 短期可见，rooted 后稳定 |
+
+CEX 通常"按链动态"——头部 CEX 还会**根据 mempool / hashrate** 临时上调 BTC confirmation 阈值（如算力骤降时从 6 升到 12）。
+
+#### 14.1.4 用户 to-credit 状态机
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: 扫块器发现 tx
+    pending --> confirming: tx in latest block
+    confirming --> credited: conf >= 链阈值
+    confirming --> dropped: tx replaced / mempool 丢弃
+    confirming --> reorg: 链 reorg 把 tx 倒回去
+    credited --> reorg: 极端深 reorg 倒回已 credit
+    reorg --> [*]: 风控 freeze user balance + 人工审核
+    pending --> blacklisted: KYT API 命中 SDN
+    blacklisted --> [*]: 入金 freeze + 合规上报
+```
+
+KYT 命中（详见 §13.8）的入金不能直接退回——必须 freeze + SAR 上报。
+
+### 14.2 热/温/冷三层钱包架构
+
+CEX 资金管理铁律：**热钱包永远不应超过用户总资产的 1-5%**。冷钱包占比一般 > 80%，温钱包 5-15% 做缓冲。以下是参考的三层 SLA：
+
+| 层 | 资金占比 | 签名方式 | 出币延迟 SLA | 审批门槛 |
+|---|---|---|---|---|
+| **热（hot）** | 1-5% | HSM 或 MPC 签名服务（自动） | < 1 min | 无人工，规则驱动 |
+| **温（warm）** | 5-15% | Multisig（如 3/5）+ 人工审批 | 5-30 min | 1 名运营审批 |
+| **冷（cold）** | > 80% | 离线签名 + 物理隔离 | 4-24 h | 多名 C-level + 物理仓库 |
+
+```mermaid
+flowchart LR
+    User[用户提币请求] --> Risk[风控引擎]
+    Risk -->|< 5 ETH| Hot[热钱包<br/>HSM/MPC 自动签]
+    Risk -->|5-100 ETH| Warm[温钱包<br/>3/5 multisig]
+    Risk -->|> 100 ETH 或<br/>批量出币需补水| Cold[冷钱包<br/>离线签名]
+    Cold -->|定期补水| Warm
+    Warm -->|定期补水| Hot
+```
+
+#### 14.2.1 批量提币：nonce 串行 + gas 调度 + Merkle 签名
+
+EVM 链上 1 个钱包发多笔 tx 必须 nonce 串行——否则后一笔会被前一笔卡住。CEX 的"批量提币批次"标准做法：
+
+1. **批次组装**：5-10 min 一个批次，把这个窗口内同链同币种的提币聚合；
+2. **nonce 串行**：批次内 tx 按 nonce 递增，gas price 用同一个 base + tip；
+3. **Merkle root 一次签名**：把 N 笔 tx 哈希组成 Merkle tree，root 用 HSM/MPC 签一次，每笔 tx 复用 sigsplit（如 Coinbase 自家方案）；
+4. **失败 tx 单独重发**：mempool 丢弃的 tx 走 Flashbots Protect 重提交。
+
+#### 14.2.2 审计签名链（audit trail）
+
+每笔出币必须留 4 列 audit trail：
+
+| 字段 | 说明 |
+|---|---|
+| `who` | 哪个 ops/工程师触发（OAuth / SSO） |
+| `when` | UTC 时间戳 |
+| `approver` | 哪些 multisig signer 签名（地址 + 设备 ID） |
+| `address` | 收款地址 + KYT 评分 + name tag |
+
+合规审计、内部年度审计都吃这张表。建议直接进 append-only 数据库（PostgreSQL + 触发器 / S3 Object Lock）——不允许任何 ops 改历史。
+
+### 14.3 机构托管 4 强对比
+
+非 CEX 自营、机构（基金 / 上市公司 / 银行 / 大型 DAO Treasury）持有 crypto 时，几乎都用**外部托管**——四家市占率头部如下：
+
+| 厂商 | 技术栈 | 合规等级 | 链覆盖 | 成本（bps/年） | 客户画像 |
+|---|---|---|---|---|---|
+| **Fireblocks** | MPC + Nitro Enclave | NYDFS BitLicense + SOC2 Type II | 100+ | 5-25 bps | #1 市占，CEX/DeFi 协议/做市商 |
+| **BitGo** | MPC + cold storage + Trust Charter | South Dakota Trust Charter（信托） | 60+ | 10-30 bps | 早期 CEX / ETF 托管（含部分 BTC ETF） |
+| **Anchorage Digital** | HSM + qualified custody | OCC National Trust Charter（联邦持牌银行，唯一） | 30+ | 15-50 bps | 银行 / 上市公司 / 联邦合规要求 |
+| **Copper** | MPC + ClearLoop（off-exchange settlement） | 英国 FCA + 瑞士 FINMA | 50+ | 8-25 bps | 机构 prime broker、对冲基金 |
+
+#### 14.3.1 关键差异化
+
+- **Anchorage** 是唯一拿到美国联邦银行执照（OCC charter）的——上市公司 + 银行系客户的合规要求只有它能满足；
+- **Copper ClearLoop** 让客户**资金留在 Copper 托管，但能在合作 CEX 上交易**——避免 FTX 式风险（资金不进 CEX 钱包），机构 prime broker 标配；
+- **Fireblocks Key Link** 让客户已有的 HSM/MPC 系统直接接入 Fireblocks workflow——不用迁 key，最大客户群转换成本最低；
+- **BitGo** 的 Trust Charter 让它可作为"qualified custodian"被部分 ETF 选中。
+
+#### 14.3.2 MPC 钱包 vs Multisig 决策树
+
+```mermaid
+flowchart TD
+    Start[需要多签管钱] --> A{用户画像}
+    A -->|机构 / 大额 / 多链| B[MPC]
+    A -->|DAO / 透明审计 / EVM 主| C[Multisig 合约]
+    A -->|个人 / 中等额度| D[Safe 2/3 + 硬件钱包]
+    B --> B1[Fireblocks / BitGo / Copper]
+    C --> C1[Safe / Squads]
+    B -.对比.-> Diff{核心权衡}
+    C -.对比.-> Diff
+    Diff -->|链下分片<br/>链覆盖最广<br/>无链上痕迹| MPC2[MPC 优点]
+    Diff -->|链上透明<br/>EVM 内开箱即用<br/>受限链支持| MS2[Multisig 优点]
+```
+
+| 维度 | MPC（Fireblocks 类） | Multisig（Safe 类） |
+|---|---|---|
+| 密钥位置 | 链下分片（threshold） | 链上合约 |
+| 链覆盖 | 广（理论上任意链都能集成） | 窄（受合约支持） |
+| 链上透明 | 不透明（外部看不到 threshold） | 完全透明 |
+| 审计成本 | 高（依赖厂商审计报告） | 低（链上可验证） |
+| 适合 | 机构 / 多链做市商 | DAO / DeFi 协议 admin |
+| 单签延迟 | 50-500 ms | 1-2 块（链上确认） |
+
+模块 13 §13.2-§13.6 已给协议方 / 个人 / 嵌入式钱包视角；本节补的是**机构托管**这一层。
+
+### 14.4 链特异性 reorg 处理事故回顾
+
+CEX 充提工程师必须熟悉的"教科书事故"：
+
+| 时间 | 链 | 事故 | 工程教训 |
+|---|---|---|---|
+| **2010** | BTC | value-overflow（块 74638，凭空铸 1840 亿 BTC） | 必须有"链上不可能事件"的硬阈值 alert |
+| **2013-03** | BTC | BIP50（v0.7 / v0.8 不兼容引发 24 块 reorg） | confirmation 必须能动态调高 |
+| **2022-05** | Polygon PoS | 157 块深 reorg | 用 heimdall checkpoint 入账，不要相信 bor 块号 |
+| **2024** | BSC | 偶发 11 块深 reorg | confirmation 提到 35+，必要时调 50 |
+| **多次** | Solana | fork / 长 unconfirmed window | 必须等 rooted（commitment=finalized），不能 credit on processed |
+| **多次** | Tron | 19 SR 中失效 7 个 → finality 受影响 | 监控 SR 健康度，异常时延后 credit |
+
+> CEX 入金风控团队会维护一张"按链动态阈值表"——hashrate 突变、SR 健康度、validator participation 跌破阈值时**立刻**临时上调 confirmation。这是和 DeFi 工程师视角最大的差别：DeFi 默认信链，CEX 必须**按"今天链有多稳"动态信链**。
+
+---
+
+## 15. 区块浏览器
 
 2023-12 圣诞前 Etherscan 主站宕机 6 小时，那期间所有自动化 verify、所有前端的 "在 Etherscan 查看交易" 链接全挂——很多团队这时才意识到 explorer 是单点依赖。2025-04 又出过一次。**至少备一个 Blockscout 当 fallback**：开源、可自托管、API 兼容 Etherscan，OP Stack / Arbitrum 链甚至已经把 Blockscout 当默认。
 
@@ -1311,11 +1715,11 @@ Frame 比直接 ledgerhq 集成体验好太多。部署 Foundry script 配 Frame
 
 ---
 
-## 15. 实战合集
+## 16. 实战合集
 
-下面五个 demo 把前面 §2-§13 的所有概念压缩成"周末两小时跑一遍"的可复制实操。假设你想跑一台 home staker 节点 + 一个数据后端 + CI——按 15.1 → 15.2 → 15.3 → 15.4 → 15.5 顺序做完，理论部分会变成肌肉记忆。完整代码见 `code/` 与 `exercises/`。
+下面五个 demo 把前面 §2-§14 的所有概念压缩成"周末两小时跑一遍"的可复制实操。假设你想跑一台 home staker 节点 + 一个数据后端 + CI——按 16.1 → 16.2 → 16.3 → 16.4 → 16.5 顺序做完，理论部分会变成肌肉记忆。完整代码见 `code/` 与 `exercises/`。
 
-### 15.1 启动 reth + lighthouse Sepolia (15 min)
+### 16.1 启动 reth + lighthouse Sepolia (15 min)
 
 ```bash
 cd code/01-reth-lighthouse-sepolia
@@ -1328,7 +1732,7 @@ curl -s http://127.0.0.1:8545 \
 
 生产 (nginx + prom + grafana): `docker compose -f docker-compose.full.yml up -d`
 
-### 15.1.1 Ponder indexer GitHub Action 部署
+### 16.1.1 Ponder indexer GitHub Action 部署
 
 ```yaml
 # .github/workflows/ponder-deploy.yml
@@ -1396,7 +1800,7 @@ jobs:
             --force-new-deployment
 ```
 
-### 15.2 Ponder 索引 USDC Transfer (20 min)
+### 16.2 Ponder 索引 USDC Transfer (20 min)
 
 ```bash
 cd code/02-ponder-erc20-indexer
@@ -1407,7 +1811,7 @@ pnpm dev
 # 打开 http://localhost:42069/graphql 测试
 ```
 
-### 15.3 Foundry CI 接 GitHub (5 min)
+### 16.3 Foundry CI 接 GitHub (5 min)
 
 ```bash
 cp code/03-foundry-github-action/.github/workflows/foundry.yml \
@@ -1416,13 +1820,13 @@ git push
 # Settings -> Secrets: MAINNET_RPC_URL, ETHERSCAN_API_KEY, DEPLOYER_PK
 ```
 
-### 15.4 Tenderly: 上传源码 + 创建 alert (10 min)
+### 16.4 Tenderly: 上传源码 + 创建 alert (10 min)
 
 ```bash
 cd code/04-tenderly-alert && ./upload-source.sh
 ```
 
-### 15.5 Helios light client (5 min)
+### 16.5 Helios light client (5 min)
 
 ```bash
 cd code/05-helios-light-client
@@ -1432,29 +1836,29 @@ bun run verify-balance.ts   # 另一终端
 
 ---
 
-## 16. 习题
+## 17. 习题
 
 九道习题按"读懂 → 选型 → 实操"递进，前三题有完整答案 (`ANSWER.md`)，后六题给思路提示自行完成。建议读完一节立刻做对应习题，比读完整章再回头做留存度高 3 倍。
 
-### 16.1 习题 1: 计算 reth + lighthouse 硬件 / 月度成本
+### 17.1 习题 1: 计算 reth + lighthouse 硬件 / 月度成本
 
 见 `exercises/01-hardware-cost-calculator/calc.ts`. 答案: `ANSWER.md`.
 
 要点: 全节点 ¥10000/年 自建; archive ¥14000/年; 云对照 ¥42000/年. NVMe 是核心成本, archive 必须企业级 / 高端 TLC.
 
-### 16.2 习题 2: 写 Forta agent 监测 ERC20 大额转账
+### 17.2 习题 2: 写 Forta agent 监测 ERC20 大额转账
 
 见 `exercises/02-forta-large-transfer-agent/`. 答案: `ANSWER.md`.
 
 要点: 用 filterLog + bigint, 多链复用, labels 做风控级联.
 
-### 16.3 习题 3: Foundry deploy + verify 全自动
+### 17.3 习题 3: Foundry deploy + verify 全自动
 
 见 `exercises/03-foundry-deploy-verify/`. 答案: `ANSWER.md`.
 
 要点: keystore 加密私钥, --slow 防 nonce 错乱, fs_permissions 写 deployments/<chainid>.json, CREATE2 跨链同地址.
 
-### 16.4 习题 4: 设计 Subgraph schema for Uniswap V3
+### 17.4 习题 4: 设计 Subgraph schema for Uniswap V3
 
 (自行作答, 思路提示)
 
@@ -1462,7 +1866,7 @@ bun run verify-balance.ts   # 另一终端
 
 易踩坑: tick 用 BigInt 是惯例（Subgraph schema 没 int24）；Int (i32) 也合法（int24 装得进 i32）, liquidity 用 BigInt (u128), 不要 BigDecimal 算定价 (精度丢)。
 
-### 16.5 习题 5: Defender Sentinel 配置改成 Tenderly Alert
+### 17.5 习题 5: Defender Sentinel 配置改成 Tenderly Alert
 
 (自行作答, 思路提示)
 
@@ -1470,7 +1874,7 @@ bun run verify-balance.ts   # 另一终端
 
 关键差异: Tenderly Web3 Action 256 MB / 60s, Autotask 256 MB / 5 min, 长任务要拆。
 
-### 16.6 习题 6: 客户端多样化 staking 拓扑 (32 个 validator)
+### 17.6 习题 6: 客户端多样化 staking 拓扑 (32 个 validator)
 
 (自行作答, 思路提示)
 
@@ -1478,19 +1882,19 @@ bun run verify-balance.ts   # 另一终端
 
 进阶: 跨地理 (US-East / EU-West / Asia), 跨 ISP, 跨电源域。
 
-### 16.7 习题 7: PR 触发 fork mainnet 测试
+### 17.7 习题 7: PR 触发 fork mainnet 测试
 
 (自行作答, 思路提示)
 
 思路: jobs 配 paths-filter, 仅修改 contracts/* trigger。fork: forge test --fork-url $MAINNET_RPC_URL --fork-block-number 22000000。覆盖率上 Codecov, PR 自动评论。
 
-### 16.8 习题 8: 设计 RPC 网关多 upstream 配置
+### 17.8 习题 8: 设计 RPC 网关多 upstream 配置
 
 (自行作答, 思路提示)
 
 思路: 用 erpc 配置 (yaml)。upstream 写 [自建 reth, Alchemy, QuickNode, dRPC]。给重 trace 调用单独路由 dRPC (flat 价)。对 eth_call 设 cache 30s。失败自动 fallback。
 
-### 16.9 习题 9: Helios + dApp 集成
+### 17.9 习题 9: Helios + dApp 集成
 
 (自行作答, 思路提示)
 
@@ -1498,29 +1902,29 @@ bun run verify-balance.ts   # 另一终端
 
 ---
 
-## 17. AI 影响
+## 18. AI 影响
 
 2025 年 Forta [Anomaly Detection bot](https://forta.org/blog/anomaly-detection/) 在某 NFT marketplace rug pull 12 小时前发出 alert——攻击者只是开始批量调用一个不寻常的 admin function，规则引擎抓不到，但 GNN 学到的"正常模式"立刻偏离触发警报。AI 在 Web3 监控上的价值不在替代 SRE，在**把规则写不出的"异常感"变成可计算的 baseline**。但同样 2025 年某 L2 项目 SRE 全员靠 ChatGPT 写运维脚本，一次 systemctl daemon-reload 改坏 mev-boost 重启策略，4 小时不出块——**AI 是放大器，放大对的也放大错的**。
 
-### 17.1 AI 协助节点告警
+### 18.1 AI 协助节点告警
 
 传统告警靠规则 (withdraw > 1M USDC), 0day 攻击模式总不在规则集. 2026 趋势: Tenderly / Forta / Hypernative 把链上 tx 流喂 LLM/GNN 学正常模式, 偏离告警. Forta [Anomaly Detection bot](https://forta.org/blog/anomaly-detection/) 2024 年提前 12h 抓到多个 rug pull. 局限: 攻击者可先做 1000 次"正常"操作把基线拉高再发动.
 
-### 17.2 AI 解析 calldata 与 trace
+### 18.2 AI 解析 calldata 与 trace
 
 - **Tenderly AI**: `0xa9059cbb...` -> "transfer 100 USDC to 0xabc"
 - **Phalcon Explorer**: tx internal call 树 -> "用户 swap 1 ETH -> 1500 USDC via Uniswap V3 1% pool"
 - 价值: 安全审计 / Wallet Guard / oncall 响应加速 5-10x
 
-### 17.3 AI 协助 indexer schema 设计
+### 18.3 AI 协助 indexer schema 设计
 
 ABI + 业务描述 -> LLM 自动生成 Ponder schema + handler 初稿. 局限: decimals 差异 / proxy upgrade ABI 变化 / reorg 边界不会自动处理, 必须人工 review.
 
-### 17.4 AI 生成 docker-compose / CI
+### 18.4 AI 生成 docker-compose / CI
 
 LLM 能给出能跑的 yaml. 必须人工核查: `--http.api` 是否含 `admin` / JWT ro 挂载 / healthcheck / `stop_grace_period`.
 
-### 17.5 不可替代的部分
+### 18.5 不可替代的部分
 
 - **Linux 运维**: I/O 瓶颈 / sysctl / fd limit / systemd. AI 命令 90% 对, 那 10% 够你 oncall 一晚.
 - **网络**: P2P NAT 穿透 / BGP 异常 / DDoS 缓解. 不在 LLM 训练集.
@@ -1529,7 +1933,7 @@ LLM 能给出能跑的 yaml. 必须人工核查: `--http.api` 是否含 `admin` 
 
 2025 年某 L2 项目 SRE 全员靠 ChatGPT 写脚本, 一次 systemctl daemon-reload 把 mev-boost 重启策略改坏, 4 小时不出块。AI 是放大器, 放大对的也放大错的；没底子用 AI 反而更危险。
 
-### 17.6 AI 工具实操清单 (2026-04 主流)
+### 18.6 AI 工具实操清单 (2026-04 主流)
 
 | 工具 | 集成位置 | 用途 | 免费 / 付费 |
 |---|---|---|---|
@@ -1578,7 +1982,7 @@ goldsky generate subgraph \
 
 ---
 
-## 18. 延伸阅读
+## 19. 延伸阅读
 
 - [Paradigm Reth 2.0 Release (2026-04)](https://www.paradigm.xyz/2026/04/releasing-reth-2-0)
 - [Reth GitHub](https://github.com/paradigmxyz/reth)
@@ -1611,7 +2015,7 @@ goldsky generate subgraph \
 
 ---
 
-**下一站**：节点、RPC、indexer、监控、CI/CD、密钥——这一模块把"合约之外"的工程基底铺到了能 24/7 跑生产的程度。但 §17 只是预览了 AI 在告警分类、calldata 解码、subgraph 脚手架上的浅层应用，下一模块 [12-AI×Web3](../12-AI×Web3/README.md) 把 AI 真正接进开发全链路：审计辅助、链上数据分析自动化、AI Agent 钱包、链上推理服务——把这一模块搭好的基础设施变成"AI 能调用的链上能力"。
+**下一站**：节点、RPC、indexer、监控、CI/CD、密钥、CEX 工程——这一模块把"合约之外"的工程基底铺到了能 24/7 跑生产的程度。但 §18 只是预览了 AI 在告警分类、calldata 解码、subgraph 脚手架上的浅层应用，下一模块 [12-AI×Web3](../12-AI×Web3/README.md) 把 AI 真正接进开发全链路：审计辅助、链上数据分析自动化、AI Agent 钱包、链上推理服务——把这一模块搭好的基础设施变成"AI 能调用的链上能力"。
 
 ---
 
@@ -1619,7 +2023,7 @@ goldsky generate subgraph \
 
 # 附录
 
-> 附录按需深入，不影响主线阅读。主线（§1-§18）已覆盖跑节点 + indexer + CI + 监控 + 密钥的端到端工程闭环；附录提供内部架构、完整操作手册、高级话题。
+> 附录按需深入，不影响主线阅读。主线（§1-§19）已覆盖跑节点 + indexer + CI + 监控 + 密钥 + CEX 工程的端到端工程闭环；附录提供内部架构、完整操作手册、高级话题。
 
 ---
 

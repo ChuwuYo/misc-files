@@ -1,0 +1,6 @@
+flowchart LR
+    U[多个用户] -->|每人 user_id| Bot[Bot 服务端]
+    Bot -->|HKDF derive| K[私钥派生]
+    K --> HW1[user1 子地址]
+    K --> HW2[user2 子地址]
+    Bot -.|主私钥|.- M[(主 KMS / HSM)]

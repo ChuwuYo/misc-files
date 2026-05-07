@@ -1,0 +1,11 @@
+flowchart TD
+    Start[需要多签管钱] --> A{用户画像}
+    A -->|机构 / 大额 / 多链| B[MPC]
+    A -->|DAO / 透明审计 / EVM 主| C[Multisig 合约]
+    A -->|个人 / 中等额度| D[Safe 2/3 + 硬件钱包]
+    B --> B1[Fireblocks / BitGo / Copper]
+    C --> C1[Safe / Squads]
+    B -.对比.-> Diff{核心权衡}
+    C -.对比.-> Diff
+    Diff -->|链下分片<br/>链覆盖最广<br/>无链上痕迹| MPC2[MPC 优点]
+    Diff -->|链上透明<br/>EVM 内开箱即用<br/>受限链支持| MS2[Multisig 优点]

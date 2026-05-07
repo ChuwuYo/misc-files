@@ -3,10 +3,37 @@
 > 目标：把你从「会写 .py 脚本」拉到「能写一个能交付、能运行、能维护的 AI 应用」。
 >
 > 本章默认 Python 3.13+，所有示例在 macOS / Linux 下验证。Windows 用户请自行替换路径分隔符。
+>
+> **前置假设**：本书不教 Python 基础语法。本章默认你 `def`、`class`、`import`、`with`、`try/except` 都写过，至少跟着教程做过一两个能跑的小程序。如果还没到这一步，先回序言看推荐的 Python 入门资源（廖雪峰 / Real Python / 官方 Tutorial），再回来读这一章——否则你会在 2.1 节就被术语劝退。
+>
+> **看不懂可以先跳过**：2.2 类型系统进阶（PEP 695 / ParamSpec）、2.4 后半段（TPM 限流）、2.6 末尾的 OTel 注入、2.8 后半段（snapshot 测试），第一遍读不下去都可以直接跳到下一节，等你真做项目卡住了再回头查。本章是「字典」，不是「小说」。
 
-第 01 章把 AI 应用工程师的画像、薪资、门槛讲清楚了，也反复强调一句话：这一行真正稀缺的是「能交付完整闭环」的人——能把 RAG 从 60% 推到 90%、能让 Agent 在 200 步内不偏题、能把 P95 延迟压在 3 秒以内。这些活儿没有一项能在脚本式 Python 上长出来。现代 AI 工程团队的代码库长的是另一副样子：pyproject.toml、ruff、mypy strict、async、结构化日志、pytest fixture、Dockerfile。
+### 真实场景：为什么需要「工程化」
+
+想象一下你在 2026 年加入了一家 AI 创业公司，第一周老板扔给你一个 issue：「我们的 RAG 客服机器人在用户问长问题时偶尔超时，帮忙看下。」你打开仓库，发现里面有 `pyproject.toml`、CI 在跑 `ruff check` 和 `mypy --strict`、日志是 JSON 格式、调 LLM 的代码全是 `async def` 和 `@retry` 装饰器。你之前写的 Python 都是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」——这套陌生的东西到底是什么？
+
+这就是本章要解决的问题。第 01 章讲过 AI 应用工程师的画像、薪资、门槛，反复强调一句话：这一行真正稀缺的是「能交付完整闭环」的人——能把 RAG 从 60% 推到 90%、能让 Agent 在 200 步内不偏题、能把 P95 延迟压在 3 秒以内。这些活儿没有一项能在脚本式 Python 上长出来。现代 AI 工程团队的代码库长的是另一副样子：pyproject.toml、ruff、mypy strict、async、结构化日志、pytest fixture、Dockerfile。
 
 所以如果你过去的 Python 体验是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」，那么进 AI 工程团队的第一周你大概率会被同事的 pyproject.toml、CI 里的 ruff check、被 mypy 红出半屏的 PR 击中。本章把这些工具一次性讲清，并用一个贯穿全章的小项目串起来：**一个调用 LLM API 的 CLI 工具 `askbot`**，从 `uv init` 到 `docker build`，每节都给它加一块。
+
+### 术语速查（先扫一眼，看不懂留个印象，正文再细讲）
+
+| 名词 | 一句话白话 | 类比 |
+|------|----------|------|
+| **uv** | Rust 写的 Python 包管理器，10–100× 速度，一个二进制顶替 pip + venv + pyenv | 像 Node 的 pnpm |
+| **ruff** | Rust 写的代码检查 + 格式化工具，900+ 规则一锅端 | 像 ESLint + Prettier |
+| **mypy** | 静态类型检查器，提前帮你抓出 `int` 当 `str` 用之类的低级错 | 像 TypeScript 编译器 |
+| **Pydantic** | 数据校验库，定义一个类就能把外部 JSON 变成有类型保证的 Python 对象 | 像 Java 的 Bean Validation |
+| **asyncio / async** | Python 的并发机制，一个进程里同时等 50 个网络请求，专治调 LLM 慢 | 像 JS 的 async/await |
+| **httpx** | 现代 HTTP 客户端，能同步能异步，API 跟 requests 几乎一样 | requests + 异步版 |
+| **tenacity** | 重试装饰器，一行代码给函数加「失败自动重试」 | 像 Java 的 @Retryable |
+| **structlog** | 结构化日志，每条日志是 dict 而不是字符串，方便机器查询 | 像往 Elasticsearch 喂 JSON |
+| **pytest** | Python 最主流的测试框架，文件名以 `test_` 开头自动识别 | 像 JS 的 jest |
+| **pyproject.toml** | 现代 Python 项目的「身份证」+ 配置文件，所有工具都读它 | 像 Node 的 package.json |
+| **Docker** | 把代码 + 依赖打成一个镜像，到哪都能跑 | 「集装箱」原意 |
+| **CI** | 持续集成，每次 push 代码自动跑测试 + 检查 | 像 GitHub Actions / GitLab Runner |
+| **CLI** | Command Line Interface，命令行工具，比如 `git`、`curl` | 没有界面、靠敲命令的程序 |
+| **wheel** | Python 的安装包格式，后缀 `.whl`，相当于打包好的二进制 | 像 jar 包 |
 
 ---
 
@@ -285,6 +312,10 @@ source = ["src/askbot"]
 
 ## 2.2 类型系统精通：让 IDE 帮你抓 bug
 
+> **难度提示**：这一节后半段（PEP 695 泛型、ParamSpec）是高阶内容。第一遍读如果觉得绕，看完「为什么 AI 工程更需要类型」「类型注解的三种姿势」「Protocol」「TypedDict」四小节就够，剩下的等你写到自己的装饰器再回来查。
+>
+> **类型注解是什么**：在变量或函数参数后面写一个冒号 + 类型，比如 `def add(a: int, b: int) -> int`，告诉编辑器和静态检查工具「这个参数应该是什么类型」。Python 运行时**不会**强制检查（传 str 也不会报错），但 mypy 会在你写代码时就把错误标红。可以理解成「给变量贴标签」。
+
 ### 为什么 AI 工程更需要类型
 
 AI 应用里有大量「数据从外部来、形状不可信」的边界：用户输入、LLM 返回、工具调用入参、向量库元数据。任何一处类型错乱，下游就是 `KeyError` 或者更糟——一个看起来跑通了但语义错了的请求。类型系统是把这些边界钉死的最便宜手段。
@@ -452,6 +483,12 @@ add("1", "2")  # mypy 红；但实际跑会返回 "12"，因为 str 也支持 +
 ---
 
 ## 2.3 Pydantic v2：AI 应用的护城河
+
+> **本节核心**：Pydantic 是 Python 生态最重要的数据校验库。你写一个继承 `BaseModel` 的类，它就能（1）把外部传进来的 JSON / dict 自动校验、转换成有类型保证的 Python 对象（错了立刻抛异常）；（2）反向生成 JSON Schema 描述这个数据结构。LLM 应用 90% 的「调用工具 / 结构化输出」全靠它。
+>
+> **JSON Schema 是什么**：一份用 JSON 写的「数据形状说明书」，告诉别人「这个 JSON 应该有哪些字段、每个字段什么类型」。LLM 调用 Function Calling 时就是把这份说明书喂给模型，让模型按格式输出。
+>
+> **「v2」是什么**：Pydantic 2024 年发的大版本，底层用 Rust 重写了，速度比 v1 快 5–50 倍。本书全部用 v2，老教程里 `from pydantic import validator`（v1）这种写法已经过时。
 
 ### 为什么 AI 应用离不开它
 
@@ -697,6 +734,10 @@ class Settings(BaseSettings):
 
 ## 2.4 异步编程：调 LLM API 的标准姿势
 
+> **难度提示**：如果你从没写过 `async def`，这一节会比前几节难一档。建议读完「为什么必须 async」「三个易错概念」「async/await 入门 60 秒」三小节先把感觉建立起来；TPM 限流、token bucket 那部分第一遍可以跳过，等你真要做高并发批量请求时再回来。
+>
+> **async 是什么**：Python 处理「等」的一种方式。普通函数等网络响应时是傻等（这一秒别的事都做不了），`async` 函数等的时候会让出 CPU 给其他任务用，等响应来了再回来。LLM 调用大部分时间在等网络，所以 async 收益巨大。语法上多了 `async def` 和 `await` 两个关键字。
+
 ### 为什么必须 async
 
 LLM API 的调用是 IO 密集型——99% 时间在等网络。同步代码一次只能等一个请求；async 代码同样的进程能同时等 50 个。在 RAG、批量评测、多 Agent 并行这些场景里，async 不是优化，是基本功。
@@ -875,6 +916,10 @@ async with httpx.AsyncClient() as c:
 ---
 
 ## 2.5 错误处理与重试：tenacity + 幂等
+
+> **本节核心**：调 LLM API 经常会失败（限流、超时、5xx），但失败方式不一样——有些该重试、有些重试只是浪费钱。这一节教你正确区分，并用 `tenacity` 这个库（重试装饰器，一行 `@retry` 给函数加重试逻辑）优雅地实现。
+>
+> **幂等是什么**：同一个操作做 N 次和做 1 次效果一样，就叫「幂等」。「读数据」天然幂等；「发邮件」「扣钱」不幂等——重试会发两份。重试前必须先确认是不是幂等。
 
 ### 重试不是加几个 try
 
@@ -1081,6 +1126,10 @@ except httpx.HTTPStatusError as e:
 ---
 
 ## 2.6 日志与可观测：上线第一天就要有
+
+> **本节核心**：上线后出了问题，你只能靠日志找原因。「结构化日志」就是把每条日志写成 JSON 字典而不是字符串，这样可以用工具按字段筛选、聚合、报警——比 `print` 强一百倍。「可观测」泛指日志 + tracing（追踪一次请求经过的所有环节） + metrics（指标），是生产服务的基本盘。
+>
+> **OTel = OpenTelemetry**：行业标准的可观测协议，所有主流监控平台都支持。这一节最后会讲怎么接，看不懂可以跳到 2.7，等第 24 章再回来。
 
 ### loguru vs structlog 怎么选
 
@@ -1938,6 +1987,30 @@ jobs:
 ---
 
 ## 2.12 章节小结与下一步
+
+### 这章核心收获（你现在应该会的）
+
+读完本章并把 askbot 跟着敲一遍，你应该能：
+
+1. 用 `uv init` 起一个新项目、用 `uv add` 装依赖、看懂 `pyproject.toml` 里 `[project]` `[dependency-groups]` `[tool.ruff]` `[tool.mypy]` 各管什么。
+2. 知道 `ruff check` 和 `mypy --strict` 在干嘛、怎么把它们配进项目、出红线时怎么修。
+3. 用 Pydantic 写一个数据模型类，从外部 JSON 反序列化为有类型保证的对象、生成 JSON Schema 喂给 LLM。
+4. 看到 `async def`、`await`、`asyncio.gather`、`TaskGroup`、`Semaphore` 不再发懵；至少能照着 askbot 的代码写一个并发调 LLM 的小脚本。
+5. 用 `@retry` 装饰器给一个 LLM 调用加退避重试，并且知道哪些错误不该重试（401、400）。
+6. 用 structlog 写出每条带 `request_id` 的结构化日志，CI 上跑 `pytest` + `pytest-httpx mock` 替换掉真实网络请求。
+7. 写一个多阶段 Dockerfile，最终镜像 < 250 MB；会配 pre-commit + GitHub Actions CI。
+
+如果上面 7 条里有 3 条以上你看完仍然没把握，**不要着急往后翻**——回到对应小节把 askbot 那段代码自己敲一遍，跑通比读懂更重要。本章每一节后面给的命令都能直接 copy 跑。
+
+### 读不下去怎么办
+
+- **被术语劝退**：回到章首的「术语速查」，每次卡住就回去看一眼那张表。
+- **代码看不懂**：照着敲，跑起来。看代码不如跑代码。Python 工具链最大的好处是「报错信息能直接 Google」。
+- **类型系统/装饰器晕了**：跳过 2.2 后半段（PEP 695、ParamSpec），先把 askbot 跑通；这部分等你做项目卡了再回头。
+- **async 完全没感觉**：去廖雪峰或 Real Python 找一篇 `asyncio` 入门通读一遍再回来，本章不是 async 教学。
+- **Docker 没装过**：先去看官方 Get Started（<https://docs.docker.com/get-started/>），10 分钟够用。
+
+### 本章学到的东西一览
 
 回头看，本章把 askbot 从空目录推到了一个可发布的 CLI：
 

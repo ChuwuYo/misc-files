@@ -45,6 +45,8 @@
 
 ## 1. Tokenizer：进入模型的第一道门
 
+> **白话**：「Tokenizer」是把人类文本切成模型认识的最小单元（叫 token，可以理解为「词片」）的那道工序。模型不认识字符，只认识 token id。一段中文给模型前要先被切成 token、再换成数字 id；模型输出也是数字 id，再被还原成文字。**整个 LLM 应用的第一道门，就是这一步**。
+
 > Andrej Karpathy 有一句广为流传的话：「LLM 的很多怪毛病都源自 tokenizer」——不会数 strawberry 里的 r、做不对算术、对中文敏感、SolidGoldMagikarp 现象，全是 tokenizer 留下的指纹。
 
 ### 1.1 为什么不能按字符也不能按词
@@ -216,6 +218,8 @@ $$\mathcal{L}(\theta) = \sum_{t=1}^{T} \log P_\theta(x_t \mid x_{<t})$$
 
 ### 2.3 规模：参数、数据、算力的 Chinchilla 定律
 
+> **白话**：「Chinchilla 定律」是 DeepMind 2022 年用一只叫 Chinchilla 的模型做出的一条经验规律——**模型参数翻一倍，训练数据也得翻一倍，效果才最划算**。在它之前业界以为「参数越大越好、数据够用就行」，结果训出一堆「胃口大但吃不饱」的模型。
+
 > 「100B 参数比 10B 强吗？」「比，但前提是数据和算力同步给够」。
 
 DeepMind 2022 年的 Chinchilla 论文（[arXiv:2203.15556](https://arxiv.org/abs/2203.15556)）做了 400+ 个模型从 70M 到 16B 参数，5B 到 500B token 的扫描，得出一条**简单的 compute-optimal scaling 曲线**：
@@ -260,6 +264,13 @@ quadrantChart
 ---
 
 ## 3. 后训练：SFT、RLHF、DPO 与 RLAIF
+
+> **白话四件套**：
+>
+> - **SFT**（Supervised Fine-Tuning，监督微调）：给模型大量「问题→标准答案」的例子，让它学会怎么按指令回答。**像教小孩做作业先看范例**。
+> - **RLHF**（Reinforcement Learning from Human Feedback，人类反馈强化学习）：让人类比较模型的两个回答哪个更好，再用强化学习把模型推向「人喜欢的答案」。**像考试后老师告诉你"A 答案比 B 答案好"，你下次照 A 写**。
+> - **DPO**（Direct Preference Optimization，直接偏好优化）：RLHF 的简化版，去掉了中间的打分模型，直接拿「好答案 vs 坏答案」的对比训练，省一半显存。**目前业界默认选项**。
+> - **RLAIF**（Reinforcement Learning from AI Feedback，AI 反馈强化学习）：把上面 RLHF 里的「人类打分」换成「另一个 AI 打分」，因为人工标注一条 1-3 美元，AI 几乎免费。Claude 系列的核心训练方法。
 
 > Base model 是个「学会续写互联网」的统计机器，它见你打 "How are you?" 会回 "How are you doing today?"——继续模仿训练数据里这种「问句接问句」的分布。要让它变成 ChatGPT 那种「答你的问题」，必须做后训练。
 
@@ -622,6 +633,8 @@ sequenceDiagram
 ---
 
 ## 5. 涌现能力与思维链：reasoning 模型的诞生
+
+> **白话**：「涌现」（emergence）是指**模型规模跨过某个门槛后，突然冒出一些小模型完全不会的能力**。比如 100B 以下的模型让它「step by step 算数学题」反而更差，但 100B 以上的模型一加这句话，准确率从 18% 跳到 57%。这种「不是平滑提升、是断崖式跨越」的现象就叫涌现。它是 LLM 区别于传统 NLP 模型的关键特征——你不能用「线性外推」预测大模型的行为。
 
 > 「100B 是个魔法门槛」——小于 100B 的模型用 chain-of-thought 不会更准，大于 100B 的反而靠 CoT 解开整类难题。这就是涌现（emergence）。
 
@@ -1241,6 +1254,40 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 - **Demo 1 → RAG**：第 16 章切 chunk 时直接复用 `tiktoken` 计 token 数，确保 chunk 不超 model context。
 - **Demo 2 → 调试 prompt**：当 prompt 出诡异输出，用逐 token 解码看模型在哪一步「跑偏」，类比第 9 章的 trace 工具。
 - **Demo 3 → 自托管 LLM**：第 13 章微调完模型用 vLLM 部署时，`top_p` / `min_p` / `temperature` 都是要在 server 端配的。理解算法本身才能调出合理参数。
+
+---
+
+## 8.6 本章核心收获与跳读路径
+
+### 核心收获（如果只记住这些就够了）
+
+1. **Tokenizer 是隐藏的成本变量**：同义中文比英文 token 数多 1.3-1.9 倍。system prompt 用英文、chunk 切割按 token 不按字符——能把推理账单直接砍 30-60%。
+2. **后训练决定模型「人格」**：同一个 base 模型经过不同的 SFT / DPO / RLAIF，能调出风格迥异的 chat 模型。GPT 啰嗦、Claude 谨慎、DeepSeek 简洁，根都在后训练数据偏好。
+3. **采样参数有判断范式**：严谨任务（代码、SQL、抽取）T=0；chat T=0.7；创意 T=1.0+ 配 min_p。**别同时把 T 和 top_p 都开到极致**，那是随机噪声。
+4. **Reasoning 模型不是万能的**：有可验证答案（数学、代码、复杂逻辑）才上 reasoning。chitchat、摘要、客服上 reasoning 是浪费钱——同一题成本可能高 20-100 倍。
+5. **Context window 别看声称值**：「128K context」按 RULER 实测有效部分多在 64K 左右；prompt 塞太满不仅慢、贵，还掉准确率。**16K-32K 是甜区**。
+6. **幻觉的根因在训练目标**：next-token 是「续写最像分布」不是「输出事实」，加 `请不要编造` 没用。要 RAG（给证据）+ 压 temperature + 后处理 verifier。
+
+### 必看 vs 选看（按读者类型）
+
+| 读者类型 | 必看 | 可以略过 | 备注 |
+|---------|------|---------|------|
+| **只调 API 的应用工程师** | §1 Tokenizer、§4 采样参数、§5.3 Reasoning 模型、§6.3 Long Context、§7 能力边界 | §2 预训练数据细节、§3.5 DPO 变体家族、§6.1 架构组件细节 | 选型 + 调参 + 估成本就够 |
+| **做 RAG / Agent** | 上面那些 + §1.4（chunk 成本）、§7.1（幻觉缓解） | §3 后训练细节、§6.2 MoE 工程难点 | 重点理解 context 与 token 的成本传导 |
+| **做微调** | §3 后训练全节、§5.3 Reasoning 训练范式 | §6 架构特性可粗读 | 13 章会落地，本章给方法论 |
+| **做模型选型 / 部署** | §1 Tokenizer、§4.6 Speculative Decoding、§6 主流架构 + 长上下文、§7 能力边界 | §2 数据来源 | 12、21 章把这些转成具体决策 |
+| **想完整理解原理** | 全章逐节，并把每篇 paper 至少扫 abstract | — | 配合 Sebastian Raschka 的书一起读 |
+
+### 跳读路径：30 分钟过完本章
+
+如果完全没时间读全章，按这个顺序 30 分钟可以拿走 80% 的可操作知识：
+
+1. **§1.4** Tokenizer 对成本的影响（5 分钟）— 立刻能用
+2. **§4.7** 应用工程师的实战配置（3 分钟）— 立刻能用
+3. **§5.3** Reasoning Models 的判断（5 分钟）— 选模型时用
+4. **§6.3** Long Context 的真实有效长度（5 分钟）— 设计 RAG 时用
+5. **§7** 能力边界全节（10 分钟）— 是后续 RAG / Agent / 微调三章的动机来源
+6. **§8.2** Demo 1 跑一遍（3 分钟）— 把 §1 的结论亲手验一次
 
 ---
 

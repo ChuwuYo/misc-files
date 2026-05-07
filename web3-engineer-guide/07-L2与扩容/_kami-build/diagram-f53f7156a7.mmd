@@ -1,0 +1,10 @@
+flowchart TD
+    Start[手里有资产 X-Y 要到 Z 链] --> Q1{Y 是稳定币?}
+    Q1 -->|否| Bridge[直接评估桥]
+    Q1 -->|是| Q2{源/目标 之一是 CEX?}
+    Q2 -->|是| Q3{CEX 支持目标链原生提币?}
+    Q3 -->|是| CEX[CEX 内部提币<br>固定费率 + 不走桥]
+    Q3 -->|否| Hop[先提到 ETH 主网<br>再走桥]
+    Q2 -->|否| Q4{是 USDC?}
+    Q4 -->|是| CCTP[CCTP 原生 burn-mint<br>无桥风险]
+    Q4 -->|否| Bridge

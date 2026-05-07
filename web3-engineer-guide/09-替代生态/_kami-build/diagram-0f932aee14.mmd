@@ -1,0 +1,7 @@
+flowchart LR
+    U[Telegram 用户] -->|/start| Bot[Bot]
+    Bot -->|launch web app| WV[Telegram WebView]
+    WV -->|TonConnect SDK| Wallet[Tonkeeper / @wallet / Tonhub]
+    Wallet -->|sign + send| TON[TON 主网]
+    TON -.txhash.-> Bot
+    Bot -.notification.-> U

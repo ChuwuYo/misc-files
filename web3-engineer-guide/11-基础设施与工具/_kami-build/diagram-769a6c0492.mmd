@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> pending: 扫块器发现 tx
+    pending --> confirming: tx in latest block
+    confirming --> credited: conf >= 链阈值
+    confirming --> dropped: tx replaced / mempool 丢弃
+    confirming --> reorg: 链 reorg 把 tx 倒回去
+    credited --> reorg: 极端深 reorg 倒回已 credit
+    reorg --> [*]: 风控 freeze user balance + 人工审核
+    pending --> blacklisted: KYT API 命中 SDN
+    blacklisted --> [*]: 入金 freeze + 合规上报

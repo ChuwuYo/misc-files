@@ -4,6 +4,18 @@
 
 面向已有 1+ 年软件工程经验、第一次系统进入 Web3 的工程师。
 
+### 读者画像扩展：中文圈现实
+
+> TL;DR：本文不替代律师意见。Web3 在中文圈是合规高敏区，**身份分流**和**司法辖区选择**和你写哪行代码同等重要。
+
+**大陆境内 dev**（截至 2026-04）：2021-09-24 央行十部委通知（"924 通知"）把"虚拟货币相关业务活动"定性为非法金融活动，但**写代码、做开源贡献、领工资**本身在司法实践中未被列为禁止行为。红线在三处：（1）**不发币**——任何指向境内用户的 token launch 都踩 ICO 禁令；（2）**不做面向 C 端的 token economic 设计**——白皮书署名、TGE 操盘等留痕极重；（3）**接外包要谨慎**——为境外项目方写"上线即发币"的合约，按帮助信息网络犯罪活动罪（帮信罪）和非法经营罪都有判例。建议：贡献开源协议、给基础设施公司远程打工（薪资走 USDC + 香港/新加坡持牌 OTC 出金）相对安全；自己起项目优先注册海外实体。
+
+**香港持牌路径**：2024-08 *稳定币条例*由 HKMA 主导，**2025-08-01 正式生效**；SFC 1/4/7/9 号牌覆盖证券交易/资管，VATP（虚拟资产交易平台）牌照独立发放。HashKey、OSL 是首批持牌 CEX；StanChart、京东币链科技、圆币科技是首批入沙盒的稳定币发行人候选。香港护照/居留权 + 持牌机构 employment 是合规含金量最高的中文圈路径。
+
+**出海路径**：Singapore PSA（MAS DPT 牌照，2024 起 retail 接入收紧，机构端仍开放）、Dubai VARA（2022 设立，对 DeFi/RWA 较友好，OKX/Bybit/Binance 多家拿牌）、Bali / Chiang Mai / Lisbon 远程节点（数字游民签证 + 海外实体雇佣，无牌照负担但需自管 KYC 和报税）。
+
+**华人海外 dev**：KYC 走海外身份（美/加/欧/港/新护照或绿卡），Coinbase/Kraken 等出入金通道才稳定；token 发行实体优先 Cayman Foundation（DAO 主流）、BVI（Layer-1 偏好）、瑞士 Stiftung（Ethereum Foundation 同款），避免在受限辖区签 SAFT。详细法律结构见 §15。
+
 ---
 
 ## 0. 前置知识
@@ -125,6 +137,36 @@ graph TD
 - 记住：蓝→黄是刚性顺序，跳不了。
 - 记住：每模块要有可验证的产出物，GitHub 公开。
 - 记住：横向模块（10/11/12）决定项目能否上线，不是可选项。
+
+---
+
+## § 行业历史时间轴（事件驱动地图）
+
+> TL;DR：Web3 不是平稳增长的工程领域，是被一连串**爆炸性事件**塑造出来的。每个事件都对应一类现在还在写的代码、还在跑的合规规则。下面 11 个节点是 Web2 工程师的"心智锚点"，详细技术机制见各对应模块。
+
+**2014-02 Mt.Gox 崩盘**：日本东京交易所丢失约 85 万 BTC（当时市值 4.5 亿美元，2026-04 价位约 600 亿美元）。表层归因为 transaction malleability 攻击，深层是 Karpelès 长期挪用与会计造假。这件事直接催生了**现代 Proof-of-Reserves（PoR）**实践和"not your keys, not your coins"行业口号。详见 11 章基础设施。
+
+**2016-06 The DAO 攻击**：Slock.it 募资 1.5 亿美元的链上风投基金被 reentrancy 攻击抽走 360 万 ETH（约 6000 万美元）。社区分裂导致 ETH/ETC 硬分叉——这是历史上第一次"代码即法律 vs 救济持币人"的公开对立。**reentrancy 从此成为安全教科书第一章**，OZ ReentrancyGuard 是每个新人写的第一个 modifier。详见 05 章。
+
+**2017-Q3 ICO 退潮 + Howey Test 执法**：2017 年下半年至 2018 年 ICO 募资超 200 亿美元，1500+ 项目 90% 归零。SEC 启动 *Munchee*、*DAO Report*、Telegram、Kik 等系列执法，确立"以 Howey Test 判断 token 是否属于证券"的事实标准。后续 Ripple/XRP 案（2023 部分胜诉）、Coinbase/SEC 案（2024-10 撤诉）等都基于这一框架。**法务审查 token launch 的工作流由此成型**。
+
+**2020 夏 DeFi Summer + 流动性挖矿**：Compound 6 月推出 COMP 治理代币空投，开启"yield farming"狂潮，TVL 从 10 亿美元 6 个月内冲到 200 亿美元。Uniswap V2、Yearn、Curve、Aave 在这个窗口同步爆发。**这是 Web2 工程师第一次大规模涌入 Solidity 写合约**，也是现代 DeFi 协议工程的诞生。详见 06 章。
+
+**2022-05 Luna/UST 崩塌**：Terra 算法稳定币 UST 脱钩，Luna 从 80 美元一周内跌到 0.0001 美元（19000 倍稀释），蒸发约 600 亿美元。Do Kwon 后被韩国和美国双双起诉。**这一事件让"算稳"在监管层成为脏词**，直接推动了美国 GENIUS Act（2024 年提案、2025 年初通过）和欧盟 MiCA（2024-12 全面生效）对储备金型稳定币的强制 1:1 fiat backing。
+
+**2022-06/07 暑假连锁清算**：Luna 暴雷触发 3AC（Three Arrows Capital）追加保证金失败 → 借出方 Celsius、Voyager、BlockFi 接连冻结提现 → 2023-01 Genesis 申请破产。串联机制是**未公开的链下信贷敞口**，同一份抵押被多家 prime broker 重复计入。教训：CeFi 黑箱的风险在 DeFi 之外，PoR + 链上抵押证明从此成为 CEX 合规底线。
+
+**2022-08 Tornado Cash 制裁与 Roman Storm 案**：OFAC 把混币器 Tornado Cash 的智能合约地址列入 SDN 清单——**史上第一次制裁不可变代码**。开发者 Alexey Pertsev 在荷兰、Roman Storm 在美国先后被起诉。2025-03 美国财政部部分解除对合约地址的制裁（保留对个人的指控），Storm 案 2025 年开庭。这场官司直接定义了"写开源代码 vs 运营服务"的法律边界，每个 mixer/隐私协议工程师必读。
+
+**2022-11 FTX/Alameda 崩盘**：CoinDesk 披露 Alameda 资产负债表中 FTT（FTX 自家代币）占比异常高，引发 CZ 抛售触发挤兑。FTX 一周内破产，约 80 亿美元客户资金被挪用至 Alameda 高风险头寸。SBF 2024-03 被判 25 年监禁。**这件事杀死了"trust the founder"叙事**，把 PoR、链上结算、自托管推到合规标配。详见 11 章。
+
+**2023-03 SVB → USDC 脱钩**：硅谷银行倒闭，Circle 披露 33 亿美元储备卡在 SVB，USDC 跌至 0.87。FDIC 周末紧急接管后恢复脱钩。这件事让全行业重写**储备金披露规则**——Circle 改为月度 attestation + 每日 Treasury 持仓公开，Tether 也被迫加速透明化。稳定币工程师从此默认要做"reserve composition + redemption proof"集成。
+
+**2024-07 Mt.Gox 14 万 BTC 还款分发**：破产管理人 Nobuaki Kobayashi 启动 10 年来首次大规模分发，约 14.2 万 BTC 通过 Kraken/Bitstamp/BitGo 等交易所打给债权人。市场短期承压（BTC 从 7 万跌至 5.4 万）。这是流动性风险管理（cliff vesting → linear unlock 设计）的真实压力测试，token 解锁曲线设计的反面教材。详见 15 章。
+
+**2025-02 Bybit Hack 14.6 亿美元**：朝鲜 Lazarus Group 攻陷 Safe{Wallet} 一名前端开发者的 AWS session token，篡改 Safe UI 让 Bybit 多签签名人在不知情下批准了恶意交易，从 cold wallet 转走 40.1 万 ETH。**史上单笔最大加密盗窃**。教训：multisig 不是终点，前端供应链 + 签名内容验证（blind signing 是头号反派）才是。详见 05 章 + 11 章。
+
+每个事件背后都是一类活的工程实践。读完这本书的目标，是让你看到下一次崩盘新闻时**第一反应是去看代码**，而不是看价格。
 
 ---
 
@@ -344,6 +386,32 @@ AI 是草稿生成器，不是决策者：
 - 执行层客户端：Geth（41%）、Reth 2.0（~20-25%，Base/OP 已迁移）、Erigon（archive，3-3.5 TB）
 - 共识层客户端：Lighthouse、Prysm、Teku、Nimbus、Lodestar
 - 安全竞赛：Code4rena（Zellic 收购，参与人数最多）、Sherlock（提供事后保险）、Cantina（审计员 stake）
+
+### 职业地图：9 类 Web3 公司
+
+> TL;DR：5 方向是技能侧，9 类公司是雇主侧。同样写 Solidity，在协议方、L2、审计所、AI×Web3 的日常完全不同——选哪类公司比选哪门语言更决定下一步。
+
+**1. 协议方（Protocol Labs）** — 直接造 DeFi/Restaking 原语，估值最高、薪水顶配，对算法/经济学/安全审视极严。代表：**Uniswap Labs / Aave / Lido / EigenLayer Labs / Morpho / Pendle**。工作语言：Solidity 主，Rust 副（核心算子和 watcher 偏 Rust）。
+
+**2. L2 / Rollup 团队** — 客户端、sequencer、bridge、proof system 全栈，工程量最大，跨执行层与共识层。代表：**OP Labs / Arbitrum Foundation / Matter Labs（zkSync）/ Scroll / Polygon Labs / Linea / Starknet / Taiko**。工作语言：Solidity（合约） + Rust（客户端、prover）+ Go（旧 fork）。
+
+**3. 钱包 / 账户层** — UX 复杂度最高，签名安全是命脉，AA + passkey + EIP-7702 全链路。代表：**MetaMask / Rabby / Privy / Dynamic / Frame / Coinbase Smart Wallet / Safe**。工作语言：TypeScript 主 + 安全审视 + 部分原生（iOS/Android secure enclave）。
+
+**4. CEX / 中心化交易所** — 撮合引擎、风控、托管、上币、清结算，量化在内，规模最大，合规最重。代表：**Coinbase / Binance / OKX / Bybit / Kraken / Bitget**。工作语言：Go / Java / Rust 后端 + TypeScript 前端 + Python 风控。
+
+**5. 做市商 / Prop Trading** — 高频、链上 MEV、跨场套利，门槛最高，薪水也最离谱。代表：**Wintermute / Jump Crypto / GSR / DRW / Cumberland / Flow Traders**。工作语言：Rust / C++ 高频 + Python 策略，对延迟和数学要求极高。
+
+**6. VC / 投研机构** — 投后服务、技术尽调、研究报告、portfolio 协调。代表：**a16z crypto / Paradigm / Pantera / Polychain / HashKey / Multicoin / Variant / 1confirmation**。工作语言：TypeScript 投后工具 + 研究为主（Python/SQL/链上数据）。
+
+**7. 审计所 / 安全公司** — 协议代码逐行审计，形式化验证、fuzzing、bounty 平台。代表：**OpenZeppelin / Trail of Bits / Cyfrin / Spearbit / ChainSecurity / Zellic / Halborn / Quantstamp**。工作语言：Solidity 深 + Halmos / Certora / K Framework / Foundry invariant，重写比读懂更重要。
+
+**8. 基础设施 / DevTools** — RPC、indexer、oracle、bridge、节点托管、监控、CI。代表：**Alchemy / Infura / Chainlink / The Graph / Pyth / Goldsky / Tenderly / Blockscout**。工作语言：Go / Rust 后端 + TypeScript 控制面 + DevOps（K8s / Terraform 重度）。
+
+**9. AI × Web3** — 链上推理网络、ML 训练协调、agent 经济、隐私 ML。代表：**Bittensor / Gensyn / Sahara / Olas / Ritual / Hyperbolic**。工作语言：Python ML（PyTorch/JAX）+ Solidity 经济层 + Rust 节点。详见 12 章。
+
+**华人创立的公司值得关注**：**Conflux**（龙凡，Tree-Graph PoW，2021 上线香港金科沙盒）、**Plasma Labs**（BTC-secured stablecoin L1，2024 主网，Founders Fund 领投）、**Goplus**（链上安全 SaaS，wallet/dApp 端实时风险扫描）、**Babylon**（David Tse，BTC staking 协议）、**Matter Labs / zkSync**（Alex Gluchowski 团队含华人核心）、**Pendle**（Vu Gaba Vineb + 华人核心，yield trading 头部）。
+
+**怎么挑**：薪资上限 1≈5>2>3>8>4>7>9>6；学习曲线 5≈7>1≈2>9>3>4>8>6；签证/远程友好度 7≈8>2>1>9>3>6>4>5（做市商基本不远程）。第一份工作建议：协议方（深度）或审计所（广度）任选其一，三年后再切换不迟。
 
 ---
 

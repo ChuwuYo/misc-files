@@ -297,6 +297,111 @@ EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Cele
 
 **章末**：5 起事故完整代码级复盘（含 Ronin/Multichain/Orbit）见附录 G。跨链消息协议（LayerZero/Wormhole/Hyperlane/CCIP/CCTP）对比见附录 H。
 
+### 7.4 桥实战决策树（用户视角）
+
+> 本节解决一个具体问题：「我手里有 X 链的 Y 资产，要到 Z 链，最优路径是什么？」桥不是越花哨越好——大多数场景**最便宜的路径是 CEX 内部提币而不是桥**。
+
+#### 三条主路径决策树
+
+```mermaid
+flowchart TD
+    Start[手里有资产 X-Y 要到 Z 链] --> Q1{Y 是稳定币?}
+    Q1 -->|否| Bridge[直接评估桥]
+    Q1 -->|是| Q2{源/目标 之一是 CEX?}
+    Q2 -->|是| Q3{CEX 支持目标链原生提币?}
+    Q3 -->|是| CEX[CEX 内部提币<br>固定费率 + 不走桥]
+    Q3 -->|否| Hop[先提到 ETH 主网<br>再走桥]
+    Q2 -->|否| Q4{是 USDC?}
+    Q4 -->|是| CCTP[CCTP 原生 burn-mint<br>无桥风险]
+    Q4 -->|否| Bridge
+```
+
+**路径 1：USDT Binance → Tron（CEX 内部提币）**
+- 操作：Binance 提币选 TRC-20 网络 → 直接到 Tron 地址
+- 费率：1 USDT 固定（Binance 公示，截至 2026-04），到账 5-15 分钟
+- 关键：**这不是桥**，是 CEX 在 Tron 上的热钱包出账。零桥风险，但有 CEX counterparty 风险（CEX 跑路即归零）
+- 对比：若走 Stargate 跨链（ETH USDT → Tron USDT）需 USDT-ETH 与 Tron 桥两跳，手续费 0.06% + 两笔 gas，完全劣势
+
+**路径 2：USDT Binance → Arbitrum（混合路径）**
+- 首选：Binance 提币选 Arbitrum One 网络（2024-08 起 Binance 已支持原生 Arbitrum USDT 提币），费率 0.8 USDT，5 分钟
+- 兜底：若 CEX 不支持目标链 → 提到 ETH 主网（费率 ~5 USDT + L1 gas $1-3）→ 再走 Stargate / Across 到 Arbitrum
+- 实测（截至 2026-04）：直接路径成本 < $1，兜底路径 $4-6，差 4-6 倍
+
+**路径 3：USDC Coinbase → Base（最优特例）**
+- 操作：Coinbase 提币选 Base 网络
+- 费率：**$0**（Coinbase 自家 L2，内部账本调账，非链上交易）
+- 到账：即时（< 30 秒）
+- 类似：Kraken → Ink、OKX → X Layer、Binance → opBNB 都是同一逻辑——CEX 自家 L2 是「免费桥」，详见附录 H.8
+
+#### 2026 主流桥手续费 / 速度对比表
+
+| 协议 | 手续费 | 到账时间 | 单笔最大额度 | 是否原生 USDC |
+|---|---|---|---|---|
+| Across | 0.04-0.10% | < 1 分钟（relayer 垫付） | $10M | 否（wrapped） |
+| Stargate v2 | 0.06% + gas | 1-3 分钟 | $5M | 否（USDC.e） |
+| LayerZero v2 (OFT) | 0.06% | 1-2 分钟 | 应用配置 | 否 |
+| Hop Protocol | 0.04% | 5-10 分钟 | $2M | 否（hUSDC） |
+| Synapse | 0.05% | 5-15 分钟 | $1M | 否（nUSD） |
+| Hyperlane | gas-only（应用补贴） | 1-2 分钟 | 应用配置 | 否 |
+| Allbridge Core | 0.30% | 3-5 分钟 | $500k | 否（aUSDC） |
+| deBridge DLN | 0.04% | 1-2 分钟（intent） | $5M | 否 |
+| Squid (Axelar 聚合) | 0.10-0.25% | 2-5 分钟 | $1M | 部分（CCTP 路由） |
+| Circle CCTP | $0（仅 gas） | 13-19 分钟（attestation） | 无限 | **是（原生）** |
+
+**结论（截至 2026-04）**：USDC 跨 EVM **首选 CCTP**（无桥风险）；速度敏感选 Across（< 1 分钟）；非 USDC 资产选 Stargate v2 或 LayerZero OFT。
+
+#### 桥被黑应急 SOP（5 步）
+
+桥被黑往往在 30 分钟内 TVL 归零。当你看到 Twitter / Discord 报警「XX bridge exploited」，按以下顺序：
+
+1. **撤销 approval**：立即用 [revoke.cash](https://revoke.cash/) 撤销该桥所有 token approval（包括 router、spoke pool、helper 合约），防止攻击者用你的授权再吸一波
+2. **claim 残值**：检查桥是否有 v2 升级合约 / 社区赔付通道（Multichain 至今未赔；Wormhole 由 Jump 全额垫付；Nomad 部分追回）；优先 claim pending 提款
+3. **监控相关地址**：Arkham / Nansen 设置 alert 跟踪攻击者地址，等其分批转移时配合 OFAC / 交易所冻结
+4. **关注官方多签**：桥多签升级是攻击/赔付双向信号——攻击地址被加入黑名单 = 团队还在；多签静默 24h+ = 可能跑路（Multichain 模式）
+5. **追溯 + 合规通报**：金额 > $1M 触发 Travel Rule，应主动通知本地金融监管 + Chainalysis；个人持仓 > $100k 损失可申请税务核销
+
+#### Bridge 聚合器实战（聚合器三巨头）
+
+桥太多、费率天天变，**生产场景几乎不直接调单一桥**，而是用聚合器拿 quote 再路由：
+
+| 聚合器 | 底层 | 卖点 | 适合 |
+|---|---|---|---|
+| **Squid** | Axelar GMP | 一笔交易跨任意 EVM + Cosmos，CCTP 路由内置 | DApp 内嵌 |
+| **Li.Fi** | 多桥报价聚合 | 集成 30+ 桥 + 30+ DEX，企业级 SDK | B2B 集成 |
+| **Socket / Bungee** | Socket 协议 | Bungee 是 C 端前端，Socket 是后端 SDK | C 端 / DEX 集成 |
+
+**Li.Fi SDK 使用伪代码**（截至 2026-04 的 v3 API）：
+
+```ts
+import { LiFi, ChainId, CoinKey } from '@lifi/sdk'
+
+const lifi = new LiFi({ integrator: 'my-dapp' })
+
+// 1. 拿报价：USDC Arbitrum → USDC Base
+const quote = await lifi.getQuote({
+  fromChain: ChainId.ARB,
+  toChain: ChainId.BAS,
+  fromToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC.arb
+  toToken:   '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC.base
+  fromAmount: '1000000000', // 1000 USDC (6 decimals)
+  fromAddress: userAddress,
+})
+
+// 2. quote 包含：路由（如 CCTP）、预估到账时间、总费用、滑点
+console.log(quote.estimate.toAmountUSD)      // 999.85
+console.log(quote.estimate.executionDuration) // 780s
+console.log(quote.toolDetails.name)           // 'Circle CCTP'
+
+// 3. 执行：SDK 自动处理 approve + bridge call
+const execution = await lifi.executeRoute(signer, quote, {
+  updateRouteHook: (route) => console.log(route.steps[0].execution?.status),
+})
+
+// 4. 监听状态：PENDING → DONE / FAILED
+```
+
+**工程师视角**：聚合器把「选哪个桥」从产品决策降为运行时报价问题。但聚合器本身有 router 合约风险（Socket 2024-01 被黑 $3.3M，approval bug），生产前必读其 router 审计报告 + 设置 approval 上限（不要 infinite approve）。
+
 ---
 
 ## 第 8 章 L2BEAT Stage 评级：如何读懂安全成绩单
@@ -853,6 +958,47 @@ graph TB
 | IBC | light client 验证 | trust-minimized 金标准（Cosmos 系） |
 
 **2026 实战决策**：USDC 走 CCTP；DeFi 最优速度走 Across；自建 rollup 互通走 Hyperlane；合规客户走 CCIP；Solana 桥走 Wormhole；Cosmos 系走 IBC。
+
+### H.8 CEX 自家 L2 浪潮：商业模式 + 横向对照
+
+> 本节解释一个 2024-2026 年的明显趋势：**几乎所有 Top-20 CEX 都在做自己的 L2/L1**。不是技术叙事——是赤裸裸的商业模式必然。
+
+#### 现象（截至 2026-04）
+
+至少 9 家中心化交易所已上线或运营自家公链：Coinbase **Base**（OP Stack，2023-08）、Kraken **Ink**（OP Stack，2024-12）、OKX **X Layer**（Polygon CDK，2024-04）、Binance **opBNB**（OP Stack，2023-09）+ **BNB Chain**（自有 L1）、KuCoin **KCC**（PoSA，2021）、HTX **Heco**（PoSA，2020 已基本停滞）、Crypto.com **Cronos** + **Cronos zkEVM**（Cosmos + ZK Stack）、Bitget **BWB Chain**（OP Stack，2025）、HashKey Group **HashKey Chain**（zkSync ZK Stack，2024-10）。
+
+#### 动机分析（4 条）
+
+1. **流量自留**：用户从 CEX 提币本来流出生态——一旦提到 ETH 主网或第三方 L2，下次回来概率 < 30%。建自家 L2 后，用户提币 = 留在 CEX 控股链，复购率 + 衍生品交叉销售飙升
+2. **Gas 收入内化**：sequencer 全部由 CEX 控制，**gas 收入 100% 归 CEX**。Base 公开数据：sequencer 月入 $1-3M（2024-Q4 平均），年化 $20-40M 纯利润——比很多上市 fintech 全年利润高
+3. **USDC/USDT 入金通道**：CEX 在自家 L2 上原生发稳定币（Base 是 Coinbase USDC 默认链；BNB Chain 是币安 BUSD/USDT 主战场），用户入金即获原生稳定币，无需桥 → DeFi 无摩擦
+4. **监管套利**：自家 L2 KYC gating 容易（sequencer 可拒绝未 KYC 地址出块），合规可控。Coinbase Base 已实测——若 SEC 要求，可在 sequencer 层面强制实施地址级合规策略，远比公链上做合规友好
+
+#### 横向对照表（截至 2026-04）
+
+| 链 | CEX | 上线 | Tech Stack | Stage | TVL | 日 tx | 主要 dApp | 原生稳定币通道 | 用户画像 |
+|---|---|---|---|---|---|---|---|---|---|
+| Base | Coinbase | 2023-08 | OP Stack | **Stage 1** | $14B | 8-12M | Aerodrome、Uniswap、Friend.tech、Farcaster | Coinbase USDC 直通 | 美国零售 + Web3 社交 |
+| BNB Chain | Binance | 2020-09 | 自有 L1（PoSA） | N/A（非 rollup） | $6B | 4-6M | PancakeSwap、Venus、Apex | Binance USDT/FDUSD | 全球零售 + meme |
+| opBNB | Binance | 2023-09 | OP Stack on BNB | Stage 0 | $200M | 3-5M | PancakeSwap v3、Apex Pro | Binance USDT 二级通道 | 高频交易 + 衍生品 |
+| Cronos | Crypto.com | 2021-11 | Cosmos EVM | N/A | $400M | 200k-500k | VVS Finance、Tectonic | CRO.com USDC | 欧洲零售 + CRO 持有者 |
+| Cronos zkEVM | Crypto.com | 2024-09 | ZK Stack | Stage 0 | $80M | 50k-100k | VVS、Veno | CRO.com 直通 | 试验性高净值 |
+| X Layer | OKX | 2024-04 | Polygon CDK | Stage 0 | $300M | 100k-300k | OKX Wallet、JumpEx | OKX USDT/USDC | 亚太零售 |
+| Ink | Kraken | 2024-12 | OP Stack（Superchain） | **Stage 1** | $250M | 80k-200k | Kraken Trade、Aerodrome (forked) | Kraken USDC 直通 | 美国 + 欧洲合规零售 |
+| KCC | KuCoin | 2021-05 | PoSA EVM | N/A | $30M | 10k-30k | MojitoSwap | KuCoin USDT | 衰退中 |
+| Heco | HTX (火币) | 2020-12 | PoSA EVM | N/A | $20M | 5k-20k | MDEX | HTX USDT | 已基本停滞 |
+| BWB Chain | Bitget | 2025-Q1 | OP Stack | Stage 0 | $50M | 20k-80k | BitgetSwap | Bitget USDT | 衍生品交叉用户 |
+| HashKey Chain | HashKey | 2024-10 | ZK Stack | Stage 0 | $40M | 5k-15k | HashKey Exchange、HSK | HashKey USDC | 香港持牌合规 |
+
+#### 工程师视角选 L2
+
+CEX 自家 L2 看似选项很多，**工程师的真实判别标准只有 3 条**：
+
+1. **看 sequencer 中心化程度**：CEX 100% 单点控制 sequencer 是底线现实。问题是有没有 force inclusion（用户绕过 sequencer 的逃生通道）+ 多久强制去中心化（Base 承诺 2026 推 fault proof Stage 2 升级路径；opBNB 至今无明确路线）。**没有 force inclusion 的 CEX L2 = CEX 控股链，不是 rollup**
+2. **看桥风险**：CEX 自家桥（Base 官方桥、Kraken Ink 桥）= CEX 兜底（Coinbase 公开承诺 Base 桥若被黑全额垫付，类似 Wormhole/Jump 模式）；第三方桥到 CEX L2（Stargate、Across 到 Base）= 第三方桥风险叠加 CEX L2 风险，**双层风险**。生产用资金应优先 CEX 官方桥
+3. **看生态原生 dApp**：判断 L2 是否真有用户的最快方法 = 看有没有原生 dApp 而非 fork。**Base 优势**：Aerodrome（Velodrome fork 但 TVL 反超原版）、Friend.tech（社交首发）、Farcaster Frames（钱包内 mini-app）形成原生网络效应；**opBNB 短板**：PancakeSwap、Apex Pro 都是 BNB Chain 复制，无原生杀手 dApp 即流量护城河浅
+
+**反例提醒**：KCC、Heco 已证明「CEX + 公链」不是必胜组合。KuCoin 与 HTX 的 L2 在 2022-2024 流动性枯竭后基本停滞，原因是**没有第二动机**——CEX 主品牌不强、稳定币不强、合规故事不强，三缺一就跑不动。
 
 ---
 

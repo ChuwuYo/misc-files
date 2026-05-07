@@ -738,8 +738,121 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <li><strong>Aleo</strong>：Circle USDCx / Paxos USAD 已上链；</li>
 <li>2026 趋势：「合规友好隐私」——可证「资金不来自 OFAC 制裁地址」同时保留隐私。</li>
 </ul>
-<h3 id="5proof-of-solvency">场景 5：Proof of Solvency</h3>
+<h3 id="5proof-of-solvency-proof-of-reservespor">场景 5：Proof of Solvency / Proof of Reserves（PoR）</h3>
 <p>FTX 崩盘后，交易所需证明资产 ≥ 用户负债。用 Merkle Sum Tree + ZK proof，每个用户能验自己的余额被包含、总和正确，但看不到别人余额。Binance、Kraken、OKX 均已部署。</p>
+<h4 id="ftx-por">行业背景：FTX 之后为什么必须做 PoR</h4>
+<p>2022-11 FTX 在 72 小时内从「全球第二大 CEX」变成全员维权对象。事后审计显示：FTX 把用户存款挪给 Alameda 做杠杆，链上钱包余额远低于内部账本负债。社区共识由此形成——<strong>CEX 必须以可验证的方式证明：链上资产 ≥ 用户负债总和</strong>，而且证明频率要远高于传统季度审计。这套机制叫 Proof of Reserves（PoR）/ Proof of Solvency。</p>
+<p>PoR 三年内迭代了三代，每代修复上一代的攻击面：</p>
+<h4 id="v1merkle-sum-tree2022-11-binance-okx-cryptocom">v1：Merkle Sum Tree（2022-11 起，Binance / OKX / Crypto.com 月度）</h4>
+<p><strong>核心结构</strong>：</p>
+<ul>
+<li>每个用户 (user_id_hash, asset, balance) 作为叶子；</li>
+<li>内部节点存子树和：<code>node.sum = left.sum + right.sum</code>，<code>node.hash = H(left.hash || left.sum || right.hash || right.sum)</code>；</li>
+<li>交易所发布 root；用户从交易所后台下载自己叶子到根的 sibling 路径，本地复算 root，比对官网公示。</li>
+</ul>
+<p><strong>用户侧自验</strong>（伪代码）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># pip install merkle-proof-verifier</span>
+<span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">binance_por</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">fetch_self_proof</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">verify_inclusion</span>
+
+<span style="color: #000">proof</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">fetch_self_proof</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">user_id</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">asset</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #4E9A06">&quot;BTC&quot;</span><span style="color: #000; font-weight: bold">)</span>  <span style="color: #8F5902; font-style: italic"># JSON: {leaf, siblings, root, total_sum}</span>
+<span style="color: #000">ok</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">verify_inclusion</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">proof</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">leaf</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">proof</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">siblings</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">proof</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">root</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #204A87; font-weight: bold">assert</span> <span style="color: #000">ok</span> <span style="color: #204A87; font-weight: bold">and</span> <span style="color: #000">proof</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">leaf</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">amount</span> <span style="color: #CE5C00; font-weight: bold">==</span> <span style="color: #000">my_balance_in_app</span>
+</code></pre></div>
+<p>Binance PoR JSON 字段大致是 <code>{user_id_hash, asset, amount, siblings: [{hash, sum, position}]}</code>，OKX 类似但叶子用 BLS12-381 域元素。</p>
+<p><strong>v1 的三个攻击面</strong>：</p>
+<ol>
+<li><strong>只证资产侧，不证负债真实性</strong>：交易所可以「忘记」把负余额账户（杠杆爆仓欠库账户）写进树，让总负债看起来更小。Merkle Sum Tree 本身不能强制「树包含全部账户」。</li>
+<li><strong>链上钱包归属难证</strong>：交易所披露一组冷钱包地址说「这就是我的资产」，但链上没法证这些地址真属于它而不是借来的。FTX 案后被实锤的「借冷钱包过场」——Crypto.com 在 2022-11 PoR 公布前几小时把 32 万 ETH 转到 Gate.io，公示完再转回——就是这个洞。</li>
+<li><strong>快照间作弊</strong>：月度快照 = 30 天内可以随意挪用，只要快照那一刻账平就行。</li>
+</ol>
+<h4 id="v2zkpor2024-polyhedra-succinct-zkpass-hyperliquid">v2：zkPoR（2024 起，Polyhedra / Succinct / zkPass / Hyperliquid 实验）</h4>
+<p><strong>核心</strong>：把 v1 的 Merkle Sum Tree 升级成 ZK 电路，证明：</p>
+<ul>
+<li>所有叶子的 sum 累加 = root.sum（线性约束）；</li>
+<li><strong>没有任何叶子是负的</strong>（range proof，关键修复 v1 攻击面 #1）；</li>
+<li>用户侧只暴露「我的叶子被包含」+「root 与官方公示一致」，不暴露其他人余额。</li>
+</ul>
+<p><strong>Circom 风格电路片段</strong>（约 30 行核心约束）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>template SumTreeNode() {
+    signal input left_hash;  signal input left_sum;
+    signal input right_hash; signal input right_sum;
+    signal input amount;     // 当前叶子余额
+    signal output node_hash; signal output node_sum;
+
+    // 关键 1：和等式
+    node_sum &lt;== left_sum + right_sum + amount;
+
+    // 关键 2：无负余额（range proof，64 bit 足够）
+    component rc = Num2Bits(64);
+    rc.in &lt;== amount;
+
+    // 关键 3：哈希绑定
+    component h = Poseidon(5);
+    h.inputs[0] &lt;== left_hash;  h.inputs[1] &lt;== left_sum;
+    h.inputs[2] &lt;== right_hash; h.inputs[3] &lt;== right_sum;
+    h.inputs[4] &lt;== amount;
+    node_hash &lt;== h.out;
+}
+</code></pre></div>
+<p>OKX 自 2023 起每周发布 zkPoR，证明 zk 电路约束「∀ leaf: balance ≥ 0 ∧ Σ balance = total_liability」，并把 proof 发到自家 explorer 供任何人验证。</p>
+<h4 id="v3-por-2025-2026">v3：实时 PoR + 链上结算（2025-2026 趋势）</h4>
+<p>v2 仍然是「快照式」证明，没法防快照间挪用。v3 思路是把账本搬到链上或链下不可篡改通道：</p>
+<ul>
+<li><strong>Hyperliquid</strong>：永续合约 + 订单簿全部跑在自家 L1 链上，每笔成交链上可查。「PoR」退化成「读链」，没有「储备 vs. 负债」这种概念差。</li>
+<li><strong>Copper ClearLoop / Fireblocks Off-Exchange</strong>：机构资金锁在 MPC 托管账户，CEX 只拿到「交易许可」而拿不到资产挪用权，结算 T+0 链上完成。机构客户绕过 CEX 资产侧风险。</li>
+<li><strong>Chainlink PoR Feed</strong>：把 v1/v2 的 root 上链做 oracle feed，DeFi 协议（如 wBTC、stETH 衍生品）可在合约里实时校验。</li>
+</ul>
+<h4 id="2026-04">真实数据（截至 2026-04）</h4>
+<table>
+<thead>
+<tr>
+<th>交易所</th>
+<th>频率</th>
+<th>方案</th>
+<th>资产覆盖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Binance</td>
+<td>月度</td>
+<td>v1 Merkle Sum</td>
+<td>BTC/ETH/USDT 等 9 资产</td>
+</tr>
+<tr>
+<td>OKX</td>
+<td>周度</td>
+<td>v2 zkPoR</td>
+<td>22 资产</td>
+</tr>
+<tr>
+<td>Crypto.com</td>
+<td>季度</td>
+<td>v1 Merkle Sum + Mazars 审计</td>
+<td>主流 7 资产</td>
+</tr>
+<tr>
+<td>Kraken</td>
+<td>半年</td>
+<td>v1 + 第三方审计</td>
+<td>全资产</td>
+</tr>
+<tr>
+<td>Bybit</td>
+<td>月度</td>
+<td>v2 zkPoR（2024 起）</td>
+<td>主流</td>
+</tr>
+</tbody>
+</table>
+<h4 id="llama-risk-vasco-defillama">攻击面分析（Llama Risk / Vasco / DeFiLlama 视角）</h4>
+<p>即使部署了 v2，PoR 仍非「绝对偿付能力」证明：</p>
+<ul>
+<li><strong>链上钱包归集时间窗</strong>：CEX 在快照前几分钟从其他平台借入资金、快照后归还——v1/v2 都拦不住。需要交叉对比链上 mempool + 历史归集模式才能识别（这正是 11 模块「OSINT 实战」要做的事，见 <a href="../11-基础设施与工具/">11-基础设施与工具</a> 后续补充章节）。</li>
+<li><strong>借贷时间差</strong>：把负债部分搬到关联实体（Alameda 模式）——电路可证「树内账平」，但证不了「树外没有隐藏负债」。</li>
+<li><strong>期间穿仓未披露</strong>：v2 的 range proof 强制 <code>balance ≥ 0</code>，但若交易所把爆仓账户从树里删掉，电路无法察觉删除行为。需要外部审计交叉对账户增长曲线 vs. 链上交互曲线。</li>
+</ul>
+<p>工程上的实践建议：作为用户，至少应当（1）每次 PoR 公布后用工具自验自己叶子在树里、（2）订阅 DeFiLlama PoR Dashboard 看交易所储备/负债比、（3）大额资金优先选择走 ClearLoop 或链上自托管。作为研发，PoR 系统的 attack surface 不在密码学而在「输入数据真不真」——这恰好是 OSINT 与 ZK 工程的交叉地带。</p>
 <h3 id="6zkml">场景 6：zkML</h3>
 <p>证明「推理结果来自指定 model X」。2025 年 Lagrange DeepProve-1 第一次对完整 GPT-2 (1.5B 参数) 生成 ZK proof。当前性能：千万参数 CNN ~分钟级，数十亿参数 LLM 走 opML 混合路线。详细 benchmark 见附录 E。</p>
 <h3 id="7zkcoprocessor">场景 7：zkCoprocessor</h3>

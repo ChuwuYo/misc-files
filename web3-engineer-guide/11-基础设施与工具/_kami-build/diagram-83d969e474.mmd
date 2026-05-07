@@ -1,0 +1,7 @@
+flowchart TD
+    User[用户钱包连接] -->|① 前端拦截| FE[钱包连接前调 KYT API<br/>地址在 OFAC SDN 直接拒绝]
+    FE --> BE[后端 tx 准入]
+    BE -->|② 后端筛查| KYT[tx submit 前调 TRM /<br/>Chainalysis API 评分]
+    KYT --> Chain[链上提交]
+    Chain -->|③ 链上 hook| Contract[合约 modifier 调<br/>Chainalysis SanctionsList 合约]
+    Contract --> Pool[流动性池 / Vault]
