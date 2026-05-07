@@ -136,6 +136,19 @@ flowchart LR
 
 **性能影响**：模型推理的 FLOPs 和延迟都按 token 数线性涨。中文比英文多 1.7× token，相同的硬件下 latency 也多 1.7×。**生产系统里这是显著差距**。
 
+**OpenAI vs Anthropic 同任务真实账单差异**：Anthropic 不开源 Claude 的 tokenizer，但社区实测（[gist: claude-tokenizer-comparison](https://github.com/anthropics/anthropic-sdk-python/issues/170) 等）显示其中文压缩率介于 cl100k_base 和 o200k_base 之间——比 cl100k 略好，比 o200k 差约 20-35%。在一段 1000 字中文文档上：
+
+| Tokenizer | Token 数（典型） | 同任务相对成本（按各家定价） |
+|-----------|-----------------|---------------------------|
+| GPT-4o（o200k_base） | ~600 | 1.0×（基准） |
+| GPT-4 Turbo（cl100k_base） | ~1100 | 1.83×（同等定价 / token 时） |
+| Claude 3.5 Sonnet | ~750-850 | 1.25-1.42× input token；但 Sonnet input 单价 $3 vs GPT-4o $2.5，叠加后 **总账单高约 50-70%** |
+| Claude 3.5 Haiku | ~750-850 | 1.25-1.42×；Haiku input $0.8，叠加后比 GPT-4o-mini 略贵 |
+
+**关键 takeaway**：同样一段中文文档摘要、月调用 100 万次：GPT-4o 约 $5,000，Claude 3.5 Sonnet 约 $8,500。**这 70% 的差距不是模型质量差异，是 tokenizer + 定价的合力**。如果你在 OpenAI / Anthropic 之间做 A/B 选型，务必把"同样 prompt 在两家各占多少 token"作为一个独立维度算清——只看每 1M token 单价容易低估 Claude 的实际成本。
+
+国产模型（DeepSeek-V3、Qwen3）在中文 token 数上比两家美国模型都低 20-30%，叠加 1/10 到 1/20 的单价，月度账单可能差 1-2 个数量级——这是 2025-2026 国产 API 在国内中文场景全面替换的根本动力。
+
 **实战准则**：
 
 1. **system prompt 用英文**：除非你的模型对中文 system prompt 调优过，否则英文 system prompt 同义且省 30-50% token。这一点对 OpenAI/Anthropic 系统几乎是常识，但很多团队的 system prompt 习惯性用中文写，每次调用浪费几百 token，月度账单上直接看到。
@@ -357,7 +370,7 @@ DPO 之后涌现一堆变体，每个都解决 DPO 的某个具体痛点：
 | 方法 | 解决什么问题 | 一句话区别 |
 |------|------------|-----------|
 | **DPO** | RLHF 太复杂 | 闭式解 + 基于 sigmoid 的 pairwise log-loss |
-| **IPO** (Identity Preference Optimization) | DPO 在偏好近乎确定时会让 implicit reward 无界增长，过拟合 | 把 sigmoid log-loss 换成对 log-ratio 差的平方损失（向常数 1/(2β) 回归），饱和有界 |
+| **IPO** (Identity Preference Optimization) | DPO 在偏好近乎确定时会让 implicit reward 无界增长，过拟合 | 损失改为 $(h_w - h_l - \frac{1}{2\beta})^2$（其中 $h = \log \frac{\pi_\theta}{\pi_{ref}}$），把 log-ratio 差**钉死在常数 $\frac{1}{2\beta}$**，饱和有界 |
 | **KTO** (Kahneman-Tversky Optimization) | preference pair 数据贵 | 只要 thumbs up/down 二元标签，不要成对 |
 | **ORPO** (Odds Ratio Preference Optimization) | 还需要 SFT + DPO 两阶段 | 把 SFT 的 NLL 加上一个 odds ratio 项 `-log σ(log(odds(y_w) / odds(y_l)))`，一个 loss 同时做 SFT 和偏好，无需 reference model |
 | **SimPO** | DPO 还需要 reference model + 偏长 | 用**长度归一化的平均 log-prob**当 implicit reward + 加 target margin γ，完全 reference-free |
@@ -571,11 +584,11 @@ sequenceDiagram
 |------|------|-------|
 | **Vanilla Speculative**（Leviathan 2023） | 独立小模型当 draft | 1.5-2× |
 | **Medusa** | target 模型上加多头 draft 头 | 2-3× |
-| **EAGLE-3**（NeurIPS 2025） | 多层特征融合 + 训练时模拟推理 | 2-6× |
+| **EAGLE-3**（[arXiv 2503.01840](https://arxiv.org/abs/2503.01840), ICML 2025） | 多层特征融合 + 训练时模拟推理 | 3-6.5×（论文报告均值） |
 
 **为什么有效**：现代 LLM 在 decode 阶段是**memory-bound 而非 compute-bound**——每个 token 的瓶颈是把权重从显存搬到计算单元，FLOPs 利用率不到 10%。speculative decoding 一次 forward 计算 N 个候选 token 的概率，FLOPs 是同一份权重的 N 倍利用，**接近免费**。
 
-**生产现状**：vLLM、TensorRT-LLM、SGLang 都默认支持。EAGLE-3 [GitHub](https://github.com/SafeAILab/EAGLE) 已是 vLLM 推荐方案。Anthropic 在 Claude 3.5 起明显感觉到 decode 加速，OpenAI 也在 o1-mini 之后大幅降低 latency——背后都是 speculative decoding + 各种 attention 优化。
+**生产现状**：vLLM、TensorRT-LLM、SGLang 都默认支持。EAGLE-3 [GitHub](https://github.com/SafeAILab/EAGLE) 是 vLLM 推荐方案，vLLM 0.6.2 起内置、0.7+ 稳定、0.8+ 在 Llama-3 / Qwen3 等主流模型上有 head 权重。社区 benchmark（不同 batch / context 下）的实测加速：单 batch 短上下文约 2-3×，batch=1 长上下文约 3-4×，**比论文报告的 6× 上限有距离**——原因是 batch 越大、QPS 越高，speculative 拒绝率上升，加速比衰减。Anthropic 在 Claude 3.5 起明显感觉到 decode 加速，OpenAI 也在 o1-mini 之后大幅降低 latency——背后都是 speculative decoding + 各种 attention 优化。
 
 **应用工程师层面的影响**：
 
@@ -682,8 +695,8 @@ flowchart LR
 **核心训练范式**：
 
 1. **大规模 RL on reasoning tasks**：DeepSeek-R1-Zero 直接在 base model 上做 RL（不要 SFT），用数学题 / 代码题做 reward（答对得 1 分），让模型自学 CoT。这套被称为 **RLVR**（Reinforcement Learning with Verifiable Rewards）——只在「能客观验证答案对错」的任务上做 RL，避免人类偏好的歧义。
-2. **GRPO（Group Relative Policy Optimization）**：DeepSeek-R1 用的 RL 算法。相比 PPO 不需要 value function（critic model），用一组采样的相对排序当 baseline，**显存砍半**。GRPO 的核心思想是：对同一个 prompt 采样 16-64 个回答，按 reward 排序，对每条回答按它在组内的相对优势更新。这个改动让 70B 模型也能用 8 卡 H100 做 RL。
-3. **R1 的「aha moment」**：训练曲线上能观察到模型突然学会自我反思——「Wait, let me recheck」。这种行为不是显式教的，**纯靠 RL reward 自发涌现**。这是 LLM 训练史上最戏剧性的一幕之一，等同于发现：只要给模型「答对得分」的反馈，它会自己学会「想清楚再答」。
+2. **GRPO（Group Relative Policy Optimization）**：DeepSeek-R1 用的 RL 算法。相比 PPO 不需要 value function（critic model），用一组采样的相对排序当 baseline——PPO 训练要同时持有 actor + critic + reward + reference 四份模型，GRPO 砍掉 critic 后只剩三份，**显存省 ~25-33%**（"砍半"是早期社区的口耳相传，原论文里实际数字接近这个范围）。GRPO 的核心思想是：对同一个 prompt 采样 16-64 个回答，按 reward 排序，对每条回答按它在组内的相对优势更新。这个改动让 70B 模型也能用 8 卡 H100 做 RL。
+3. **R1 的「aha moment」**：DeepSeek-R1 论文 Figure 3 给出训练曲线：模型生成"Wait..."、"Let me reconsider"这类自我反思 token 的频率在某个 step 后突然抬升，模型 chain-of-thought 平均长度从几百 token 涨到几千 token。论文把这一现象叙述为"emergence of reflective behavior"——纯靠 RL reward 自发涌现，并未显式监督。**但这条叙事在 2025 学界有质疑**：(a) 后续工作（如 Yu et al., 2025）指出 cold-start SFT 阶段已暴露大量 reflective token，RL 是放大而非凭空产生；(b) Mistral / Tulu 3 等团队复现 R1-Zero 的纯 RL 范式时，aha moment 出现时机和强度高度依赖 base model 与 prompt format，并非"纯算法效果"。综合判断：**aha moment 是真实可观察的训练现象，但不是 RL-only 的魔法**——它依赖 base model 在预训练里已经见过推理样本，RL 只是把它们的生成概率放大。营销话术成分约三成，技术发现成分约七成。
 4. **多阶段训练**：R1 不止 RL 一步——先 cold-start SFT（少量高质量 CoT 数据）→ RL on reasoning tasks → 重新生成 SFT 数据 → 通用 SFT + RLHF。R1-Zero 是「纯 RL」实验，证明可行；R1 是「SFT + RL 混合」工程方案，输出可读性更好。
 
 **性能数字**：
@@ -748,7 +761,7 @@ flowchart LR
 - **MQA**（Multi-Query Attention）：所有 head 共享一份 K、V。极端压缩，但质量略降。
 - **GQA**：head 分组，每组共享 K、V。**MHA 和 MQA 的折中**。
 
-**为什么 GQA 重要**：推理时 KV cache（缓存历史 K、V 避免重复算）占了大头显存。70B 模型的 KV cache 在 128K context 下能吃 30 GB+。GQA 把 KV head 数从 N 降到 N/8 甚至 N/16，**KV cache 砍 8-16 倍**，长 context 推理才可能。
+**为什么 GQA 重要**：推理时 KV cache（缓存历史 K、V 避免重复算）占了大头显存。Llama-3 70B（$L=80, H_{kv}=8, d_h=128$, fp16, GQA）在 128K context、batch=1 下 KV Cache 约 **40 GiB**（详细公式见 09 章 §11.2）；如果用 MHA（$H=64$）会膨胀 8 倍到 320 GiB，无法部署。**KV cache 砍 8-16 倍**，长 context 推理才可能。
 
 #### 6.1.2 RoPE（Rotary Position Embedding）
 
@@ -759,7 +772,7 @@ flowchart TB
     B -->|Learned<br/>BERT| B2[x + learnable position embed]
     B -->|RoPE<br/>现代| B3["旋转 Q、K 向量<br/>角度 = θ × position"]
 
-    B3 --> C["Q · K = ||Q|| ||K|| cos(θ_diff)<br/>自然编码相对位置"]
+    B3 --> C["旋转后的 Q · K 只依赖 (m-n)·θ<br/>自然编码相对位置"]
 
     style B3 fill:#d4edda,stroke:#155724
 ```
@@ -773,7 +786,7 @@ flowchart TB
 #### 6.1.3 RMSNorm 与 SwiGLU
 
 - **RMSNorm**：去掉 LayerNorm 的均值减法，只用 RMS 缩放。计算量减一半，效果差不多。
-- **SwiGLU**：FFN 层从 `linear → ReLU → linear` 改成 `(linear → SiLU) ⊙ linear → linear`，多一个门控分支。**比 ReLU 提升 1-2 个百分点**，但 FFN 参数多 50%（所以总参数对齐时 hidden_dim 要相应调小）。
+- **SwiGLU**：FFN 层从 `linear → ReLU → linear`（2 个矩阵，参数量 $\approx 8d^2$）改成 `(linear → SiLU) ⊙ linear → linear`（3 个矩阵），多一个门控分支。**比 ReLU 提升 1-2 个百分点**。Llama 系把 hidden_dim $d_{ff}$ 从 $4d$ 缩到 $\frac{8}{3}d$，三矩阵合计 $3 \times d \times \frac{8}{3}d = 8d^2$ 与原 FFN 持平——所以"SwiGLU 多 50% 参数"只在不调 hidden_dim 时成立；现代 LLM 都做了相应缩放（详见 09 章 §5.8）。
 
 参考：[2025 modern LLM architecture](https://joshthompson.co.uk/ai/modern-llms-2025-rmsnorm-glu-gqa-rotary-embeddings-moe/)、[Llama 3 paper](https://arxiv.org/abs/2407.21783)。
 
@@ -860,7 +873,20 @@ gantt
 
 **应用工程师的实战观察**：
 
-- **「128K context」≠「128K 都好用」**。RULER benchmark（[Hsieh 2024](https://arxiv.org/abs/2404.06654)）测试发现，多数模型在 64K 后明显衰减；Lost-in-the-Middle 现象（[Liu 2023](https://arxiv.org/abs/2307.03172)）让 32K-96K 中段信息利用率最低。
+- **「128K context」≠「128K 都好用」**。RULER benchmark（[Hsieh 2024](https://arxiv.org/abs/2404.06654)）测试发现，多数模型在 64K 后明显衰减；Lost-in-the-Middle 现象（[Liu 2023](https://arxiv.org/abs/2307.03172)）让 32K-96K 中段信息利用率最低。**声称 vs 有效 context length（按 RULER 90% 准确率阈值）**：
+
+  | 模型 | 声称 | 有效 |
+  |---|---|---|
+  | Llama 3.1 70B | 128K | ~64K |
+  | Llama 3.1 405B | 128K | ~64K |
+  | Claude 3.5 Sonnet | 200K | ~100-128K |
+  | GPT-4o | 128K | ~64-96K |
+  | Gemini 1.5 Pro | 1M-10M | ~200-400K |
+  | Qwen3-235B | 128K（YaRN 1M） | ~96K |
+  | DeepSeek-V3 | 128K | ~64-96K |
+
+  **应用 takeaway**：声称值是营销，按 effective 值算预算。RAG 系统设计时，假设上限 = 声称的 50-70% 才稳。
+
 - **优先把关键信息放头尾**：第 16 章 RAG 会反复提，retrieved chunk 要放在 prompt 的头部或尾部，不要放中段。
 - **prompt 不要塞满**：哪怕模型支持 128K，实际用 16K-32K 是「最甜」区间。塞到 100K 不仅慢、贵，还掉准确率。
 - **prefill 成本**：长 prompt 的第一 token 延迟（TTFT）和 prompt 长度成线性甚至超线性关系。50K 输入的 TTFT 可能要 5-15 秒，UX 不友好——长 context 配 streaming UI 时要给用户「正在思考」的过渡态。

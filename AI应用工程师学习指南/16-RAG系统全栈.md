@@ -700,6 +700,31 @@ contextualized = f"{contextualize(whole_doc, chunk)}\n\n{chunk}"
 
 **这个方法的优雅之处**：它不要求改 embedding 模型、不要求改向量库、不要求改 LLM，只在 ingest 阶段多调一次廉价 LLM。能加进任何现有 pipeline。
 
+**自己实现时的成本估算**（这是 Anthropic 博客没明说的）：
+
+```
+每 chunk 成本 ≈ (cached_doc_tokens × cache_read_price)
+              + (chunk_tokens × input_price)
+              + (~80 output_tokens × output_price)
+
+总成本 ≈ N_chunks × 每 chunk 成本
+```
+
+代入 Claude Haiku 4.5（2025-10）参考价：input $0.80 / Moutput $4 / Mcache write $1 / Mcache read $0.08 / M。一份 50 页文档（约 30K tokens），切 60 个 chunk（每个 ≈ 500 tokens）：
+
+- cache write 一次：30K × $1/M ≈ $0.030
+- 每 chunk：30K × $0.08/M (cache read) + 500 × $0.80/M + 80 × $4/M ≈ $0.0024 + $0.0004 + $0.00032 ≈ $0.0031
+- 60 chunks × $0.0031 + 一次 cache write $0.030 ≈ $0.22 / 文档
+
+**关键前提（缺一项就翻车）**：
+
+1. **必须启用 prompt cache**——不开 cache，每个 chunk 都要全量送整本 doc，成本会乘以 20-100×。
+2. **doc 必须 ≥ 1024 tokens**（Claude prompt cache 的最小缓存单位），太短的文档不要用 contextual retrieval，直接用 chunk 原文即可。
+3. **TTL 内打完所有 chunk**——Claude 默认 cache 5 分钟，超时要重新付 cache write，所以 ingest 时一份文档的所有 chunk 应该连续打完，不要中间穿插别的请求。
+4. **超长文档（> 200K tokens）拆段处理**——一份 1000 页报告整本缓存超过模型上下文窗口，要按章节拆成多个"sub-document"分别 cache。
+
+**估算一下你的项目**：1000 万 tokens 知识库（约 1.5 万页），按 500 tokens/chunk 切 = 2 万 chunks，按上面公式 ≈ $60-100 一次性 ingest 成本。**听起来不贵，但记住"一次性"前提是文档不变**——文档每周更新一次，成本要乘以更新频率。频繁变动的工单库不要做 contextual retrieval，ROI 是负的。
+
 ### 6.7 Self-RAG / CRAG：自我反思
 
 **Self-RAG**（[Asai et al. 2023](https://arxiv.org/abs/2310.11511)）：训练一个会自己决定**何时检索、检索结果是否有用、答案是否充分**的模型。通过特殊 reflection token（`[Retrieve]`、`[Relevant]`、`[Supported]`、`[Useful]`）实现。优点是端到端；缺点是要专门训模型，工程上罕见落地。
@@ -764,7 +789,9 @@ Phase 2 · Query
 4. 二者融合喂 LLM
 ```
 
-LightRAG 的 indexing 成本约为 GraphRAG 的 1/100（500 页约 0.5 美元 / 3 分钟 vs. 50-200 美元 / 数小时），质量保留 70-90%。**在不需要全局摘要的场景下，LightRAG 是更工程的选择**。
+LightRAG 的 indexing 成本相对 GraphRAG 大幅下降（论文给出的对比是 500 页约 0.5 美元 / 3 分钟 vs. 50-200 美元 / 数小时，差异接近 100×），质量保留 70-90%。**在不需要全局摘要的场景下，LightRAG 是更工程的选择**。
+
+> **数字校准**：100× 的成本差是 LightRAG 论文里的有利对比——它假设 GraphRAG 跑了完整 Leiden 社区检测 + 多层级摘要，而 LightRAG 只抽实体关系。**工程实测的差异更常见落在 10-50× 区间**，取决于：(1) GraphRAG 的 community level 切到几层；(2) 用什么模型抽实体（gpt-4o vs gpt-4o-mini vs Qwen3-32B 差一个数量级）；(3) 是否启用 entity resolution。所以**别把"100× 便宜"作为选型唯一理由**——先算自己语料的 token 量 × 抽取调用次数 × 模型单价，得出工程估值，再决定要不要上 Graph 系。
 
 ### 7.4 Neo4j Graphiti（2024-11）
 
@@ -992,49 +1019,63 @@ def mrr(retrieved, ground_truth):
 
 ### 9.4 ragas 完整脚本
 
-> 兼容性提示：ragas 0.4 起把这套基于 `Dataset` + 全局 metric 实例的"legacy API"标记为弃用，**1.0 会移除**，新版主推 `ragas.metrics.collections` 下基于类的 `Faithfulness(llm=llm)` 形态。下面这份脚本仍是当前生产里最常见的写法，且在 0.x 长期支持期内可跑；上 1.x 时按官方 migration guide 替换 import 即可。
+> 兼容性提示：ragas 0.2（2024-10）引入了 `EvaluationDataset` + `SingleTurnSample`/`MultiTurnSample` 这套显式类型化 API，取代了基于 HuggingFace `datasets.Dataset` + 字符串字段的 legacy 写法。legacy 形态在 0.x 仍可跑、1.0 会移除。下面给的是 0.2+ 推荐写法。注意字段名也对齐了：旧版 `ground_truth` → 新版 `reference`、旧版 `contexts` → 新版 `retrieved_contexts`。
 
 ```python
-# ragas_eval.py
-from datasets import Dataset
-from ragas import evaluate
+# ragas_eval.py — ragas 0.2+ EvaluationDataset API
+from ragas import evaluate, EvaluationDataset
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import (
-    faithfulness, answer_relevancy,
-    context_precision, context_recall, answer_correctness,
+    Faithfulness, ResponseRelevancy,
+    LLMContextPrecisionWithReference, LLMContextRecall,
+    AnswerCorrectness,
 )
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-# 1. 评估集（人工准备 50-200 条最佳）
-samples = [
-    {
-        "question": "如何申请退款？",
-        "ground_truth": "在订单详情页点击「申请退款」，选择原因后提交，3-5 个工作日到账。",
-        # 下面两项由你的 RAG 系统在线运行得出
-        "answer": rag_pipeline.answer("如何申请退款？"),
-        "contexts": rag_pipeline.retrieve("如何申请退款？"),
-    },
-    # ... 200 条
-]
-
-dataset = Dataset.from_list(samples)
-
-# 2. judge LLM（推荐用比生成 LLM 更强的模型）
+# 1. judge LLM / embeddings（推荐用比生成 LLM 更强的模型做 judge）
 judge_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o", temperature=0))
 judge_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-large"))
 
-# 3. 跑评估
-result = evaluate(
-    dataset,
-    metrics=[faithfulness, answer_relevancy,
-             context_precision, context_recall, answer_correctness],
-    llm=judge_llm,
-    embeddings=judge_emb,
-)
-print(result.to_pandas().describe())
-result.to_pandas().to_csv("ragas_report.csv", index=False)
+# 2. 评估集（人工准备 50-200 条最佳）
+samples: list[SingleTurnSample] = []
+for row in golden_set:  # golden_set: [{"question": ..., "reference": ...}, ...]
+    out = rag_pipeline.run(row["question"])  # 你的 RAG 在线运行
+    samples.append(SingleTurnSample(
+        user_input=row["question"],
+        retrieved_contexts=out["contexts"],   # list[str]
+        response=out["answer"],               # str
+        reference=row["reference"],           # str（旧版叫 ground_truth）
+    ))
+
+dataset = EvaluationDataset(samples=samples)
+
+# 3. 指标（0.2+ 是类实例，构造时绑定 judge llm / embeddings）
+metrics = [
+    Faithfulness(llm=judge_llm),
+    ResponseRelevancy(llm=judge_llm, embeddings=judge_emb),
+    LLMContextPrecisionWithReference(llm=judge_llm),
+    LLMContextRecall(llm=judge_llm),
+    AnswerCorrectness(llm=judge_llm, embeddings=judge_emb),
+]
+
+# 4. 跑评估
+result = evaluate(dataset=dataset, metrics=metrics, llm=judge_llm, embeddings=judge_emb)
+df = result.to_pandas()
+print(df.describe())
+df.to_csv("ragas_report.csv", index=False)
 ```
+
+字段对照（迁移老脚本时照着改）：
+
+| legacy 字段（0.1） | 0.2+ 字段 |
+|---|---|
+| `question` | `user_input` |
+| `answer` | `response` |
+| `contexts` | `retrieved_contexts` |
+| `ground_truth` | `reference` |
+| `ground_truth_contexts` | `reference_contexts` |
 
 ### 9.5 端到端 LLM-as-judge
 
@@ -1381,13 +1422,13 @@ def hyde_retrieve(question: str):
 ### 10.8 评估脚本
 
 ```python
-# eval/run_ragas.py
+# eval/run_ragas.py — ragas 0.2+ API
 import json
-from datasets import Dataset
-from ragas import evaluate
+from ragas import evaluate, EvaluationDataset
+from ragas.dataset_schema import SingleTurnSample
 from ragas.metrics import (
-    faithfulness, answer_relevancy,
-    context_precision, context_recall,
+    Faithfulness, ResponseRelevancy,
+    LLMContextPrecisionWithReference, LLMContextRecall,
 )
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
@@ -1397,37 +1438,40 @@ from app.rag import RAG
 
 def main():
     rag = RAG()
-    samples = []
+    judge_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o", temperature=0))
+    judge_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-large"))
+
+    samples: list[SingleTurnSample] = []
     with open("eval/golden_set.jsonl") as f:
         for line in f:
             row = json.loads(line)
             out = rag.answer(row["question"])
-            samples.append({
-                "question": row["question"],
-                "ground_truth": row["ground_truth"],
-                "answer": out["answer"],
-                "contexts": [c["text"] for c in out["citations"]],
-            })
+            samples.append(SingleTurnSample(
+                user_input=row["question"],
+                retrieved_contexts=[c["text"] for c in out["citations"]],
+                response=out["answer"],
+                reference=row["reference"],   # golden_set 里的字段名也用 reference
+            ))
 
-    dataset = Dataset.from_list(samples)
-    judge_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4o", temperature=0))
-    judge_emb = LangchainEmbeddingsWrapper(OpenAIEmbeddings(model="text-embedding-3-large"))
-    result = evaluate(
-        dataset,
-        metrics=[faithfulness, answer_relevancy,
-                 context_precision, context_recall],
-        llm=judge_llm, embeddings=judge_emb,
-    )
+    dataset = EvaluationDataset(samples=samples)
+    metrics = [
+        Faithfulness(llm=judge_llm),
+        ResponseRelevancy(llm=judge_llm, embeddings=judge_emb),
+        LLMContextPrecisionWithReference(llm=judge_llm),
+        LLMContextRecall(llm=judge_llm),
+    ]
+    result = evaluate(dataset=dataset, metrics=metrics, llm=judge_llm, embeddings=judge_emb)
     df = result.to_pandas()
-    print(df[["faithfulness", "answer_relevancy",
-              "context_precision", "context_recall"]].describe())
+    cols = ["faithfulness", "answer_relevancy",
+            "llm_context_precision_with_reference", "context_recall"]
+    print(df[[c for c in cols if c in df.columns]].describe())
     df.to_csv("eval/report.csv", index=False)
 
 if __name__ == "__main__":
     main()
 ```
 
-`golden_set.jsonl` 一行一条 `{"question": "...", "ground_truth": "..."}`，先手标 30-50 条。
+`golden_set.jsonl` 一行一条 `{"question": "...", "reference": "..."}`，先手标 30-50 条（注意 0.2+ 字段名是 `reference`，老脚本 `ground_truth` 要批量改）。
 
 ### 10.9 一份完整的实验日志
 
@@ -1490,6 +1534,66 @@ LLM 输出必须能追溯到具体文档。已经做过两件事：
 - **段落级 anchor**：source 里带行号或 anchor，用户点击直接跳到原文。
 - **置信区分**：Faithfulness 评分低的引用标红。
 - **冲突检测**：多个 chunk 内容矛盾时，prompt 里显式标出，让 LLM 选择并解释。
+
+#### 11.3.1 引用幻觉：生产 RAG 的高频暗坑
+
+让 LLM "在每个事实后面用 `[n]` 标注来源"听上去很美——直到上线后你会发现这些 bug：
+
+1. **超出范围的编号**：你只送了 5 个 chunks，LLM 输出 `... [7]`、`[12]`。
+2. **凭空捏造的 page / section**：prompt 里根本没给 page number，LLM 自己写"参见第 47 页"或 "in section 3.2.1"——纯属编造。
+3. **doc_id 串味**：从 chunk A 的事实，挂在 chunk B 的引用上（事实和引用不对应）。
+4. **文件名拼写漂移**：source 是 `python-tutorial-v3.md`，LLM 写成 `python_tutorial.md` 或 `python-tutorial.pdf`。
+5. **引用空洞**：Markdown 里 `[1]` 链接但 `[1]: ...` 没生成（半截 footnote）。
+6. **多 chunk 同源时去重失败**：3 个 chunk 都来自同一份合同，LLM 给三个不同编号，前端展示 3 条几乎一样的引用。
+
+这类 bug 在 ragas 的 `faithfulness` 上不一定能抓到——指标看的是事实是否来自 context，不看引用编号是否合法。**必须做引用层的硬校验**。最小可用版本：
+
+```python
+import re
+from typing import Iterable
+
+CITE_RE = re.compile(r"\[(\d+)\]")
+PAGE_RE = re.compile(r"(?:page|页|p\.|第)\s*(\d+)\s*(?:页)?", re.IGNORECASE)
+
+def validate_citations(answer: str, chunks: list[dict]) -> dict:
+    """返回 {valid: bool, issues: [str], cleaned_answer: str}"""
+    issues = []
+    n = len(chunks)
+    valid_ids = set(range(1, n + 1))
+
+    # 1. 检查 [n] 编号是否都在范围内
+    cited = {int(m.group(1)) for m in CITE_RE.finditer(answer)}
+    out_of_range = cited - valid_ids
+    if out_of_range:
+        issues.append(f"out_of_range_citations: {sorted(out_of_range)}")
+
+    # 2. 检查未被引用的 chunk（不一定是 bug，但常见诊断信号）
+    unused = valid_ids - cited
+    if unused == valid_ids and n > 0:
+        issues.append("no_citation_at_all")
+
+    # 3. 检查页码 / section 是否在 chunk metadata 里出现过
+    cited_pages = {int(m.group(1)) for m in PAGE_RE.finditer(answer)}
+    actual_pages = {c.get("page") for c in chunks if c.get("page") is not None}
+    fabricated_pages = cited_pages - actual_pages
+    if fabricated_pages:
+        issues.append(f"fabricated_pages: {sorted(fabricated_pages)}")
+
+    # 4. 检查文件名是否被改写（chunk source 必须出现在答案里，如果你要求引用文件名）
+    # ... 视产品形态决定要不要做
+
+    return {"valid": not issues, "issues": issues}
+```
+
+**生产兜底策略**（按防御深度排）：
+
+- **结构化输出强约束**：用 `response_format` / `with_structured_output` 让 LLM 输出 `{"answer": "...", "citations": [{"id": 1, "snippet": "..."}, ...]}`，把"哪个事实对应哪个 id"显式拆出来，比放任 LLM 在文本里塞 `[n]` 稳得多。
+- **post-validation 层**：上面那段 `validate_citations`，发现 out_of_range / fabricated_pages 时——要么 retry 一次（带"上次输出有 X 错误"反馈），要么直接降级输出"无法从知识库中找到可靠引用"。
+- **prompt 强约束**：system prompt 里写死「只能引用 1-{N} 之间的编号；不要写 page、section、章节号；不要拼凑文件名」。Claude 4.5+ / GPT-4.1+ 对这种约束遵循度可接受，老模型不行。
+- **前端折叠**：把 LLM 给的 citations 在前端按 chunk_id 去重 + 重新编号，用户看到的不是 LLM 编号而是后处理过的合法编号。
+- **采样审计**：每天随机抽 50 条线上回答，跑 `validate_citations`，把违例率作为日常 KPI（健康 RAG 的引用违例率应 < 2%；> 5% 说明 prompt 或模型有问题）。
+
+**什么时候这件事最严重**：法律 / 医疗 / 金融——一句"参见招股书第 47 页"如果是编的，是合规事故。**这些领域必须把"引用合法性校验"做到检索/生成 pipeline 内，不能只靠 prompt 自觉**。
 
 ### 11.4 缓存
 

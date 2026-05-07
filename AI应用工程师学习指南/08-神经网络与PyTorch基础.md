@@ -243,6 +243,28 @@ model = MyModel().to(device)
 
 fp16 和 bf16 的差别值得多说一句。fp16 的 5 位指数位让它范围窄，训练时容易下溢出（梯度太小直接归零）；bf16 是 Google Brain 设计的，砍掉的是尾数精度而非指数范围，它跟 fp32 的指数范围一样，训练稳定性远好于 fp16，所以 Ampere 之后的 NVIDIA GPU 和 Google TPU 都把 bf16 当训练首选。fp16 还活在两个地方：消费级 GPU（不支持 bf16 的卡）和推理。
 
+**bf16 硬件支持的硬指引**（写代码前先对一下，别等 autocast 报错才查）：
+
+| 架构 | 计算能力 (sm_) | 代表卡 | bf16 | 备注 |
+|---|---|---|---|---|
+| Volta | 7.0 | V100 | **不支持** | 训练只能用 fp16 + GradScaler |
+| Turing | 7.5 | T4 / RTX 20 系 | **不支持** | 同上 |
+| Ampere（消费） | 8.6 | RTX 30 系（3060/3080/3090） | 支持 | bf16 + autocast 稳定 |
+| Ampere（数据中心） | 8.0 | A100 / A30 | 支持 | bf16 训练首选 |
+| Ada Lovelace | 8.9 | RTX 40 系 / L40 / 6000 Ada | 支持 | 同上 |
+| Hopper | 9.0 | H100 / H200 | 支持 | bf16 + FP8 |
+| Blackwell | 10.0 | B100 / RTX 50 系 | 支持 | + FP4 |
+| A10 | 8.6 | A10 / A10G | 支持 | 注意 A10 是 Ampere，A100 是数据中心 |
+
+判断指令一行：`torch.cuda.is_bf16_supported()` 直接返回 True/False，写脚本时这样用最稳：
+
+```python
+amp_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+need_scaler = amp_dtype is torch.float16
+```
+
+**T4 / V100 是新手最常踩的坑**：很多云厂商的便宜实例还在挂 T4，你照着教程开 bf16 autocast 会得到一堆 NaN 或者直接 RuntimeError。这两张卡只能走 fp16 + GradScaler 路线。
+
 切换 dtype 的方式：
 
 ```python
@@ -257,6 +279,29 @@ w = torch.zeros(3, 4, dtype=torch.bfloat16, device="cuda")
 混合精度训练（AMP）是日常会用到的玩法，8.7 节专门讲。
 
 dtype 选择对显存的影响是线性的：fp32 → fp16/bf16 直接砍一半，量化到 int8 再砍一半。所以推理部署的常见路径是 fp32 训练 → bf16/fp16 推理 → int8 量化推理 → 极限场景 int4/int2 量化。本章先打好 fp32/bf16 训练这一关，量化推理放到后面工程化章节。
+
+**显存口诀（背下来，调 batch 时不用打开 nvidia-smi 摸黑试）**：
+
+记 N 是参数量（个），M 是基础每参数字节数（fp32 = 4，bf16/fp16 = 2，int8 = 1，int4 ≈ 0.5）。
+
+```text
+推理峰值显存  ≈ N × M  +  激活显存(随 batch×seq 线性)
+全参训练显存  ≈ N × (2 + 4 + 8) + 激活
+              = N × 14 bytes (fp16/bf16 混精 + Adam) ≈ 14N
+              ≈ N × 16 bytes (再算上梯度的 fp16 副本)
+LoRA 训练显存 ≈ N × 2 (基座冻结 bf16) + lora_params × 14 + 激活
+QLoRA 训练显存≈ N × 0.5 (基座 4bit) + lora_params × 14 + 激活
+```
+
+代入算几个常见数字：
+
+- 7B 全参 bf16+Adam 训练：7e9 × 16 ≈ 112 GB（所以 8×A100-80G 都不够，要开 ZeRO-3）
+- 7B LoRA 训练：7e9 × 2 + 50M × 14 ≈ 14 GB + 0.7 GB ≈ 16-20 GB（24G 卡舒适）
+- 7B QLoRA 训练：7e9 × 0.5 + 50M × 14 ≈ 4 GB + 0.7 GB ≈ 6-8 GB（12G 卡能跑）
+- 7B bf16 推理：7e9 × 2 = 14 GB
+- 7B int4 推理：7e9 × 0.5 = 3.5 GB（手机端边缘）
+
+激活那部分跟 batch_size × seq_len 成正比，开梯度检查点能砍 60-80%。Transformer 训练时激活常占总显存 30-50%，是除模型权重外的大头。这个口诀第 13 章微调实战还会用到，先记下。
 
 ---
 
@@ -783,6 +828,8 @@ optimizer = Lion(
 
 Lion 跟 AdamW 的迁移有几个隐藏陷阱。第一是学习率范围完全不同，把 AdamW 配置直接套上去 Lion 会发散。规则是 AdamW 的 lr 除以 3-10 再开始扫，weight_decay 乘 3-10。第二是 Lion 对学习率比 AdamW 更敏感，最优区间窄一些，Sweep 时步长要小。第三是 Lion 没有 epsilon 这种"分母兜底"机制，sign 函数在零附近不连续，所以梯度噪声很小的时候表现可能不稳定，这也是它在小 batch 上吃亏的原因。理解这些差异之后再决定换不换，比看完一篇博客就立刻 all-in 要靠谱得多。
 
+第四个隐藏陷阱单独点出来：**Lion 的 weight_decay 在更新规则里和 sign(c_t) 是相加的，不是被 sqrt(v_t) 缩放过的**。意味着 wd 项的影响幅度跟 sign 项基本同量级——Lion 配 wd=0.1 配 lr=1e-4，每步参数实际衰减 1e-5，**比 AdamW 同 lr 配 wd=0.01 的有效衰减要快得多**。生产里见过的故事：把 AdamW 的 (lr=3e-4, wd=0.01) 转 Lion，按建议改成 (lr=3e-5, wd=0.1)，跑了几千步发现模型大量参数往零靠，等效正则强度过头。安全做法是 wd 先乘 3 而不是 10 起步，盯 weight 范数曲线，掉得太快再下调。
+
 ### 8.7.4 学习率调度
 
 学习率本身是最重要的超参，没有之一。常见调度策略：
@@ -951,6 +998,8 @@ loss.backward()
 实践中训练 LLM、ViT 之类的大模型基本是 compile + bf16 + AdamW + 余弦调度的组合。
 
 一个容易踩的坑：compile 跟 `torch.utils.checkpoint`（梯度检查点，用算力换显存）组合时，老版本会有兼容性问题。如果你用的是 PyTorch 2.5 之前的版本，碰到诡异错误可以先把 compile 关掉确认是不是这个问题。2.5 之后基本修好了，但偶尔还会出现新算子不支持编译的情况。判断方法很简单：报错栈里出现 `dynamo`、`inductor`、`fx` 这几个关键词，大概率跟 compile 有关。
+
+**架构兼容性补充**：`torch.compile` 的 Inductor 后端在 Ampere 及以后（sm_80+）的卡上经过最多打磨，30/40/50 系消费卡和 A100/H100 数据中心卡都稳。Turing（T4, sm_75）和 Volta（V100, sm_70）上 Inductor 仍然能跑，但 Triton 内核生成的优化路径少，遇到 LayerNorm + 复杂 attention 模式时偶尔 fallback 到 eager，加速比可能从 1.5x 掉到 1.1x。如果你的训练机就是 V100/T4，先 benchmark 实际收益再决定要不要开 compile，不开也不丢人。
 
 ### 8.8.4 torch.cuda.is_available 和后端检查
 
@@ -1233,7 +1282,15 @@ if __name__ == "__main__":
     main()
 ```
 
-### 8.9.3 关键设计点解释
+### 8.9.3 PyTorch 2.11 + Python 3.13 环境下的兼容性提示
+
+这份脚本在 2026-05 的主流环境（PyTorch 2.5–2.11 + Python 3.10–3.13）下都能直接 `python train.py` 跑通。三个新环境特有的提示：
+
+- **MNIST 下载源**：torchvision 在 2024 年起把 MNIST 主源切到 Amazon S3 镜像（原 LeCun 站点 503 频发），`download=True` 自动走镜像，不用改 URL。下载失败时手动塞入 `~/.cache/torch/datasets/MNIST/raw/` 也行，文件名是 `train-images-idx3-ubyte.gz` 那四个。
+- **Python 3.13 free-threading 模式（PEP 703，可选）**：默认仍然带 GIL，本脚本无差别。如果你装的是 `python3.13t` 的 free-threading 构建，`num_workers > 0` 的多进程行为不变（DataLoader 走的是 fork/spawn 进程，跟 GIL 没关系），但 PyTorch 自身有些算子在 free-threading 下还在打补丁，碰到 segfault 暂时换回普通 `python3.13`。
+- **`torch.compile` 在 Python 3.13 上**：PyTorch 2.5 开始官方支持 3.13，2.11 自然 OK。第一次 compile 时 dynamo 的字节码翻译会比 3.11 慢一点（3.13 的 bytecode 改了不少），多等几十秒不要急着 Ctrl-C。
+
+### 8.9.4 关键设计点解释
 
 **为什么用 dataclass 配置**：写一个 `Config` 数据类，所有超参集中一处。比散落在 `argparse` 默认值里好维护，也方便后续切到 Hydra/OmegaConf。
 
@@ -1253,7 +1310,7 @@ if __name__ == "__main__":
 
 **为什么用 `non_blocking=True`**：搭配 `pin_memory=True` 时，CPU 到 GPU 的拷贝可以异步进行，让 GPU 在拷贝下一个 batch 的同时计算上一个 batch，提高吞吐。不开 pin_memory 时这个参数没用。
 
-### 8.9.4 推理脚本 infer.py
+### 8.9.5 推理脚本 infer.py
 
 ```python
 """加载训练好的模型对单张图片做推理。"""

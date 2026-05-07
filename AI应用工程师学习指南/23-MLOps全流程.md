@@ -342,8 +342,10 @@ features = fs.get_online_features(
 
 Feast 的弱项是流式特征和复杂转换。它假设上游已经把特征算好放在数据源里，自己只做注册和分发。但很多现实特征要现算（比如"过去 5 分钟会话内点击次数"），这就需要更强的特征计算引擎。
 
-- **Tecton**：商业平台，背后是 Spark + Flink，能直接定义批/流/实时特征转换，自动编译成对应引擎的作业。Feast 早期就是 Tecton 公司开源出来的子集。
-- **Hopsworks**：开源 + 商业混合。强项是和 Feast、TensorFlow、PyTorch 深度集成，自带数据科学环境和模型注册。北欧开源界出品。
+- **Tecton**：商业平台，背后是 Spark + Flink，能直接定义批/流/实时特征转换，自动编译成对应引擎的作业。Feast 早期就是 Tecton 公司开源出来的子集。Tecton 的强项是：流式实时特征（窗口聚合自动维护）、Feature Server 提供 p99 延迟 SLA、多源 join 在编译期推断而非运行时拼。需要这三件中任一项时，Feast 起步会越走越窄。
+- **Hopsworks**：开源 + 商业混合。强项是和 Feast、TensorFlow、PyTorch 深度集成，自带数据科学环境和模型注册。北欧开源界出品，欧盟合规市场（GDPR、Schrems II 数据驻留）的优势明显——能完全自部署、不强依赖任何美区 SaaS。
+
+一条更客观的选型口径：**离线批为主、特征定义量小** → Feast；**流式实时占 50% 以上 + p99 SLA 要求** → Tecton；**欧盟 / 政务 / 强合规自部署** → Hopsworks。三选一，不要叠加上。
 
 ### 23.4.3 落地节奏
 
@@ -422,6 +424,22 @@ model = mlflow.pyfunc.load_model("models:/fraud_gbdt@champion")
 ```
 
 这种设计的好处是回滚成本几乎为零——发现新版本有问题，把 `@champion` alias 重新指回上一个版本即可，业务侧零感知。
+
+### 23.5.2.1 从 MLflow 2.x 迁移到 3.x：alias 体系换 stage
+
+很多团队的存量代码还停在 MLflow 2.7 之前的"Staging / Production / Archived" 三段式 stage 体系。3.x（2025 年发布）正式弃用 stage，统一推 alias。直接升级会跳出大量 DeprecationWarning，留着不动迟早出事。一份能直接照抄的迁移步骤：
+
+1. **升级前盘点**：跑 `mlflow models search-versions --name <model_name>`，把所有还挂在 stage 字段上的版本和它们对应的环境记一份表。3.x 还能读到 stage 字段（向后兼容窗口至少到 3.3），但任何写入都会报警。
+2. **替换 API 调用**：
+   - `client.transition_model_version_stage(name, version, "Production")` → `client.set_registered_model_alias(name, "champion", version)`
+   - `MlflowClient().get_latest_versions(name, stages=["Production"])` → `client.get_model_version_by_alias(name, "champion")`
+   - 模型加载侧：`models:/fraud_gbdt/Production` → `models:/fraud_gbdt@champion`
+3. **`log_model` 参数变化**：3.x 把 `artifact_path=` 改名为 `name=`，签名向后兼容但日志会报 deprecation。所有训练脚本走一遍 `grep -rn "artifact_path"` 替换掉。
+4. **环境映射约定**：团队内统一一份"alias ↔ stage" 对照（`@champion` ↔ Production、`@challenger` ↔ Staging、`@archived_v1` ↔ Archived），写进 README，避免不同人各起一套 alias 名字。
+5. **服务端切换顺序**：先把所有加载逻辑换成 `@alias`，再灰度把 stage 写入改成 alias 写入，最后把所有遗留 stage 字段统一打成 `@archived_<version>` alias 落库后清空——不要反过来，否则中间窗口有版本既无 stage 又无 alias，加载即崩。
+6. **CI 强制门**：在仓库里加一条 lint 规则，禁用 `transition_model_version_stage` 和带 `/Production` 后缀的 model URI，新代码再也写不进去老 API。
+
+迁移做完后跑一次回滚演练（见 §23.10.2），确认 alias 切换比 stage 切换更快、更原子。
 
 ### 23.5.3 审批流和治理
 
@@ -954,6 +972,8 @@ ML 系统的另一个监控难题是**真实标签的延迟**。
 
 把每条告警明确归类到 P0–P3，一年后告警噪声会下降一个数量级。
 
+第 25 章会再讲一套"AI 安全告警"——prompt 注入命中、PII 输出、Agent 越权调用。两套告警**走同一个分级**，但对接到不同的响应链路：MLOps 告警进 SRE / ML 平台值班，安全告警进 SecOps / 红队值班。一个落地建议：在告警事件结构里加一个 `domain: "mlops" | "ai_security"` 字段，让两条 runbook 各取所需，又能在事故复盘时按 trace_id join 起来还原全貌。
+
 ---
 
 ## 23.9 CI/CD for ML：从代码合并到模型上线
@@ -1179,6 +1199,28 @@ if __name__ == "__main__":
     rollback(sys.argv[1])
 ```
 
+### 23.10.2.1 回滚证据的合规审计要求
+
+技术上"切 alias 几秒钟回滚"很爽，但监管行业还要回答另一个问题：**这次回滚发生在什么时候、谁执行的、回滚到的版本对应哪份训练数据、哪段代码、哪份评估报告？这些证据保留多久？**
+
+不同行业的合规线参考（具体请以最新版法规和内部合规为准）：
+
+- **金融风控、信贷决策、反洗钱模型**：中国银保监对模型决策的审计证据通常要求保留 5 年起，部分高风险品种（信贷违约、反欺诈）按 7 年起。美国 OCC SR 11-7 / Fed SR 11-7 要求 model risk management 全生命周期可追溯。
+- **医疗 AI（SaMD）**：FDA 21 CFR Part 11 / Part 820 要求软件变更（含模型权重变更）的记录保留期通常对齐器械生命周期 + 售后跟踪期，常见 10 年起。EU MDR 体外诊断（IVDR）也是 10 年起。
+- **欧盟 AI Act 高风险类**：技术文档、训练数据集摘要、评估结果、上线后监控记录至少保留 10 年（Article 18）。每次重大模型变更（含回滚）都要重新评估并记录。
+- **国内生成式 AI 备案**：《生成式人工智能服务管理暂行办法》要求服务者保留训练数据来源记录、模型评估记录、用户使用记录，具体保留期由行业主管部门规定，通常 6 个月起，金融/医疗叠加专项法规继续往上加。
+
+工程上要做的具体事：
+
+1. **回滚事件结构化落库**：每次 alias 切换写一条不可变审计记录，至少含 `timestamp`、`operator`、`model_name`、`from_version`、`to_version`、`reason`、`linked_incident_id`。MLflow 自身的 audit log 不一定够，常见做法是 alias 切换走一个独立的封装函数，函数内同时写 MLflow 和外部审计存储（独立保留期）。
+2. **版本和数据/代码绑死**：每个 model version 必须能回查到对应的 training run、训练数据 DVC commit、代码 git commit、评估报告 artifact。MLflow 自动记录 git commit hash 和 run ID，DVC 数据版本要在训练脚本里显式记录（`mlflow.log_param("data_version", dvc_rev)`）。
+3. **审计存储独立保留**：放在和业务数据分离的 WORM（Write Once Read Many）存储——AWS S3 Object Lock、Azure Immutable Blob、阿里云不可篡改存储。保留期按行业法规设置 retention policy，到期前**不可删**。
+4. **Model Card 版本化归档**：每个上过 production 的版本保留一份 Model Card 快照（不是当前最新版本，是当时上线时的版本），归档到长期存储。
+5. **演练时把"取证演练"也跑一遍**：除了演练回滚动作本身，还要演练"假设两年后监管来查这次回滚，30 分钟内能不能拉出全套证据"。第一次演练通常会发现某条证据拉不全。
+6. **跨组件时间戳对齐**：MLflow tracking server 的时间、审计存储的时间、外部告警系统的时间，必须强制 NTP 同步并记录时区。事故发生时跨系统对账时间戳错乱是查证的最大障碍。
+
+合规审计的核心原则是**可追溯、不可篡改、保留期足够**。技术回滚做得再快，证据链断了照样在监管检查时翻车。
+
 ### 23.10.3 把"反馈"接回数据
 
 复盘和监控产出的，不只是事故记录，更是**新一轮训练数据**。
@@ -1361,22 +1403,45 @@ def rollback_to_previous(name: str):
 ```python
 # pipeline.py
 from prefect import flow, task
-import subprocess
+import subprocess, os
+
+# 注意：BentoML 2.x 起命令是 `bentoml deployment create`，老的 `bentoml deploy --env`
+# 已经移除。这里给的是当前形态；自部署 K8s 时改成 `bentoml containerize` + `kubectl apply`。
+DEPLOY_NAME_SHADOW = "fraud-shadow"
+
+ENV = {
+    **os.environ,
+    "MLFLOW_TRACKING_URI": "http://mlflow.internal:5000",
+    # serve.py 启动后 mlflow.pyfunc.load_model 会用这个 URI 拉 @champion
+}
 
 @task
-def train(): subprocess.run(["python", "train.py"], check=True)
+def pull_data():
+    subprocess.run(["dvc", "pull"], check=True, env=ENV)
 
 @task
-def test_model(): subprocess.run(["pytest", "tests/model/"], check=True)
+def train():
+    subprocess.run(["python", "train.py"], check=True, env=ENV)
 
 @task
-def deploy_shadow(): subprocess.run(["bentoml", "deploy", "--env", "shadow"], check=True)
+def test_model():
+    subprocess.run(["pytest", "tests/model/"], check=True, env=ENV)
 
 @task
-def daily_monitor(): subprocess.run(["python", "monitor.py"], check=True)
+def deploy_shadow():
+    subprocess.run(
+        ["bentoml", "deployment", "create", "-f", "deploy/shadow.yaml",
+         "--name", DEPLOY_NAME_SHADOW],
+        check=True, env=ENV,
+    )
+
+@task
+def daily_monitor():
+    subprocess.run(["python", "monitor.py"], check=True, env=ENV)
 
 @flow
 def daily_training():
+    pull_data()
     train()
     test_model()
     deploy_shadow()
@@ -1389,6 +1454,36 @@ if __name__ == "__main__":
     daily_training.serve(name="train", cron="0 2 * * *")
     daily_monitoring.serve(name="monitor", cron="0 6 * * *")
 ```
+
+复现 demo 时还要补两份配置——一份 `requirements.txt` 把版本钉死，一份 `deploy/shadow.yaml` 给 BentoML 部署用：
+
+```text
+# requirements.txt（节选，所有版本必须钉死）
+mlflow==3.1.4
+scikit-learn==1.5.0
+pandas==2.2.2
+prefect==3.0.10
+bentoml==1.3.7
+evidently==0.4.40
+dvc[s3]==3.55.2
+boto3==1.34.150
+```
+
+```yaml
+# deploy/shadow.yaml
+service: "service:FraudClassifier"
+envs:
+  - name: MLFLOW_TRACKING_URI
+    value: http://mlflow.internal:5000
+  - name: MLFLOW_S3_ENDPOINT_URL
+    valueFrom:
+      secretKeyRef: { name: mlflow-s3, key: endpoint }
+labels:
+  env: shadow
+  traffic_split: "0"
+```
+
+`monitor.py` 在 Evidently 0.7+ 上要走新 API：把 `from evidently import Report` 改成 `from evidently.future.report import Report`，把 `r.as_dict()[...]` 替换成 `r.metrics_results["share_of_drifted_columns"]`。版本不同访问路径不一样，CI 里跑一次 smoke test 比读 changelog 靠谱。
 
 至此，一条最小但完整的 MLOps 链路就能跑了：
 
@@ -1403,7 +1498,7 @@ if __name__ == "__main__":
 1. **MLOps 的核心是元数据**——代码、数据、模型、指标四者必须随时可对齐、可回放。
 2. **数据先版本化**：DVC 适合中小规模研究目录，LakeFS 适合 TB 级数据湖，二者可组合。
 3. **实验跟踪只用一个**：MLflow 是默认开源选择，W&B 是 UI 最强的商业选择。
-4. **Feature Store 不是必选**：训练和推理代码不分叉时不上；分叉时 Feast 起步、Tecton 进阶。
+4. **Feature Store 不是必选**：训练和推理代码不分叉时不上；分叉时按场景分流——批为主选 Feast、流式 + SLA 严苛选 Tecton、欧盟自部署选 Hopsworks。
 5. **模型注册靠 alias 不靠版本号**：业务永远加载 `@champion`，回滚就是切 alias。
 6. **流水线编排按团队配**：数据工程为主选 Airflow/Dagster；Python 优先选 Prefect/Metaflow；K8s 原生选 Kubeflow。
 7. **部署形态决定运维上限**：在线 BentoML/Triton/Ray Serve，批量 Spark+MLflow，流式 Flink+Feature Store，边缘单独的世界。

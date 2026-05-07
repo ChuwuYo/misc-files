@@ -597,6 +597,26 @@ settings = Settings()  # type: ignore[call-arg]
 
 这样跑 `python -c "from askbot.settings import settings"` 如果 `ASKBOT_OPENAI_API_KEY` 没设，立刻 ValidationError——比线上跑半小时才报错友好得多。
 
+**但注意一个反直觉的副作用**：CLI 工具一定要保证 `askbot --help` 在没设环境变量时也能跑（用户第一次安装就跑 `--help` 的场景太多）。eager 单例会让 `from askbot.cli import app` 触发 `from askbot.client import chat` → `from askbot.settings import settings` → `Settings()` 校验 → 没设 key 直接挂掉，连 `--help` 都看不到。生产做法二选一：
+
+```python
+# 选项 A：lazy 单例（推荐）
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()  # type: ignore[call-arg]
+
+# 调用端用 get_settings().model 而非 settings.model
+```
+
+```python
+# 选项 B：保留 eager，但在 cli 入口前用 try/except 捕获
+# 仅当真正进入命令时才让 ValidationError 抛出
+```
+
+askbot 后续代码里出于行文简洁仍用 `settings = Settings()`，**生产项目请改成 lazy 模式**——这点容易在 review 时被忽略。
+
 `.env` 不要提交到 git。新人入职给一份 `.env.example`：
 
 ```
@@ -943,6 +963,103 @@ async def call():   # timeout 在 httpx client 配置里
     ...
 ```
 
+### 429 不要只看 status code
+
+LLM 厂商的 429 几乎都带一个 `Retry-After`（秒数）或者 `x-ratelimit-reset-tokens` / `x-ratelimit-reset-requests` header，告诉你限流窗口什么时候重置。光用 tenacity 的指数退避在两端都会翻车——退避过短继续撞 429，退避过长浪费 SLA。生产代码必须读 header：
+
+```python
+import httpx
+from tenacity import wait_base
+
+class WaitFromRetryAfter(wait_base):
+    """优先用上游返回的 Retry-After，没有就退化为指数退避。"""
+    def __init__(self, fallback: wait_base) -> None:
+        self.fallback = fallback
+
+    def __call__(self, retry_state) -> float:
+        exc = retry_state.outcome.exception()
+        if isinstance(exc, httpx.HTTPStatusError):
+            ra = exc.response.headers.get("retry-after")
+            if ra:
+                try:
+                    return float(ra)
+                except ValueError:
+                    pass  # HTTP date 格式很少见，懒得处理
+            # OpenAI 风格的 token 桶 reset 时间
+            reset = exc.response.headers.get("x-ratelimit-reset-tokens")
+            if reset and reset.endswith("ms"):
+                return float(reset[:-2]) / 1000
+        return self.fallback(retry_state)
+```
+
+把这个 wait 策略接到 `@retry(wait=...)` 里，配合 fallback 是 `wait_exponential_jitter`，就有了「上游说什么我听什么、上游没说我自己估」的健壮组合。
+
+### 多模型降级链：429/5xx 不是世界末日
+
+生产 LLM 客户端通常不止一个上游。一个真实的「降级链」长这样：
+
+```
+首选：GPT-5 (高质量、高延迟)
+  ↓ 429 / 5xx
+备选：GPT-5-mini (中等质量、快)
+  ↓ 429 / 5xx
+兜底：本地 vLLM Qwen3-72B (永远有容量)
+```
+
+简化代码：
+
+```python
+from collections.abc import Callable, Awaitable
+from typing import TypeVar
+T = TypeVar("T")
+
+async def with_fallback(
+    primaries: list[Callable[[], Awaitable[T]]],
+) -> T:
+    """按顺序尝试，前一个挂了就降级到下一个。最后一个挂了直接抛。"""
+    last_exc: Exception | None = None
+    for fn in primaries:
+        try:
+            return await fn()
+        except (httpx.HTTPStatusError, httpx.NetworkError) as e:
+            last_exc = e
+            log.warning("llm.fallback", from_=fn.__name__, reason=str(e))
+            continue
+    assert last_exc is not None
+    raise last_exc
+
+# 使用
+resp = await with_fallback([
+    lambda: call_gpt5(prompt),
+    lambda: call_gpt5_mini(prompt),
+    lambda: call_local_vllm(prompt),
+])
+```
+
+进阶：根据**错误类型**决定降级粒度。配额耗尽（429）就切下一个 provider；模型质量需要（5xx）可能要排查；prompt 太长（400）所有 provider 都救不了，直接报错。配合 21 章的 vLLM 自托管做兜底，是生产 LLM 应用最常见的稳定性兜底架构。
+
+### 多 API key 轮换
+
+单个 key 的 RPM/TPM 是死限。一旦业务跑大就要用多 key 池：
+
+```python
+import itertools
+keys = itertools.cycle([k1, k2, k3])
+
+async def call_with_key_pool(payload: dict) -> dict:
+    for _ in range(len(keys_list)):
+        key = next(keys)
+        try:
+            return await call_llm_with_key(payload, key=key)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                continue  # 这个 key 挂了，换下一个
+            raise
+    raise RuntimeError("all keys rate-limited")
+```
+
+实战里会再加一层「key 健康度评分」——某个 key 连续 429 N 次就降权，过段时间再尝试。本书第 24 章讲 LLMOps 时再展开。
+
 ### 错误信息要友好
 
 最后一个容易忽视的点：错误返给用户/上游时，要把内部细节打码。LLM API 4xx 错误常常带着 prompt 片段、internal request id，这些不能直接 echo 出去。
@@ -1111,6 +1228,25 @@ shared_processors = [
 ```
 
 效果：所有日志自动带 trace_id，在 Grafana 里点一条日志就能跳到对应的 trace，跨服务排查瞬间提速。
+
+### 异步 + tenacity + structlog 三件套的并发坑
+
+把这三个组合起来时，有几个反复踩到的细节：
+
+1. **tenacity 的 `before_sleep_log` 只吃 stdlib logger**，所以重试日志默认走 `logging.Logger`，绕过 structlog 的 ContextVar 注入——重试一旦发生，那条「retry attempt 2 in 4s」日志里没有 `request_id`，跨重试关联失败。修法是写一个自定义 `before_sleep` 回调，从 ContextVar 显式取值：
+   ```python
+   def _before_sleep(rs):
+       log.warning("llm.retry",
+                   request_id=request_id_var.get(),
+                   attempt=rs.attempt_number,
+                   sleep=rs.next_action.sleep)
+   ```
+2. **ContextVar 在 `asyncio.gather` / `TaskGroup` 里是按 task 拷贝的**——主任务里 `request_id_var.set("abc")` 后再 `gather(fetch1(), fetch2())`，两个子任务都看得到 `"abc"`；但子任务内部再 `set("xyz")` 不会污染主任务。这是好事，但容易让人误以为「为什么主任务读不到我子任务设的值」。规则：set 永远只往「当前 task 的 context 副本」里写。
+3. **限流 + 重试 + 日志的顺序敏感**。如果你把 `_post`（带重试）放在 `async with sem` 外面，重试期间会持续占着 sem 槽位（其实没占），导致并发计数失真；如果把 sem 放在 `_post` 内部，每次重试都重新 acquire 锁——也不对（重试本来就该串行下去）。askbot 的写法是「sem 在 chat 里、重试在 \_post 里、chat 调 \_post」，sem 包住整个生命周期含重试。这是正确的；但很多新手会把 sem 放进 `_post` 顶部，重试 4 次会把锁释放再争抢 4 次，并发模型瞬间崩溃。
+4. **httpx 的连接池 + Semaphore 二者的关系**。Semaphore 是上层任务并发数闸门，httpx 的 `Limits.max_connections=100` 是底层 TCP 连接数上限。两个数不要写成同一个值——sem=8 时连接池配 20 是常见做法（连接池给重试和串行场景留 buffer）。
+5. **OTel span 跨重试不丢**。tenacity 重试时整个被装饰函数会被多次调用，每次都进入 `with tracer.start_as_current_span(...)`——你会看到一次逻辑请求在 Jaeger 里有多个 span，但都挂在同一个 parent。如果想把多次重试合并成一个 span，要把 span 创建放在重试装饰器外面，重试内部只 `add_event`。两种风格各有取舍，团队约定即可。
+
+把这五条贴到 review checklist 里，能少一半生产 P0。
 
 ---
 
@@ -1711,6 +1847,26 @@ RUN uv sync --frozen --no-editable
 ```
 
 代码变更频率远高于依赖变更，让依赖装在前面、源码后面，能让 90% 的 build 直接复用 cache。10 GB 内存的 builder 节点上一个项目 build 时间从 90 秒降到 8 秒不夸张。
+
+### 这个 Dockerfile 在 CI 里能直接跑吗
+
+不能直接抄进 CI 就完。两个隐藏前提，文档不写 CI 一定会翻车：
+
+1. **BuildKit 必须开**。`# syntax=docker/dockerfile:1.7` directive 与 `RUN --mount=type=cache,...` 都依赖 BuildKit。
+   - **GitHub Actions**：用 `docker/build-push-action@v5` 默认就是 buildx，OK。
+   - **GitLab CI**：默认 `docker:dind` runner 不开 BuildKit，需要在 job env 里 `DOCKER_BUILDKIT: "1"`，或者切到 buildx executor / kaniko。
+   - **本机 Docker Desktop / Docker 23+**：默认 BuildKit，OK。
+   忘了开的症状：构建失败报「unknown flag: --mount」或者直接忽略 `# syntax`。
+2. **builder 与 runtime 的 Python 版本必须严格一致**。venv 里 `bin/python` 是个软链接指向构建时的 `/usr/local/bin/python3.13`；如果 runtime 换成 `python:3.12-slim`，运行时 venv 直接坏，`askbot --help` 报 `bad interpreter`。两个 stage 都钉到 `python:3.13-slim`，并通过参数复用：
+   ```dockerfile
+   ARG PY_VERSION=3.13
+   FROM python:${PY_VERSION}-slim AS builder
+   # ...
+   FROM python:${PY_VERSION}-slim AS runtime
+   ```
+   这样 `docker build --build-arg PY_VERSION=3.14` 一处改全镜像跟随。
+
+3. **uv 镜像 tag 要 pin 到具体 patch 版本**。`ghcr.io/astral-sh/uv:0.11` 是滚动 tag，半年后 `0.11.x` 内部行为变了你的镜像就跟着变。生产请写 `:0.11.5`，跟随项目升级时一并 review。
 
 ### 镜像扫描
 
