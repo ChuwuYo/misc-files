@@ -1026,6 +1026,9 @@ Resources:
 </section><section class="chapter">
 <h2 id="6-eip-712" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. EIP-712 类型化签名</h2>
 
+<blockquote>
+<p><strong>收敛声明</strong>：本节是 EIP-712 全书主讲（domain 公式 + 渲染字段 + 检测 hook）；其他模块只引用此处。</p>
+</blockquote>
 <p><strong>建议顺序</strong>：先读 §6（EIP-712 typed data）再读 §5（SIWE）——SIWE 本质是 personal_sign 派生，理解 712 后才看清 SIWE 为何重定义文本。</p>
 <blockquote>
 <p><strong>TL;DR</strong> EIP-712 把签名从"一串 hex"升级为"一张表单"——domain 隔离跨站重放，每个字段都可读，<code>verifyingContract</code> + <code>chainId</code> 限定生效范围。签名前必须在 UI 渲染全部字段。</p>
@@ -1587,7 +1590,7 @@ PIMLICO_API_KEY=pim_...
 <h2 id="13" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. 参考资料</h2>
 
 <ul>
-<li>viem 官方文档（v2.47，2026-04）：https://viem.sh/</li>
+<li>viem 官方文档（v2.43.3，与模块 13 一致）：https://viem.sh/</li>
 <li>viem ethers 迁移：https://viem.sh/docs/ethers-migration</li>
 <li>wagmi v2 文档：https://wagmi.sh/</li>
 <li>wagmi v2 hooks：https://wagmi.sh/react/api/hooks</li>
@@ -2105,6 +2108,7 @@ Authorization {
 <h2 id="h-permit2" id="ch22"><span class="chapter-num">Chapter 22</span><br>附录 H. Permit2 字段级</h2>
 
 <blockquote>
+<p><strong>收敛声明</strong>：本附录主讲前端侧（构造 + 钓鱼检测）；合约侧接收 + 校验代码见模块 04 附录 G。</p>
 <p>主线删除了 Permit2 详解（防止干扰主线节奏），这里补全。</p>
 </blockquote>
 <p><strong>背景</strong>：Uniswap 2022-11 部署的 Permit2（<code>0x000000000022D473030F116dDEE9F6B43aC78BA3</code>，所有 EVM 链同地址），把所有 ERC-20 授权统一到一个合约里。两种模式：AllowanceTransfer（内部维护 allowance）和 SignatureTransfer（一次性 nonce，最安全）。</p>

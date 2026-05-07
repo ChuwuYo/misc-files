@@ -809,7 +809,7 @@
 </ul>
 <h3 id="23-the-dao-2016-07-20-1920000">2.3 The DAO 分叉（2016-07-20，区块 1,920,000）</h3>
 <p>以太坊历史上最尴尬也最关键的一次分叉。</p>
-<p>The DAO 是当时全世界最大的众筹合约，募了 1150 万 ETH（≈$1.5 亿，2016 年的 1.5 亿）。它的 <code>splitDAO</code> 函数干了一件经典蠢事：<strong>先把钱转给你，再扣你的余额</strong>。攻击者发现这个顺序后，做了个会回头再调一次 <code>splitDAO</code> 的合约——钱还没扣，又能再领一份；递归下去，他抽走了 360 万 ETH。</p>
+<p>The DAO 是当时全世界最大的众筹合约，募了约 1180-1270 万 ETH（2016-05 高峰估值约 $150M，但 2016-06 攻击日 ETH 价已下跌）。它的 <code>splitDAO</code> 函数干了一件经典蠢事：<strong>先把钱转给你，再扣你的余额</strong>。攻击者发现这个顺序后，做了个会回头再调一次 <code>splitDAO</code> 的合约——钱还没扣，又能再领一份；递归下去，他抽走了 360 万 ETH。</p>
 <p>社区分裂成两派：一派说"代码即法律，认栽"，另一派说"我们是人不是教条"。最后硬分叉把那笔钱回滚了，没回滚的那条链留下来叫 <strong>Ethereum Classic</strong>（ETC），回滚的那条就是今天的 <strong>Ethereum</strong>。这次事件留下的两份遗产至今仍是 Solidity 程序员的肌肉记忆：<strong>Checks-Effects-Interactions</strong> 模式（先改余额再转账）和 <strong>ACD 公开讨论惯例</strong>（核心决策不再黑箱）。</p>
 <p>来源：<a href="https://www.gemini.com/cryptopedia/the-dao-hack-makerdao">Gemini: DAO Hack Explained</a>。</p>
 <h3 id="24-tangerine-whistle2016-10-18-spurious-dragon2016-11-22">2.4 Tangerine Whistle（2016-10-18）+ Spurious Dragon（2016-11-22）</h3>
@@ -2076,9 +2076,6 @@ forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</spa
 </code></pre></div>
 <p>点 Run 逐步显示 stack / storage。替换 <code>02</code> 为 <code>01/04/07</code> 等过一遍算术 opcode。</p>
 <hr />
-<!-- §12 USDC trace 详细内容已移至附录 F -->
-
-<hr />
 
 </section><section class="chapter">
 <h2 id="14-logs" id="ch16"><span class="chapter-num">Chapter 16</span><br>14 事件与 logs</h2>
@@ -3316,7 +3313,7 @@ cast<span style="color: #F8F8F8"> </span>4byte<span style="color: #F8F8F8"> </sp
 <li>EIP-7702 designator 用 <code>0xef01</code> 前缀（Verkle / EOF 预留前缀空间）</li>
 </ul>
 <h4 id="c25-eip-7736leaf-level-state-expiry-verkle">C.2.5 EIP-7736：leaf-level state expiry（依赖 Verkle）</h4>
-<p>Verkle extension-and-suffix 子树加访问计数器，过期 = 删除该子树。只有 Verkle 上线后方可实施，详见 §24。</p>
+<p>Verkle extension-and-suffix 子树加访问计数器，过期 = 删除该子树。只有 Verkle 上线后方可实施，详见 §C.3。</p>
 <hr />
 <h3 id="c3-state-expiry-history-expiry">C.3 State expiry / History expiry / 弱无状态</h3>
 <p>以太坊状态 350 GB，每年还在涨。十年后呢？百年后呢？没人想跑 5 TB 的全节点。</p>
@@ -3887,8 +3884,6 @@ curl<span style="color: #F8F8F8"> </span>-X<span style="color: #F8F8F8"> </span>
 <span style="color: #F8F8F8">  </span>-d<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;engine_getClientVersionV1&quot;,&quot;params&quot;:[{}],&quot;id&quot;:1}&#39;</span>
 </code></pre></div>
 <hr />
-<!-- §28 USDC 字节码详细 walkthrough 已移至附录 F -->
-
 
 </section><section class="chapter">
 <h2 id="h-pectra-2026-04" id="ch32"><span class="chapter-num">Chapter 32</span><br>附录 H. Pectra 一年后的现场观察（2026-04）</h2>
@@ -3957,7 +3952,6 @@ curl<span style="color: #F8F8F8"> </span>-X<span style="color: #F8F8F8"> </span>
 </ul>
 <h3 id="295-prysm">29.5 Prysm 事件复盘</h3>
 <p>2025-12-10（Fusaka 后 7 天），Prysm v6.0.4 在 PeerDAS 数据列处理路径有 race condition，~38% validator attestation miss，finality 一度从 99.9% 降至 75%，但没有 fork——其他四 CL 合计份额 &gt; 33%，链没断。事件后 lighthouse / teku 份额各涨 ~5%。客户端多样性是协议层防线而非营销话术，正是这一节的实证。</p>
-<!-- §30 延伸阅读已移至主线 §21 -->
 </section>
 </body>
 </html>

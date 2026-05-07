@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity 0.8.28;
 
 /// @title 未保护的 init：还原 Parity Multisig (2017-11-06) 凶案
 /// @notice 历史损失：约 51.4 万 ETH（约 1.55 亿美元）被永久冻结。

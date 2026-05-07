@@ -882,11 +882,11 @@ timelock<span style="color: #000; font-weight: bold">.</span>renounceRole<span s
 <hr />
 <h3 id="beanstalk2022-04182m13">故事二：Beanstalk（2022-04，$182M）——13 秒，一个区块</h3>
 <blockquote>
-<p>周四下午，Twitter 上一条消息："Beanstalk 刚刚被清空了，$182M。" 链上数据显示：一笔交易，13 秒，Aave 闪电贷 10 亿美元，投票，执行，还款。全程没有人能介入——因为没有 Timelock，没有 snapshot。</p>
+<p>周四下午，Twitter 上一条消息："Beanstalk 刚刚被清空了，$182M。" 链上数据显示：一笔交易，13 秒，Aave + Uniswap V3 + SushiSwap + Maker DAI Module 多源闪电贷合计约 $1B（多源同 tx），投票，执行，还款。全程没有人能介入——因为没有 Timelock，没有 snapshot。</p>
 </blockquote>
 <p><strong>先记一个定义</strong>：闪电贷 = 同一笔 tx 内借款 + 还款，不还就 revert——意味着攻击者可以在一个 tx 内拥有任意大 token 余额。</p>
 <p><strong>攻击链路</strong>：</p>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. Aave 闪电贷 10 亿 USD
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. Aave + Uniswap V3 + SushiSwap + Maker DAI Module 多源闪电贷合计约 $1B（多源同 tx）
 2. 买 BEAN+3CRV LP → 存 Silo → 获得投票权
 3. emergencyCommit(BIP-18)  ← calldata = &quot;把国库转给 0xattacker&quot;
 4. BIP-19 转 25 万给乌克兰（道德烟雾弹）
@@ -1038,6 +1038,7 @@ OZ VestingWallet — 教学用，简单 cliff + linear
 - <strong>附录 F</strong>：全部治理攻击案例（Beanstalk / Build Finance / CMP-289 / Mango / Sky 等）
 - <strong>附录 G</strong>：法律 / MiCA / Howey
 - <strong>附录 H</strong>：真实 DAO 解剖（Uniswap / Aave / MakerDAO / Optimism）</p>
+<p><strong>附录排序说明</strong>：本模块附录按引入顺序非字母序——主线 §6 提及攻击案例后接附录 H 治理攻击复盘，故 H 早于 C-G。完整索引参见上方 line 493 目录。</p>
 </blockquote>
 <hr />
 <hr />
@@ -1381,7 +1382,7 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 </table>
 <p><strong>最小 Plugin 骨架</strong>（Solidity）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: AGPL-3.0-or-later</span>
-<span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">^</span><span style="color: #204A87; font-weight: bold">0.8.17</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.28</span><span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>PluginUUPSUpgradeable<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>IDAO<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@aragon/osx/core/plugin/PluginUUPSUpgradeable.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
@@ -1812,6 +1813,9 @@ $$</p>
 <p><strong>把 ve-token 想成"投票权 IRA 账户"</strong>：你把 CRV 锁进去，最长 4 年；锁得越久，发给你的 veCRV 越多，能投的票、能分的协议费、LP 收益的乘数都越大。它是 Curve 在 2020 年丢出的一颗手榴弹——把"治理权"和"时间偏好"硬挂钩。三年后，整个 DeFi 都在抄它：Frax 抄、Convex 抄、Velodrome 抄、Aerodrome 抄、Pendle 抄完又退回 sPENDLE。这一章讲清楚 veCRV 的数学、它如何引爆 Curve War（第 25 章）、以及为什么 Pendle 在 2025 年说"算了，我软化它"。</p>
 </blockquote>
 <p>ve（vote-escrow）由 Curve 2020-09 发明，把治理权与时间偏好挂钩——锁得越久权重越大。</p>
+<blockquote>
+<p>（本节是 §5 ve 直觉的工程展开；§5 给概念，本节给 Curve War 完整复盘 + 设计模式）</p>
+</blockquote>
 <h3 id="151-vecrv">15.1 veCRV 设计</h3>
 <p>直觉先行：<strong>veCRV 像一张"承诺书 NFT"</strong>——你承诺把 CRV 锁 N 年不动，协议给你一张随时间逐日缩水的投票卡。锁 4 年的人投票权是锁 1 年的人 4 倍，是不锁的人无穷大。这种设计逼出三件事：①投机者不会玩（他们不愿意被锁），②长期主义者天然胜出，③"控制 Curve 让自己稳定币流动性更深"成了一门生意。</p>
 <p>CRV 锁仓 1 周到 4 年 → 得到 veCRV。锁越长，veCRV 越多，投票权 + 协议分红 + LP boost 同步上升。</p>

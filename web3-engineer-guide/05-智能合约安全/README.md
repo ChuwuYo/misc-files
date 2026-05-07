@@ -104,6 +104,8 @@ flowchart LR
 
 ## 2. 重入家族
 
+> 本节是重入主讲（漏洞 + PoC + 真实案例）；CEI 模式直觉补充见模块 04 §8.1
+
 > **TL;DR**：`call` 把执行权交出去，对方可以回调你。状态没更新时被回调 = 重入。修复：CEI 顺序 + `nonReentrant`。read-only 重入是 view 函数读到脏状态用于定价。
 
 > **钩子**：银行柜员把钱递出去之后才在账本上划掉余额——你拿到现金，转身又排队，账本说"你还有 1 ETH"，柜员说"好的，再来一份"。重入就是这种"趁柜员转身的瞬间二次取款"。The DAO 2016 年用这招抽走 6000 万；Curve Vyper 编译器 2023 年被同招换皮，赔进去 7000 万。
@@ -218,7 +220,7 @@ modifier nonReentrant() {
 
 > **TL;DR**：直接读 DEX `getReserves()` 作价格，闪电贷一笔 swap 拉任意比例。修复：TWAP ≥ 30min + Chainlink 4 项检查。池子流动性 / 受害协议 TVL < 0.5% 时攻击必盈利。
 
-> **钩子**：2022 年 10 月，Eisenberg 用 1000 万 USDC 把 MNGO 现货价在 20 分钟内拉了 11 倍，再抵押这堆"账面浮盈"借走金库 1.16 亿美元——估值用的就是他刚拉爆的那个价格。他叫这"高度盈利的交易策略"。**Oracle 操纵的本质：给协议看一个你单方面捏造的"市场价"**。
+> **钩子**：2022 年 10 月，Eisenberg 跨两账号合计约 $10M USDC 起手，把 MNGO 现货价在 20 分钟内拉了 11 倍，再抵押这堆"账面浮盈"借走金库 1.16 亿美元——估值用的就是他刚拉爆的那个价格。他叫这"高度盈利的交易策略"。**Oracle 操纵的本质：给协议看一个你单方面捏造的"市场价"**。
 
 ### 3.1 漏洞描述
 
@@ -379,7 +381,7 @@ contract SafeProxyImpl is Initializable {
 ```mermaid
 timeline
     title Bybit Heist（DPRK / TraderTraitor / UNC4899）
-    数月前 : 假招聘 + 钓鱼 macOS dev → Safe.global 工程师中招
+    数月前 : 假招聘 + 钓鱼 macOS dev → Safe{Wallet} 一名 Developer (Developer1)，攻击者拿到其 AWS session token 直接侵入 Safe AWS 基础设施
     2025-02-04 : macOS RAT 持久化
     2025-02-17 : AWS C2 上线
     2025-02-19 15:29 UTC : 替换 app.safe.global S3 JS（仅对 Bybit cold wallet 生效）
@@ -398,6 +400,8 @@ timeline
 ---
 
 ## 5. 签名重放 / EIP-712 钓鱼
+
+> 本节聚焦签名钓鱼防御；EIP-712 字段 + 前端实现见模块 10 §6
 
 > **TL;DR**：签名安全 = 5W：Who + What + Where（chainId+verifyingContract）+ When（deadline）+ Why-not-twice（nonce）。缺一 = 重放或仿冒。
 
@@ -1142,7 +1146,7 @@ contract Attacker { receive() external payable { vault.withdraw(); } }
 ### F.2 SMTChecker 示例
 
 ```solidity
-pragma solidity 0.8.25;
+pragma solidity 0.8.28;
 // solc Tiny.sol --model-checker-engine all --model-checker-targets overflow,assert
 contract Tiny {
     function safeAdd(uint256 a, uint256 b) external pure returns (uint256) {

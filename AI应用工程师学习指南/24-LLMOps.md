@@ -49,7 +49,7 @@
 
 ### 24.2.1 Langfuse
 
-定位是开源 LLM 工程平台。MIT 许可，Python / JS / Java SDK 完整，self-host 是一等公民——单机 docker-compose 几分钟可以起来，生产规模需要 Postgres + ClickHouse + Redis + S3 + 可选 K8s。功能覆盖 trace、prompt 管理、数据集、评估器、人工标注、playground。2026 年 1 月被 ClickHouse 收购，对底层查询性能继续利好。SDK 装机量月级超过 600 万，社区活跃度在开源 LLMOps 里第一梯队。
+定位是开源 LLM 工程平台。MIT 许可，Python / JS / Java SDK 完整，self-host 是一等公民——单机 docker-compose 几分钟可以起来，生产规模需要 Postgres + ClickHouse + Redis + S3 + 可选 K8s。功能覆盖 trace、prompt 管理、数据集、评估器、人工标注、playground。后端 v3 起拆为 langfuse-web + langfuse-worker 双容器架构，OTel ingestion 走 worker。2026 年 1 月被 ClickHouse 收购，承诺继续 MIT 开源 + self-host，对底层查询性能继续利好。SDK 装机量月级超过 600 万，社区活跃度在开源 LLMOps 里第一梯队。Python SDK 在 2026 年 3 月发布 v4——移除了 `langfuse.decorators` 子模块，`@observe` 改从 `from langfuse import observe` 顶层导入；`update_current_trace` 等命令式更新被拆成 `propagate_attributes` 上下文管理器 + 各 wrapper 对象的 `update_trace()` 方法。本章代码示例以 v3 风格为主（仍是当下使用最广的版本），切到 v4 时按官方迁移指南改两行即可。
 
 适合的团队：需要 self-host（合规、数据主权）；多模型、多框架混用，不想被 LangChain 绑架；预算敏感但接受自己运维。
 
@@ -129,7 +129,8 @@ Weights & Biases 把传统 ML 实验追踪扩展到 LLM 的产品。`@weave.op` 
 | 调用 | `gen_ai.operation.name` | 操作类型，如 `chat`、`completion`、`embeddings` |
 | 参数 | `gen_ai.request.temperature` / `top_p` / `max_tokens` | 调用参数 |
 | Token | `gen_ai.usage.input_tokens` / `output_tokens` | token 用量（旧版叫 prompt_tokens / completion_tokens，被替换） |
-| 内容 | `gen_ai.prompt` / `gen_ai.completion` （事件） | 实际 prompt / 输出，**默认不采集**（PII 风险） |
+| Token-Cache | `gen_ai.usage.cache_creation.input_tokens` / `cache_read.input_tokens` | prompt cache 写入 / 命中 token，部分 provider 才有 |
+| 内容 | `gen_ai.input.messages` / `gen_ai.output.messages` （事件 / log record） | 实际 prompt / 输出，**默认不采集**（PII 风险）。早期 `gen_ai.prompt` / `gen_ai.completion` 记法仍在过渡期 |
 | Agent | `gen_ai.agent.name` / `gen_ai.agent.id` / `gen_ai.tool.name` | agent / tool 维度 |
 
 注意两点。
@@ -457,6 +458,8 @@ print(result)
 ```
 
 ragas 的所有指标都是 LLM-as-judge 实现的，意味着它的可信度上限就是 judge 模型的可信度。生产里建议用比应用本身更强的模型做 judge（应用用 gpt-4o-mini，judge 用 gpt-4o 或 Claude Sonnet），否则会出现 judge 看不出问题的情况。
+
+ragas 在 0.4 之后启动了 collections-based API 迁移：旧的 `from ragas.metrics import Faithfulness` 仍可用，但官方计划在 1.0 移除，新写代码推荐 `from ragas.metrics.collections import Faithfulness` 并使用其 `.score() / .ascore()` 方法。生产代码做版本升级时关注这条迁移路径，避免到 1.0 才发现要全量改。
 
 ### 24.5.3 LLM-as-judge：又强又脏的工具
 
@@ -1089,13 +1092,13 @@ CREATE TABLE llm_audit_log (
    失败采集 → 标注队列 → dataset → 下一轮 eval
 ```
 
-**docker-compose（Langfuse + 依赖）：**
+**docker-compose（Langfuse v3 + 依赖）：** 注意 v3 起后端是 web + worker 双容器，不能只起 web。完整官方版包含 healthcheck 和细粒度环境变量（参考 langfuse 仓库根目录的 docker-compose.yml），下面是删减后只保留主干的最小可读版本。
 
 ```yaml
-# docker-compose.yml （示意，最小化）
+# docker-compose.yml （示意，最小化；生产请直接基于官方版改）
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     environment:
       POSTGRES_PASSWORD: changeme
       POSTGRES_DB: langfuse
@@ -1103,7 +1106,7 @@ services:
       - pg_data:/var/lib/postgresql/data
 
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8
+    image: clickhouse/clickhouse-server:25.3
     environment:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: changeme
@@ -1115,7 +1118,7 @@ services:
 
   minio:
     image: minio/minio
-    command: server /data
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: changeme123
@@ -1123,22 +1126,32 @@ services:
       - minio_data:/data
 
   langfuse-web:
-    image: langfuse/langfuse:latest
+    image: langfuse/langfuse:3
     depends_on: [postgres, clickhouse, redis, minio]
     ports: ["3000:3000"]
-    environment:
+    environment: &langfuse_env
       DATABASE_URL: postgresql://postgres:changeme@postgres:5432/langfuse
       CLICKHOUSE_URL: http://clickhouse:8123
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: changeme
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
       REDIS_CONNECTION_STRING: redis://redis:6379
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
       LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
       LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: changeme123
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
       NEXTAUTH_SECRET: changeme-please
       SALT: changeme-too
+      ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
       NEXTAUTH_URL: http://localhost:3000
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    depends_on: [postgres, clickhouse, redis, minio]
+    ports: ["3030:3030"]
+    environment: *langfuse_env
 
 volumes:
   pg_data: {}
@@ -1146,7 +1159,7 @@ volumes:
   minio_data: {}
 ```
 
-`docker compose up -d`，访问 `localhost:3000`，建项目，拿 public key / secret key 接入应用。
+`docker compose up -d`，访问 `localhost:3000`，建项目，拿 public key / secret key 接入应用。`ENCRYPTION_KEY` 生产必须换成 64 位 hex 随机串（`openssl rand -hex 32`）。
 
 **应用侧（FastAPI + Langfuse + LLM-as-judge 异步）：**
 
@@ -1327,5 +1340,9 @@ PR 上跑回归集，evaluator 不达标直接 fail。这就是 Evaluator-Driven
 - **合规从第一天考虑。** 留痕、脱敏、版本绑定、访问审计——这些都不是事后能补的。
 
 **最后一句话：** LLMOps 不是"在 LLM 上套一层 MLOps"。它是一种新的工程纪律——你接受了一个非确定的、闭源的、按调用收费的核心组件作为系统中枢，然后用观测、评估、闭环把这种不确定性压回到产品可以承担的范围。这种纪律学起来比单纯的 prompt 工程或 RAG 优化都要慢，但一旦内化，你的 LLM 应用就有了真正可以长期运行的工程地基。
+
+---
+
+观测和评估解决的是"系统好不好"的问题。下一章我们处理另一类只有上线之后才会暴露的问题——**有人在主动让你的系统变坏**。Prompt 注入、越狱、Agent 越权、数据泄漏，每一项都不是 trace 大盘能直接告诉你的。第 25 章把这套对抗面摆开。
 
 下一章我们会从持续改进的"改"那一侧深入：什么时候 prompt 已经调到头了，需要走微调或继续训练？怎么判断、怎么准备数据、怎么把微调结果接回这一章的评估闭环。

@@ -1481,7 +1481,7 @@ bytes32 refUID           // 引用另一条 attestation（链式声誉）
 <h2 id="hbayc-230-inferno-drainer" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 H：真实事件复盘（BAYC 230 万被盗 / Inferno Drainer）</h2>
 
 <h3 id="h1-bayc-230-wyvern-calldata-2022-02">H.1 BAYC 230 万被盗：Wyvern calldata 漏洞（2022-02）</h3>
-<p>损失 $1.7M / 254 NFT（含 BAYC #3475）。Wyvern v2 允许订单创建后修改 calldata，攻击者拿"半填"订单签名后补 calldata 把 NFT 转出。Seaport 修复：calldata 进 hash。</p>
+<p>损失 $1.7M / 254 NFT（含 BAYC #3475）。OpenSea <strong>stale listing</strong> 漏洞——用户跨钱包转移 NFT 后旧低价挂单未失效，攻击者按旧低价 fill；与 Wyvern calldata 篡改无关。</p>
 <p><strong>教训</strong>：用户绝不签看不懂的 typed data；EIP-712 + 钱包 message preview 必备。</p>
 <h3 id="h2-inferno-drainerscam-as-a-service2022-2025">H.2 Inferno Drainer：Scam-as-a-Service（2022-2025）</h3>
 <p>累计 $89M+（原版 ~$80M + 2024-09-2025-03 复活 $9M）。模板钓鱼站诱导 <code>setApprovalForAll(drainer, true)</code> → Discord/Twitter 账号接管分发链接 → 受害者一键授权所有 NFT。</p>

@@ -6,9 +6,9 @@
 >
 > 这两件事说明一件事：**AI 应用工程师不可能把 LLM 当黑盒**。你不需要会从零写 Transformer，但 tokenizer、采样参数、训练范式、推理特性这些底层原理，都会在某天以 bug、账单、莫名其妙的输出形式回到你面前。本章就是把这层「肚子」剖开。
 
-本章在全书的位置：第 1-10 章把工程基础（Python、Web、Docker、数据库、向量库、RPC、并发、可观测性、CI/CD、安全）打完，从这章开始正式进入 LLM 篇。后面的 prompt engineering（第 12 章）、RAG（第 13 章）、Agent（第 14 章）、Fine-tuning（第 15 章）每一节都依赖你对本章原理的理解——否则调出来的东西全是黑盒，出问题只能靠玄学和换模型。
+**承前启后**：第 10 章刚把分布式训练讲完——能训出一个大模型只是开始；这个由 next-token 概率分布堆出来的「黑盒」每天在你应用里算什么、为什么这么算、什么时候会算错，才是 AI 应用工程师真正吃饭的底层。第 1-10 章把工程基础（Python、Web、Docker、数据库、向量库、RPC、并发、可观测性、CI/CD、安全）打完，从这章开始正式进入第四部分 LLM 篇。后面的开源生态（第 12 章）、微调技术（第 13 章）、Prompt 工程化（第 14 章），以及第五部分应用开发里的 RAG、Agent，每一节都依赖你对本章原理的理解——否则调出来的东西全是黑盒，出问题只能靠玄学和换模型。
 
-**前置**：第 1 章（Python 基础，跑代码 demo）、第 9 章（可观测性，理解为什么要监控 token）。**后续**：第 12 章把本章的采样参数、tokenizer 落到 prompt 工程；第 13 章把本章的 context window、knowledge cutoff 转化为 RAG 的设计动机；第 15 章把本章的 SFT/DPO 转成可执行的微调流程。
+**前置**：第 1 章（Python 基础，跑代码 demo）、第 9 章（可观测性，理解为什么要监控 token）、第 10 章（训练栈，理解模型权重是怎么来的）。**后续**：第 12 章把本章的架构特性、许可证、上下文长度落到模型选型；第 13 章把本章的 SFT/DPO 转成可执行的微调流程；第 14 章把本章的采样参数、tokenizer 落到 prompt 工程化；第五部分进一步把 context window、knowledge cutoff 转化为 RAG 与 Agent 的设计动机。
 
 > **阅读纲领**：本章不教你训练 LLM，只教你**作为 API 调用方需要懂哪些**。判断标准是：这条知识在 debug 一次失败、估一次成本、选一个模型时会不会用上。用不上的（比如手推 attention、各种位置编码的数学推导）我们让给《Attention Is All You Need》和 Sebastian Raschka 的书。
 
@@ -141,7 +141,7 @@ flowchart LR
 1. **system prompt 用英文**：除非你的模型对中文 system prompt 调优过，否则英文 system prompt 同义且省 30-50% token。这一点对 OpenAI/Anthropic 系统几乎是常识，但很多团队的 system prompt 习惯性用中文写，每次调用浪费几百 token，月度账单上直接看到。
 2. **few-shot 例子用英文**：同上。一个 5-shot 中文 prompt 普遍 2K token，换成英文能压到 800-1000。
 3. **用户输入按用户语言处理**：不要把用户的中文翻译成英文再喂模型，会累积翻译错误。模型本身已经多语言对齐，对用户原始 query 的理解不会比你预先翻译差。
-4. **chunk 切割按 token 不按字符**：第 13 章 RAG 会反复用到，切错 chunk size 会爆 context window。常见错误：用 `text.split` 按字符切 1000 字一段，中文 1000 字 ≈ 1100-1500 token（GPT-4o），混入英文段落或代码后可能涨到 2000+。
+4. **chunk 切割按 token 不按字符**：第 16 章 RAG 会反复用到，切错 chunk size 会爆 context window。常见错误：用 `text.split` 按字符切 1000 字一段，中文 1000 字 ≈ 1100-1500 token（GPT-4o），混入英文段落或代码后可能涨到 2000+。
 5. **算成本前先估 token**：在做任何 PoC 前，用 tiktoken 把典型 prompt + 预期 output 跑一遍，估出每次调用的 token，再乘单价、乘日活。这一步能在立项阶段就识别成本不可行的方案。
 
 参考：[OpenAI Tokenizer](https://platform.openai.com/tokenizer)、[tiktoken cookbook](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken)。
@@ -356,17 +356,17 @@ DPO 之后涌现一堆变体，每个都解决 DPO 的某个具体痛点：
 
 | 方法 | 解决什么问题 | 一句话区别 |
 |------|------------|-----------|
-| **DPO** | RLHF 太复杂 | 闭式解 + pairwise loss |
-| **IPO** (Identity Preference Optimization) | DPO 容易过拟合（reward 无界增长） | 把 sigmoid loss 换成回归 loss，有限制点 |
+| **DPO** | RLHF 太复杂 | 闭式解 + 基于 sigmoid 的 pairwise log-loss |
+| **IPO** (Identity Preference Optimization) | DPO 在偏好近乎确定时会让 implicit reward 无界增长，过拟合 | 把 sigmoid log-loss 换成对 log-ratio 差的平方损失（向常数 1/(2β) 回归），饱和有界 |
 | **KTO** (Kahneman-Tversky Optimization) | preference pair 数据贵 | 只要 thumbs up/down 二元标签，不要成对 |
-| **ORPO** (Odds Ratio Preference Optimization) | 还需要 SFT + DPO 两阶段 | 一个 loss 同时做 SFT 和 偏好，单阶段 |
-| **SimPO** | DPO 还需要 reference model | 完全 reference-free |
+| **ORPO** (Odds Ratio Preference Optimization) | 还需要 SFT + DPO 两阶段 | 把 SFT 的 NLL 加上一个 odds ratio 项 `-log σ(log(odds(y_w) / odds(y_l)))`，一个 loss 同时做 SFT 和偏好，无需 reference model |
+| **SimPO** | DPO 还需要 reference model + 偏长 | 用**长度归一化的平均 log-prob**当 implicit reward + 加 target margin γ，完全 reference-free |
 
 **实战选哪个**：
 
 - **数据是 (chosen, rejected) 对** → DPO（默认）/ SimPO（省显存）。
 - **数据是 (response, like/dislike) 二元** → KTO。
-- **想合并 SFT + 偏好** → ORPO（Mistral 7B v0.3 的官方做法）。
+- **想合并 SFT + 偏好** → ORPO（原论文在 Mistral-7B / Llama-2 上验证，TRL 的 `ORPOTrainer` 已开箱即用）。
 - **只要稳定** → DPO 仍是最稳的。
 
 参考：[DPO Variants 综述](https://mbrenndoerfer.com/writing/dpo-variants-ipo-kto-orpo-cdpo-llm-alignment)。
@@ -411,7 +411,7 @@ flowchart TB
 - **GPT 风格啰嗦 + emoji** 来自 RLHF reward hacking——人类标注员偏好长答案、有结构化、显得「努力」。所以 GPT-4o 经常不分点不舒服，这是训练分布固化的偏好。
 - **Claude 谨慎拒绝多** 来自 Constitutional AI 的宪法权重大。Anthropic 公开过 Claude 的部分宪法原则——避免有害、避免欺骗、避免给出可能伤害用户的建议——这些原则在 RL 阶段被反复强化，模型对边缘话题就会「下意识谨慎」。
 - **DeepSeek-V3 / Qwen3 没那么啰嗦**，因为它们的偏好数据里更多是中文标注、且未必偏好长答案。这种 cultural difference 直接体现在输出风格上。
-- **微调 = 后训练**：第 15 章会讲，企业做的 fine-tuning 99% 是 SFT、5% 是 DPO，和上面 pipeline 一脉相承，只是数据量少 100×。理解上面 pipeline 后，你做微调时就知道该收什么数据、用什么 loss、训多少步。
+- **微调 = 后训练**：第 13 章会讲，企业做的 fine-tuning 99% 是 SFT、5% 是 DPO，和上面 pipeline 一脉相承，只是数据量少 100×。理解上面 pipeline 后，你做微调时就知道该收什么数据、用什么 loss、训多少步。
 
 ---
 
@@ -721,7 +721,7 @@ flowchart LR
 | **Position** | Sinusoidal / Learned | **RoPE** (Rotary Position Embedding) | GPT-NeoX (2022) |
 | **Normalization** | LayerNorm | **RMSNorm** | Llama 1 (2023) |
 | **Activation** | GELU / ReLU | **SwiGLU** | PaLM (2022) |
-| **Long Context** | 截断 | **YaRN** (RoPE 频率插值扩展) | Code Llama (2023) |
+| **Long Context** | 截断 | **YaRN** (RoPE 频率插值 + attention 温度补偿) | Nous-Yarn-Llama (2023-09) |
 
 **为什么收敛**：所有这些选择都是**「在不显著增加 FLOPs 的前提下提升模型质量或推理速度」**的工程改良。Llama、Mistral、Gemma、Qwen、DeepSeek、Phi 各自独立验证后全部采用——这种独立收敛在工程上是最强的合理性证据。
 
@@ -855,16 +855,21 @@ gantt
 - **RoPE 频率插值**（Position Interpolation, [Chen 2023](https://arxiv.org/abs/2306.15595)）：把 RoPE 的旋转频率压缩 N 倍，让原本只能看 4K 的模型「视觉上」看到 128K。简单但损失高频信息。
 - **YaRN（[Peng 2023](https://arxiv.org/abs/2309.00071)）**：分频段处理，高频不动、低频压缩 + attention 温度补偿。**当前事实标准**——Llama 3、Qwen、DeepSeek、gpt-oss 全用 YaRN。
 - **NTK-aware scaling**：YaRN 的前身，思路类似但更早。
-- **Ring Attention**（[Liu 2023](https://arxiv.org/abs/2310.01889)）：把 sequence 切成块分到不同 GPU，每个 GPU 算自己 chunk 的 Q 和环形传过来的 K、V。**让 1M+ 训练成为可能**，Gemini 1.5 用的就是这个。
+- **Ring Attention**（[Liu 2023](https://arxiv.org/abs/2310.01889)）：把 sequence 切成块分到不同 GPU，每个 GPU 算自己 chunk 的 Q 和环形传过来的 K、V，通信和计算重叠。**让 1M+ context 训练成为可能**，是 Gemini 1.5 / Llama 3 长上下文背后被广泛参考的方案；Accelerate 1.x 起的 Context Parallel（CP）就是 Ring Attention 的工程实现。
 - **Sliding Window + Sink**（Mistral）：每个位置只看局部 window + 几个固定的「sink token」。简化 attention 复杂度。
 
 **应用工程师的实战观察**：
 
 - **「128K context」≠「128K 都好用」**。RULER benchmark（[Hsieh 2024](https://arxiv.org/abs/2404.06654)）测试发现，多数模型在 64K 后明显衰减；Lost-in-the-Middle 现象（[Liu 2023](https://arxiv.org/abs/2307.03172)）让 32K-96K 中段信息利用率最低。
-- **优先把关键信息放头尾**：第 13 章 RAG 会反复提，retrieved chunk 要放在 prompt 的头部或尾部，不要放中段。
+- **优先把关键信息放头尾**：第 16 章 RAG 会反复提，retrieved chunk 要放在 prompt 的头部或尾部，不要放中段。
 - **prompt 不要塞满**：哪怕模型支持 128K，实际用 16K-32K 是「最甜」区间。塞到 100K 不仅慢、贵，还掉准确率。
 - **prefill 成本**：长 prompt 的第一 token 延迟（TTFT）和 prompt 长度成线性甚至超线性关系。50K 输入的 TTFT 可能要 5-15 秒，UX 不友好——长 context 配 streaming UI 时要给用户「正在思考」的过渡态。
-- **prompt caching 大有可为**：Anthropic、DeepSeek、OpenAI 都支持 prompt caching——同一个 system prompt + 长文档反复调用时，缓存命中部分**只算 10% 价格**。RAG / Agent 场景这是省 70%+ 成本的关键。
+- **prompt caching 大有可为，但各家差异大**：
+  - **Anthropic**：手动开关，需要在 system / user 块上加 `cache_control: {"type": "ephemeral"}` 标记缓存断点，最多 4 个；命中按基础价 **10%** 计，**写入**比基础价贵 25%（5 分钟 TTL）或 100%（1 小时 TTL）。
+  - **OpenAI**：自动缓存，prompt 前缀 ≥ 1024 token 自动启用，无需声明；命中按基础价 **50%** 计（部分模型 25%），写入不收溢价。
+  - **DeepSeek**：自动 disk 级缓存，命中按基础价 **10%**（DeepSeek-V3 / R1 都启用），是国产 API 里成本压得最低的一档。
+  - **Gemini**：分隐式（自动）和显式（创建 CachedContent，按存储 + 命中两段计费），适合长文档反复问。
+  - **应用工程师 takeaway**：RAG / Agent 系统把不变的 prefix（system prompt + 示例 + 工具定义）放最前并在 Anthropic 上手动打 cache，能省 70%+ 成本；OpenAI 不用动手但要把变量放尾部。
 
 ---
 
@@ -938,9 +943,9 @@ flowchart LR
     A --> C[领域不熟<br/>风格不符]
     A --> D[多步任务<br/>需要工具]
 
-    B --> E[RAG<br/>第 13 章]
-    C --> F[Fine-tuning<br/>第 15 章]
-    D --> G[Agent<br/>第 14 章]
+    B --> E[RAG<br/>第 16 章]
+    C --> F[Fine-tuning<br/>第 13 章]
+    D --> G[Agent<br/>第 17 章]
 
     style B fill:#f8d7da,stroke:#721c24
     style C fill:#fff3cd,stroke:#856404
@@ -1207,9 +1212,9 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 
 ### 8.5 把三段代码放进 RAG / Agent 怎么用
 
-- **Demo 1 → RAG**：第 13 章切 chunk 时直接复用 `tiktoken` 计 token 数，确保 chunk 不超 model context。
+- **Demo 1 → RAG**：第 16 章切 chunk 时直接复用 `tiktoken` 计 token 数，确保 chunk 不超 model context。
 - **Demo 2 → 调试 prompt**：当 prompt 出诡异输出，用逐 token 解码看模型在哪一步「跑偏」，类比第 9 章的 trace 工具。
-- **Demo 3 → 自托管 LLM**：第 15 章微调完模型用 vLLM 部署时，`top_p` / `min_p` / `temperature` 都是要在 server 端配的。理解算法本身才能调出合理参数。
+- **Demo 3 → 自托管 LLM**：第 13 章微调完模型用 vLLM 部署时，`top_p` / `min_p` / `temperature` 都是要在 server 端配的。理解算法本身才能调出合理参数。
 
 ---
 
@@ -1219,15 +1224,16 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 
 | 本章主题 | 后续章节 | 关系 |
 |---------|---------|------|
-| Tokenizer（§1） | 第 13 章 RAG | 切 chunk 的 token 边界 |
-| Context Window / Long Context（§6.3） | 第 13 章 RAG | retrieval 数量上限、lost-in-the-middle |
-| 后训练 SFT（§3.2） | 第 15 章 Fine-tuning | 企业微调 99% 是 SFT |
-| 后训练 DPO（§3.4） | 第 15 章 Fine-tuning | 偏好对齐的工程实践 |
-| 采样参数（§4） | 第 12 章 Prompt | temperature / top_p 在 prompt 调优中的角色 |
-| Reasoning Models（§5.3） | 第 14 章 Agent | reasoning 模型作 Agent backbone |
-| 幻觉（§7.1） | 第 13 章 RAG / 第 14 章 Agent | 缓解的两大动机 |
-| MoE / 推理成本（§6.2） | 第 9 章 可观测性 / 第 16 章 部署 | 成本监控 + 模型选型 |
-| Speculative Decoding（§4.6） | 第 16 章 部署 | 自托管推理加速 |
+| Tokenizer（§1） | 第 16 章 RAG | 切 chunk 的 token 边界 |
+| Context Window / Long Context（§6.3） | 第 16 章 RAG | retrieval 数量上限、lost-in-the-middle |
+| 后训练 SFT（§3.2） | 第 13 章 微调技术 | 企业微调 99% 是 SFT |
+| 后训练 DPO（§3.4） | 第 13 章 微调技术 | 偏好对齐的工程实践 |
+| 采样参数（§4） | 第 14 章 Prompt 工程化 | temperature / top_p 在 prompt 调优中的角色 |
+| Reasoning Models（§5.3） | 第 17 章 Agent | reasoning 模型作 Agent backbone |
+| 幻觉（§7.1） | 第 16 章 RAG / 第 17 章 Agent | 缓解的两大动机 |
+| 主流架构 / 许可证 / MoE（§6） | 第 12 章 开源生态 | 选型与部署成本估算的依据 |
+| MoE / 推理成本（§6.2） | 第 9 章 可观测性 / 第 21 章 模型部署 | 成本监控 + 模型选型 |
+| Speculative Decoding（§4.6） | 第 21 章 模型部署 | 自托管推理加速 |
 
 ### 9.2 推荐阅读
 
@@ -1263,6 +1269,10 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 - [Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard) — 开源模型 benchmark。
 - [LMSYS Chatbot Arena](https://chat.lmsys.org/) — 人类盲评 ELO 排名。
 - [SimonW's blog](https://simonwillison.net/) — LLM 发布的实时观察记录。
+
+---
+
+原理摸清之后，自然就要回答一个更实际的问题——市面上几十个开源模型，谁配得上「在我家业务里跑」？下一章我们把 2026 年的开源 LLM 江湖盘一遍：六大流派、许可证陷阱、显存账本、量化与本地部署。本章学到的 tokenizer、GQA、MoE、上下文长度、SFT/DPO，都会变成下一章选型决策表上的一个个具体维度。
 
 ---
 

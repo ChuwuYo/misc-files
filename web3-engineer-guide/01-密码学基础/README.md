@@ -620,7 +620,7 @@ pip install -r requirements.txt
 
 # Solidity 端
 curl -L https://foundry.paradigm.xyz | bash && foundryup
-forge install OpenZeppelin/openzeppelin-contracts@v5.6.1 --no-commit
+forge install OpenZeppelin/openzeppelin-contracts@v5.5.0 --no-commit
 forge build
 ```
 
@@ -1653,7 +1653,7 @@ assert pairing(G1, sig_M) == pairing(pk_agg, H)
 - Legrandin/pycryptodome v3.23.0（2025-05）.
   <https://pypi.org/project/pycryptodome/>
 - supranational/blst. <https://github.com/supranational/blst>
-- (★) OpenZeppelin Contracts v5.6.1（2026-03）.
+- (★) OpenZeppelin Contracts v5.5.0（2026-03）.
   <https://github.com/OpenZeppelin/openzeppelin-contracts/releases>
 - ethers-rs. <https://github.com/gakonst/ethers-rs>
 - (★) drand/drand. <https://github.com/drand/drand>

@@ -1283,7 +1283,8 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <p>每种模式背后都是一桩血案——TheDAO（$60M）→ CEI；Parity multisig（$30M + $280M 永久冻结）→ initializer 检查；Audius 治理 proxy（$6M）→ ERC-7201。<strong>主线只讲两个能挡 90% 初级问题的模式</strong>。</p>
 <p><strong>前置：call / delegatecall / staticcall 三件套</strong>。EVM 提供三种低层调用——<code>call</code> 是普通外部调用，被调方的 <code>msg.sender</code> = 当前合约，状态写入对方 storage；<code>delegatecall</code> 借对方代码在自己 storage 上执行，<code>msg.sender</code> 与 <code>msg.value</code> 保留为最初调用者，proxy / Diamond / 多数 library 都靠它；<code>staticcall</code> 等同于 view 模式 call，被调方写状态会立即 revert，常用于不可信的只读探测。三者都返回 <code>(bool ok, bytes memory data)</code>，<strong>调用失败不会自动 revert</strong>——必须手动 <code>require(ok)</code>，否则会得到静默吞掉的错。</p>
 <h3 id="81-ceichecks-effects-interactions">8.1 CEI：Checks → Effects → Interactions</h3>
-<p>2016 年 6 月，TheDAO 余额每 60 秒被掏空 ~$2M。攻击者用了一个简单的招式：在合约 <code>transfer ETH</code> 给他时，<code>receive()</code> fallback 里再调一次 <code>withdraw</code>——余额更新永远到不了。这次事故让以太坊硬分叉。</p>
+<p>本节给直觉 + 一例代码；完整漏洞家族 + 真实案例见模块 05 §2。</p>
+<p>2016 年 6 月，TheDAO 单笔 tx 内 splitDAO 递归约 30 次抽走约 360 万 ETH。攻击者用了一个简单的招式：在合约 <code>transfer ETH</code> 给他时，<code>receive()</code> fallback 里再调一次 <code>withdraw</code>——余额更新永远到不了。这次事故让以太坊硬分叉。</p>
 <p><strong>CEI 是答案</strong>：先检查参数（Checks）、再改状态（Effects）、<strong>最后</strong>做外部调用（Interactions）。违反它是 90% 重入漏洞的源头。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 错例：余额更新在转账后</span>
 <span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">withdraw</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1710,12 +1711,13 @@ Vault<span style="color: #000; font-weight: bold">(</span>vault<span style="colo
 </tbody>
 </table>
 <p><strong>红线</strong>：① delegate 后所有 storage 读写发生在 EOA 地址——恶意合约可取走 EOA 持有的一切 token；② delegation 新值直接覆盖旧值（非叠加）；③ 应用合约仍假设调用方是普通 EOA 或 4337 SmartWallet——被 EOA delegate 的合约按 ERC-1271 实现 <code>isValidSignature</code>；④ <strong>chainId = 0 是工具链最高危字段</strong>：authorization tuple 允许 chainId = 0 表示「在任意链上生效」。攻击者一旦诱骗用户签 chainId=0 的 7702 auth，可在所有 EVM 链上重放、把 EOA 在每条链上 delegate 到 sweeper。</p>
-<p><strong>钱包 / dApp 必须默认使用具体 chainId、显示拒绝 chainId=0</strong>。详见 05 模块 §11.4 攻击案例。</p>
+<p><strong>钱包 / dApp 必须默认使用具体 chainId、显示拒绝 chainId=0</strong>。详见 05 模块 §4.5 / §5（chainId=0 攻击实例）。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="g-permit2" id="ch15"><span class="chapter-num">Chapter 15</span><br>附录 G. Permit2 完整字段对照</h2>
 
+<p>本附录主讲合约侧（接收 + 校验代码）；前端构造 + 钓鱼检测见模块 10 附录 H。</p>
 <p>主线 §4.4 提到 EIP-2612 permit。Permit2（Uniswap 2022）是更激进的方案：把 permit 抽出来做成所有 token 通用的中间层。每条主流链通过 CREATE2 部署在 <code>0x000000000022D473030F116dDEE9F6B43aC78BA3</code>。</p>
 <p>「同一地址」是部署确定性，<strong>不是跨链</strong>——每条链上的 Permit2 是独立合约，allowance / nonce 各链互不可见。</p>
 <h3 id="g1-vs-eip-2612">G.1 vs EIP-2612 关键区别</h3>
@@ -1945,7 +1947,7 @@ ISignatureTransfer<span style="color: #F8F8F8"> </span><span style="color: #204A
 <li><code>tx.origin</code> 永远不用于鉴权（钓鱼合约绕过）</li>
 <li><code>block.timestamp</code> 不是随机源（±15 秒可控）</li>
 <li>for 循环里 external call（gas 不可控 + 无长度限制 = DoS）</li>
-<li>ERC-20 fee-on-transfer（PAXG / SAFEMOON：transferFrom 100 对方收到 99）</li>
+<li>ERC-20 fee-on-transfer（STA / RFI / SAFEMOON：transferFrom 100 对方收到 99）</li>
 <li><code>call</code> 不限 gas（被调方可烧光 gas）</li>
 <li>Proxy 实现合约未 <code>_disableInitializers()</code>（可被外部初始化）</li>
 <li><code>permit</code> 单独广播（被 front-run 让 transferFrom 失败）</li>

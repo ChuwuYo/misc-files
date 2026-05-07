@@ -1,6 +1,6 @@
 # Module 10 演示项目
 
-Next.js 15 + viem 2.47 + wagmi 2.18 + RainbowKit 2.2 + permissionless 0.2 + NextAuth v5。
+Next.js 15 + viem 2.43.3 + wagmi 2.18 + RainbowKit 2.2 + permissionless 0.2 + NextAuth v5。
 
 所有依赖在 `package.json` 中 pin 到具体版本，使用 pnpm 9.15 管理。
 
@@ -51,7 +51,7 @@ EIP-7702 演示需要一个简单的批量执行合约。Solidity 实现：
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.28;
 
 contract BatchExecutor {
   struct Call { address to; uint256 value; bytes data; }

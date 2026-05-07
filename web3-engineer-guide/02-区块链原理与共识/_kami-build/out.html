@@ -879,7 +879,7 @@
 <li>矿工年收入：≈ 100 亿美元（含 fee）</li>
 <li>全球 mining pool 数：~ 15 个主要 pool 占 90%+ 算力</li>
 </ul>
-<p><strong>章末</strong>：Bitcoin 17 年零协议级 reorg 靠三处保守取舍：①脚本图灵不完备；②单 leader 单链概率最终性，把"快"全让给"稳"；③块大小 1MB 限制吞吐 ~7 TPS。Litecoin/ETC 等变体的详细分析见附录 A。</p>
+<p><strong>章末</strong>：Bitcoin 历史上有过两次大型重组：2010-08 value-overflow bug 触发 53 块硬分叉；2013-03 BIP50（v0.7/v0.8 BDB 锁限）24 块共识 reorg。除此之外 17 年无大型协议级 reorg。三处保守取舍：①脚本图灵不完备；②单 leader 单链概率最终性，把"快"全让给"稳"；③块大小 1MB 限制吞吐 ~7 TPS。Litecoin/ETC 等变体的详细分析见附录 A。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1677,7 +1677,7 @@ Avalanche（DAG 版本）
 <ul>
 <li>验证者数：~ 1300+</li>
 <li>平均 TPS：~ 50（C-Chain），峰值 4000+（X-Chain）</li>
-<li>终结性：~ 1.2-2 秒</li>
+<li>最终性：~ 1.2-2 秒</li>
 <li>TVL：$1B+</li>
 </ul>
 <h4 id="a106">A.10.6 工程画像</h4>
@@ -1883,18 +1883,20 @@ python3<span style="color: #F8F8F8"> </span>pow_chain.py<span style="color: #F8F
 <h3 id="371">37.1 设计目标</h3>
 <p>n=4, f=1 的最小 BFT。演示正常路径 + 拜占庭主节点 + view-change。不模拟：真异步、消息丢失（这些是教学简化）。</p>
 <h3 id="372">37.2 节点数据结构</h3>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #5C35CC; font-weight: bold">@dataclass</span>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">dataclasses</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">dataclass</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">field</span>
+
+<span style="color: #5C35CC; font-weight: bold">@dataclass</span>
 <span style="color: #204A87; font-weight: bold">class</span><span style="color: #F8F8F8"> </span><span style="color: #000">Node</span><span style="color: #000; font-weight: bold">:</span>
-    <span style="color: #000">nid</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                    <span style="color: #8F5902; font-style: italic"># node id</span>
-    <span style="color: #000">n</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                      <span style="color: #8F5902; font-style: italic"># 总节点数</span>
-    <span style="color: #000">f</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                      <span style="color: #8F5902; font-style: italic"># 容错门限</span>
-    <span style="color: #000">view</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>               <span style="color: #8F5902; font-style: italic"># 当前视图</span>
-    <span style="color: #000">seq</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>                <span style="color: #8F5902; font-style: italic"># 主节点用来分配序号</span>
-    <span style="color: #000">log</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">[</span><span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">]</span>              <span style="color: #8F5902; font-style: italic"># 已 commit 的请求列表</span>
-    <span style="color: #000">prepares</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>              <span style="color: #8F5902; font-style: italic"># 收到的 PREPARE 集合</span>
-    <span style="color: #000">commits</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>               <span style="color: #8F5902; font-style: italic"># 收到的 COMMIT 集合</span>
-    <span style="color: #000">vc_votes</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span>              <span style="color: #8F5902; font-style: italic"># 视图切换投票</span>
-    <span style="color: #000">byzantine</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">bool</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #204A87; font-weight: bold">False</span>     <span style="color: #8F5902; font-style: italic"># 是否拜占庭主节点（仅演示用）</span>
+    <span style="color: #000">nid</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                                          <span style="color: #8F5902; font-style: italic"># node id</span>
+    <span style="color: #000">n</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                                            <span style="color: #8F5902; font-style: italic"># 总节点数</span>
+    <span style="color: #000">f</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span>                                            <span style="color: #8F5902; font-style: italic"># 容错门限</span>
+    <span style="color: #000">view</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>                                     <span style="color: #8F5902; font-style: italic"># 当前视图</span>
+    <span style="color: #000">seq</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">int</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #0000CF; font-weight: bold">0</span>                                     <span style="color: #8F5902; font-style: italic"># 主节点用来分配序号</span>
+    <span style="color: #000">log</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">[</span><span style="color: #204A87">str</span><span style="color: #000; font-weight: bold">]</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">field</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">default_factory</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #204A87">list</span><span style="color: #000; font-weight: bold">)</span>     <span style="color: #8F5902; font-style: italic"># 已 commit 的请求列表</span>
+    <span style="color: #000">prepares</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">field</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">default_factory</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #204A87">dict</span><span style="color: #000; font-weight: bold">)</span>     <span style="color: #8F5902; font-style: italic"># 收到的 PREPARE 集合</span>
+    <span style="color: #000">commits</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">field</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">default_factory</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #204A87">dict</span><span style="color: #000; font-weight: bold">)</span>      <span style="color: #8F5902; font-style: italic"># 收到的 COMMIT 集合</span>
+    <span style="color: #000">vc_votes</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">dict</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">field</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">default_factory</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #204A87">dict</span><span style="color: #000; font-weight: bold">)</span>     <span style="color: #8F5902; font-style: italic"># 视图切换投票</span>
+    <span style="color: #000">byzantine</span><span style="color: #000; font-weight: bold">:</span> <span style="color: #204A87">bool</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #204A87; font-weight: bold">False</span>                           <span style="color: #8F5902; font-style: italic"># 是否拜占庭主节点（仅演示用）</span>
 
     <span style="color: #204A87; font-weight: bold">def</span><span style="color: #F8F8F8"> </span><span style="color: #000">quorum</span><span style="color: #000; font-weight: bold">(</span><span style="color: #3465A4">self</span><span style="color: #000; font-weight: bold">)</span> <span style="color: #CE5C00; font-weight: bold">-&gt;</span> <span style="color: #204A87">int</span><span style="color: #000; font-weight: bold">:</span>
         <span style="color: #204A87; font-weight: bold">return</span> <span style="color: #0000CF; font-weight: bold">2</span> <span style="color: #CE5C00; font-weight: bold">*</span> <span style="color: #3465A4">self</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">f</span> <span style="color: #CE5C00; font-weight: bold">+</span> <span style="color: #0000CF; font-weight: bold">1</span>   <span style="color: #8F5902; font-style: italic"># n=4 → 3</span>

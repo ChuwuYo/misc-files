@@ -55,7 +55,7 @@ contract MyVault is ERC4626 {
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {MyVault} from "../src/MyVault.sol";

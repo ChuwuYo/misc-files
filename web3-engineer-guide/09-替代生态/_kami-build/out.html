@@ -834,7 +834,7 @@ Tron · Hedera · 并行 EVM · Hyperliquid · 等</p>
 
 <blockquote>
 <p><strong>TL;DR</strong>：非 EVM 世界有四套根本不同的世界观。看懂这张表，后面所有章节的"为什么这么设计"就不陌生了。</p>
-<p><strong>场景钩子</strong>：2024 年初，一个 EVM 老兵同时拿到三家公司的面试题。Solana 要他解释为什么转账要"显式列账户"；Cosmos 要他设计一条 RWA 应用链；Sui 要他用线性类型重写 ERC-20。三道全错——不是不会写代码，而是<strong>心智模型错了</strong>：他在用"合约 + mapping"的脑回路看四个完全不同的世界。</p>
+<p><strong>场景钩子</strong>：2024 年初，一个 EVM 老兵同时拿到三家公司的面试题。Solana 要他解释为什么转账要"显式列账户"；Cosmos 要他设计一条 RWA 应用链；Sui 要他用线性类型重写 ERC-20。三道全错——不是不会写代码，而是<strong>心智模型错了</strong>：他在用"合约 + mapping"的脑回路看五个完全不同的世界（含其他主流）。</p>
 </blockquote>
 <h3 id="m01">M0.1 四大族一览</h3>
 <table>
@@ -1209,7 +1209,7 @@ OP_DUP OP_HASH160 &lt;pubkey_hash&gt; OP_EQUALVERIFY OP_CHECKSIG
 <h2 id="0-evm" id="ch11"><span class="chapter-num">Chapter 11</span><br>0 · 导论：EVM 不是世界的中心</h2>
 
 <blockquote>
-<p><strong>场景钩子</strong>：2024 年初，一个老 EVM 工程师同时拿到三家公司的面试题。Solana 公司让他解释为什么转账要"显式列账户"；Cosmos 公司让他设计一条 RWA 应用链；Sui 公司让他用线性类型重写 ERC-20。他三道全错——不是不会写代码，而是<strong>心智模型不对</strong>：他在用"合约 + mapping"的脑回路看四个完全不同的世界。本章先把这四套世界观摆上桌：Solana 把 EVM"通用服务器"做到极致，Cosmos 让每个应用自己当链，Move 把资产做成编译期不可复制的对象，Bitcoin 干脆<strong>故意不图灵完备</strong>。理解这四种"反 EVM"动机，才能读懂后面 53 章。</p>
+<p><strong>场景钩子</strong>：2024 年初，一个老 EVM 工程师同时拿到三家公司的面试题。Solana 公司让他解释为什么转账要"显式列账户"；Cosmos 公司让他设计一条 RWA 应用链；Sui 公司让他用线性类型重写 ERC-20。他三道全错——不是不会写代码，而是<strong>心智模型不对</strong>：他在用"合约 + mapping"的脑回路看五个完全不同的世界（含其他主流）。本章先把这五套世界观摆上桌：Solana 把 EVM"通用服务器"做到极致，Cosmos 让每个应用自己当链，Move 把资产做成编译期不可复制的对象，Bitcoin 干脆<strong>故意不图灵完备</strong>，其他主流（TON/NEAR/Polkadot/Cardano 等）作为附录单列。理解这几种"反 EVM"动机，才能读懂本模块主线 + 附录。</p>
 </blockquote>
 <h3 id="01-evm">0.1 为什么要学非 EVM</h3>
 <p>EVM 解决的是"通用应用服务器"问题；其他生态要么把这个问题做得更极致（Solana），要么换个问法（Cosmos、Move、Bitcoin）。</p>
@@ -1441,7 +1441,7 @@ DEX 撮合账户       ←  owner = DEX Program
 
 <blockquote>
 <p><strong>场景钩子</strong>：2017 年 Anatoly 在 Loom 第一次画 PoH 草图时，跟同事 Greg Fitzgerald 解释："想象沙漏——只不过是密码学沙漏。下面那粒沙没漏完，上面这粒就不可能存在。"SHA-256 是单线程不可并行的，把它当作"沙漏的下一粒沙"就拿到了一条<strong>全网都能本地验证的时间轴</strong>——共识协议不再需要花一半时间互相喊"现在几点"。这就是 PoH。常被人误解为"PoH 替代了 PoS"，<strong>完全不对</strong>：PoH 只是共识下面的时钟。</p>
-<p>共识基础与 Tower BFT 完整对比见模块 02 第 25-26 节。本节只讲 PoH 在 Solana 系统里独有的东西：它<strong>不是共识</strong>，是写在共识下面的时钟。</p>
+<p>共识基础与 Tower BFT 完整对比见模块 02 §8.2。本节只讲 PoH 在 Solana 系统里独有的东西：它<strong>不是共识</strong>，是写在共识下面的时钟。</p>
 </blockquote>
 <p>PoH = 严格顺序的 SHA-256 哈希链：$h_{n+1} = \text{SHA256}(h_n)$（含事务时 $h_{n+1} = \text{SHA256}(h_n \,|\, \text{tx_data})$，事务被不可篡改地嵌入时间轴）。SHA-256 不可并行，leader 把事务 hash 喂进去就把它"钉"在这条链的某个位置。</p>
 <p><strong>为什么这件事有用</strong>——共识协议要交换"现在几点"，O(n²) 通信。Solana 让 PoH 隐含全部时序，共识只需投"哪条 fork"。三个直接红利：</p>
@@ -1462,7 +1462,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <h2 id="3-tower-bft-ncn" id="ch14"><span class="chapter-num">Chapter 14</span><br>3 · Tower BFT 与 NCN</h2>
 
 <blockquote>
-<p>Tower BFT 算法骨架与 PBFT/CometBFT 横向对比见模块 02 §6（PBFT 系）/ §7（HotStuff）/ §8（Solana）。本节只讲 Solana 工程师必须知道的两件事：<strong>finality 数字</strong>和 <strong>Jito NCN</strong>。</p>
+<p>Tower BFT 算法骨架与 PBFT/CometBFT 横向对比见模块 02 附录 A.8（PBFT 系）/ §7（HotStuff）/ §8（Solana）。本节只讲 Solana 工程师必须知道的两件事：<strong>finality 数字</strong>和 <strong>Jito NCN</strong>。</p>
 </blockquote>
 <p><strong>Finality 数字</strong>（用来回答"我等几秒可以发货"）：</p>
 <ul>
@@ -2384,7 +2384,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <h2 id="15-cometbft" id="ch27"><span class="chapter-num">Chapter 27</span><br>15 · CometBFT 工程要点</h2>
 
 <blockquote>
-<p>CometBFT 算法（PBFT 派生、commit 即 final、1/3 BFT 容忍）见模块 02 §10。本节只讲 Cosmos 工程师常踩的两个坑：<strong>ABCI++ 介入点</strong>和 <strong>v0.38 / v0.39 选哪个</strong>。</p>
+<p>CometBFT 算法（PBFT 派生、commit 即 final、1/3 BFT 容忍）见模块 02 §6（Tendermint/CometBFT）。本节只讲 Cosmos 工程师常踩的两个坑：<strong>ABCI++ 介入点</strong>和 <strong>v0.38 / v0.39 选哪个</strong>。</p>
 </blockquote>
 <p><strong>ABCI++（v0.38 引入）</strong>让应用层在 propose / vote 阶段插手共识——这是 dYdX 把 orderbook 撮合放进 <code>PrepareProposal</code> / <code>ProcessProposal</code> 的原因。三个新钩子：</p>
 <table>
@@ -2774,7 +2774,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <h3 id="193-ignite">19.3 实战：用 Ignite 起一条链</h3>
 <p>完整步骤见 <code>code/cosmos/README.md</code>。最小路径：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 1) 装 Ignite v28</span>
-curl<span style="color: #F8F8F8"> </span>https://get.ignite.com/cli!<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash
+curl<span style="color: #F8F8F8"> </span>https://get.ignite.com/cli<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash
 
 <span style="color: #8F5902; font-style: italic"># 2) 一键脚本（创建 blogchain + blog module + post CRUD）</span>
 <span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code/cosmos
@@ -3066,7 +3066,7 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 3. shared object 的写走 Mysticeti 共识排序</p>
 <h3 id="213-mysticeti">21.3 Mysticeti 双轨共识</h3>
 <blockquote>
-<p>Mysticeti DAG 算法（Narwhal/Bullshark 派生）见模块 02 §24。本节讲 Sui 工程师必须懂的工程后果：<strong>owned 对象走 Fast Path 不进共识</strong>。</p>
+<p>Mysticeti DAG 算法（Narwhal/Bullshark 派生）见模块 02 附录 A.12 / 附录 D。本节讲 Sui 工程师必须懂的工程后果：<strong>owned 对象走 Fast Path 不进共识</strong>。</p>
 </blockquote>
 <figure><img src="diagram-ffc3def4b9.png" alt="mermaid diagram"></figure>
 
@@ -3120,7 +3120,7 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 <h2 id="22-aptos-block-stm" id="ch35"><span class="chapter-num">Chapter 35</span><br>22 · Aptos 全局存储与 Block-STM</h2>
 
 <blockquote>
-<p><strong>场景钩子</strong>：Diem 团队解散时，CEO Mo Shaikh 与 CTO Avery Ching 拐弯做了 Aptos——保留 Diem 原版"资源挂在 address 下"的存储模型（用着舒服），但执行层换成了<strong>乐观并行 Block-STM</strong>：所有事务先假装无冲突并行跑，事后用 multi-version storage 检测冲突，撞了就回滚重排。这条路反过来挑战 Sui："你不需要让用户思考 owned/shared，并行让虚拟机自己处理。"Aptos 与 Sui 同月主网（2022-10），但两家在 Move 标准库、token 规范、共识算法上几乎彻底分家。今天 Sui TVL ≈ 1B、Aptos ≈ 500M——技术上分庭抗礼，市场口碑略有差距。</p>
+<p><strong>场景钩子</strong>：Diem 团队解散时，CEO Mo Shaikh 与 CTO Avery Ching 拐弯做了 Aptos——保留 Diem 原版"资源挂在 address 下"的存储模型（用着舒服），但执行层换成了<strong>乐观并行 Block-STM</strong>：所有事务先假装无冲突并行跑，事后用 multi-version storage 检测冲突，撞了就回滚重排。这条路反过来挑战 Sui："你不需要让用户思考 owned/shared，并行让虚拟机自己处理。"Aptos 2022-10-17 主网；Sui 2023-05-03 主网（差 7 个月，非同月），两家在 Move 标准库、token 规范、共识算法上几乎彻底分家。今天 Sui TVL ≈ 1B、Aptos ≈ 500M——技术上分庭抗礼，市场口碑略有差距。</p>
 </blockquote>
 <h3 id="221-aptos">22.1 Aptos 的全局存储模型</h3>
 <p>Aptos 沿用 Diem Move 的"resource lives at an address"风格，资源<strong>挂在某个 address 的 storage slot 上</strong>，不是独立对象。</p>
@@ -5122,7 +5122,7 @@ $$</p>
 <blockquote>
 <p><strong>场景钩子</strong>：Silvio Micali 是图灵奖得主、零知识证明发明人之一、MIT 终身教授——2017 年他 70 岁了，决定亲自做一条链。他对其他 PoS 设计的批评一针见血："让全员投票太慢、太容易被腐蚀"。Algorand 的解法是用 <strong>VRF 每轮抽 ~1000 人临时组委员会</strong>，对手根本无法预测下一个 leader → 抗 grinding、抗分叉。Silvio 的数学证明非常严谨："committee 不冲突 ⇒ 不出现自然分叉"。但学院派教授做产品也有代价：8 年过去，Algorand TVL/DAU 远不如 Solana/Sui——<strong>算法的优雅与生态的繁荣，在加密世界经常背离。</strong></p>
 </blockquote>
-<p><strong>心智迁移点</strong>：CometBFT/Tower BFT 让全员投票；Algorand 用 <strong>VRF 抽 ~1000 人</strong>临时组委员会，对手无法预测下一个 leader → 抗 grinding、抗分叉。Silvio Micali 把"committee 不冲突 ⇒ 不出现自然分叉"作为核心论证。共识细节见模块 02 §13。</p>
+<p><strong>心智迁移点</strong>：CometBFT/Tower BFT 让全员投票；Algorand 用 <strong>VRF 抽 ~1000 人</strong>临时组委员会，对手无法预测下一个 leader → 抗 grinding、抗分叉。Silvio Micali 把"committee 不冲突 ⇒ 不出现自然分叉"作为核心论证。共识细节见模块 02 附录 A.5。</p>
 <h3 id="421-avm-v10-dynamic-round-times">42.1 AVM v10 与 Dynamic Round Times</h3>
 <ul>
 <li><strong>TEAL</strong>（Algorand 的低级合约语言）→ <strong>PyTeal</strong>（Python DSL）→ <strong>Algorand Python</strong>（2024+）</li>
@@ -5498,7 +5498,7 @@ $$</p>
 <blockquote>
 <p><strong>场景钩子</strong>：Leemon Baird 是空军学院密码学教授，2016 年发明 Hashgraph 共识算法（gossip-about-gossip + virtual voting）——并把它<strong>申请了专利</strong>。这在开源至上的区块链世界里被骂得狗血淋头："专利共识？算什么 Web3？" 但 Leemon 没在意，他把 Hedera 做成<strong>企业链</strong>：39 家全球企业（IBM、Google、波音、LG、McLaren）实体董事会治理，固定低 gas（$0.0001/tx），carbon-negative。普通工程师可能一辈子用不上 Hedera，但全球 RWA、企业供应链、合规稳定币这块市场，Hedera 是能数得上的几条链之一。2026-03 Agent Lab 上线后，是非 Solana 阵营第一条把 AI Agent 做成顶级产品的链。</p>
 </blockquote>
-<p><strong>心智迁移点</strong>：Solana 全开放、Cosmos 治理由 token 持有者投票；Hedera 由 <strong>39 家全球企业</strong>（IBM、Google、波音、LG、McLaren）组成实体董事会治理，以"企业可信度"换"非完全去中心化"。共识 Hashgraph（gossip-about-gossip + virtual voting）见模块 02 §22；<strong>算法是 Hedera 独家专利</strong>，这点与所有开源链截然不同。</p>
+<p><strong>心智迁移点</strong>：Solana 全开放、Cosmos 治理由 token 持有者投票；Hedera 由 <strong>39 家全球企业</strong>（IBM、Google、波音、LG、McLaren）组成实体董事会治理，以"企业可信度"换"非完全去中心化"。共识 Hashgraph（gossip-about-gossip + virtual voting）见模块 02 附录 A 横评（Hashgraph 行）；<strong>算法是 Hedera 独家专利</strong>，这点与所有开源链截然不同。</p>
 <h3 id="471">47.1 服务体系</h3>
 <table>
 <thead>
@@ -6430,19 +6430,19 @@ $$</p>
 <ul>
 <li><a href="https://www.anchor-lang.com/docs/updates/release-notes/0-31-0">Anchor 0.31.0 Release Notes</a></li>
 <li><a href="https://www.anchor-lang.com/docs/installation">Anchor &amp; Solana CLI Installation</a></li>
-<li><a href="https://blockeden.xyz/blog/2026/03/16/solana-client-diversity-agave-firedancer-1m-tps-mainnet-validator-ecosystem/">Solana Client Diversity Report (BlockEden, 2026-03)</a></li>
-<li><a href="https://www.celebremagazine.world/business/what-firedancer-actually-changes-for-solana-developers-in-2026/">What Firedancer changes for Solana developers in 2026</a></li>
+<li><a href="https://blockeden.xyz/blog/2026/03/16/solana-client-diversity-agave-firedancer-1m-tps-mainnet-validator-ecosystem/">Solana Client Diversity Report (BlockEden, 2026-03)</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
+<li><a href="https://www.celebremagazine.world/business/what-firedancer-actually-changes-for-solana-developers-in-2026/">What Firedancer changes for Solana developers in 2026</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
 <li><a href="https://www.solana-program.com/docs/token-2022">Token-2022 Spec &amp; Extensions</a></li>
 <li><a href="https://www.zkcompression.com/home">Light Protocol ZK Compression</a></li>
 <li><a href="https://www.cosmoslabs.io/blog/the-cosmos-stack-roadmap-2026">Cosmos Stack Roadmap 2026 (Cosmos Labs)</a></li>
-<li><a href="https://www.rarebitcoin.id/2026/04/cosmos-sdk-v053-major-upgrade-for-terra.html">Cosmos SDK v0.53 Notes</a></li>
+<li><a href="https://www.rarebitcoin.id/2026/04/cosmos-sdk-v053-major-upgrade-for-terra.html">Cosmos SDK v0.53 Notes</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
 <li><a href="https://github.com/cosmos/ibc-go/releases">ibc-go Releases</a></li>
 <li><a href="https://babylonlabs.io/blog/babylon-bitcoin-staking-mainnet-launch-phase-1">Babylon Bitcoin Staking Mainnet Phase-1</a></li>
 <li><a href="https://blog.berachain.com/blog/berachain-v2-an-explanation-of-the-changes-how-it-affects-pol-dynamics-and-why-its-an-important-next-step">Berachain V2 Upgrade</a></li>
 <li><a href="https://www.sei.io/">Sei v2 EVM-Only Migration (2026-04)</a></li>
 <li><a href="https://blog.sui.io/mysticeti-v2-sui-consensus/">Mysticeti v2 Performance Notes</a></li>
-<li><a href="https://blockeden.xyz/blog/2026/02/08/movevm-blockchain-comparison-sui-aptos-initia/">MoveVM Wars 2026 (BlockEden)</a></li>
-<li><a href="https://blockeden.xyz/blog/2026/03/11/aptos-vs-sui-move-language-twin-stars-compared/">Aptos vs Sui in 2026 (BlockEden)</a></li>
+<li><a href="https://blockeden.xyz/blog/2026/02/08/movevm-blockchain-comparison-sui-aptos-initia/">MoveVM Wars 2026 (BlockEden)</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
+<li><a href="https://blockeden.xyz/blog/2026/03/11/aptos-vs-sui-move-language-twin-stars-compared/">Aptos vs Sui in 2026 (BlockEden)</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
 <li><a href="https://www.npmjs.com/package/@mysten/sui">@mysten/sui npm</a></li>
 <li><a href="https://www.theblock.co/post/387140/zk-powered-bitcoin-layer-2-citrea-launches-mainnet">Citrea Mainnet Launch (The Block, 2026-01)</a></li>
 <li><a href="https://www.kucoin.com/blog/bitcoin-inscriptions-2026-ordinals-guide">Bitcoin Inscriptions 2026 (KuCoin)</a></li>
@@ -6464,7 +6464,7 @@ $$</p>
 <li><a href="https://github.com/Squads-Protocol/v4">Squads V4 GitHub</a></li>
 <li><a href="https://docs.squads.so/main">Squads Multisig Docs</a></li>
 <li><a href="https://www.theblock.co/post/365600/solana-mobile-seeker-crypto-smartphone">Solana Mobile Seeker shipping (The Block)</a></li>
-<li><a href="https://blockeden.xyz/blog/2026/01/25/solana-mobile-skr-token-seeker-web3-smartphone-revolution/">Solana Mobile SKR Token Launch (BlockEden 2026-01)</a></li>
+<li><a href="https://blockeden.xyz/blog/2026/01/25/solana-mobile-skr-token-seeker-web3-smartphone-revolution/">Solana Mobile SKR Token Launch (BlockEden 2026-01)</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
 <li><a href="https://cosmos.network/ibc-eureka">IBC Eureka Goes Live (Cosmos Network 2025-04)</a></li>
 <li><a href="https://www.chainfacts.com/news/2026-01-13-cosmos-ibc-eureka">IBC Eureka Bridges Cosmos and Ethereum 2026-01</a></li>
 <li><a href="https://blog.succinct.xyz/ibc/">Succinct: Unites 120 Cosmos Chains with Ethereum</a></li>
@@ -6497,7 +6497,7 @@ $$</p>
 <li><a href="https://github.com/near/mpc">NEAR MPC GitHub</a></li>
 <li><a href="https://wiki.polkadot.com/learn/learn-jam-chain/">Polkadot JAM Chain Wiki</a></li>
 <li><a href="https://forum.polkadot.network/t/polkadot-3-0-the-jam-upgrade/13834">Polkadot 3.0 (the JAM upgrade) Forum</a></li>
-<li><a href="https://blockeden.xyz/blog/2025/10/28/jam-chain-polkadot-s-paradigm-shift-toward-the-decentralized-global-computer/">JAM Testnet Launch 2026-01 (BlockEden)</a></li>
+<li><a href="https://blockeden.xyz/blog/2025/10/28/jam-chain-polkadot-s-paradigm-shift-toward-the-decentralized-global-computer/">JAM Testnet Launch 2026-01 (BlockEden)</a>（社区/聚合源，技术细节以官方 docs 为准）</li>
 <li><a href="https://cardano.org/news/2025-01-23-explainer-the-plomin-hard-fork/">Cardano Plomin Hard Fork (Cardano Foundation)</a></li>
 <li><a href="https://cardano.org/news/2026-03-20-weekly-development-report/">Cardano Weekly Dev Report 2026-03</a></li>
 <li><a href="https://coinmarketcap.com/cmc-ai/hedera/latest-updates/">Hedera Agent Lab Launch (CMC AI 2026-03)</a></li>

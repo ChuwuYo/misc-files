@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.25;
+pragma solidity 0.8.28;
 
 /// @title 经典经典重入：先转账后改状态
 /// @notice 还原 The DAO（2016 年 6 月 17 日）的核心错误：状态更新晚于外部调用。

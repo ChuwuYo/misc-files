@@ -896,7 +896,7 @@ const isValid = off.verifyOffchainAttestationSignature(attesterAddr, signedAttes
 
 ### H.1 BAYC 230 万被盗：Wyvern calldata 漏洞（2022-02）
 
-损失 $1.7M / 254 NFT（含 BAYC #3475）。Wyvern v2 允许订单创建后修改 calldata，攻击者拿"半填"订单签名后补 calldata 把 NFT 转出。Seaport 修复：calldata 进 hash。
+损失 $1.7M / 254 NFT（含 BAYC #3475）。OpenSea **stale listing** 漏洞——用户跨钱包转移 NFT 后旧低价挂单未失效，攻击者按旧低价 fill；与 Wyvern calldata 篡改无关。
 
 **教训**：用户绝不签看不懂的 typed data；EIP-712 + 钱包 message preview 必备。
 

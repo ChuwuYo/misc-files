@@ -17,7 +17,7 @@ export default function Home() {
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h1>Module 10：前端与账户抽象</h1>
-          <p className="muted">Next.js 15 · viem 2.47 · wagmi 2.18 · RainbowKit 2.2 · permissionless 0.2 · NextAuth v5</p>
+          <p className="muted">Next.js 15 · viem 2.43.3 · wagmi 2.18 · RainbowKit 2.2 · permissionless 0.2 · NextAuth v5</p>
         </div>
         <Connect />
       </header>

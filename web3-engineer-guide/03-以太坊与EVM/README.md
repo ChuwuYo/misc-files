@@ -148,7 +148,7 @@ EVM 不是一次设计完的。它是被一拳一拳打出来的形状：DAO 被
 
 以太坊历史上最尴尬也最关键的一次分叉。
 
-The DAO 是当时全世界最大的众筹合约，募了 1150 万 ETH（≈$1.5 亿，2016 年的 1.5 亿）。它的 `splitDAO` 函数干了一件经典蠢事：**先把钱转给你，再扣你的余额**。攻击者发现这个顺序后，做了个会回头再调一次 `splitDAO` 的合约——钱还没扣，又能再领一份；递归下去，他抽走了 360 万 ETH。
+The DAO 是当时全世界最大的众筹合约，募了约 1180-1270 万 ETH（2016-05 高峰估值约 $150M，但 2016-06 攻击日 ETH 价已下跌）。它的 `splitDAO` 函数干了一件经典蠢事：**先把钱转给你，再扣你的余额**。攻击者发现这个顺序后，做了个会回头再调一次 `splitDAO` 的合约——钱还没扣，又能再领一份；递归下去，他抽走了 360 万 ETH。
 
 社区分裂成两派：一派说"代码即法律，认栽"，另一派说"我们是人不是教条"。最后硬分叉把那笔钱回滚了，没回滚的那条链留下来叫 **Ethereum Classic**（ETC），回滚的那条就是今天的 **Ethereum**。这次事件留下的两份遗产至今仍是 Solidity 程序员的肌肉记忆：**Checks-Effects-Interactions** 模式（先改余额再转账）和 **ACD 公开讨论惯例**（核心决策不再黑箱）。
 
@@ -1144,10 +1144,6 @@ forge test -vvvv --match-contract StackPlayTest
 
 ---
 
-<!-- §12 USDC trace 详细内容已移至附录 F -->
-
----
-
 ## 14 事件与 logs
 
 打开 Etherscan 任何一笔交易，下面那一长串"Transfer"、"Approval"、"Swap" 是怎么来的？
@@ -1845,7 +1841,7 @@ Hegota 升级时同时维护 MPT + Verkle：
 
 #### C.2.5 EIP-7736：leaf-level state expiry（依赖 Verkle）
 
-Verkle extension-and-suffix 子树加访问计数器，过期 = 删除该子树。只有 Verkle 上线后方可实施，详见 §24。
+Verkle extension-and-suffix 子树加访问计数器，过期 = 删除该子树。只有 Verkle 上线后方可实施，详见 §C.3。
 
 ---
 
@@ -2181,8 +2177,6 @@ curl -X POST http://localhost:8551 \
 
 ---
 
-<!-- §28 USDC 字节码详细 walkthrough 已移至附录 F -->
-
 ## 附录 H. Pectra 一年后的现场观察（2026-04）
 
 写在 2026-04，Pectra 上线 11 个月。这种"上线一年后回头看"的复盘往往比 EIP 提案本身更有信息量——提案画的饼是甜的，现场吃下去是甜是苦得自己尝。
@@ -2228,5 +2222,3 @@ L2 swap 费从几美分降至零点几美分；每天 rollup blob 数从 ~21,300
 ### 29.5 Prysm 事件复盘
 
 2025-12-10（Fusaka 后 7 天），Prysm v6.0.4 在 PeerDAS 数据列处理路径有 race condition，~38% validator attestation miss，finality 一度从 99.9% 降至 75%，但没有 fork——其他四 CL 合计份额 > 33%，链没断。事件后 lighthouse / teku 份额各涨 ~5%。客户端多样性是协议层防线而非营销话术，正是这一节的实证。
-
-<!-- §30 延伸阅读已移至主线 §21 -->

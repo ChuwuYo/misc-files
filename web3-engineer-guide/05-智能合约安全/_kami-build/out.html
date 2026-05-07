@@ -776,6 +776,7 @@
 <h2 id="2" id="ch04"><span class="chapter-num">Chapter 04</span><br>2. 重入家族</h2>
 
 <blockquote>
+<p>本节是重入主讲（漏洞 + PoC + 真实案例）；CEI 模式直觉补充见模块 04 §8.1</p>
 <p><strong>TL;DR</strong>：<code>call</code> 把执行权交出去，对方可以回调你。状态没更新时被回调 = 重入。修复：CEI 顺序 + <code>nonReentrant</code>。read-only 重入是 view 函数读到脏状态用于定价。</p>
 <p><strong>钩子</strong>：银行柜员把钱递出去之后才在账本上划掉余额——你拿到现金，转身又排队，账本说"你还有 1 ETH"，柜员说"好的，再来一份"。重入就是这种"趁柜员转身的瞬间二次取款"。The DAO 2016 年用这招抽走 6000 万；Curve Vyper 编译器 2023 年被同招换皮，赔进去 7000 万。</p>
 </blockquote>
@@ -919,7 +920,7 @@
 
 <blockquote>
 <p><strong>TL;DR</strong>：直接读 DEX <code>getReserves()</code> 作价格，闪电贷一笔 swap 拉任意比例。修复：TWAP ≥ 30min + Chainlink 4 项检查。池子流动性 / 受害协议 TVL &lt; 0.5% 时攻击必盈利。</p>
-<p><strong>钩子</strong>：2022 年 10 月，Eisenberg 用 1000 万 USDC 把 MNGO 现货价在 20 分钟内拉了 11 倍，再抵押这堆"账面浮盈"借走金库 1.16 亿美元——估值用的就是他刚拉爆的那个价格。他叫这"高度盈利的交易策略"。<strong>Oracle 操纵的本质：给协议看一个你单方面捏造的"市场价"</strong>。</p>
+<p><strong>钩子</strong>：2022 年 10 月，Eisenberg 跨两账号合计约 $10M USDC 起手，把 MNGO 现货价在 20 分钟内拉了 11 倍，再抵押这堆"账面浮盈"借走金库 1.16 亿美元——估值用的就是他刚拉爆的那个价格。他叫这"高度盈利的交易策略"。<strong>Oracle 操纵的本质：给协议看一个你单方面捏造的"市场价"</strong>。</p>
 </blockquote>
 <h3 id="31">3.1 漏洞描述</h3>
 <p>直接读 DEX <code>getReserves()</code> 作价格 → 闪电贷一笔 swap 拉任意比例。Uniswap V2 invariant $x \cdot y = k$，投入 $\Delta x$ 后：</p>
@@ -1141,7 +1142,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <p>来源：<a href="https://www.sygnia.co/blog/sygnia-investigation-bybit-hack/">Sygnia</a>、<a href="https://www.wiz.io/blog/north-korean-tradertraitor-crypto-heist">Wiz</a>、<a href="https://www.ic3.gov/psa/2025/psa250226">FBI IC3 PSA 250226</a>、<a href="https://www.nccgroup.com/research/in-depth-technical-analysis-of-the-bybit-hack/">NCC Group</a>、<a href="https://www.bleepingcomputer.com/news/security/lazarus-hacked-bybit-via-breached-safe-wallet-developer-machine/">BleepingComputer</a>。</p>
 <figure><pre><code class="language-mermaid">timeline
     title Bybit Heist（DPRK / TraderTraitor / UNC4899）
-    数月前 : 假招聘 + 钓鱼 macOS dev → Safe.global 工程师中招
+    数月前 : 假招聘 + 钓鱼 macOS dev → Safe{Wallet} 一名 Developer (Developer1)，攻击者拿到其 AWS session token 直接侵入 Safe AWS 基础设施
     2025-02-04 : macOS RAT 持久化
     2025-02-17 : AWS C2 上线
     2025-02-19 15:29 UTC : 替换 app.safe.global S3 JS（仅对 Bybit cold wallet 生效）
@@ -1163,6 +1164,7 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <h2 id="5-eip-712" id="ch07"><span class="chapter-num">Chapter 07</span><br>5. 签名重放 / EIP-712 钓鱼</h2>
 
 <blockquote>
+<p>本节聚焦签名钓鱼防御；EIP-712 字段 + 前端实现见模块 10 §6</p>
 <p><strong>TL;DR</strong>：签名安全 = 5W：Who + What + Where（chainId+verifyingContract）+ When（deadline）+ Why-not-twice（nonce）。缺一 = 重放或仿冒。</p>
 <p><strong>钩子</strong>：2024 年深夜，PEPE 持有者在"Uniswap 克隆站"签了一个不需要 gas 的签名，钱包提示"无 tx 上链，安全"。三分钟后 139 万美元消失。<strong>用户以为"不上链 = 不花钱"，但链上把签名等同于盖章授权</strong>。Permit2 让这条攻击链完全链下——2024 年全年 Permit 钓鱼累计 &gt; 3 亿美元（ScamSniffer）。</p>
 </blockquote>
@@ -2301,7 +2303,7 @@ contract Attacker { receive() external payable { vault.withdraw(); } }
 </tbody>
 </table>
 <h3 id="f2-smtchecker">F.2 SMTChecker 示例</h3>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.25</span><span style="color: #000; font-weight: bold">;</span>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.28</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #8F5902; font-style: italic">// solc Tiny.sol --model-checker-engine all --model-checker-targets overflow,assert</span>
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">Tiny</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">safeAdd</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">a</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">b</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>pure<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>

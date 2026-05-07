@@ -1,6 +1,6 @@
 # 第 18 章 · MCP 协议与工具集成生态
 
-> 写在前面：本章基于 MCP 规范 2025-11-25 版本（即「One Year of MCP」周年版本）以及 2026 路线图撰写，覆盖 FastMCP 3.x、@modelcontextprotocol/sdk v1.x 以及主流客户端（Claude Desktop、Claude Code、Cursor、VS Code、Continue、Cline、Zed）的实际行为。读完本章，你应当能够：独立阅读 MCP spec 而不被术语挡住；从零搭一个生产可用的 MCP Server；把它接到任意一个 MCP Host；判断什么场景该用 MCP、什么场景该用 OpenAPI 或者直接 Function Calling；并且能在企业环境里把这套东西部署得安全、可观测、可治理。
+> 写在前面：本章基于 MCP 规范 2025-11-25 版本（即「One Year of MCP」周年版本）以及 2026 路线图撰写，覆盖 FastMCP 3.2.x、@modelcontextprotocol/sdk v1.29.x 以及主流客户端（Claude Desktop、Claude Code、Cursor、VS Code、Continue、Cline、Zed）的实际行为。读完本章，你应当能够：独立阅读 MCP spec 而不被术语挡住；从零搭一个生产可用的 MCP Server；把它接到任意一个 MCP Host；判断什么场景该用 MCP、什么场景该用 OpenAPI 或者直接 Function Calling；并且能在企业环境里把这套东西部署得安全、可观测、可治理。
 
 ---
 
@@ -159,7 +159,7 @@ Mcp-Session-Id: 0d4b1c9a-...
 
 Streamable HTTP 在 2026 年的核心痛点是水平扩展。规范要求 session 是有状态的（同一个 session id 必须路由到同一个 server 实例），这跟无状态负载均衡天然冲突。生产部署常见的解法有三种：粘性会话（sticky session，依赖 LB 的 cookie 或 IP hash）、共享会话存储（把 session 状态放 Redis）、以及彻底无状态（每次请求都重新走完 initialize，代价是首请延迟）。MCP 2026 路线图里明确把"无状态运行 + 可扩展会话处理"列为传输层优先项，预计 2026 年 6 月版本会正式落地新的会话模型。
 
-另外两个工程上的细节很容易被忽略。一是 **`Accept` 头**：客户端必须同时声明接受 `application/json` 与 `text/event-stream`，否则服务器无法在两种响应模式间切换；不少早期 client 实现漏写了 SSE 的 Accept，导致流式工具完全用不了。二是 **`Origin` 与 DNS rebinding 防御**：远程 MCP server 部署时一定要校验 `Origin` 头并配置严格的 CORS，否则浏览器内的恶意页面可以构造请求让 client 误连恶意 server，再通过 DNS rebinding 绕过同源限制。SDK 里都暴露了对应的开关，但默认值并不总是安全的，部署前务必检查。
+另外两个工程上的细节很容易被忽略。一是 **`Accept` 头**：客户端必须同时声明接受 `application/json` 与 `text/event-stream`，否则服务器无法在两种响应模式间切换；不少早期 client 实现漏写了 SSE 的 Accept，导致流式工具完全用不了。二是 **`Origin` 与 DNS rebinding 防御**：spec 明确要求 server 校验 `Origin` 头、对所有不在白名单的来源直接返 403，并且本地开发时只绑 `127.0.0.1` 而不是 `0.0.0.0`，避免被同网段或浏览器 DNS rebinding 探到。Python SDK 在 1.23.0 版本专门修过一轮 DNS rebinding 漏洞（影响 watsonx.data 等下游），FastMCP 与 TS SDK 都暴露了 `allowedOrigins` / `TransportSecuritySettings` 这类开关，但默认值并不总是安全的——部署前必看一遍。
 
 ### 18.3.4 WebSocket：实验中的双向流
 
@@ -482,7 +482,7 @@ def main() -> None:
     mcp.run(transport="http", host="0.0.0.0", port=8765, path="/mcp")
 ```
 
-随后用 uvicorn / gunicorn 包一层进容器，前面挂 nginx 或者 traefik 做 TLS 与限流。`Mcp-Session-Id` 头部由 FastMCP 自动管理。如果你需要鉴权，FastMCP 3 的中间件接口支持自定义 ASGI middleware，可以接 OAuth 2.1 Resource Server 模式（这是 spec 推荐的远程鉴权方案，2025 春季版本起进入正式 spec）。
+随后用 uvicorn / gunicorn 包一层进容器，前面挂 nginx 或者 traefik 做 TLS 与限流。`Mcp-Session-Id` 头部由 FastMCP 自动管理。如果你需要鉴权，FastMCP 3 的中间件接口支持自定义 ASGI middleware，可以接 OAuth 2.1 Resource Server 模式（这是 spec 推荐的远程鉴权方案，2025-06-18 版本正式纳入主线，2025-11-25 版本进一步引入 CIMD 与企业托管授权扩展）。
 
 ### 18.5.6 几个常被忽视的 FastMCP 用法
 
@@ -534,8 +534,8 @@ local-search-mcp/
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.0",
-    "zod": "^3.23.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0",
     "fast-glob": "^3.3.2"
   },
   "devDependencies": {
@@ -673,7 +673,7 @@ await server.connect(transport);
 app.listen(8765);
 ```
 
-注意 `sessionIdGenerator` 与会话存储是水平扩展的关键。在多实例部署里你要么用 sticky session（最省事），要么把 transport 内部的 session 状态接到 Redis（SDK 1.18 起暴露了相关 hook）。
+注意 `sessionIdGenerator` 与会话存储是水平扩展的关键。在多实例部署里你要么用 sticky session（最省事），要么把 transport 内部的 session 状态接到 Redis（SDK 1.18 起暴露相关 hook，1.29 版本对接口做了进一步收敛）。
 
 ---
 
@@ -1069,13 +1069,23 @@ server 可以发送通知（无 id 的 JSON-RPC 消息）告知 client 某些事
 
 写这一章的时间点是 2026 年 5 月。MCP 这一年里发生的几件事值得记一笔，因为它们决定了你在工程决策时该把 MCP 放在多重的位置。
 
-**官方 server 几乎补齐了 SaaS 长尾**。GitHub、Notion、Slack、Linear、Atlassian、Cloudflare、AWS、Stripe、Sentry、Vercel、Supabase、Neon、PlanetScale、HubSpot、Salesforce 全部有了官方或半官方 MCP server。这意味着新写一个"AI 助手"产品时，绝大多数集成不再是"一个个对接 API"，而是"挑选已有 MCP server 列表"。
+**2025-11-25 spec 的几项硬性升级**值得开发者立刻吃下来：
+
+- **Tasks primitive**：任何请求都可以被升级成一个 Task，client 可以查询状态、阶段性拉取结果、在 server 设定的窗口期内取消。这把"长任务"从过去靠 progress notification 模拟的半残方案，正名成了一等公民——批量数据处理、远程 agent 调用、需要分钟级才能跑完的 tool 终于不必再阻塞 session。
+- **Sampling with Tools（SEP-1577）**：sampling 请求可以带上 tool definitions 与 tool choice，意味着 server 可以让 client 跑一次完整的 tool-using agent loop。"server 是 agent skill 的提供方"这个论调到 2025-11-25 才真正成立。
+- **Client ID Metadata Documents（CIMD）**：远程 server 的 OAuth 客户端注册不再需要每个 server 都跑一遍 dynamic client registration，client 通过一个公开的 metadata URL 自证身份，整套登录流程对企业 IdP 友好太多。
+- **Enterprise-Managed Authorization 扩展**：在企业 IdP 已经知道用户身份的前提下，可以跳过 OAuth 重定向、直接由 IdP 颁发面向某个 MCP server 的 token，这条路径专门为大公司"已经有 SSO，不想再多一套登录"的诉求设计。
+- **Extensions Framework**：spec 明确了"可选扩展如何命名、发现、协商"的规则，避免了过去厂商自行往 capabilities 里塞私货导致的互通问题。
+
+这五件事拼在一起的结果是：MCP 在 2025-11-25 完成了从"开发者协议"向"企业可用基础设施"的关键一跳。理解这一点，你写 server 时才不会在 2026 年把 long-running tool 还做成"靠 progress 假装"的形态。
+
+**官方 server 几乎补齐了 SaaS 长尾**。GitHub、Notion、Slack、Linear、Atlassian、Cloudflare、AWS、Stripe、Sentry、Vercel、Supabase、Neon、PlanetScale、HubSpot、Salesforce 全部有了官方或半官方 MCP server。这意味着新写一个"AI 助手"产品时，绝大多数集成不再是"一个个对接 API"，而是"挑选已有 MCP server 列表"。MCP Registry 在 2025 年 9 月推出之后，到 2026 年 5 月条目已经接近两千，比首批增长 4 倍以上。
 
 **跨厂商接受度**。OpenAI 在 2025 年下半年宣布 Codex CLI 与 ChatGPT Desktop 支持 MCP；Google Gemini CLI 在 2026 年初接入；Mistral、xAI 也都跟进。这件事的意义是 MCP 不再是 Anthropic 的专属生态，已经从协议变成了行业基础设施。
 
 **Apps**。FastMCP 3 引入的 Apps 机制（在对话里嵌入交互式 UI）开始被 Claude 与 Cursor 支持。一个 server 不只暴露 tool，还可以暴露一个用户能直接操作的小应用。这把 MCP 从"AI 调工具"扩展到"AI 主导但人也能操作的混合界面"。
 
-**2026 spec roadmap**。官方公布的优先项：无状态 session、跨 server 的"agent-to-agent"通信、官方 registry 标准化、更细粒度的权限模型（per-tool scope 而非 per-server scope）、async tool（长任务的工具不再阻塞 session）。这些会在 6 月版本里逐步落地。
+**2026 spec roadmap**。官方公布的优先项：无状态 session 与可扩展会话处理、跨 server 的 "agent-to-agent" 通信、官方 registry 标准化的进一步推进、更细粒度的权限模型（per-tool scope 而非 per-server scope）、以 Tasks primitive 为基础的更完整异步生命周期。注意 async/long-running tool 的核心机制（Tasks）已经在 2025-11-25 落地，2026 年的工作主要是把它做透——传输层无状态化、跨实例的任务路由、与 OAuth scope 的对齐。
 
 **反思与争议**。批评声音也存在：MCP 在 schema 严格性上不如 OpenAPI（部分老 server 的 inputSchema 写得很随意，模型容易调错）；多 server 装得多了，tool 列表太长，模型反而选不准（"tool overload"问题，社区在尝试 dynamic tool selection 与 hierarchical 工具组）；安全模型的边界仍然主要靠 host 自觉，规范层缺乏强制机制。这些都是真实的痛点，也是接下来一年会被解决或缓解的方向。
 
@@ -1109,7 +1119,9 @@ server 可以发送通知（无 id 的 JSON-RPC 消息）告知 client 某些事
 
 ### 18.14.2 通向下一章
 
-下一章会接续 MCP 进入更宽的话题：「Agent 编排与工作流」，在 MCP 提供的工具基底上，讨论怎么用 LangGraph、Mastra、Vercel AI SDK 等编排框架把多个 tool / 多个 LLM 调用拼成可控的工作流。MCP 把"工具能力"标准化了；工作流编排负责把这些能力组合成业务结果——这两层叠在一起，才是"AI 应用工程师"完整的工具箱。
+第 17 章讲清楚了 Agent 内部怎么跑，本章讲清楚了 Agent 之外怎么接——MCP 这一层把工具发现、权限协商、长任务、人机协作都收进了协议。但到此为止，工具与上下文几乎都默认是文本：JSON 参数、文本返回、文档 chunk。真实世界不是。
+
+下一章（第 19 章）转向多模态：图像、视频、语音、扫描件 PDF、多模态 RAG（ColPali / ColQwen2）这些"非文本"模态怎么进入 LLM 应用栈。其中很多能力（VLM 看图、Whisper 转写、TTS 输出、CosyVoice 克隆）都可以包成 MCP tool 或 resource 暴露给 Agent——本章给的协议基础到那时还会继续起作用。换句话说：第 17 章是 Agent 的内核，本章是 Agent 与外部世界之间的标准接口，第 19 章是这个外部世界本身有多丰富。三章合起来，Agent 才真正不只会聊天。
 
 到这里你已经具备了独立设计、开发、部署一个 MCP server 的能力。下一步建议你做的事情很具体：挑一个你日常用到的 SaaS（Notion、Jira、Slack、内部 wiki 都行），写一个最小 MCP server 把它的核心能力暴露出来，接进 Claude Desktop 自己用一周。一周之内你会遇到 schema 设计、错误处理、鉴权、安全过滤的所有典型问题——比读十篇博客都管用。MCP 的学习曲线在第一个 server 跑通之后就基本下滑了，剩下的都是工程深度。
 

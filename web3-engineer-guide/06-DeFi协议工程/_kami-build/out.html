@@ -599,7 +599,7 @@ M. 学习路径与项目案例
 <p>TL;DR：DeFi 是一组互相调用的状态机，每个状态机用自己的不变量约束代币流动。三件事区别于传统金融：可组合、无许可、24/7。事故 90% 出在"组合"上。</p>
 </blockquote>
 <h3 id="11">1.1 一个开场故事</h3>
-<p>2022 年 5 月 9 日凌晨，一个 Anchor 用户分两笔从协议里取出 3.75 亿 UST，扔进 Curve 3pool 卖出。72 小时后 UST 跌穿 $0.10，LUNA 供应从 7.25 亿炸到 70 亿，$400 亿市值蒸发。代码没出 bug——只是设计本身假设"无论何时都有人愿意用 1 LUNA 换 1 UST 套利"。</p>
+<p>2022 年 5 月 9 日凌晨，一个 Anchor 用户分两笔从协议里取出 3.75 亿 UST，扔进 Curve 3pool 卖出。72 小时后 UST 跌穿 $0.10，LUNA 供应从约 3.45 亿炸到约 6.5 万亿（19000 倍稀释），$400 亿市值蒸发。代码没出 bug——只是设计本身假设"无论何时都有人愿意用 1 LUNA 换 1 UST 套利"。</p>
 <p>银行的钱不会因为别人挤兑就消失，DeFi 会。原因是 DeFi 不是"金融的去中心化重构"，而是一组靠数学约束跑起来的状态机：合约是机器、不变量（$xy=k$、SY=PT+YT 之类）是约束、协议互相调用是粘合剂。事故几乎都长在"互相调用"那条缝上。</p>
 <h3 id="12">1.2 工程定义</h3>
 <blockquote>
@@ -952,6 +952,7 @@ $$</p>
 <h2 id="6" id="ch07"><span class="chapter-num">Chapter 07</span><br>第 6 章：预言机——链下价格怎么搬上链</h2>
 
 <blockquote>
+<p>本节是 Oracle 工程主讲（架构 + 选型 + 完整代码 + 案例复盘）；攻击家族直觉见模块 05 §3。</p>
 <p>TL;DR：合约里的价格不是凭空来的。<strong>Chainlink</strong> 节点主动推（push），<strong>Pyth</strong> 让消费者按需拉（pull），<strong>TWAP</strong> 用过去 N 分钟均价防操纵。oracle 是 DeFi 单类损失最大的攻击面——Mango $116M、Cream $130M、bZx 都是 oracle 攻击。</p>
 </blockquote>
 <h3 id="61-push-vs-pull">6.1 Push vs Pull（一张表）</h3>
@@ -992,7 +993,7 @@ $$</p>
 <p>不做 stale 检查 = 用 24 小时前的价格清算别人 = 灾难。<strong>RedStone</strong>（push+pull 双模）和 <strong>Chainlink Data Streams</strong>（pull 低延迟）是 2025-2026 增长最快的两家替代，模型上是 Chainlink/Pyth 的杂交。</p>
 <h3 id="62-mango-oracle">6.2 Mango 故事（oracle 攻击经典）</h3>
 <blockquote>
-<p>2022-10-11，Avi Eisenberg 用 $5M 在三家小盘 CEX 同时挂单把 MNGO 现货从 $0.04 拉到 $0.91（涨 22 倍）。Mango 的 oracle 老老实实把 MNGO 估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，把这笔虚高浮盈当抵押借走 $116M。<strong>整个攻击 20 分钟、合约按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。</p>
+<p>2022-10-11，Avi Eisenberg 用约 $10M USDC（CFTC 起诉书 / Halborn 复盘）在三家小盘 CEX 同时挂单把 MNGO 现货从 $0.04 拉到 $0.91（涨 22 倍）。Mango 的 oracle 老老实实把 MNGO 估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，把这笔虚高浮盈当抵押借走 $116M。<strong>整个攻击 20 分钟、合约按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。</p>
 </blockquote>
 <p>教训：① 用现货价做风控前先问"市场深度能撑多大操纵"；② 叠加 TWAP 或集中度阈值；③ Chainlink + 多源 + secondary oracle（Aave V3 做法）。<strong>Cream / bZx / Mango 三例完整复盘见附录 C</strong>。</p>
 <p>法律续集：Eisenberg 2024 年被判欺诈罪，2025 年法官以"Mango 没有用户协议、没有禁止操纵条款"为由 Rule 29 撤销有罪判决。检方上诉中。</p>
@@ -1150,19 +1151,19 @@ $$</p>
 <h3 id="92-ust-2022-05400">9.2 故事一：UST 死亡螺旋（2022-05，$400 亿）</h3>
 <h4 id="2831-ust-2022-05">28.3.1 UST 死亡螺旋（2022-05）</h4>
 <blockquote>
-<p>想象一栋楼有两部电梯：A 电梯（UST）说"我永远在 1 楼"、B 电梯（LUNA）说"我浮动"。规则是：A 不在 1 楼时，谁都能用 1 个 A 的票换"1 美元价值的 B 票"——市场会自动套利把 A 拽回 1 楼。<strong>这套机制在 LUNA 票还值钱时一直工作</strong>。问题来了：当 A 跌到 0.97、套利者大量铸 B 卖出，B 价格跌；A 还没回到 1 元、套利者要更多 B 票才换 1 美元价值；铸出的 B 更多被卖、B 价格继续跌。<strong>两部电梯互相往下拽——这就是死亡螺旋</strong>。2022-05-07 周末第一次脱锚开始，到 2022-05-13 一周内 UST 从 $1 跌到 $0.01、LUNA 从 $80 跌到 $0.0001、$400 亿市值蒸发。Do Kwon 流亡黑山被抓，2025 年在美国法院被判 36 个月（约 3 年）。</p>
+<p>想象一栋楼有两部电梯：A 电梯（UST）说"我永远在 1 楼"、B 电梯（LUNA）说"我浮动"。规则是：A 不在 1 楼时，谁都能用 1 个 A 的票换"1 美元价值的 B 票"——市场会自动套利把 A 拽回 1 楼。<strong>这套机制在 LUNA 票还值钱时一直工作</strong>。问题来了：当 A 跌到 0.97、套利者大量铸 B 卖出，B 价格跌；A 还没回到 1 元、套利者要更多 B 票才换 1 美元价值；铸出的 B 更多被卖、B 价格继续跌。<strong>两部电梯互相往下拽——这就是死亡螺旋</strong>。2022-05-07 周末第一次脱锚开始，到 2022-05-13 一周内 UST 从 $1 跌到 $0.01、LUNA 从 $80 跌到 $0.0001、$400 亿市值蒸发。Do Kwon 流亡黑山被抓，2025-12-11 美国南区法院判 <strong>25 年</strong>联邦监禁。</p>
 </blockquote>
 <p><strong>机制根因</strong>：UST 跌 → 套利者用 1 UST 换价值 $1 的 LUNA → 铸出的 LUNA 立刻被卖 → LUNA 价格跌 → 每 UST 换更多 LUNA → LUNA 供应爆炸——<strong>死亡螺旋</strong>。</p>
 <p><strong>时间线</strong>（来源：<a href="https://corpgov.law.harvard.edu/2023/05/22/anatomy-of-a-run-the-terra-luna-crash/">Anatomy of a Run 哈佛</a>、<a href="https://arxiv.org/pdf/2207.13914">Terra-Luna ScienceDirect</a>）：
 - 2022-05-07：两大地址从 Anchor 提走 $375M UST。Curve 3pool 出现 UST/3CRV 卖压。UST 跌到 ~$0.972。
 - 2022-05-09 至 10：LFG 卖 BTC 和 ~$480M USDT 护盘，无效。
 - 2022-05-10 至 13：UST 跌到 $0.30、$0.10、$0.01。LUNA 从 $80 跌到 $0.0001。
-- 2022-05-16：UST/LUNA 基本归零。LUNA 总供应从 7.25 亿炸到 70 亿。</p>
-<p><strong>Do Kwon 后续</strong>：2024-2025 在美国受审，因 $40B 崩盘被判 36 个月（约 3 年）。</p>
+- 2022-05-16：UST/LUNA 基本归零。LUNA 供应从约 3.45 亿炸到约 6.5 万亿（19000 倍稀释）。</p>
+<p><strong>Do Kwon 后续</strong>：2024-2025 在美国受审，因 $40B 崩盘被判 <strong>25 年</strong>联邦监禁（2025-12-11 美国南区法院判）。</p>
 <p><strong>这件事教什么</strong>：① 算法稳定币的"无外部抵押自稳定"是个谎言；② 经济模型出问题时合约代码再安全也救不了你；③ "看起来稳"的协议要先问"极端行情下还能维持吗？"。</p>
 <h3 id="93-mango-markets2022-10116m">9.3 故事二：Mango Markets（2022-10，$116M）</h3>
 <blockquote>
-<p>Avi Eisenberg 用 $5M 在三家小盘 CEX 同时挂单把 MNGO 现货从 $0.04 拉到 $0.91（涨 22 倍）。Mango 的 oracle 是这三家 CEX 的中位数价——OK，它老老实实把估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，把虚高浮盈当抵押借走 $116M。<strong>整个攻击 20 分钟，每一行代码都按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。</p>
+<p>Avi Eisenberg 用约 $10M USDC（CFTC 起诉书 / Halborn 复盘）在三家小盘 CEX 同时挂单把 MNGO 现货从 $0.04 拉到 $0.91（涨 22 倍）。Mango 的 oracle 是这三家 CEX 的中位数价——OK，它老老实实把估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，把虚高浮盈当抵押借走 $116M。<strong>整个攻击 20 分钟，每一行代码都按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。</p>
 </blockquote>
 <p><strong>法律续集</strong>：Eisenberg 2024 年被陪审团裁定欺诈罪 + 市场操纵罪，但 2025 年法官以"Mango 没有用户协议、没有禁止操纵条款、没有还款要求"为由 Rule 29 撤销有罪判决。检方上诉中。</p>
 <p><strong>这件事教什么</strong>：① 用现货价做 oracle 必死无疑；② 流动性差的标的资产 + 集中度低的 oracle = 灾难；③ "合法但不道德"在链上是开放问题——Mango 的合约没说不许操纵。</p>
@@ -1419,8 +1420,8 @@ $$</p>
 <figure><img src="diagram-a767f18e98.png" alt="mermaid diagram"></figure>
 
 <p>LayerZero V2 的 X-of-Y-of-N 模型应配置 <strong>2 of 3 of 5</strong>（2 必选 DVN + 5 可选中任 3 个签）。<strong>教训</strong>：① 借贷协议接受跨链资产时桥安全模型即协议安全模型；② 1-of-1 是单点；③ Umbrella 自动 slash 有上限。</p>
-<h3 id="c4-drift-2024-04285m">C.4 Drift 2024-04（$285M）</h3>
-<p>Solana perp DEX，privileged access 被滥用（疑似 DPRK），$285M 损失。归因依赖链上行为聚类（Elliptic 几小时归因）。</p>
+<h3 id="c4">C.4 （已删除）</h3>
+<p>（原描述与 DMM Bitcoin 2024-05 $305M 混淆，本案删除）</p>
 <h3 id="c5-euler-v1-2023-03197m">C.5 Euler V1 2023-03（$197M）</h3>
 <p>donateToReserves 没做健康检查。攻击链：① 闪电贷 30M DAI 10x 杠杆借 100M eDAI；② 调 <code>donateToReserves(100M)</code> 让账户突然变"deeply insolvent"；③ 用第二账户清算第一账户拿走清算折扣对应资产；④ 重复多次抽走 $197M。<strong>结局</strong>：攻击者最终归还 ~$240M（多于偷的）——团队从 OpSec 失误找到对话路径。<strong>教训</strong>：任何会让账户余额突变的函数都必须做 healthCheck。</p>
 <h3 id="c6-nomad-2022-08190m">C.6 Nomad 2022-08（$190M）</h3>
@@ -1428,7 +1429,7 @@ $$</p>
 <h3 id="c7-beanstalk-2022-04182m">C.7 Beanstalk 2022-04（$182M）</h3>
 <p>闪电贷借大量治理代币 → 通过"金库转给攻击者"提案 → 还贷。<strong>根因</strong>：无 timelock，治理权重按当下持币而非 ve 锁仓计算。<strong>教训</strong>：必须用 timelock + 长期锁仓权重过滤闪电贷攻击。</p>
 <h3 id="c8-cream-2021-10130m">C.8 Cream 2021-10（$130M）</h3>
-<p>Cream 用 yUSD（Yearn vault share）做抵押估值，直接读 <code>vault.totalAssets() / totalSupply</code> 作 share-price。攻击者闪电贷给 yVault 直接转入资产把 share-price 拉到 2 倍，再用同一笔 yUSD 借走 $130M。<strong>教训</strong>：可被外部 donation 操纵的 share-price 不能做估值，必须用底层资产市场价 + TWAP。</p>
+<p>Cream PriceOracleProxy 把 yUSDVault.getPricePerFullShare 直接当价格；攻击者通过 deposit/withdraw 双倍化 share-price 后反复杠杆借贷，借走 $130M。<strong>教训</strong>：可被外部 donation 操纵的 share-price 不能做估值，必须用底层资产市场价 + TWAP。</p>
 <h3 id="c9-multichain-2023-07130m">C.9 Multichain 2023-07（$130M）</h3>
 <p>CEO Zhaojun 在中国被带走，电脑/手机/硬件钱包/助记词全被没收。两周后异常转账 ~$125M，CEO 妹妹也被带走（曾试图转移 ~$220M），桥永久关闭。<strong>根因</strong>：私钥控制权高度集中在 CEO 单人——事实上的中心化跨链桥。</p>
 <h3 id="c10-htxheco-2023-11100m">C.10 HTX/Heco 2023-11（$100M）</h3>
@@ -1442,9 +1443,9 @@ $$</p>
 <h3 id="c14-kyberswap-elastic-2023-1147m">C.14 KyberSwap Elastic 2023-11（$47M）</h3>
 <p>V3-style 集中流动性 DEX。tick 边界整数舍入方向错——swap 量"几乎等于"跨过 tick 但少 1 wei 时，合约<strong>没跨 tick</strong> 但<strong>假设已经跨了</strong>，baseL 记录错远高于真实状态。攻击者反向 swap 利用错位抽走 $47M。TVL $71M → $3M，团队解散。<strong>教训</strong>：tick math 必须与 V3 reference impl 对拍 differential testing。</p>
 <h3 id="c15-curve-2023-0773m">C.15 Curve 2023-07（$73M）</h3>
-<p>受害池：alETH/ETH（$22.6M）、msETH/ETH（$3.4M）、pETH/ETH（$11M）、CRV/ETH（$24.7M）。<strong>根因不在 Curve</strong>——Vyper 编译器 0.2.15/0.2.16/0.3.0 的 <code>@nonreentrant</code> 装饰器把 lock 标志和其它变量塞同一 storage slot，某些路径下 lock 失效。攻击：<code>add_liquidity</code> → ETH 转账 fallback → reentrancy 进入 <code>remove_liquidity</code> → lock 失效 → 池子状态错乱。<strong>教训</strong>：编译器/运行时/外部调用约定都是攻击面。</p>
+<p>受害池：alETH/ETH ~$13.6M、msETH/ETH ~$1.6M（c0ffeebabe / Hacken 公开数据）、pETH/ETH（$11M）、CRV/ETH（$24.7M）。<strong>根因不在 Curve</strong>——Vyper 编译器 0.2.15/0.2.16/0.3.0 的 <code>@nonreentrant</code> 装饰器把 lock 标志和其它变量塞同一 storage slot，某些路径下 lock 失效。攻击：<code>add_liquidity</code> → ETH 转账 fallback → reentrancy 进入 <code>remove_liquidity</code> → lock 失效 → 池子状态错乱。<strong>教训</strong>：编译器/运行时/外部调用约定都是攻击面。</p>
 <h3 id="c16-bzx-2020-02954k">C.16 bZx 2020-02（~$954K）</h3>
-<p>DeFi 历史首次大规模 oracle manipulation via flash loan。第一次：闪电贷 7,500 ETH 在 Kyber 拉高 sUSD 到 $2.5，bZx 用 Kyber 现货价做估值借出更多 ETH。第二次：3,518 ETH 在 Synthetix 直接买 sUSD 推高 Uniswap sUSD/ETH 价 2x，把 sUSD 抵押到 bZx 借出净利。<strong>根因</strong>：用单个 DEX 现货价做 oracle。</p>
+<p>DeFi 历史首次大规模 oracle manipulation via flash loan。bZx #1 (2020-02-15)：Compound 借 ETH → Uniswap V1 操控 wBTC/ETH 做空 wBTC，损失约 $350K；bZx #2 (2020-02-18)：Synthetix sUSD 经 Kyber/Uniswap，损失约 $645K。两次攻击不同向量。<strong>根因</strong>：用单个 DEX 现货价做 oracle。</p>
 <h3 id="c17-gmx-v1-2022-09565k">C.17 GMX V1 2022-09（~$565K）</h3>
 <p>V1 GMX 用现货 oracle 给 perp 喂价、不收 swap fee。攻击：① thin AVAX/USDC 池子拉价；② GLP 价被推高；③ 攻击者以高价 swap AVAX 进 GLP；④ 反向操作把价拉回。V2 引入 price impact + 收 swap fee 防御。</p>
 <hr />
@@ -1512,6 +1513,9 @@ $$</p>
 </section><section class="chapter">
 <h2 id="fve-tokenomics-berachain-pol-real-yield" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 F：ve-tokenomics + Berachain PoL + Real Yield 辨真伪</h2>
 
+<blockquote>
+<p>本附录给 DeFi 视角的 ve 经济效应；治理设计 + Curve War 完整复盘见模块 15。</p>
+</blockquote>
 <p>（与模块 15 §5/§7 重叠——本附录给 DeFi 视角，15 章给治理视角）</p>
 <h3 id="f1-ve33">F.1 ve(3,3) 经济学</h3>
 <p>详见附录 A.6。Aerodrome bribe 市场流程：</p>
@@ -2735,7 +2739,7 @@ forge<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> <
 <span style="color: #000">src</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;src&quot;</span>
 <span style="color: #000">out</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;out&quot;</span>
 <span style="color: #000">libs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;lib&quot;</span><span style="color: #000; font-weight: bold">]</span>
-<span style="color: #000">solc_version</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;0.8.24&quot;</span>
+<span style="color: #000">solc_version</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;0.8.28&quot;</span>
 <span style="color: #000">optimizer</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span>
 <span style="color: #000">optimizer_runs</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">20000</span>
 <span style="color: #000">via_ir</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">false</span>
@@ -2759,7 +2763,7 @@ forge<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> <
 <h3 id="b3-fork-mainnet">B.3 fork mainnet 测试模板</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// test/Fork.t.sol</span>
 <span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>
-<span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.24</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.28</span><span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>Test<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;forge-std/Test.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>IPool<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@aave/v3-core/contracts/interfaces/IPool.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>

@@ -4,7 +4,9 @@
 >
 > 本章默认 Python 3.13+，所有示例在 macOS / Linux 下验证。Windows 用户请自行替换路径分隔符。
 
-如果你过去的 Python 体验是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」，那么进 AI 工程团队的第一周你大概率会被同事的 pyproject.toml、CI 里的 ruff check、被 mypy 红出半屏的 PR 击中。本章把这些工具一次性讲清，并用一个贯穿全章的小项目串起来：**一个调用 LLM API 的 CLI 工具 `askbot`**，从 `uv init` 到 `docker build`，每节都给它加一块。
+第 01 章把 AI 应用工程师的画像、薪资、门槛讲清楚了，也反复强调一句话：这一行真正稀缺的是「能交付完整闭环」的人——能把 RAG 从 60% 推到 90%、能让 Agent 在 200 步内不偏题、能把 P95 延迟压在 3 秒以内。这些活儿没有一项能在脚本式 Python 上长出来。现代 AI 工程团队的代码库长的是另一副样子：pyproject.toml、ruff、mypy strict、async、结构化日志、pytest fixture、Dockerfile。
+
+所以如果你过去的 Python 体验是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」，那么进 AI 工程团队的第一周你大概率会被同事的 pyproject.toml、CI 里的 ruff check、被 mypy 红出半屏的 PR 击中。本章把这些工具一次性讲清，并用一个贯穿全章的小项目串起来：**一个调用 LLM API 的 CLI 工具 `askbot`**，从 `uv init` 到 `docker build`，每节都给它加一块。
 
 ---
 
@@ -37,7 +39,7 @@
 | 重试 | 自己写 try/except | **tenacity** | 装饰器式，async 友好 |
 | 日志 | logging | **structlog**（结构化）/ loguru（脚本/原型） | 结构化日志直接进 ELK/Loki |
 
-注：2026 年 3 月 OpenAI 收购了 Astral（uv / ruff / ty 背后的公司）。短期没什么影响，但你应该意识到这条工具链的战略地位。
+注：2026 年 3 月 OpenAI 宣布收购 Astral（uv / ruff / ty 背后的公司）。两个工具仍然是 MIT/Apache 2.0 开源许可，短期不会有破坏性变化，但你应该意识到这条工具链的战略地位。
 
 ### 为什么不再推 pip + venv + black + flake8
 
@@ -53,7 +55,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 brew install uv
 
 # 验证
-uv --version   # 期望输出 uv 0.5+ 或更新
+uv --version   # 2026 年 5 月已到 0.11.x；本章命令在 0.4+ 都能跑
 ```
 
 uv 不需要预先安装 Python。它会按需下载并缓存指定版本，避免和系统 Python 打架。背后用的是 Astral 自家的 python-build-standalone，比 pyenv 编译快几个数量级，也避开了 macOS 系统 Python 那堆 OpenSSL 链接问题。
@@ -125,6 +127,8 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/askbot"]
 ```
+
+> 这里所有 `>=` 写的是「写本书时的下限」，到 2026 年 5 月 ruff 已发到 0.15.x、mypy 出到 2.0、httpx 0.28.x。把下限定保守、由 `uv lock` 锁具体版本，是兼容性最稳的做法。
 
 注意几个 2026 年的细节：
 
@@ -496,7 +500,8 @@ def parse_llm_json(model: type[BaseModel], text: str) -> BaseModel:
     if m:
         text = m.group(1)
     text = text.strip()
-    # 2. 让 Pydantic 直接解析（它处理 trailing comma 等比 json.loads 宽容）
+    # 2. 让 Pydantic 直接解析（v2.5+ 内部用 jiter，比 stdlib json 解析快、错误信息更细，
+    #    但仍要求严格 JSON：trailing comma、单引号 key 不接受，需要先做规整）
     try:
         return model.model_validate_json(text)
     except ValidationError as e:
@@ -507,7 +512,7 @@ def parse_llm_json(model: type[BaseModel], text: str) -> BaseModel:
 # "Your previous output didn't match the schema, errors: {errors}. Please return valid JSON only."
 ```
 
-这是 instructor、langchain-output-parsers 这些库的核心逻辑——把 ValidationError 转成 prompt 反馈，让 LLM 自我修复。我们后面第 05 章会自己实现一个简版。
+这是 instructor、langchain-output-parsers 这些库的核心逻辑——把 ValidationError 转成 prompt 反馈，让 LLM 自我修复。我们后面第 14 章会自己实现一个简版。
 
 ### field_validator 与 model_validator
 
@@ -676,9 +681,9 @@ class Settings(BaseSettings):
 
 LLM API 的调用是 IO 密集型——99% 时间在等网络。同步代码一次只能等一个请求；async 代码同样的进程能同时等 50 个。在 RAG、批量评测、多 Agent 并行这些场景里，async 不是优化，是基本功。
 
-Python 3.13 的 free-threading（无 GIL）已不再是实验性，3.14 正式支持，但对 IO 密集场景几乎没收益（因为 GIL 在 IO 时本来就释放）。所以即便你跑无 GIL Python，LLM 应用的并发依旧靠 async。
+Python 3.13 的 free-threading（无 GIL）按 PEP 703 走的是 Phase I——构建产物存在但**仍是实验性、非默认**；2025 年 6 月 PEP 779 通过后，3.14 进入 Phase II——free-threaded 构建**官方支持但仍非默认**，距离 Phase III「成为默认构建」还有几年。但即便你跑无 GIL Python，对 IO 密集场景几乎没收益（因为 GIL 在 IO 时本来就释放），所以 LLM 应用的并发依旧靠 async。
 
-什么时候该考虑 free-threading？答案是「CPU 密集 + 多核」的混合负载，比如本地推理（llama.cpp Python 绑定）、向量计算（不走 GPU 的小批量场景）、PDF/HTML 解析这种纯 CPU 的预处理。3.13 上单线程会慢约 40%，3.14 缩到 5–10%，是可以认真考虑的选项。生产建议：先在 CI 里加一个 free-threaded 版本的矩阵，观察哪些第三方包不兼容；3.14 起 ABI 已经稳定，主要风险是带 C 扩展的包（torch、numpy、cryptography）需要等更新。
+什么时候该考虑 free-threading？答案是「CPU 密集 + 多核」的混合负载，比如本地推理（llama.cpp Python 绑定）、向量计算（不走 GPU 的小批量场景）、PDF/HTML 解析这种纯 CPU 的预处理。3.13 上单线程开销约 40%，3.14 已缩到 10% 上下，是可以认真考虑的选项。生产建议：先在 CI 里加一个 free-threaded 版本的矩阵，观察哪些第三方包不兼容；主要风险是带 C 扩展的包（torch、numpy、cryptography）需要专门构建的 wheel。
 
 ### 三个易错概念先讲清
 
@@ -747,15 +752,16 @@ async def example() -> None:
         print(t.result())
 ```
 
-`lambda p=p:` 是为了捕获每次循环的 p 值——直接 `lambda: ask(p)` 会全部用最后一个 p（Python 闭包按引用捕获变量）。这是 async 新手最常踩的坑之一。更安全的写法是不用 lambda，直接传协程对象：
+`lambda p=p:` 是为了**冻结每次循环的 p 值到默认参数**——直接 `lambda: ask(p)` 在所有 lambda 真正被调用时再去查 p，而 list comprehension 结束后 p 已经被绑到最后一个值（Python 闭包延迟绑定，不是按值捕获）。注意此处生成器表达式 `(... for p in prompts)` 由于 list comprehension 立即求值后再调用 lambda，所以全部 lambda 看到的是最后一次循环的 p；用 `p=p` 默认参数把当前 p 拍进 lambda 自己的作用域才安全。这是 async 新手最常踩的坑之一。更直接的写法是把限流逻辑下沉到调用本身，调用端就不再需要 lambda：
 
 ```python
-tasks = [tg.create_task(limiter.run(lambda p=p: ask(p))) for p in prompts]
-# 或者把限流逻辑包进 ask 里，调用端简洁很多：
+sem = asyncio.Semaphore(8)
 async def ask_limited(p: str) -> str:
     async with sem:
         return await ask(p)
-tasks = [tg.create_task(ask_limited(p)) for p in prompts]
+
+async with asyncio.TaskGroup() as tg:
+    tasks = [tg.create_task(ask_limited(p)) for p in prompts]
 ```
 
 第二种写法在 askbot 的实际代码里就是这么做的。
@@ -799,7 +805,7 @@ async def ask_with_tpm(prompt: str, est_tokens: int) -> str:
     return await ask(prompt)
 ```
 
-生产里 token 估算可以用 `tiktoken`（OpenAI）或 `transformers` 的 tokenizer。本章不展开实现，但记住这个问题，第 06 章会回头处理。
+生产里 token 估算可以用 `tiktoken`（OpenAI）或 `transformers` 的 tokenizer。本章不展开实现，但记住这个问题，第 11 章讲 Tokenizer、第 22 章讲成本控制时会回头处理。
 
 ### httpx AsyncClient：唯一推荐的 HTTP 库
 
@@ -1077,7 +1083,7 @@ async def call_llm_traced(url: str, payload: dict) -> dict:
         return resp
 ```
 
-OTel 在 2024–2025 年专门为 GenAI 设了语义约定（`gen_ai.*` 属性），遵循它能直接被各种可观测平台识别、画图。本章不展开，第 11 章「可观测与评测」会细讲。
+OTel 在 2024–2025 年专门为 GenAI 设了语义约定（`gen_ai.*` 属性），遵循它能直接被各种可观测平台识别、画图。本章不展开，第 24 章 LLMOps「可观测、评估与持续改进」会细讲。
 
 ### 把 OTel context 自动注入到 structlog
 
@@ -1161,7 +1167,7 @@ members = ["packages/*"]
 askbot-core = { workspace = true }
 ```
 
-第 13 章会专门讲多包架构。本章保持单包简单。
+完整的多包工程结构会在后续章节真正搭中台与服务时再回头看。本章保持单包简单。
 
 ### 包内分层：什么放哪里
 
@@ -1261,7 +1267,15 @@ async def test_call_llm_retries_on_429(httpx_mock: HTTPXMock) -> None:
     assert resp == {"ok": True}
 ```
 
-测重试这一块最容易翻车的地方是 tenacity 的退避把测试拉到 30 秒以上。解决：测试时用 `wait=wait_fixed(0)` 覆盖等待时间，或者用 `from tenacity import retry; my_retry.retry.sleep = lambda _: None`。
+测重试这一块最容易翻车的地方是 tenacity 的退避把测试拉到 30 秒以上。最稳的解决方式是用 `retry_with` 在测试现场重新生成一个零退避版本：
+
+```python
+from tenacity import wait_fixed
+fast = _post.retry_with(wait=wait_fixed(0))
+await fast(payload)
+```
+
+也可以用 `enabled=False` 直接关掉重试只测一次正常路径。生产代码不要污染重试装饰器，测试再去包一层。
 
 ### Snapshot 测试：LLM 输出不可重复怎么办
 
@@ -1282,7 +1296,7 @@ async def test_summary_invariants(httpx_mock: HTTPXMock) -> None:
     assert summary.strip()      # 非空
 ```
 
-正经的 LLM 评测（不变量、LLM-as-judge、人工标注）放第 11 章。本章关心的是「我的代码本身有没有 bug」，mock 完全够。
+正经的 LLM 评测（不变量、LLM-as-judge、人工标注）放第 24 章 LLMOps。本章关心的是「我的代码本身有没有 bug」，mock 完全够。
 
 ### Snapshot 测试 syrupy
 
@@ -1324,7 +1338,7 @@ def fake_chat_response():
 
 ### 性能测试不在本章
 
-很多团队把 pytest 当成万能锤。LLM 应用的性能（吞吐、延迟）测试更适合 `locust` 或 `k6`，端到端跑真实负载。本章只覆盖单测和集成测，性能测试见第 11 章。
+很多团队把 pytest 当成万能锤。LLM 应用的性能（吞吐、延迟）测试更适合 `locust` 或 `k6`，端到端跑真实负载。本章只覆盖单测和集成测，性能测试见第 21 章模型部署的阶梯压测、第 22 章性能优化与成本控制。
 
 ---
 
@@ -1454,7 +1468,7 @@ app = typer.Typer(help="askbot — minimal LLM CLI", no_args_is_help=True)
 def ask(
     prompt: str = typer.Argument(..., help="The question."),
     system: str = typer.Option("You are a concise assistant.", help="System prompt."),
-    model: str = typer.Option(None, help=f"Override default ({settings.model})."),
+    model: str | None = typer.Option(None, help=f"Override default ({settings.model})."),
     json_log: bool = typer.Option(False, "--json-log", help="JSON log output."),
 ) -> None:
     """问 LLM 一个问题，stdout 输出回答。"""
@@ -1489,6 +1503,7 @@ def batch(
             async with asyncio.TaskGroup() as tg:
                 tasks = [
                     tg.create_task(chat(ChatRequest(
+                        model=settings.model,
                         messages=[Message(role="user", content=p)],
                     )))
                     for p in prompts
@@ -1507,10 +1522,14 @@ def main() -> None:
 
 ### src/askbot/__init__.py
 
+和 2.7 节的版本一致，对外暴露 main + 主要数据模型 + chat 函数：
+
 ```python
 from askbot.cli import main
+from askbot.client import chat
+from askbot.types import ChatRequest, ChatResponse, Message
 
-__all__ = ["main"]
+__all__ = ["main", "chat", "ChatRequest", "ChatResponse", "Message"]
 __version__ = "0.1.0"
 ```
 
@@ -1557,10 +1576,15 @@ uv run pytest -x                 # 第一个失败立刻停
 ```python
 # 临时用，绝不进生产代码
 import asyncio
-asyncio.get_event_loop().set_debug(True)  # 打印慢任务、未 await 的协程
+
+async def main() -> None:
+    asyncio.get_running_loop().set_debug(True)   # 打印慢任务、未 await 的协程
+    # ... 业务
+
+asyncio.run(main())
 ```
 
-或者环境变量 `PYTHONASYNCIODEBUG=1`。最常见用途：找出谁在 async 里偷偷调阻塞 IO，会被警告 `Executing took x seconds`。
+更省事的姿势是直接环境变量 `PYTHONASYNCIODEBUG=1`，`asyncio.run` 会自动开 debug。最常见用途：找出谁在 async 里偷偷调阻塞 IO，会被警告 `Executing took x seconds`。注意 Python 3.12+ 已废弃在线程外调用 `get_event_loop()`，所以早期教程里那种顶层 `asyncio.get_event_loop().set_debug(True)` 写法在新版本会 DeprecationWarning。
 
 ---
 
@@ -1592,8 +1616,8 @@ uv publish
 # ---- Builder ----
 FROM python:3.13-slim AS builder
 
-# uv 官方镜像直接提供二进制，pin 版本保证可复现
-COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
+# uv 官方镜像直接提供二进制，pin 版本保证可复现（写本书时是 0.11.x，按需更新）
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /bin/
 
 # 这两个变量是官方推荐：编译为 .pyc，避免运行时 IO；用 copy 而非 hardlink，跨 layer 安全
 ENV UV_COMPILE_BYTECODE=1 \
@@ -1705,15 +1729,16 @@ trivy image --severity HIGH,CRITICAL askbot:0.1.0
 
 ```yaml
 # .pre-commit-config.yaml
+# rev 写当前最新稳定版即可，pre-commit autoupdate 会自动同步
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.4
+    rev: v0.15.0
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v2.0.0
     hooks:
       - id: mypy
         additional_dependencies:
@@ -1770,16 +1795,16 @@ jobs:
 - 打包：uv build → wheel；多阶段 Dockerfile → 200 MB 镜像
 - 卡口：pre-commit + ruff + mypy
 
-往下走，第 03 章会把这些工程基础投到 LLM API 上：协议细节、流式输出、token 计数、prompt 模板管理。askbot 会在那一章长出第一个真正的「智能」——目前它只是一个套了壳子的 HTTP 客户端。
+往下走，第 03 章会补一层"看模型不再发怵"的数学直觉：cosine similarity 在 RAG 里到底测的是什么、softmax/温度采样在调什么、KL 散度为什么是 RLHF 的命门、AdamW 那几个超参各自管什么。代码全部跑得起来，最后用不到 50 行从零写一个 self-attention 收尾。askbot 这条主线会在第 14 章 Prompt 工程化、第 15 章 LangChain/LlamaIndex 实战回来——目前它只是一个套了壳子的 HTTP 客户端，有了工程地基才方便长肉。
 
 ### 一些没展开但值得知道的事
 
 - **uv tool install**：装命令行工具到全局，不污染当前项目（替代 `pipx`）。
 - **rye / hatch**：另外两个 PEP 621 系工具，活跃度不及 uv，但 hatch 作为 build backend 很常见。
-- **mypy 替代品**：pyright（微软，编辑器内更快）、ty（Astral 自家，2026 还在 alpha）、pyrefly（Meta）。新项目可以观望，老项目老老实实 mypy。
-- **logfire**：Pydantic 出的可观测平台，结合 structlog + OTel，本章不展开，第 11 章会聊。
+- **mypy 替代品**：pyright（微软，编辑器内更快）、ty（Astral 自家，2026 处于 beta、用 0.0.x 版本号、目标年内 1.0）、pyrefly（Meta）。新项目可以观望，老项目老老实实 mypy。
+- **logfire**：Pydantic 出的可观测平台，结合 structlog + OTel，本章不展开，第 24 章 LLMOps 会聊。
 - **anyio**：跨 asyncio / trio 的统一接口，FastAPI、httpx 内部都在用。如果你想写一个能在多种 event loop 上跑的库，研究一下；自己写应用通常直接 asyncio 就行。
-- **rich**：终端漂亮输出（表格、进度条、Markdown 渲染）。askbot 的输出本章故意保持原始 print，第 04 章在交互式 REPL 时会引入 rich。
+- **rich**：终端漂亮输出（表格、进度条、Markdown 渲染）。askbot 的输出本章故意保持原始 print，后续做交互式 CLI / 流式 token 渲染时会引入 rich。
 - **uvloop**：用 libuv 替换 asyncio 默认 selector，吞吐 +30%。FastAPI/uvicorn 默认开。CLI 短命进程没必要。
 - **freezegun / time-machine**：测试里冻结时间。涉及超时、缓存 TTL 的代码必备。
 - **hypothesis**：基于属性的测试（property-based testing）。Pydantic 模型的边界测试可以让 hypothesis 自动生成奇怪输入，发现你想不到的 bug。

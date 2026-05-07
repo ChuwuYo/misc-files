@@ -4,7 +4,7 @@
 >
 > 学术界发一篇 paper 的时间，工业界要走完"数据 → 实验 → 训练 → 注册 → 部署 → 监控 → 反馈 → 重训"七道工序。每一道都有专属工具、专属坑、专属事故。MLOps 就是把这七道工序串成一条可回放、可追溯、可回滚的流水线。
 >
-> 这一章把 2026 年的经典 MLOps 全景图铺一遍。下一章再讲它的 LLM 表亲——LLMOps。
+> 前面三章把生产工程篇收尾了：向量库、模型部署、性能与成本。它们解决的是"怎么让一次请求跑得对、跑得快、跑得便宜"。从这一章起进入运维篇，问题换成"怎么让这套系统每天都跑得对、跑得快、跑得便宜"——多了"每天"两个字，工程量上一个台阶。这一章把 2026 年的经典 MLOps 全景图铺一遍，下一章再讲它的 LLM 表亲——LLMOps。
 
 ---
 
@@ -832,7 +832,7 @@ class FraudScorer:
 
 ### 23.8.2 Evidently：开源漂移检测
 
-Evidently 是开源工具中的标杆，提供 100+ 内置指标，能直接生成 HTML 报告或推送到监控 UI。
+Evidently 是开源工具中的标杆，提供 100+ 内置指标，能直接生成 HTML 报告或推送到监控 UI。注意 Evidently 在 0.7 系列里把 API 重构成了「Dataset → Report」的新形态（从 `evidently.future` 导入），但 0.4–0.6 的 `Report().run()` 风格仍向下兼容，下面的例子按当前生产里更常见的兼容写法给出：
 
 ```python
 from evidently import Report
@@ -1314,6 +1314,7 @@ class FraudClassifier:
 
 ```python
 # monitor.py - 每天定时跑漂移
+# 注：Evidently 0.7+ 推荐从 evidently.future 走新 Dataset→Report API；这里用 0.4–0.6 兼容写法
 from evidently import Report
 from evidently.presets import DataDriftPreset
 import pandas as pd, requests
@@ -1321,9 +1322,13 @@ import pandas as pd, requests
 def run_daily():
     ref = pd.read_parquet("s3://.../reference.parquet")
     cur = pd.read_parquet("s3://.../last_24h.parquet")
-    r = Report([DataDriftPreset(method="psi")], include_tests=True).run(ref, cur)
+    r = Report([DataDriftPreset(method="psi")], include_tests=True).run(
+        reference_data=ref, current_data=cur,
+    )
 
-    drifted_share = r.metrics_results["DataDriftPreset"]["share_drifted_columns"]
+    # 不同 Evidently 版本下 share_drifted_columns 的访问路径有差异，
+    # 0.4–0.6 通常通过 r.as_dict() / r.json() 取，0.7+ 通过新结构访问
+    drifted_share = r.as_dict()["metrics"][0]["result"]["share_of_drifted_columns"]
     requests.post(
         "http://pushgateway.internal:9091/metrics/job/fraud_drift",
         data=f"fraud_model_drift_share {drifted_share}\n",

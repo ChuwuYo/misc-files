@@ -20,7 +20,7 @@ forge install ora-io/OAO  # 如有
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.28;
 
 interface IAIOracle {
     function requestCallback(

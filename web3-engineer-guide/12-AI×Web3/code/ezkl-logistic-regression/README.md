@@ -89,7 +89,7 @@ ezkl create-evm-verifier --vk-path vk.key --sol-code-path Verifier.sol --abi-pat
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
 import "../src/Verifier.sol";

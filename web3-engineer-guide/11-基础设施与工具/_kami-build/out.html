@@ -581,14 +581,14 @@
 <p>2026-04-15 凌晨 2 点，某 80M TVL 借贷协议的 oncall 群炸了：清算机器人连续 6 分钟无响应，链上一个 8000 ETH 头寸正以每秒 2% 的速度滑向坏账。原因不在合约，不在清算机器人代码——是托管 RPC 商在 UTC 18:00 静默把这个 API key 的 <code>eth_getLogs</code> 限速从 10 RPS 降到 2 RPS，错误返回 "block range too large" 而不是 429。<strong>节点和 RPC 才是合约真正活的地方</strong>，这一模块讲的就是这件事。</p>
 </blockquote>
 <p>本模块面向会 Linux + Docker 但从未跑过节点的工程师，目标是搭建 reth+lighthouse Sepolia 节点 + RPC + 索引器 + 告警 + CI。版本号、容量数据、价格以 2026-04-27 为准。</p>
-<p><strong>承上</strong>：<a href="../03-EVM深入/README.md">模块 03 EVM 深入</a> 把字节码执行层讲透，<a href="../05-安全审计/README.md">模块 05 安全审计</a> 把合约层风险讲透——但合约不是凭空运行的，它跑在节点进程里、透过 RPC 暴露给前端、靠 indexer 才能被检索、靠 validator + MEV-Boost 才能被打包上链。本模块把"合约之外"的这一切补齐。</p>
+<p><strong>承上</strong>：<a href="../03-以太坊与EVM/README.md">模块 03 以太坊与 EVM</a> 把字节码执行层讲透，<a href="../05-智能合约安全/README.md">模块 05 智能合约安全</a> 把合约层风险讲透——但合约不是凭空运行的，它跑在节点进程里、透过 RPC 暴露给前端、靠 indexer 才能被检索、靠 validator + MEV-Boost 才能被打包上链。本模块把"合约之外"的这一切补齐。</p>
 <p>前置模块：<a href="../10-前端与账户抽象/README.md">10-前端与账户抽象</a> — 前端通过 RPC 与链交互，本模块讲清楚 RPC 从哪来、节点怎么跑。</p>
 <hr />
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>章节地图</h2>
 
 <p><strong>主线</strong>（§1-§18）→ <strong>附录</strong>（A-H 按需深入）。前八节是"能跑起来"的最小闭环，§9 起是把它运营好的工程化。</p>
-<figure><img src="diagram-26d3b2457f.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-aaffb8c070.png" alt="mermaid diagram"></figure>
 
 <p>附录 H2 在后，主线优先。</p>
 <hr />
@@ -1161,9 +1161,10 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <span style="color: #F8F8F8">          </span><span style="color: #204A87; font-weight: bold">role-to-assume</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">arn:aws:iam::123456789012:role/eth-deploy-role</span>
 <span style="color: #F8F8F8">          </span><span style="color: #204A87; font-weight: bold">aws-region</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">us-east-1</span>
 <span style="color: #F8F8F8">      </span><span style="color: #000; font-weight: bold">-</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">run</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span>
+<span style="color: #F8F8F8">          </span><span style="color: #000">export AWS_KMS_KEY_ID=$KMS_KEY_ID</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">forge script script/Deploy.s.sol:DeployScript \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--rpc-url $RPC_URL \</span>
-<span style="color: #F8F8F8">            </span><span style="color: #000">--aws --aws-kms-key-id $KMS_KEY_ID \</span>
+<span style="color: #F8F8F8">            </span><span style="color: #000">--aws \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--broadcast --verify \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--etherscan-api-key $ETHERSCAN_API_KEY \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--slow</span>
@@ -1583,7 +1584,7 @@ forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</spa
 
 <span style="color: #8F5902; font-style: italic"># 模拟 whale impersonation</span>
 cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span>tenderly_setBalance<span style="color: #F8F8F8"> </span>0xVITALIK<span style="color: #F8F8F8"> </span>0x1000000000000000000<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$TENDERLY_VNET_URL</span>
-cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span>tenderly_addBalance<span style="color: #F8F8F8"> </span>0xVITALIK<span style="color: #F8F8F8"> </span>0x1000000000000000000<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$TENDERLY_VNET_URL</span>
+cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span>tenderly_addBalance<span style="color: #F8F8F8"> </span>0xVITALIK<span style="color: #F8F8F8"> </span>0x1000000000000000000<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$TENDERLY_VNET_URL</span><span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># 注：vNet 端点已替换为 tenderly_setBalance；fork 端点保留 addBalance</span>
 </code></pre></div>
 <h4 id="tenderly">Tenderly 三大产品线</h4>
 <table>
@@ -2219,11 +2220,11 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <li>Safe 1/N 紧急 pause（任一签名者可触发）；unpause 必须走 3/5 主签——非"pause 后不能 unpause"</li>
 </ol>
 <h3 id="133-relayer-aws-kms-foundry">13.3 服务器签名 (Relayer): AWS KMS + Foundry</h3>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Foundry 1.0+ 直接调 AWS KMS</span>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Foundry 1.0+ 直接调 AWS KMS（KMS key 通过环境变量 AWS_KMS_KEY_ID 传入，--aws 自动读取）</span>
+<span style="color: #204A87">export</span><span style="color: #F8F8F8"> </span><span style="color: #000">AWS_KMS_KEY_ID</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #000">$KMS_KEY_ID</span>
 forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </span>script/Deploy.s.sol<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$RPC_URL</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span>--aws<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
-<span style="color: #F8F8F8">  </span>--aws-kms-key-id<span style="color: #F8F8F8"> </span><span style="color: #000">$KMS_KEY_ID</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span>--broadcast
 </code></pre></div>
 <blockquote>
@@ -2258,10 +2259,10 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 
 <span style="color: #F8F8F8">      </span><span style="color: #000; font-weight: bold">-</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">name</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">forge script with KMS</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">run</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span>
+<span style="color: #F8F8F8">          </span><span style="color: #000">export AWS_KMS_KEY_ID=$KMS_KEY_ID</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">forge script script/Deploy.s.sol:DeployScript \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--rpc-url $RPC_URL \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--aws \</span>
-<span style="color: #F8F8F8">            </span><span style="color: #000">--aws-kms-key-id $KMS_KEY_ID \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--broadcast \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--verify \</span>
 <span style="color: #F8F8F8">            </span><span style="color: #000">--etherscan-api-key $ETHERSCAN_API_KEY \</span>
@@ -2921,9 +2922,9 @@ curl<span style="color: #F8F8F8"> </span>-X<span style="color: #F8F8F8"> </span>
 <span style="color: #F8F8F8">  </span>-H<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;Content-Type: application/json&#39;</span><span style="color: #F8F8F8"> </span>--data<span style="color: #F8F8F8"> </span>@bls_to_execution_changes.json
 </code></pre></div>
 <h3 id="c3-consolidation-validator-1">C.3 consolidation（多 validator 合并为 1）</h3>
-<p>EIP-7251 consolidate 系统合约部署在 0x0000...0301，<strong>raw calldata 96 字节</strong>：source_pubkey (48B) || target_pubkey (48B)；cast send 直接传 calldata，无 Solidity 函数签名。</p>
+<p>EIP-7251 consolidate 系统合约部署在 <code>0x0000BBdDc7CE488642fb579F8B00f3a590007251</code>（Pectra 主网实际部署地址），<strong>raw calldata 96 字节</strong>：source_pubkey (48B) || target_pubkey (48B)；cast send 直接传 calldata，无 Solidity 函数签名。配套的 EIP-7002 withdrawal/exit 系统合约部署在 <code>0x00000961Ef480Eb55e80D19ad83579A64c007002</code>，用于从 EL 触发 partial withdrawal 与 full exit。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$RPC</span><span style="color: #F8F8F8"> </span>--account<span style="color: #F8F8F8"> </span>deployer<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
-<span style="color: #F8F8F8">  </span>0x0000000000000000000000000000000000000301<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span>0x0000BBdDc7CE488642fb579F8B00f3a590007251<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">$(</span>cast<span style="color: #F8F8F8"> </span>concat-hex<span style="color: #F8F8F8"> </span><span style="color: #000">$SOURCE_PUBKEY</span><span style="color: #F8F8F8"> </span><span style="color: #000">$TARGET_PUBKEY</span><span style="color: #204A87; font-weight: bold">)</span>
 </code></pre></div>
 <p>合并后：source 进入 exit queue；target 收到全部 ETH；余额上限 2048 ETH。</p>
