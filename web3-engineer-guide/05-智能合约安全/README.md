@@ -80,7 +80,7 @@ SWC Registry 37 类漏洞都是这三问的排列组合。
 ### 1.2 攻击者经济学（Web3 独有）
 
 - **TVL 即赏金池**：协议 TVL 决定攻击上限。
-- **闪电贷把资本成本归零**：同一笔 tx 借还，只需支付 0.09% 手续费，攻击门槛趋近于零。
+- **闪电贷把资本成本归零**：同一笔 tx 借还，只需支付约 0.05%（Aave V3）至池费率（Uniswap V3）的手续费，攻击门槛趋近于零。
 - **赎金博弈**：Euler 归还 1.97 亿，10% bounty 即可触发谈判。
 - **DPRK 国家级威胁**：Bybit 14.6 亿（[FBI](https://www.fbi.gov/news/press-releases/fbi-dc3-and-npa-identification-of-north-korean-cyber-actors-tracked-as-tradertraitor-responsible-for-theft-of-308-million-from-bitcoindmmcom)），愿意烧 6 个月做长线社工。
 
@@ -162,7 +162,7 @@ contract ReentrancyAttacker {
 
 | 事件 | 日期 | 损失 | 子类 |
 |---|---|---|---|
-| The DAO | 2016-06-17 | 6000 万美元（360 万 ETH） | 单函数 → ETH/ETC 硬分叉 |
+| The DAO | 2016-06-17 | 约 360 万 ETH（当时约 5500 万美元） | 单函数 → ETH/ETC 硬分叉 |
 | Lendf.Me | 2020-04-19 | 2500 万美元 | 跨函数（imBTC ERC-777 hook） |
 | Cream Finance | 2021-08-30 | 1900 万美元 | 跨合约（AMP ERC-777） |
 | dForce | 2023-02 | 3700 万美元 | 只读（Curve `get_virtual_price`，[CertiK](https://www.certik.com/resources/blog/curve-conundrum-the-dforce-attack-via-a-read-only-reentrancy-vector-exploit)） |
@@ -281,7 +281,7 @@ function borrow(uint256 amt) external {
 function safePrice() public view returns (uint256) {
     (uint80 rid, int256 ans, , uint256 updatedAt, uint80 answeredIn) = feed.latestRoundData();
     if (ans <= 0) revert BadPrice();                                 // ① 负 / 零价
-    if (answeredIn < rid) revert StalePrice();                       // ② round 一致（旧 feed 兼容）
+    if (answeredIn < rid) revert StalePrice();                       // ② roundId 一致性检查——answeredInRound < roundId 表示 stale
     if (block.timestamp - updatedAt > heartbeat) revert StalePrice();// ③ 新鲜度（ETH/USD 3600s, USDC/USD 86400s）
     return uint256(ans) * 10 ** (18 - feed.decimals());              // ④ decimals 归一
 }
@@ -700,7 +700,7 @@ Echidna / Certora 配置详见附录 B。
 
 - **协议**：The DAO，众筹 1.5 亿美元 ETH 的去中心化风投。
 - **漏洞**：`withdraw()` 先把 ETH 送出去（`call`），再把账本余额清零——只要接收方是合约，就可以在"清零"之前反复 `withdraw`。
-- **攻击**：攻击者循环调用，从 1 ETH 存款起，把金库里 360 万 ETH 分 36 笔递归抽入一个"子 DAO"。
+- **攻击**：攻击者通过 `splitDAO` 递归触发，绕过 split 后的余额更新检查，把金库里 360 万 ETH 抽入一个"子 DAO"。
 - **影响**：以太坊社区投票硬分叉；ETH 链"撤销"攻击，ETC 链"代码即法律"——一个 bug 劈出两条链。
 
 ### 关键代码对比

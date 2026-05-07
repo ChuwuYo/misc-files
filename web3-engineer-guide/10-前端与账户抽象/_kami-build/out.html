@@ -552,6 +552,7 @@
 <p>同年全年，签名钓鱼吞掉了 4.94 亿美元、33.2 万受害者。这是 dApp 工程师每天战斗的战场。</p>
 <p>这个模块讲怎么活下来——也讲怎么活得漂亮：viem 的函数式设计为什么能在两年内把 ethers 拉下王座，Coinbase 怎么用 Passkey + 4337 让你妈也能用钱包，Vitalik 的 EIP-7702 怎么让旧 EOA "原地长出腿"，Stripe 为什么花钱买下 Privy。</p>
 </blockquote>
+<p>模块 04 让你写出能跑在 EVM 的合约，本模块教用户怎么和它对话——viem/wagmi/RainbowKit/ERC-4337/EIP-7702 这一整条前端栈。</p>
 <p>本模块把现代 dApp 前端栈逐层拆到协议字段级，配 <code>code/</code> 下可 <code>pnpm dev</code> 跑起来的 Next.js 15 项目。基线：Pectra 主网 2025-05-07 激活，EntryPoint v0.7 + EIP-7702 是 2026 事实组合（v0.8 在灰度，主网采用 &lt;15%）。前置 09-替代生态；后续 11-基础设施与工具。</p>
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>目录</h2>
@@ -989,7 +990,7 @@ Resources:
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">SiweMessage</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">JSON</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">parse</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">message</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">))</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">data</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">success</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">verify</span><span style="color: #000; font-weight: bold">({</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">signature</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">signature</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">,</span>
-<span style="color: #F8F8F8">          </span><span style="color: #000">nonce</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">siwe.nonce</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">          </span><span style="color: #000">nonce</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">session.expectedNonce</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 从服务端存储取，不信任客户端提交的 siwe.nonce</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">domain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">process.env.NEXTAUTH_URL?.replace</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">/^https?:\/\//</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;&#39;</span><span style="color: #000; font-weight: bold">),</span>
 <span style="color: #F8F8F8">        </span><span style="color: #000; font-weight: bold">})</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000">success</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">null</span>
@@ -1063,7 +1064,7 @@ Resources:
 <ul>
 <li><strong>Signer</strong>：EOA / Passkey / MPC，负责签 userOpHash。</li>
 <li><strong>Bundler</strong>（快递员）：攒 N 笔 UserOp，打包成一笔 tx 调 EntryPoint。Pimlico / Alchemy / Etherspot。</li>
-<li><strong>EntryPoint</strong>（单例合约）：<code>0x0000000071727De22E5E9d8BAf0edAc6f37da0329</code>，所有链同地址。</li>
+<li><strong>EntryPoint</strong>（单例合约）：<code>0x0000000071727De22E5E9d8BAf0edAc6f37da032</code>，所有链同地址。</li>
 <li><strong>Smart Account</strong>：实现 <code>validateUserOp</code> 的合约，Safe / Kernel / Nexus / LightAccount。</li>
 <li><strong>Paymaster</strong>（金主）：可选，代付 gas。支持 ERC-20 代付 / 业务方 sponsor。</li>
 <li><strong>Factory</strong>：可选，首次 UserOp 时 CREATE2 部署 smart account。</li>
@@ -1255,10 +1256,10 @@ Resources:
 <h2 id="11-code" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. 实战项目导览（code/）</h2>
 
 <blockquote>
-<p>前面 21 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：<code>pnpm dev</code> 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。</p>
-<p>把它当作"读完前 21 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。</p>
+<p>前面 10 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：<code>pnpm dev</code> 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。</p>
+<p>把它当作"读完前 10 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。</p>
 </blockquote>
-<h3 id="221">22.1 目录结构</h3>
+<h3 id="111">11.1 目录结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/
 ├── package.json                 # pin 全部版本
 ├── pnpm-lock.yaml              # pnpm 9.15
@@ -1304,7 +1305,7 @@ Resources:
         ├── useSmartAccount.ts
         └── useSiweLogin.ts
 </code></pre></div>
-<h3 id="222">22.2 启动</h3>
+<h3 id="112">11.2 启动</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code
 cp<span style="color: #F8F8F8"> </span>.env.example<span style="color: #F8F8F8"> </span>.env.local<span style="color: #F8F8F8">      </span><span style="color: #8F5902; font-style: italic"># 填 RPC、Pimlico key、WC projectId</span>
 pnpm<span style="color: #F8F8F8"> </span>install
@@ -1319,7 +1320,7 @@ NEXT_PUBLIC_RPC_MAINNET=https://eth-mainnet.g.alchemy.com/v2/KEY
 NEXT_PUBLIC_RPC_BASE=https://base-mainnet.g.alchemy.com/v2/KEY
 PIMLICO_API_KEY=pim_...
 </code></pre></div>
-<h3 id="223">22.3 跑通的几条主线</h3>
+<h3 id="113">11.3 跑通的几条主线</h3>
 <ol>
 <li>连钱包 → 读 ETH 余额（<code>useBalance</code>，默认 Sepolia）。</li>
 <li><code>useReadContract</code> 读 USDC balanceOf/decimals/symbol。</li>
@@ -1329,7 +1330,7 @@ PIMLICO_API_KEY=pim_...
 <li>ERC-4337 UserOp：permissionless 创建 Safe smart account，Pimlico paymaster，bundler 广播。</li>
 <li>EIP-7702 batched tx：viem <code>signAuthorization</code> 挂载 BatchExecutor，单笔做多事。</li>
 </ol>
-<h3 id="224-walkthrough">22.4 关键代码 walkthrough</h3>
+<h3 id="114-walkthrough">11.4 关键代码 walkthrough</h3>
 <p><code>src/lib/wagmi.ts</code> 即 §2.1 Config（chains: sepolia/mainnet/base，injected + walletConnect + coinbaseWallet + safe，cookieStorage + ssr=true）。</p>
 <p><code>src/lib/aa.ts</code> 把 Safe smart account + Pimlico paymaster + bundler 串成一个 <code>smartClient</code>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createSmartAccountClient</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;permissionless&#39;</span>
@@ -1353,6 +1354,7 @@ PIMLICO_API_KEY=pim_...
 <span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// owner 接口允许我们注入任意 signer（这里给的是浏览器 wallet）</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">safeAccount</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">toSafeSmartAccount</span><span style="color: #000; font-weight: bold">({</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">publicClient</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// ⚠️ owners 应传 viem Account 对象（如 `privateKeyToAccount(...)` 或 walletClient），而非自定义 `{ address, signMessage }` 结构；如需用外部 signer，请用 `toAccount(...)` 封装</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000">owners</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[{</span><span style="color: #F8F8F8"> </span><span style="color: #000">address</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">opts.ownerAddress</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">signMessage</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">message</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">})</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">opts</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">ownerSign</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">message</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">`0x${</span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #4E9A06">}`</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}],</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000">version</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1.4.1&#39;</span><span style="color: #000; font-weight: bold">,</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000">entryPoint</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">address</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">entryPoint07Address</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">version</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;0.7&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
@@ -1442,7 +1444,7 @@ PIMLICO_API_KEY=pim_...
 <span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ...</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<h3 id="225">22.5 项目级安全约定</h3>
+<h3 id="115">11.5 项目级安全约定</h3>
 <p>write 前必跑 <code>useSimulateContract</code> 并同步显示结果；typed data 签名前渲染 <code>&lt;TypedDataPreview/&gt;</code>；Permit2 deadline ≤ 5 分钟；7702 永远 chain_id != 0；SIWE nonce verify 后即销毁。</p>
 <hr />
 
@@ -1450,7 +1452,7 @@ PIMLICO_API_KEY=pim_...
 <h2 id="12" id="ch13"><span class="chapter-num">Chapter 13</span><br>12. 习题与解答</h2>
 
 <blockquote>
-<p>这一节六道题是对前 22 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。</p>
+<p>这一节六道题是对前 10 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。</p>
 <p>不会做就回对应章节，做完再读参考解答能学到双倍。</p>
 </blockquote>
 <p>前 5 道带答案，第 6 道开放题。</p>
@@ -1614,6 +1616,10 @@ PIMLICO_API_KEY=pim_...
 <li>Permit2 SignatureTransfer：https://docs.uniswap.org/contracts/permit2/reference/signature-transfer</li>
 <li>NextAuth (Auth.js) v5：https://authjs.dev/</li>
 </ul>
+<hr />
+<blockquote>
+<p><strong>下一站</strong>：前端搞定了，但 RPC/Indexer/Validator 这些底层基础设施才是支撑 DApp 的肌肉。下一站模块 11 看节点运维 / MEV-Boost / CI/CD 这一层。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">

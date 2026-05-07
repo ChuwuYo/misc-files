@@ -293,7 +293,7 @@ contract NotPacked {
 
 > TL;DR：ERC-20 是同质化代币的标准接口；用 OZ v5 继承 + 加你自己的 mint 限额；学完能写一份审计员愿意签字的代币合约。
 
-USDT、USDC、UNI 全是 ERC-20。这套接口包含 `transfer` / `approve` / `transferFrom` / `balanceOf` / `totalSupply` 五个函数和两个事件。**自己实现 transferFrom 是面试题，不是生产代码**——OZ v5 的 `ERC20.sol` 处理过 USDT 不返回 bool、fee-on-transfer 差额、ERC-777 hook 重入等十年踩出来的坑。
+USDT、USDC、UNI 全是 ERC-20。这套接口包含 `transfer` / `approve` / `transferFrom` / `allowance` / `balanceOf` / `totalSupply` 六个函数和两个事件。**自己实现 transferFrom 是面试题，不是生产代码**——OZ v5 的 `ERC20.sol` 处理过 USDT 不返回 bool、fee-on-transfer 差额、ERC-777 hook 重入等十年踩出来的坑。
 
 ### 4.1 最小合约：继承 OZ 即可
 
@@ -459,6 +459,8 @@ NFT 的图片、属性、描述放在 `tokenURI(id)` 返回的 JSON 里（通常
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 contract MyNFT is ERC721URIStorage, Ownable {
+    uint256 public nextTokenId;
+
     function mint(address to, string calldata uri) external onlyOwner returns (uint256 id) {
         id = nextTokenId++;
         _safeMint(to, id);

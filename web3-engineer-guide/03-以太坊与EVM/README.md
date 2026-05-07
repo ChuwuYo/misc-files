@@ -386,7 +386,7 @@ storageRoot bytes32    (该账户 storage trie 的根)
 | **能持有 ETH** | 能 | 能 |
 | **能被调用** | 能（无代码 → 仅转账；有 designator → 跑代理代码） | 能 |
 
-**Pectra 后的微妙变化**：EOA 的 codeHash 字段在挂上 designator 时变成 `keccak256(0xef0100 || delegateAddress)`。链上看 `getCode(eoa)` 返回 23 字节 `0xef0100 + 20 字节地址`。这是 EIP-7702 的硬约定，任何执行层客户端都按此识别。撤销委托（authorization 指向 0x0）后，EOA 的 codeHash 仍是 `keccak256(0xef0100 || 0x0...0)`，**不会**变回 `keccak256("")`。codeHash 字段一旦被 SetCode 改写，就永远是 designator hash，区分"从未委托过"与"曾委托又撤销"需要看 code 内容（指向 0x0 的 designator）而非比对 codeHash 是否等于空哈希。
+**Pectra 后的微妙变化**：EOA 的 codeHash 字段在挂上 designator 时变成 `keccak256(0xef0100 || delegateAddress)`。链上看 `getCode(eoa)` 返回 23 字节 `0xef0100 + 20 字节地址`。这是 EIP-7702 的硬约定，任何执行层客户端都按此识别。将 authorization 中 address 设为 `0x000...0` 即可撤销委托，账户 code 被清空，codeHash 回到 `keccak256("")`（空 EOA 状态）。
 
 ### 3.2 五种交易类型
 

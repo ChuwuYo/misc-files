@@ -1034,7 +1034,7 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 </code></pre></div>
 <p>要点：
 1. <code>AdminCap</code> 是 owned 对象——转让权限 = <code>transfer::transfer(cap, new_admin)</code>，无需 <code>onlyOwner</code> modifier。
-2. <code>Counter</code> 是 shared 对象——任何人可 increment，走 Mysticeti 共识排序（~500 ms）。
+2. <code>Counter</code> 是 shared 对象——任何人可 increment，走 Mysticeti 共识排序（旧版约 500ms，Mysticeti v2 显著改善：p50≈67ms, p99≈114ms）。
 3. owned 对象（如 AdminCap）走 fast path，不进共识（~250 ms）。</p>
 <blockquote>
 <p>深入 Aptos 全局存储 + Block-STM、PTB、Move Prover → <strong>附录 B/C</strong></p>
@@ -1446,7 +1446,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <p><strong>场景钩子</strong>：2017 年 Anatoly 在 Loom 第一次画 PoH 草图时，跟同事 Greg Fitzgerald 解释："想象沙漏——只不过是密码学沙漏。下面那粒沙没漏完，上面这粒就不可能存在。"SHA-256 是单线程不可并行的，把它当作"沙漏的下一粒沙"就拿到了一条<strong>全网都能本地验证的时间轴</strong>——共识协议不再需要花一半时间互相喊"现在几点"。这就是 PoH。常被人误解为"PoH 替代了 PoS"，<strong>完全不对</strong>：PoH 只是共识下面的时钟。</p>
 <p>共识基础与 Tower BFT 完整对比见模块 02 第 25-26 节。本节只讲 PoH 在 Solana 系统里独有的东西：它<strong>不是共识</strong>，是写在共识下面的时钟。</p>
 </blockquote>
-<p>PoH = 严格顺序的 SHA-256 哈希链：$h_{n+1} = \text{SHA256}(h_n)$。SHA-256 不可并行，leader 把事务 hash 喂进去就把它"钉"在这条链的某个位置。</p>
+<p>PoH = 严格顺序的 SHA-256 哈希链：$h_{n+1} = \text{SHA256}(h_n)$（含事务时 $h_{n+1} = \text{SHA256}(h_n \,|\, \text{tx_data})$，事务被不可篡改地嵌入时间轴）。SHA-256 不可并行，leader 把事务 hash 喂进去就把它"钉"在这条链的某个位置。</p>
 <p><strong>为什么这件事有用</strong>——共识协议要交换"现在几点"，O(n²) 通信。Solana 让 PoH 隐含全部时序，共识只需投"哪条 fork"。三个直接红利：</p>
 <ol>
 <li>leader schedule 可在 epoch 开始时一次抽完（400 ms/slot）</li>
@@ -3894,7 +3894,7 @@ OP_DUP OP_HASH160 &lt;20-byte pubkey hash&gt; OP_EQUALVERIFY OP_CHECKSIG
 <p>Taproot（BIP-340/341/342，2021-11 激活）把 <strong>Schnorr 签名 + MAST 脚本树 + 新 sighash 算法</strong>打包，让复杂脚本在大部分情况下与普通转账<strong>在链上长得完全一样</strong>。</p>
 <h4 id="taproot">Taproot 的三件套</h4>
 <h5 id="bip-340-schnorr">BIP-340 · Schnorr 签名</h5>
-<p>替代 ECDSA（64 字节 vs 70-72 字节），<strong>线性可聚合</strong>：</p>
+<p>替代 ECDSA（64 字节 vs 71-73 字节），<strong>线性可聚合</strong>：</p>
 <p>$$
 \sigma_{\text{multi}} = \sigma_1 + \sigma_2 + \cdots + \sigma_n
 $$</p>

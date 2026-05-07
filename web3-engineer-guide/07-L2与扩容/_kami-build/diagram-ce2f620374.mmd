@@ -1,0 +1,11 @@
+flowchart TB
+    subgraph OP[Optimistic：先信任，事后挑战]
+        OP1[Sequencer 提交状态根]-->OP2[默认相信，7 天挑战期]
+        OP2-->|无人挑战| OP3[状态根生效]
+        OP2-->|有人挑战| OP4[fraud proof 二分博弈 L1 仲裁]
+    end
+    subgraph ZK[ZK：每次附数学证明]
+        ZK1[Sequencer 提交状态根 + validity proof]-->ZK2[L1 验证 proof 200-500k gas]
+        ZK2-->|通过| ZK3[状态根即时生效]
+        ZK2-->|失败| ZK4[拒绝整批]
+    end

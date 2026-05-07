@@ -438,7 +438,7 @@
   <h2>目录</h2>
   <div class="toc-item">
     <span class="toc-num">01</span>
-    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">0. 主线目录</a></span>
+    <span class="toc-title"><a href="#ch01" style="color:inherit;text-decoration:none">0. 开场：四个数字，一个共同点</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -531,14 +531,30 @@
     <span class="toc-title"><a href="#ch19" style="color:inherit;text-decoration:none">附录 F. 形式化验证深入</a></span>
     <span class="toc-page">·</span>
   </div>
+  <div class="toc-item">
+    <span class="toc-num">20</span>
+    <span class="toc-title"><a href="#ch20" style="color:inherit;text-decoration:none">附录 G. 重入的形式化定义</a></span>
+    <span class="toc-page">·</span>
+  </div>
 </section>
 <blockquote>
 <p>读完基础 Solidity 即可上手。目标：识别 6 大漏洞家族，写可被审计的代码。文献截至 2026-04-27，金额按事件当日 USD 计价。</p>
 </blockquote>
 <hr />
 <section class="chapter">
-<h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 主线目录</h2>
+<h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 开场：四个数字，一个共同点</h2>
 
+<ul>
+<li><strong>2016-06-17 · The DAO · 6000 万美元</strong>——一个 30 行合约把以太坊劈成 ETH / ETC 两条链。</li>
+<li><strong>2022-03-29 · Ronin Bridge · 6.25 亿美元</strong>——5/9 个签名节点被钓鱼，桥被搬空。</li>
+<li><strong>2025-02-21 · Bybit · 14.6 亿美元</strong>——前端供应链 + 盲签，三个钱包人按下了"确认"。</li>
+<li><strong>2025-05-22 · Cetus（Sui）· 2.23 亿美元</strong>——一行 shift wrap，AMM 报价被改写。</li>
+</ul>
+<p>四起事件横跨十年、跨越四类攻击家族，共同点只有一个：<strong>链上没有客服，bug 直接是损失</strong>。完整年表见 §0.5。</p>
+<blockquote>
+<p><strong>承上</strong>：模块 04 让你能写 Solidity，本模块教你写<strong>对</strong>。能写不等于能扛住攻击。</p>
+</blockquote>
+<h3 id="01-tldr">0.1 TL;DR / 学习目标 / 前置 / 导览</h3>
 <p>漏洞章节统一四段式：<strong>TL;DR → 钩子 → 漏洞描述+PoC → 修复</strong>。主线 ≤ 30 页 PDF。</p>
 <table>
 <thead>
@@ -633,6 +649,11 @@
 <td>附录 F</td>
 <td>形式化验证深入</td>
 <td>Certora CVL / SMTChecker</td>
+</tr>
+<tr>
+<td>附录 G</td>
+<td>重入的形式化定义</td>
+<td>CEI 时序冲突的数学表达</td>
 </tr>
 </tbody>
 </table>
@@ -736,7 +757,7 @@
 <h3 id="12-web3">1.2 攻击者经济学（Web3 独有）</h3>
 <ul>
 <li><strong>TVL 即赏金池</strong>：协议 TVL 决定攻击上限。</li>
-<li><strong>闪电贷把资本成本归零</strong>：同一笔 tx 借还，只需支付 0.09% 手续费，攻击门槛趋近于零。</li>
+<li><strong>闪电贷把资本成本归零</strong>：同一笔 tx 借还，只需支付约 0.05%（Aave V3）至池费率（Uniswap V3）的手续费，攻击门槛趋近于零。</li>
 <li><strong>赎金博弈</strong>：Euler 归还 1.97 亿，10% bounty 即可触发谈判。</li>
 <li><strong>DPRK 国家级威胁</strong>：Bybit 14.6 亿（<a href="https://www.fbi.gov/news/press-releases/fbi-dc3-and-npa-identification-of-north-korean-cyber-actors-tracked-as-tradertraitor-responsible-for-theft-of-308-million-from-bitcoindmmcom">FBI</a>），愿意烧 6 个月做长线社工。</li>
 </ul>
@@ -759,11 +780,8 @@
 <p><strong>钩子</strong>：银行柜员把钱递出去之后才在账本上划掉余额——你拿到现金，转身又排队，账本说"你还有 1 ETH"，柜员说"好的，再来一份"。重入就是这种"趁柜员转身的瞬间二次取款"。The DAO 2016 年用这招抽走 6000 万；Curve Vyper 编译器 2023 年被同招换皮，赔进去 7000 万。</p>
 </blockquote>
 <h3 id="21">2.1 漏洞描述</h3>
-<p><code>call</code> 是执行权移交。对方拿到 CPU 可反调你，此时"未更新的状态"在他眼里仍是真的。漏洞数学：</p>
-<p>$$
-\text{Interact}(s_t, v(s_t));\quad s_{t+1} = \text{Effect}(s_t)
-$$</p>
-<p>正确的 CEI 顺序应为先 Effect 后 Interact。重入 = <strong>状态可观察性与状态正确性的时序冲突</strong>。</p>
+<p><code>call</code> 是执行权移交。对方拿到 CPU 可反调你，此时"未更新的状态"在他眼里仍是真的。一句话总结：重入 = <strong>状态可观察性与状态正确性的时序冲突</strong>——你已经把钱转出去了，但账本还没改，对方就趁这个空档再来一次。</p>
+<p>形式化定义见附录 G。</p>
 <p>四个变种：① 单函数（The DAO）；② 跨函数（共享 storage 但锁不同）；③ 跨合约（ERC-777/1155/721 receive hook）；④ 只读（view 函数读到脏状态用于定价）。</p>
 <h3 id="22-poc">2.2 PoC</h3>
 <p><strong>场景</strong>：Alice 部署了一个看似正常的 ETH 金库 <code>VulnerableBank</code>，存款 1 ETH 后可以随时 <code>withdraw</code> 拿回。Bob 写了一个攻击合约 <code>ReentrancyAttacker</code>，存进去 1 ETH，但他的 <code>receive</code> 函数会在收到钱的瞬间再次调 <code>withdraw</code>——金库还没来得及把账上余额清零，又掏出 1 ETH。这样一直递归下去，直到金库被掏空。</p>
@@ -803,7 +821,7 @@ $$</p>
 <tr>
 <td>The DAO</td>
 <td>2016-06-17</td>
-<td>6000 万美元（360 万 ETH）</td>
+<td>约 360 万 ETH（当时约 5500 万美元）</td>
 <td>单函数 → ETH/ETC 硬分叉</td>
 </tr>
 <tr>
@@ -996,7 +1014,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">safePrice</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>view<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint80</span><span style="color: #F8F8F8"> </span><span style="color: #000">rid</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">int256</span><span style="color: #F8F8F8"> </span><span style="color: #000">ans</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">updatedAt</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint80</span><span style="color: #F8F8F8"> </span><span style="color: #000">answeredIn</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>feed<span style="color: #000; font-weight: bold">.</span>latestRoundData<span style="color: #000; font-weight: bold">();</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>ans<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>BadPrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                                 </span><span style="color: #8F5902; font-style: italic">// ① 负 / 零价</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>answeredIn<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #F8F8F8"> </span>rid<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                       </span><span style="color: #8F5902; font-style: italic">// ② round 一致（旧 feed 兼容）</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>answeredIn<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #F8F8F8"> </span>rid<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                       </span><span style="color: #8F5902; font-style: italic">// ② roundId 一致性检查——answeredInRound &lt; roundId 表示 stale</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">block.timestamp</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>updatedAt<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span>heartbeat<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #8F5902; font-style: italic">// ③ 新鲜度（ETH/USD 3600s, USDC/USD 86400s）</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">(</span>ans<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">*</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">10</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">**</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">18</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>feed<span style="color: #000; font-weight: bold">.</span>decimals<span style="color: #000; font-weight: bold">());</span><span style="color: #F8F8F8">              </span><span style="color: #8F5902; font-style: italic">// ④ decimals 归一</span>
 <span style="color: #000; font-weight: bold">}</span>
@@ -1445,6 +1463,9 @@ slither<span style="color: #F8F8F8"> </span>.<span style="color: #F8F8F8"> </spa
 <span style="color: #F8F8F8">    </span>--invariant-runs<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">500</span><span style="color: #F8F8F8"> </span>--invariant-depth<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span>
 </code></pre></div>
 <p>Echidna / Certora 配置详见附录 B。</p>
+<blockquote>
+<p><strong>下一站</strong>：漏洞清单背完，真正的考场在 DeFi——下一站模块 06 看 AMM/借贷/稳定币这些系统怎么把这 12 类漏洞放大成 9 位数损失。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1457,7 +1478,7 @@ slither<span style="color: #F8F8F8"> </span>.<span style="color: #F8F8F8"> </spa
 <ul>
 <li><strong>协议</strong>：The DAO，众筹 1.5 亿美元 ETH 的去中心化风投。</li>
 <li><strong>漏洞</strong>：<code>withdraw()</code> 先把 ETH 送出去（<code>call</code>），再把账本余额清零——只要接收方是合约，就可以在"清零"之前反复 <code>withdraw</code>。</li>
-<li><strong>攻击</strong>：攻击者循环调用，从 1 ETH 存款起，把金库里 360 万 ETH 分 36 笔递归抽入一个"子 DAO"。</li>
+<li><strong>攻击</strong>：攻击者通过 <code>splitDAO</code> 递归触发，绕过 split 后的余额更新检查，把金库里 360 万 ETH 抽入一个"子 DAO"。</li>
 <li><strong>影响</strong>：以太坊社区投票硬分叉；ETH 链"撤销"攻击，ETC 链"代码即法律"——一个 bug 劈出两条链。</li>
 </ul>
 <h3 id="_2">关键代码对比</h3>
@@ -2346,6 +2367,21 @@ contract Attacker { receive() external payable { vault.withdraw(); } }
 </tr>
 </tbody>
 </table>
+<hr />
+
+</section><section class="chapter">
+<h2 id="g" id="ch20"><span class="chapter-num">Chapter 20</span><br>附录 G. 重入的形式化定义</h2>
+
+<p>主线 §2.1 给的是直觉解释，这里补上数学表达。设 $s_t$ 为时刻 $t$ 的合约状态，$v(s_t)$ 为基于 $s_t$ 计算出的待转值（如可提余额）。漏洞合约的执行序列为：</p>
+<p>$$
+\text{Interact}(s_t, v(s_t));\quad s_{t+1} = \text{Effect}(s_t)
+$$</p>
+<p>即：先把控制权连同"基于旧状态算出来的值"交出去，再更新状态。攻击者在 $\text{Interact}$ 内重入时观察到的仍是 $s_t$，于是 $v(s_t)$ 可被重复领取。</p>
+<p>正确的 CEI 顺序应为先 Effect 后 Interact：</p>
+<p>$$
+s_{t+1} = \text{Effect}(s_t);\quad \text{Interact}(s_{t+1}, v(s_{t+1}))
+$$</p>
+<p>重入即 <strong>状态可观察性 (observability) 与状态正确性 (correctness) 的时序冲突</strong>——<code>nonReentrant</code> 锁、CEI 顺序、transient storage 都是在消除这一时序窗口。</p>
 <hr />
 <blockquote>
 <p>文献截至 2026-04-27，金额按事件当日 USD 计价，URL 在该日期可访问。</p>

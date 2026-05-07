@@ -526,6 +526,7 @@
 <p>TL;DR：写过 JS / Python 没碰过静态类型语言的 Web2 工程师，照主线读完两周，能写出可被审计的 ERC-20 / ERC-721；要深入研究 Yul、Diamond、storage 二进制级、EIP-7702 字段细节，去附录 A-H。</p>
 </blockquote>
 <p>写 Solidity 跟写 JS 最大的不同：你写完一行代码，编译器把它翻成字节码丢上链——<strong>改不了、删不掉、出 bug 烧的是真钱</strong>。这本模块用主线 8 章把你带到「能写一份审计员愿意签字的 ERC-20」的水平，再用附录 A-H 把所有不上主线的硬核话题归档好，需要时再翻。</p>
+<p>✦ <strong>承上</strong>：模块 03 把 EVM 拆到字节码、stack / memory / storage、gas 计费的底层；本模块上一层楼——用 Solidity 写出能跑在那台 EVM 上的合约。每个 storage 写、每个 calldata 参数、每个 <code>unchecked</code> 块，背后都是模块 03 那张 gas 表在算账。</p>
 <p><strong>版本基线</strong>：Solidity 0.8.28、Foundry stable、OpenZeppelin v5.5.0、Solady v0.1.26。<code>via_ir = false</code>（0.8.28-0.8.33 有清空 bug，2026-02-11 披露）。</p>
 <p><strong>主线 8 章</strong>（按顺序读）：</p>
 <figure><img src="diagram-ee49746c8a.png" alt="mermaid diagram"></figure>
@@ -789,7 +790,7 @@
 <blockquote>
 <p>TL;DR：ERC-20 是同质化代币的标准接口；用 OZ v5 继承 + 加你自己的 mint 限额；学完能写一份审计员愿意签字的代币合约。</p>
 </blockquote>
-<p>USDT、USDC、UNI 全是 ERC-20。这套接口包含 <code>transfer</code> / <code>approve</code> / <code>transferFrom</code> / <code>balanceOf</code> / <code>totalSupply</code> 五个函数和两个事件。<strong>自己实现 transferFrom 是面试题，不是生产代码</strong>——OZ v5 的 <code>ERC20.sol</code> 处理过 USDT 不返回 bool、fee-on-transfer 差额、ERC-777 hook 重入等十年踩出来的坑。</p>
+<p>USDT、USDC、UNI 全是 ERC-20。这套接口包含 <code>transfer</code> / <code>approve</code> / <code>transferFrom</code> / <code>allowance</code> / <code>balanceOf</code> / <code>totalSupply</code> 六个函数和两个事件。<strong>自己实现 transferFrom 是面试题，不是生产代码</strong>——OZ v5 的 <code>ERC20.sol</code> 处理过 USDT 不返回 bool、fee-on-transfer 差额、ERC-777 hook 重入等十年踩出来的坑。</p>
 <h3 id="41-oz">4.1 最小合约：继承 OZ 即可</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// SPDX-License-Identifier: MIT</span>
 <span style="color: #204A87; font-weight: bold">pragma solidity</span><span style="color: #F8F8F8"> </span><span style="color: #A40000; border: 1px solid #EF2929">0.8.28</span><span style="color: #000; font-weight: bold">;</span>
@@ -920,6 +921,8 @@
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>ERC721URIStorage<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">MyNFT</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>ERC721URIStorage<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>Ownable<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">nextTokenId</span><span style="color: #000; font-weight: bold">;</span>
+
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">mint</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>uri<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span>onlyOwner<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">id</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">        </span>id<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>nextTokenId<span style="color: #CE5C00; font-weight: bold">++</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #F8F8F8">        </span>_safeMint<span style="color: #000; font-weight: bold">(</span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>id<span style="color: #000; font-weight: bold">);</span>
@@ -1379,6 +1382,7 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <li>记住 3 句话：① CEI——Checks → Effects → Interactions；② 别主动给用户打钱，让他们 claim；③ 升级用 UUPS + OZ 工具检查 storage layout。</li>
 <li>1 道小练习：写一个 <code>VulnerableBank</code>（违反 CEI）+ 一个 <code>Attacker</code> 合约抽干它，再把 bank 改成 CEI 顺序，验证攻击失败。</li>
 </ul>
+<p>✦ <strong>下一站</strong>：你已经能写 Solidity 了，但能写 ≠ 能写对。本章 8 条 checklist 只是开胃菜——下一站模块 05 系统看 12 类漏洞 + 真实事故复盘 + 审计工具链（Slither / Echidna / Foundry invariant），这是合约工程师上线前的必修课，也是把「能跑」升级成「不被抽干」的那一步。</p>
 <hr />
 <h1 id="_9">附录</h1>
 <p>主线学完之后看的硬核话题。每条附录都是「主线提一句、附录展开」的模式——审计、面试、读 Uniswap V4 / Aave V4 源码时回来翻。</p>

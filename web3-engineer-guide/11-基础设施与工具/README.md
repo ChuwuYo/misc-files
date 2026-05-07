@@ -216,7 +216,7 @@ eRPC 自带 health check + circuit breaker（lag > 30 块自动剔除）。`eth_
 
 **TL;DR**：质押 32 ETH → 获得 validator 身份 → 每个 slot 投票（attestation）→ 偶尔被选中提议区块（proposal）→ 获得 ~3-4% APR。
 
-**钩子**：Validator = 押金 32 ETH 的代议士。投票投错（attestation）扣几 gwei；蓄意双投（同一 slot 签两份不同票）最高罚 32 ETH + 强制退出。2024 年某 staking 服务商机房迁移，工程师把 keystore `scp` 到新机器后忘了关老 VC，**9 个 validator 触发 double-sign，单次损失 ~16 ETH/个，共赔 144 ETH**（当时约 $50 万）。
+**钩子**：Validator = 押金 32 ETH 的代议士。投票投错（attestation）扣几 gwei；蓄意双投（同一 slot 签两份不同票）初始罚约 1/32 本金（~1 ETH）+ 强制退出；correlation penalty 视同时被 slash 的 validator 数量叠加，最坏情况趋近全额。2024 年某 staking 服务商机房迁移，工程师把 keystore `scp` 到新机器后忘了关老 VC，**9 个 validator 触发 double-sign，单次损失 ~16 ETH/个，共赔 144 ETH**（当时约 $50 万）。
 
 ### 4.1 入门流程（直觉版）
 
@@ -253,7 +253,7 @@ lighthouse vc \
 
 | 防御 | 工具 | 关键点 |
 |---|---|---|
-| slashing DB 单一来源 | lighthouse VC | 永远不要复制 keystore 到第二台机器同时跑 |
+| slashing DB 单一来源 | lighthouse VC | ① 不要把 keystore（私钥文件）复制到第二台机器同时运行；② slashing protection DB（EIP-3076 JSON）须随 keystore 迁移，它记录已签范围防止双签 |
 | doppelganger 检测 | `--enable-doppelganger-protection` | 启动时延迟 2 epoch 检测网络上是否同 pubkey 在线 |
 | 迁移时导出 EIP-3076 | `prysmctl / lighthouse slashing-protection` | 切换客户端必须导出导入 slashing DB |
 
@@ -265,7 +265,7 @@ lighthouse vc \
 
 **TL;DR**：mev-boost 让 validator 接入第三方 builder 提供的高 MEV 区块，validator 不需要自己搜索 MEV，只需接收出价最高的 block header 并签名。
 
-**钩子**：MEV bundle = 密封投标。Builder（快递员）打包一批交易出价给 validator（拍卖师）；validator 只看到密封的出价金额（blinded header），签名后 relay 才揭示具体 tx 列表（reveal）。一旦签了就必须提议，否则被 slashing。
+**钩子**：MEV bundle = 密封投标。Builder（快递员）打包一批交易出价给 validator（拍卖师）；validator 只看到密封的出价金额（blinded header），签名后 relay 才揭示具体 tx 列表（reveal）。一旦签了就必须广播区块，否则视为 missed proposal——损失 proposer reward 并受轻微 inactivity 惩罚，**不构成 slashable offense**（slashing 仅针对双签或 surround vote）。
 
 ### 5.1 PBS 架构（四个角色）
 
@@ -1459,7 +1459,7 @@ bun run verify-balance.ts   # 另一终端
 
 思路: Pool(id, token0, token1, fee), Position(id, owner, pool, liquidity, tickLower, tickUpper), Swap(id, pool, sender, amount0, amount1, sqrtPrice, tick, ts), Mint, Burn, Collect。关系: Pool 1-N Position, Pool 1-N Swap。derived field: 24h volume / TVL。
 
-易踩坑: tick 用 i32 (signed), liquidity 用 BigInt (u128), 不要 BigDecimal 算定价 (精度丢)。
+易踩坑: tick 用 BigInt（The Graph schema 类型；合约内为 int24）, liquidity 用 BigInt (u128), 不要 BigDecimal 算定价 (精度丢)。
 
 ### 16.5 习题 5: Defender Sentinel 配置改成 Tenderly Alert
 

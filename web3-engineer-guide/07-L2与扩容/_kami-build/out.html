@@ -537,6 +537,7 @@
 </blockquote>
 <p><strong>读者画像</strong>：刚学完 EVM/Solidity，目标是理解 L2 直觉并选一条 L2 部署合约。</p>
 <p><strong>学习目标</strong>：读完主线（第 1–8 章）能回答「我该把合约部署在哪条 L2、为什么」。附录 A–H 供深挖。</p>
+<p><strong>承上</strong>：模块 06 把 DeFi 拆完了，但所有协议都卡在主网 Gas——AMM 一笔 swap $30、清算机器人抢不过、长尾资产根本没法做。本模块换镜头：把执行外包到 L2，把 DA 拆出来当独立资源，把跨链桥当独立协议看。理解这层，DeFi 才有亚秒级确认 + $0.01 手续费的物理可能，模块 06 的协议设计才有真实落点。</p>
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>主线导览</h2>
 
@@ -597,10 +598,10 @@
 <p><strong>类比</strong>：L1 = 法庭（慢、贵、严谨）；L2 = 工地（快、便宜，每天打包施工记录送进法庭）。</p>
 <ul>
 <li><strong>Optimistic</strong>：先信任、事后抽查——7 天挑战期，有人怀疑就打官司；</li>
-<li><strong>ZK</strong>：每份记录附数学证明——几小时内终局，不需等待。</li>
+<li><strong>ZK</strong>：每份记录附数学证明——约 5-30 分钟（视 prover 负载）即终局，不需等待。</li>
 </ul>
 <h3 id="21">2.1 两大派别对比</h3>
-<figure><img src="diagram-4921a89d0a.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-ce2f620374.png" alt="mermaid diagram"></figure>
 
 <table>
 <thead>
@@ -614,7 +615,7 @@
 <tr>
 <td>提款延迟</td>
 <td>7 天</td>
-<td>几小时</td>
+<td>约 5-30 分钟（视 prover 负载）</td>
 </tr>
 <tr>
 <td>Prover 成本</td>
@@ -670,7 +671,7 @@
 <blockquote>
 <p><strong>TL;DR</strong>：ZK Rollup 每个 batch 附一份数学证明，L1 验证通过即终局，无需等待。工程师关心三件事：proof 多大、验证多贵、prover 多慢。</p>
 </blockquote>
-<p><strong>场景</strong>：同样把 100 USDC 转给朋友，如果是 zkSync 而非 Arbitrum，几小时后资金就到 L1——因为 ZK rollup 不需要「事后抽查」，每个 batch 上链时<strong>附一份数学证明</strong>，L1 用 50 万 gas 验完，通过即终局。</p>
+<p><strong>场景</strong>：同样把 100 USDC 转给朋友，如果是 zkSync 而非 Arbitrum，约 5-30 分钟（视 prover 负载）后资金就到 L1——因为 ZK rollup 不需要「事后抽查」，每个 batch 上链时<strong>附一份数学证明</strong>，L1 用 50 万 gas 验完，通过即终局。</p>
 <h3 id="41">4.1 类比：快递查验码</h3>
 <p><strong>ZK 证明 = 快递查验码</strong>。快递员（sequencer）交货时附上一串验证码，收件方（L1）扫一下就确认货物正确，不需要亲自清点每一件——这就是「有效性证明」的直觉。</p>
 <h3 id="42-rollup">4.2 Rollup 场景的三件套</h3>
@@ -903,8 +904,8 @@
 <h3 id="82-stage-1-5">8.2 Stage 1 硬要求（5 条）</h3>
 <ol>
 <li><strong>permissionless proof</strong>：任何人能挑战（Optimistic）或任何 prover 能提交（ZK）；</li>
-<li><strong>Security Council ≥ 8 人</strong>，≥50% 独立外部成员；</li>
-<li><strong>多签门槛 ≥ 75%</strong>；</li>
+<li><strong>Security Council ≥ 8 人</strong>（独立成员比例为 Vitalik 讨论稿建议，非 L2BEAT 正式框架）；</li>
+<li><strong>多签门槛 ≥ 75%</strong>（如 6/8）；</li>
 <li><strong>upgrade delay ≥ 7 天</strong>；</li>
 <li><strong>force inclusion</strong>：用户可绕过 sequencer 强制提款。</li>
 </ol>
@@ -942,6 +943,7 @@
 <h3 id="85-stage">8.5 Stage 不是唯一指标</h3>
 <p>Stage 评级 ≠ 安全评级。Blast 和 zkSync Era 同为 Stage 0，但 Blast 因 fraud proof 未上线风险更高。实际评估还需看：sequencer force inclusion 延迟、合约审计、bug bounty。</p>
 <p><strong>章末</strong>：L2BEAT Stage 的数学定义见附录 B。</p>
+<p><strong>下一站</strong>：L2 里最硬核的支柱是 ZK——它不仅压缩 rollup 计算，还能证明任意陈述。本模块把 ZK 当成「rollup 工具」介绍，但它的能力远不止此。下一站模块 08 系统看 SNARK/STARK/zkVM/zkML，把 ZK 从「rollup 加速器」升级到「通用证明系统」，理解为什么 ZK 是未来十年密码学最值得押注的方向。</p>
 <hr />
 
 </section><section class="chapter">

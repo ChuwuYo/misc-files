@@ -478,47 +478,52 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">09</span>
-    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">附录 A：ERC-721A / 5192 / 4906 / 6551 / 2981 详</a></span>
+    <span class="toc-title"><a href="#ch09" style="color:inherit;text-decoration:none">主线小结与下一站</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">10</span>
-    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">附录 B：NFT 市场份额（OpenSea / Blur / Magic Eden）</a></span>
+    <span class="toc-title"><a href="#ch10" style="color:inherit;text-decoration:none">附录 A：ERC-721A / 5192 / 4906 / 6551 / 2981 详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">11</span>
-    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">附录 C：版税之战详</a></span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">附录 B：NFT 市场份额（OpenSea / Blur / Magic Eden）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">12</span>
-    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">附录 D：Farcaster Hub / Frame / Mini Apps 详</a></span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">附录 C：版税之战详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">13</span>
-    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">附录 E：Lens v3 / Lens Chain 详</a></span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">附录 D：Farcaster Hub / Frame / Mini Apps 详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">14</span>
-    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">附录 F：ENS 治理边界详</a></span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">附录 E：Lens v3 / Lens Chain 详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">15</span>
-    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">附录 G：EAS Schema 设计详</a></span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">附录 F：ENS 治理边界详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">16</span>
-    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 H：真实事件复盘（BAYC 230 万被盗 / Inferno Drainer）</a></span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 G：EAS Schema 设计详</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">17</span>
-    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">延伸阅读（主线精选）</a></span>
+    <span class="toc-title"><a href="#ch17" style="color:inherit;text-decoration:none">附录 H：真实事件复盘（BAYC 230 万被盗 / Inferno Drainer）</a></span>
+    <span class="toc-page">·</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">18</span>
+    <span class="toc-title"><a href="#ch18" style="color:inherit;text-decoration:none">延伸阅读（主线精选）</a></span>
     <span class="toc-page">·</span>
   </div>
 </section>
@@ -528,6 +533,7 @@
 <p>NFT 不是 JPEG 图片，是<strong>给链上 256 位整数绑定语义</strong>的通用机制。绑张图是收藏品，绑个名字是 ENS，绑个声誉是 Soulbound，绑个钱包是 ERC-6551——同一抽象，不同语义，像数字所有权证书。</p>
 <p><strong>主线目标</strong>：写过 ERC-20 的工程师，读完能写出第一个 NFT 合约 + 集成 ENS。</p>
 <p>前置：模块 04（Solidity）。工程基线：Solidity <code>0.8.28</code>，OpenZeppelin v5.5.0，viem 2.43.3，siwe@2.3.2，eas-sdk@2.7.0，@farcaster/frame-sdk 0.1.x。</p>
+<p>模块 12 的 AI agent 想在链上行动，第一道坎是"我是谁、凭什么被信任"——本模块给出 ENS / EAS / Soulbound / ERC-6551 这套答案，也是所有人类用户进入 Web3 的同一个入口。</p>
 <hr />
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>主线路径</h2>
@@ -866,7 +872,7 @@
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>需合约实现 ERC-4906（interfaceID <code>0x49064906</code>），市场才信任变更。</p>
-<p><strong>章末</strong>：存储选 IPFS baseURI 作为默认，艺术收藏考虑 Arweave，动态 metadata 加 ERC-4906 事件。下一章接入 ENS + SIWE 登录。</p>
+<p><strong>章末</strong>：存储选 IPFS baseURI 作为默认，艺术收藏考虑 Arweave，动态 metadata 加 ERC-4906 事件。tokenURI 后面那串 IPFS / Arweave 哈希其实是另一个独立战场——模块 14 会系统讲存储层怎么把"链下文件永久可用"做成工程问题。下一章先接入 ENS + SIWE 登录。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1023,7 +1029,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span>a<span style="color: #000; font-weight: bold">.</span>schema<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span>schemaUID
 <span style="color: #F8F8F8">            </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>a<span style="color: #000; font-weight: bold">.</span>attester<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span>trustedAttester
 <span style="color: #F8F8F8">            </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>a<span style="color: #000; font-weight: bold">.</span>expirationTime<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span>a<span style="color: #000; font-weight: bold">.</span>expirationTime<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">block.timestamp</span><span style="color: #000; font-weight: bold">)</span>
-<span style="color: #F8F8F8">            </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!</span>a<span style="color: #000; font-weight: bold">.</span>revocationTime<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">            </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>a<span style="color: #000; font-weight: bold">.</span>revocationTime<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic">// why: 校验 schema 对、attester 可信、未过期、未撤销</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #000; font-weight: bold">}</span>
@@ -1112,14 +1118,21 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <p><strong>fid 的社交特殊性</strong>：转 fid 给别人时全网 follow 跟着走，这是社交语义的路径依赖，也是 Farcaster 用户极少 transfer fid 的原因。</p>
 <p><strong>章末</strong>：Farcaster 是目前工程师最容易上手的 Web3 社交协议，Mini App 是最快的分发渠道。Lens v3 / Lens Chain 详见附录 E。</p>
 <hr />
-<h1 id="_2">附录</h1>
+
+</section><section class="chapter">
+<h2 id="_2" id="ch09"><span class="chapter-num">Chapter 09</span><br>主线小结与下一站</h2>
+
+<p>主线 7 章走完一条线：<strong>ERC-721 / 1155 / 6551 给资产以唯一 id</strong>（第 1-3 章）→ <strong>元数据存储把链上 id 接到链下内容</strong>（第 4 章）→ <strong>ENS + SIWE 让人类名字和钱包登录可用</strong>（第 5 章）→ <strong>EAS attestation 把声誉做成可验证的链上断言</strong>（第 6 章）→ <strong>Farcaster 把社交图谱搬到协议层</strong>（第 7 章）。一条主线下来，工程师手里就有了 NFT + 身份 + 社交三件套。</p>
+<p><strong>下一站</strong>：第 4 章里 tokenURI 指向的 <code>ipfs://...</code> 哈希，到底怎么保证十年后还能拉得到？模块 14 系统讲 IPFS / Arweave / Filecoin / Walrus，把"NFT 元数据永久可用"从一句承诺变成一套可工程化的存储层。</p>
+<hr />
+<h1 id="_3">附录</h1>
 <blockquote>
 <p>附录内容比主线更深，可按需跳读。主线已覆盖写出 NFT + ENS 的所有必要知识；附录是工程深挖和市场背景。</p>
 </blockquote>
 <hr />
 
 </section><section class="chapter">
-<h2 id="aerc-721a-5192-4906-6551-2981" id="ch09"><span class="chapter-num">Chapter 09</span><br>附录 A：ERC-721A / 5192 / 4906 / 6551 / 2981 详</h2>
+<h2 id="aerc-721a-5192-4906-6551-2981" id="ch10"><span class="chapter-num">Chapter 10</span><br>附录 A：ERC-721A / 5192 / 4906 / 6551 / 2981 详</h2>
 
 <h3 id="a1-erc-721a-mint">A.1 ERC-721A：批量 mint 优化</h3>
 <p>2022-01 Azuki 用 ERC-721A 把 mint(5) 从 617k gas 压到 85k——核心思路：<strong>只在 ownership 变化点写 storage</strong>，<code>ownerOf</code> 往前回溯找锚点（O(k) 读换 O(1) 写）。</p>
@@ -1261,7 +1274,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="bnft-opensea-blur-magic-eden" id="ch10"><span class="chapter-num">Chapter 10</span><br>附录 B：NFT 市场份额（OpenSea / Blur / Magic Eden）</h2>
+<h2 id="bnft-opensea-blur-magic-eden" id="ch11"><span class="chapter-num">Chapter 11</span><br>附录 B：NFT 市场份额（OpenSea / Blur / Magic Eden）</h2>
 
 <p><strong>2026 市场格局</strong>（techgolly.com 数据）：OpenSea 累计 $39.5B / Blur $2.8B，OpenSea 重夺主导。</p>
 <table>
@@ -1298,7 +1311,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="c" id="ch11"><span class="chapter-num">Chapter 11</span><br>附录 C：版税之战详</h2>
+<h2 id="c" id="ch12"><span class="chapter-num">Chapter 12</span><br>附录 C：版税之战详</h2>
 
 <table>
 <thead>
@@ -1342,7 +1355,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="dfarcaster-hub-frame-mini-apps" id="ch12"><span class="chapter-num">Chapter 12</span><br>附录 D：Farcaster Hub / Frame / Mini Apps 详</h2>
+<h2 id="dfarcaster-hub-frame-mini-apps" id="ch13"><span class="chapter-num">Chapter 13</span><br>附录 D：Farcaster Hub / Frame / Mini Apps 详</h2>
 
 <p><strong>Hub 网络</strong>：~40 个节点 gossip 同步四类消息（CastAdd / CastRemove / ReactionAdd / FollowAdd）。消息由 fid Ed25519 key 签名，Hub 验签接受。任何人可跑 Hub。</p>
 <p><strong>Mini Apps 实战（Next.js 15）</strong>：</p>
@@ -1390,7 +1403,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="elens-v3-lens-chain" id="ch13"><span class="chapter-num">Chapter 13</span><br>附录 E：Lens v3 / Lens Chain 详</h2>
+<h2 id="elens-v3-lens-chain" id="ch14"><span class="chapter-num">Chapter 14</span><br>附录 E：Lens v3 / Lens Chain 详</h2>
 
 <p>Lens（Aave 创始人 Stani Kulechov 2022 推出）走 on-chain social 路线。</p>
 <p><strong>时间线</strong>：2022-05 v1 on Polygon → 2024-11 v3 testnet on Lens Chain（zkSync stack + Avail DA）→ 2025-04-04 Lens Chain mainnet（迁移 125GB / 65 万 profile / 2800 万 follow）→ 2026-Q1 Mask Network 接手 stewardship。</p>
@@ -1404,7 +1417,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="fens" id="ch14"><span class="chapter-num">Chapter 14</span><br>附录 F：ENS 治理边界详</h2>
+<h2 id="fens" id="ch15"><span class="chapter-num">Chapter 15</span><br>附录 F：ENS 治理边界详</h2>
 
 <ul>
 <li><code>.eth</code> 顶级 namehash 的 controller 由 ENS DAO + root multisig 持有（ENS Labs 是主要提案方）</li>
@@ -1416,7 +1429,7 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <hr />
 
 </section><section class="chapter">
-<h2 id="geas-schema" id="ch15"><span class="chapter-num">Chapter 15</span><br>附录 G：EAS Schema 设计详</h2>
+<h2 id="geas-schema" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 G：EAS Schema 设计详</h2>
 
 <h3 id="schema">Schema 字段最佳实践</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>address recipient        // 被证明对象（必须）
@@ -1438,7 +1451,7 @@ bytes32 refUID           // 引用另一条 attestation（链式声誉）
 <hr />
 
 </section><section class="chapter">
-<h2 id="hbayc-230-inferno-drainer" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 H：真实事件复盘（BAYC 230 万被盗 / Inferno Drainer）</h2>
+<h2 id="hbayc-230-inferno-drainer" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 H：真实事件复盘（BAYC 230 万被盗 / Inferno Drainer）</h2>
 
 <h3 id="h1-bayc-230-wyvern-calldata-2022-02">H.1 BAYC 230 万被盗：Wyvern calldata 漏洞（2022-02）</h3>
 <p>损失 $1.7M / 254 NFT（含 BAYC #3475）。Wyvern v2 允许订单创建后修改 calldata，攻击者拿"半填"订单签名后补 calldata 把 NFT 转出。Seaport 修复：calldata 进 hash。</p>
@@ -1467,7 +1480,7 @@ Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', '
 <hr />
 
 </section><section class="chapter">
-<h2 id="_3" id="ch17"><span class="chapter-num">Chapter 17</span><br>延伸阅读（主线精选）</h2>
+<h2 id="_4" id="ch18"><span class="chapter-num">Chapter 18</span><br>延伸阅读（主线精选）</h2>
 
 <table>
 <thead>

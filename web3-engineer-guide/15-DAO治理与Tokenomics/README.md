@@ -458,7 +458,7 @@ OZ VestingWallet — 教学用，简单 cliff + linear
 - DAO 不是"民主软件"，是"代币 + Governor + Timelock"三件套——三者缺一就是赌场。
 - 投票机制选型决定权力分布：1T1V 适合协议金库，QV/QF 适合公共物品，1P1V 必须先解决身份层。
 - OZ Governor 是事实标准，但真正持钱的是 Timelock；Governor 只是"提议执行者"，48 小时延迟是社区最后的撤销窗口。
-- 三种治理攻击命门各异：The DAO 是 reentrancy + 没 Timelock，Beanstalk 是 timelock=0 + 闪电贷，Humpy 是"完全合法"——quorum 太低，supermajority 没设。
+- 三种治理攻击命门各异：The DAO 是 reentrancy（违反 CEI 顺序），Beanstalk 是 timelock=0 + 闪电贷，Humpy 是"完全合法"——quorum 太低，supermajority 没设。
 - Tokenomics 比合约审计更决定项目命运。团队 + 投资人 > 50% / TGE 流通 < 5% / 没有 cliff，三个红旗见一即跑。
 
 **全 guide 收官**：

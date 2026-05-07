@@ -719,7 +719,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <p>Prover 持有 L2 所有交易的执行细节，向 L1 合约证明「这批交易执行后，新状态根是 X」。</p>
 <ul>
 <li>业务方写 Solidity，ZK 在后台透明运行；</li>
-<li>主流：zkSync Era（Type 4）、Scroll、Linea（Type 2）、Starknet（Cairo + S-two）；</li>
+<li>主流：zkSync Era（Type 4）、Scroll、Linea（Type 2）、Starknet（Cairo VM，不在 EVM 兼容类型框架；Kakarot 跑在其上属 Type 3/4）；</li>
 <li>目标：SP1 Hypercube 已实现 12 秒内证完 ETH L1 区块（real-time proving）。</li>
 </ul>
 <h3 id="2zkbridge">场景 2：zkBridge（替代多签）</h3>
@@ -1341,7 +1341,7 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 <h2 id="8" id="ch09"><span class="chapter-num">Chapter 09</span><br>第 8 章 安全红线、练习与进阶路线</h2>
 
 <blockquote>
-<p><strong>TL;DR</strong>：USENIX Security 2024 SoK：≈96% 真实 ZK 漏洞来自 under-constrained。会看漏洞，比会写电路更值钱。</p>
+<p><strong>TL;DR</strong>：USENIX Security 2024 SoK：≈95% 真实 ZK 漏洞来自 under-constrained。会看漏洞，比会写电路更值钱。</p>
 </blockquote>
 <h3 id="_29">钩子</h3>
 <p>Trail of Bits 在 PLONK / Bulletproofs / Spartan 实现里发现 frozen heart 漏洞——不是算法错，是 Fiat-Shamir 少 hash 了一项。ZK 的安全边界不在数学，在「每一行代码是否真的约束了你以为约束了的东西」。</p>
@@ -1701,7 +1701,7 @@ verify(cm, z, v, π) -&gt; bool
 <td><strong>Type 4</strong></td>
 <td>仅源码兼容（Solidity/Vyper → 自定义 VM）</td>
 <td>最快</td>
-<td>zkSync Era、Starknet（通过 Kakarot）</td>
+<td>zkSync Era；Kakarot（跑在 Starknet 上的 EVM 兼容层，Starknet 原生 Cairo VM 不在该框架内）</td>
 </tr>
 </tbody>
 </table>
@@ -2022,7 +2022,7 @@ verify(cm, z, v, π) -&gt; bool
 <p>后果：恶意 prover 可以先生成挑战，再选对自己有利的 commitment——即「后置 commitment」，破坏协议完整性。</p>
 <p>修复方式：确保 transcript 在每次 squeeze（生成挑战）前 absorb 了所有输出的 commitment，用唯一 domain separator 区分不同协议。</p>
 <h3 id="h3-under-constrained">H.3 Under-Constrained：最高频漏洞</h3>
-<p>USENIX Security 2024 SoK：≈96% 真实 ZK 漏洞来自 under-constrained。</p>
+<p>USENIX Security 2024 SoK：≈95% 真实 ZK 漏洞来自 under-constrained。</p>
 <p><strong>为什么难发现</strong>：under-constrained 不会让诚实 proof 生成失败，也不会让 verifier 拒绝——只有恶意 prover 故意填错时才会被利用。</p>
 <p><strong>典型模式</strong>：</p>
 <table>

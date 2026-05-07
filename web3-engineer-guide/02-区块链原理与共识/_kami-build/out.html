@@ -832,11 +832,7 @@
 <li>Bob 手里那笔钱就消失了。</li>
 </ol>
 <p>她需要多少算力才能挖出更长的链？答案是越多越好。她有的算力比例叫 q（如 q=0.3 表示她占全网 30%）。</p>
-<p>中本聪白皮书给了精确公式（看不懂没关系，下面有翻译）：</p>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P(成功双花) ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
-其中 λ = z·q/p，p = 1 - q，z = 商家等的确认数
-</code></pre></div>
-<p><strong>数学翻译</strong>：</p>
+<p><strong>先看数字直觉</strong>：q=0.10、等 6 块确认时，攻击成功率约 <strong>0.024%</strong>——这就是交易所"6 个确认"标准的来源。q 翻三倍到 0.30，6 确认成功率跳到 ~17.7%；q 到 0.40 时 6 确认还有 35%。换句话说，<strong>算力比例每往上挪一档，确认数要翻倍才能压住风险</strong>。</p>
 <table>
 <thead>
 <tr>
@@ -856,7 +852,7 @@
 <tr>
 <td>0.30（占 30%）</td>
 <td>25%</td>
-<td><strong>13%</strong></td>
+<td><strong>~17.7%</strong></td>
 <td>2.0%</td>
 </tr>
 <tr>
@@ -867,8 +863,11 @@
 </tr>
 </tbody>
 </table>
-<p><strong>举例：z=6、q=0.30</strong>——表里是 13%，但中本聪原文取的近似版本约 0.6%（不同近似差别在于是否把"领先若干块"当作起点）。要点是：<strong>等的确认越多，攻击者算力越少时成功率越快归零</strong>。</p>
-<p><strong>交易所为什么等 6 个确认</strong>：q=0.10 时 z=6 把成功率压到 0.024%，这是白皮书附录给的参考值。</p>
+<p><strong>公式</strong>：上表数字来自中本聪白皮书 §11 给的精确公式（看不懂没关系，看上面表就够）：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>P(成功双花) ≈ 1 − Σ_{k=0..z} [(λ^k · e^{-λ}) / k!] × (1 − (q/p)^(z-k))
+其中 λ = z·q/p，p = 1 - q，z = 商家等的确认数
+</code></pre></div>
+<p><strong>举例：z=6、q=0.30</strong>——按白皮书 §11 精确 Poisson 级数计算约 <strong>17.7%</strong>。要点是：<strong>等的确认越多，攻击者算力越少时成功率越快归零</strong>。</p>
 <p><strong>q 的现实约束</strong>：Bitcoin 全网算力 600 EH/s，要凑 q=0.1 需要租 60 EH/s 算力，NiceHash 一天约 400 万美元——攻击不划算。但小币种（如 ETC，第 7 章）算力小，q=0.5 实际可达，就被 51% 攻击过。</p>
 <h4 id="325-vs">3.2.5 最长链 vs 最重链</h4>
 <p>Bitcoin 文档说"最长链规则"，但实际是<strong>最重链</strong>（cumulative work）。区别：如果攻击者用低难度块伪造一条更<strong>长</strong>的链，节点不应接受。最重链规则会拒绝它，最长链规则会被骗。代码 <code>code/pow_chain.py</code> 用的就是最重链规则。</p>
@@ -1137,7 +1136,6 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 </tr>
 </tbody>
 </table>
-<h3 id="254">25.4 易混点速查表</h3>
 <hr />
 
 </section><section class="chapter">
@@ -1214,7 +1212,7 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 <h3 id="86-alpenglowpoh">8.6 Alpenglow：PoH 退役计划</h3>
 <p>2025 年 Anza 提出 Alpenglow，要用 <strong>Votor + Rotor</strong> 替换 PoH + Tower BFT。</p>
 <ul>
-<li><strong>Votor</strong>：把 32 轮确认压缩到 1-2 轮；80% stake 在线时单轮 finality ≈ 100ms</li>
+<li><strong>Votor</strong>：把 32 轮确认压缩到 1-2 轮；80% stake 在线时单轮 finality ≈ 150ms</li>
 <li><strong>Rotor</strong>：替换 Turbine 数据广播树为 one-hop broadcast</li>
 </ul>
 <p>时间线：
@@ -1271,45 +1269,6 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 <hr />
 <!-- Sections 27-28: Avalanche, Lightning Network 已移至附录 A -->
 
-<p>2018 年一份匿名论文挂上 IPFS——作者署名 "Team Rocket"。论文叫《Snowflake to Avalanche》，提出一种全新的共识思路：每个节点不需要问全网所有人，只随机问 k=20 个邻居就能做决定。后来这个团队浮出水面是康奈尔的 Emin Gün Sirer 和他的学生们，2020 年正式发布 Avalanche 主网。</p>
-<p>Snow 系和前面所有 BFT 协议结构上完全不同。PBFT/HotStuff 决定一块时所有 n 节点都参与；Snow 让每个节点只随机抽样 k=20 个邻居，依赖大数定律——这思路像选举民调，调查 1000 人就能预测全国选民。代价是它放弃了 BFT 派"≤1/3 拜占庭即安全"的硬保证，换成 metastable 性质：<strong>"网络绝大多数最终会偏好同一值"</strong>——这是个统计学性质，不是绝对 BFT 保证。这条路线学界至今仍有争议（Bern University 2024 报告）。</p>
-<h3 id="272">27.2 协议演进</h3>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Slush（不容拜占庭，只是个 toy）
-   ↓
-Snowflake（加 conviction counter）
-   ↓
-Snowball（加 confidence counter）
-   ↓
-Snowman（线性链版本，Avalanche C-Chain 用）
-   ↓
-Avalanche（DAG 版本）
-</code></pre></div>
-<h3 id="273">27.3 核心参数</h3>
-<p>来源：Avalanche 官方文档 / pkg.go.dev/snowball，访问 2026-04-27：</p>
-<ul>
-<li><strong>k = 20</strong>：每次随机抽样 20 个邻居</li>
-<li><strong>AlphaPreference = 15</strong>：15/20 偏好同一答案 → 改变本地偏好</li>
-<li><strong>AlphaConfidence = 15</strong>：15/20 偏好同一答案 → confidence +1</li>
-<li><strong>β = 20</strong>：连续 20 轮 confidence 累计 → 决定</li>
-</ul>
-<h3 id="274-snowball">27.4 Snowball 决策流程图</h3>
-<figure><img src="diagram-241b7a61a1.png" alt="mermaid diagram"></figure>
-
-<h3 id="275">27.5 安全模型</h3>
-<p>抽 20 个邻居的安全性来自概率：攻击者 &lt;20% 节点时，期望拜占庭 &lt;4 个，达不到 α=15 majority。但这条曲线在攻击者份额 ≥50% 时开始失效，70%+ 几乎一定能控制（见习题 8）——所以 Avalanche 的安全边界 ~50%，与 BFT 经典 33% 不同。这点经常被忽视。Avalanche 团队 2024 提的 Frosty 改进加强了 liveness 保证。来源：crypto.unibe.ch/2024/05/21/avalanche.html（2026-04-27）。</p>
-<h3 id="276-avalanche">27.6 Avalanche 真实部署</h3>
-<h4 id="2761">27.6.1 三链架构</h4>
-<p>Avalanche 不是单链，而是 X-Chain（资产）+ P-Chain（治理 + staking）+ C-Chain（EVM 兼容）三链。Snowman 共识跑在 P/C-Chain，Avalanche DAG 共识跑在 X-Chain。</p>
-<h4 id="2762-2026-04">27.6.2 数字感（2026-04）</h4>
-<ul>
-<li>验证者数：~ 1300+</li>
-<li>平均 TPS：~ 50（C-Chain），峰值 4000+（X-Chain）</li>
-<li>终结性：~ 1.2-2 秒</li>
-<li>TVL：$1B+</li>
-</ul>
-<h3 id="277">27.7 工程画像</h3>
-<p>三链架构（X-Chain 资产 / P-Chain 治理 + staking / C-Chain EVM）对开发者不友好——多数 EVM DApp 直接跑 C-Chain，X/P 链是历史包袱。2024 Subnets/L1 公告把"起子链"做成基础设施级能力，2025 ACP-77 重构 Subnet 经济激励。Snow 系本身仍是 Avalanche 最强的差异化——但形式化证明的争议让它在企业链场景拼不过 Hashgraph 的 aBFT 标签。</p>
-<hr />
 
 </section><section class="chapter">
 <h2 id="9-finality" id="ch11"><span class="chapter-num">Chapter 11</span><br>9. Finality 概念</h2>
@@ -1353,7 +1312,7 @@ Avalanche（DAG 版本）
 </tr>
 </tbody>
 </table>
-<p>PoW 链的概率最终性遵循中本聪公式 P(逆转 z 块) = (q/p)^z（q&lt;p），交易所通常等到 P&lt;0.001% 才入账——Bitcoin q=0.1 时 6 conf P≈0.024% 是这条阈值的来源。Ethereum 经济最终性的具体数字：回滚 finalized 块至少需 1/3 stake 被 slash ≈ 10M+ ETH，是博弈论而非数学保证。Tendermint/Algorand/GRANDPA 的 absolute finality 是协议层硬约束，代价是分区时停链。</p>
+<p>PoW 链的概率最终性遵循中本聪公式（以下为 q≪p 时的粗略近似，精确值见上方 Poisson 级数）P(逆转 z 块) = (q/p)^z（q&lt;p），交易所通常等到 P&lt;0.001% 才入账——Bitcoin q=0.1 时 6 conf P≈0.024% 是这条阈值的来源。Ethereum 经济最终性的具体数字：回滚 finalized 块至少需 1/3 stake 被 slash ≈ 10M+ ETH，是博弈论而非数学保证。Tendermint/Algorand/GRANDPA 的 absolute finality 是协议层硬约束，代价是分区时停链。</p>
 <h3 id="92-safety-vs-liveness">9.2 Safety vs Liveness</h3>
 <p>Safety = 永不出错（不会两块在同高度都 finalized）；Liveness = 永远在进步（链一直出块）。FAB 的标准定义。两者不能同时百分百保证（FLP），所有协议都在分区时做取舍：</p>
 <table>
@@ -1454,6 +1413,7 @@ Avalanche（DAG 版本）
 </tbody>
 </table>
 <p><strong>章末</strong>：主线到这里结束。你已经能看着任何共识协议白皮书，先翻 System Model，问它怎么解 nothing-at-stake / long-range / grinding，再看它在 safety vs liveness 上选了什么。后续附录 A-F 提供更深的技术细节。</p>
+<p><strong>下一站——模块 03《EVM 与智能合约》</strong>：共识把"账本写哪条"敲定了，但账本里那行字到底执行什么逻辑？模块 03 把镜头推到链上的虚拟机：EVM 字节码、gas 计费、storage slot、合约调用语义。本册讲的 finality 在那边变成"交易何时不可回滚"的工程边界，slashing 的押金账本则变成 Solidity 合约里一个 mapping。共识管"谁说了算"，EVM 管"算出来的是什么"——下一站见。</p>
 <hr />
 <h1 id="_2">附录</h1>
 <hr />
@@ -1683,7 +1643,43 @@ Avalanche（DAG 版本）
 </code></pre></div>
 <p>关键改进：主动起搏器（Jolteon）、reputation-based leader election（v4）、Quorum Store mempool、prefix consensus model（Raptr）。Raptr 测试 TPS 260,000，延迟 &lt; 800ms。</p>
 <h3 id="a10-avalanche-snow">A.10 Avalanche Snow 系列</h3>
-<p>2018 年匿名论文，每个节点只随机抽样 k=20 个邻居投票，依赖大数定律——思路像选举民调。安全边界约 50%（非 BFT 经典 33%），这点经常被忽视。三链架构：X-Chain（资产）、P-Chain（治理+staking）、C-Chain（EVM 兼容）。</p>
+<p>2018 年一份匿名论文挂上 IPFS——作者署名 "Team Rocket"。论文叫《Snowflake to Avalanche》，提出一种全新的共识思路：每个节点不需要问全网所有人，只随机问 k=20 个邻居就能做决定。后来这个团队浮出水面是康奈尔的 Emin Gün Sirer 和他的学生们，2020 年正式发布 Avalanche 主网。</p>
+<p>Snow 系和前面所有 BFT 协议结构上完全不同。PBFT/HotStuff 决定一块时所有 n 节点都参与；Snow 让每个节点只随机抽样 k=20 个邻居，依赖大数定律——这思路像选举民调，调查 1000 人就能预测全国选民。代价是它放弃了 BFT 派"≤1/3 拜占庭即安全"的硬保证，换成 metastable 性质：<strong>"网络绝大多数最终会偏好同一值"</strong>——这是个统计学性质，不是绝对 BFT 保证。这条路线学界至今仍有争议（Bern University 2024 报告）。</p>
+<h4 id="a101">A.10.1 协议演进</h4>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Slush（不容拜占庭，只是个 toy）
+   ↓
+Snowflake（加 conviction counter）
+   ↓
+Snowball（加 confidence counter）
+   ↓
+Snowman（线性链版本，Avalanche C-Chain 用）
+   ↓
+Avalanche（DAG 版本）
+</code></pre></div>
+<h4 id="a102">A.10.2 核心参数</h4>
+<p>来源：Avalanche 官方文档 / pkg.go.dev/snowball，访问 2026-04-27：</p>
+<ul>
+<li><strong>k = 20</strong>：每次随机抽样 20 个邻居</li>
+<li><strong>AlphaPreference = 15</strong>：15/20 偏好同一答案 → 改变本地偏好</li>
+<li><strong>AlphaConfidence = 15</strong>：15/20 偏好同一答案 → confidence +1</li>
+<li><strong>β = 20</strong>：连续 20 轮 confidence 累计 → 决定</li>
+</ul>
+<h4 id="a103-snowball">A.10.3 Snowball 决策流程图</h4>
+<figure><img src="diagram-241b7a61a1.png" alt="mermaid diagram"></figure>
+
+<h4 id="a104">A.10.4 安全模型</h4>
+<p>抽 20 个邻居的安全性来自概率：攻击者 &lt;20% 节点时，期望拜占庭 &lt;4 个，达不到 α=15 majority。但这条曲线在攻击者份额 ≥50% 时开始失效，70%+ 几乎一定能控制（见习题 8）——所以 Avalanche 的安全边界 ~50%，与 BFT 经典 33% 不同。这点经常被忽视。Avalanche 团队 2024 提的 Frosty 改进加强了 liveness 保证。来源：crypto.unibe.ch/2024/05/21/avalanche.html（2026-04-27）。</p>
+<h4 id="a105-avalanche">A.10.5 Avalanche 真实部署</h4>
+<p><strong>三链架构</strong>：Avalanche 不是单链，而是 X-Chain（资产）+ P-Chain（治理 + staking）+ C-Chain（EVM 兼容）三链。Snowman 共识跑在 P/C-Chain，Avalanche DAG 共识跑在 X-Chain。</p>
+<p><strong>数字感（2026-04）</strong>：</p>
+<ul>
+<li>验证者数：~ 1300+</li>
+<li>平均 TPS：~ 50（C-Chain），峰值 4000+（X-Chain）</li>
+<li>终结性：~ 1.2-2 秒</li>
+<li>TVL：$1B+</li>
+</ul>
+<h4 id="a106">A.10.6 工程画像</h4>
+<p>三链架构（X-Chain 资产 / P-Chain 治理 + staking / C-Chain EVM）对开发者不友好——多数 EVM DApp 直接跑 C-Chain，X/P 链是历史包袱。2024 Subnets/L1 公告把"起子链"做成基础设施级能力，2025 ACP-77 重构 Subnet 经济激励。Snow 系本身仍是 Avalanche 最强的差异化——但形式化证明的争议让它在企业链场景拼不过 Hashgraph 的 aBFT 标签。</p>
 <h3 id="a11-bitcoin-lightning-network">A.11 Bitcoin Lightning Network</h3>
 <p>不是共识协议，是绕开共识的工程方案——把高频小额转账从主链卸载到链下双方共识，只用主链做"开/关通道结算"。HTLC（Hashed TimeLock Contract）保证原子性：要么所有跳成功，要么所有跳退款。2026-04：14940 节点，48678 通道，总容量 5637 BTC，月交易量 $1.17B。</p>
 <h3 id="a12-narwhal-bullshark-mysticeti">A.12 Narwhal + Bullshark / Mysticeti</h3>

@@ -80,7 +80,7 @@ graph LR
 **类比**：L1 = 法庭（慢、贵、严谨）；L2 = 工地（快、便宜，每天打包施工记录送进法庭）。
 
 - **Optimistic**：先信任、事后抽查——7 天挑战期，有人怀疑就打官司；
-- **ZK**：每份记录附数学证明——几小时内终局，不需等待。
+- **ZK**：每份记录附数学证明——约 5-30 分钟（视 prover 负载）即终局，不需等待。
 
 ### 2.1 两大派别对比
 
@@ -92,7 +92,7 @@ flowchart TB
         OP2-->|有人挑战| OP4[fraud proof 二分博弈 L1 仲裁]
     end
     subgraph ZK[ZK：每次附数学证明]
-        ZK1[Sequencer 提交状态根 + validity proof]-->ZK2[L1 验证 proof 50-500k gas]
+        ZK1[Sequencer 提交状态根 + validity proof]-->ZK2[L1 验证 proof 200-500k gas]
         ZK2-->|通过| ZK3[状态根即时生效]
         ZK2-->|失败| ZK4[拒绝整批]
     end
@@ -100,7 +100,7 @@ flowchart TB
 
 | 维度 | Optimistic | ZK |
 |---|---|---|
-| 提款延迟 | 7 天 | 几小时 |
+| 提款延迟 | 7 天 | 约 5-30 分钟（视 prover 负载） |
 | Prover 成本 | 仅挑战时产生 | 每 batch 都要生成（硬件密集） |
 | EVM 等价性 | 几乎完美 | Type-1 到 Type-4 不等 |
 | 安全假设 | ≥1 诚实挑战者 | 电路正确 + 可信设置安全 |
@@ -158,7 +158,7 @@ sequenceDiagram
 
 > **TL;DR**：ZK Rollup 每个 batch 附一份数学证明，L1 验证通过即终局，无需等待。工程师关心三件事：proof 多大、验证多贵、prover 多慢。
 
-**场景**：同样把 100 USDC 转给朋友，如果是 zkSync 而非 Arbitrum，几小时后资金就到 L1——因为 ZK rollup 不需要「事后抽查」，每个 batch 上链时**附一份数学证明**，L1 用 50 万 gas 验完，通过即终局。
+**场景**：同样把 100 USDC 转给朋友，如果是 zkSync 而非 Arbitrum，约 5-30 分钟（视 prover 负载）后资金就到 L1——因为 ZK rollup 不需要「事后抽查」，每个 batch 上链时**附一份数学证明**，L1 用 50 万 gas 验完，通过即终局。
 
 ### 4.1 类比：快递查验码
 
@@ -312,8 +312,8 @@ graph LR
 ### 8.2 Stage 1 硬要求（5 条）
 
 1. **permissionless proof**：任何人能挑战（Optimistic）或任何 prover 能提交（ZK）；
-2. **Security Council ≥ 8 人**，≥50% 独立外部成员；
-3. **多签门槛 ≥ 75%**；
+2. **Security Council ≥ 8 人**（独立成员比例为 Vitalik 讨论稿建议，非 L2BEAT 正式框架）；
+3. **多签门槛 ≥ 75%**（如 6/8）；
 4. **upgrade delay ≥ 7 天**；
 5. **force inclusion**：用户可绕过 sequencer 强制提款。
 

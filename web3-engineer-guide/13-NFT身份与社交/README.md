@@ -475,7 +475,7 @@ contract ReputationGate {
         return a.schema == schemaUID
             && a.attester == trustedAttester
             && (a.expirationTime == 0 || a.expirationTime > block.timestamp)
-            && !a.revocationTime != 0;
+            && a.revocationTime == 0;
         // why: 校验 schema 对、attester 可信、未过期、未撤销
     }
 }
