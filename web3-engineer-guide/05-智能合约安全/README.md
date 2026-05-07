@@ -4,7 +4,18 @@
 
 ---
 
-## 0. 主线目录
+## 0. 开场：四个数字，一个共同点
+
+- **2016-06-17 · The DAO · 6000 万美元**——一个 30 行合约把以太坊劈成 ETH / ETC 两条链。
+- **2022-03-29 · Ronin Bridge · 6.25 亿美元**——5/9 个签名节点被钓鱼，桥被搬空。
+- **2025-02-21 · Bybit · 14.6 亿美元**——前端供应链 + 盲签，三个钱包人按下了"确认"。
+- **2025-05-22 · Cetus（Sui）· 2.23 亿美元**——一行 shift wrap，AMM 报价被改写。
+
+四起事件横跨十年、跨越四类攻击家族，共同点只有一个：**链上没有客服，bug 直接是损失**。完整年表见 §0.5。
+
+> **承上**：模块 04 让你能写 Solidity，本模块教你写**对**。能写不等于能扛住攻击。
+
+### 0.1 TL;DR / 学习目标 / 前置 / 导览
 
 漏洞章节统一四段式：**TL;DR → 钩子 → 漏洞描述+PoC → 修复**。主线 ≤ 30 页 PDF。
 
@@ -27,6 +38,7 @@
 | 附录 D | 其余真实事件 postmortem | Wormhole / Nomad / Beanstalk … |
 | 附录 E | 审计流程模板 | STRIDE-DeFi / Actor Map / 报告 |
 | 附录 F | 形式化验证深入 | Certora CVL / SMTChecker |
+| 附录 G | 重入的形式化定义 | CEI 时序冲突的数学表达 |
 
 ---
 
@@ -98,13 +110,9 @@ flowchart LR
 
 ### 2.1 漏洞描述
 
-`call` 是执行权移交。对方拿到 CPU 可反调你，此时"未更新的状态"在他眼里仍是真的。漏洞数学：
+`call` 是执行权移交。对方拿到 CPU 可反调你，此时"未更新的状态"在他眼里仍是真的。一句话总结：重入 = **状态可观察性与状态正确性的时序冲突**——你已经把钱转出去了，但账本还没改，对方就趁这个空档再来一次。
 
-$$
-\text{Interact}(s_t, v(s_t));\quad s_{t+1} = \text{Effect}(s_t)
-$$
-
-正确的 CEI 顺序应为先 Effect 后 Interact。重入 = **状态可观察性与状态正确性的时序冲突**。
+形式化定义见附录 G。
 
 四个变种：① 单函数（The DAO）；② 跨函数（共享 storage 但锁不同）；③ 跨合约（ERC-777/1155/721 receive hook）；④ 只读（view 函数读到脏状态用于定价）。
 
@@ -680,6 +688,8 @@ forge test --match-contract InvariantVaultTest -vvv \
 
 Echidna / Certora 配置详见附录 B。
 
+> **下一站**：漏洞清单背完，真正的考场在 DeFi——下一站模块 06 看 AMM/借贷/稳定币这些系统怎么把这 12 类漏洞放大成 9 位数损失。
+
 ---
 
 ## 故事 1：The DAO（2016-06-17）
@@ -1148,6 +1158,26 @@ contract Tiny {
 | Certora | 7.x | 学术免费 license |
 | OpenZeppelin | 5.x | upgrade-plugin-foundry 0.3.x |
 | Solidity | 0.8.25-0.8.28 | 看链上 EVM 版本对齐 |
+
+---
+
+## 附录 G. 重入的形式化定义
+
+主线 §2.1 给的是直觉解释，这里补上数学表达。设 $s_t$ 为时刻 $t$ 的合约状态，$v(s_t)$ 为基于 $s_t$ 计算出的待转值（如可提余额）。漏洞合约的执行序列为：
+
+$$
+\text{Interact}(s_t, v(s_t));\quad s_{t+1} = \text{Effect}(s_t)
+$$
+
+即：先把控制权连同"基于旧状态算出来的值"交出去，再更新状态。攻击者在 $\text{Interact}$ 内重入时观察到的仍是 $s_t$，于是 $v(s_t)$ 可被重复领取。
+
+正确的 CEI 顺序应为先 Effect 后 Interact：
+
+$$
+s_{t+1} = \text{Effect}(s_t);\quad \text{Interact}(s_{t+1}, v(s_{t+1}))
+$$
+
+重入即 **状态可观察性 (observability) 与状态正确性 (correctness) 的时序冲突**——`nonReentrant` 锁、CEI 顺序、transient storage 都是在消除这一时序窗口。
 
 ---
 

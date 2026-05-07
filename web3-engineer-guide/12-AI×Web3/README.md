@@ -43,7 +43,6 @@ L0 是营销重灾区。**L1 起才有工程价值，L3 是 2026-04 最先进实
 ## 目录
 
 **主线**
-- [0.5 时间轴](#05-时间轴ai-编程工具与链上-ai-的两条平行历史)
 - [0. 两端为何都不可信](#0-公共讨论的两端为何都不可信)
 - [1. 生产化 AI 应用](#1-已经在帮工程师的-ai-应用生产化)
 - [2. 涌现但不可全信](#2-正在涌现但不可全信的-ai-应用)
@@ -64,58 +63,13 @@ L0 是营销重灾区。**L1 起才有工程价值，L3 是 2026-04 最先进实
 - [附录 F. SCONE-bench / METR 详细数据](#附录-f-scone-bench--metr-详细数据)
 - [附录 G. AI 代币项目分析](#附录-g-ai-代币项目分析)
 - [附录 H. Intent / ERC-7521 详](#附录-h-intent--erc-7521-详)
-
----
-
-## 0.5 时间轴：AI 编程工具与链上 AI 的两条平行历史
-
-> 看这张图的方法：**上半段是工程师手里的工具，下半段是协议层的实验**。两条线在 2024-2026 之间各自加速，但加速的点不一样——一条让工时下降，另一条让"信任假设"下降。后面所有讨论都建立在这两条线**没合流**这个事实上。
-
-```mermaid
-timeline
-    title AI 编程工具 vs 链上 AI 的双线演化（2020-2026）
-    section AI 编程工具
-        2020 : GPT-3 论文发布，第一次出现"通用文本生成有商用潜力"的信号
-        2021 : OpenAI Codex 发布(06)
-             : GitHub Copilot 技术预览(06-29)
-        2022 : Copilot 商用化(06-21)
-             : Tabnine、Codeium 起步
-        2023 : Copilot Chat 切换 GPT-4
-             : Cursor、Aider 早期版本登场
-        2024 : Cursor 大规模采用，Claude 3.5 Sonnet 发布
-             : Devin 等"AI software engineer"概念出现
-        2025 : Claude Code 发布并成为审计圈首选
-             : METR 实验：AI 让资深 OSS 开发者慢 19%(07)
-             : OpenZeppelin Contracts MCP(07-30)、Cyfrin Aderyn MCP
-             : Trail of Bits Slither-MCP 发布(11-15)
-             : Lovable 8 个月达 100M ARR
-        2026 : Trail of Bits 公开 AI-native 内部基础设施(03-31)
-             : Solidity 调查：88% 月用 AI、61% 首选 Claude Code
-             : Anthropic SCONE-bench：AI 模拟盗取 4.6M 美元(12)
-    section 链上 AI / zkML / 去中心化推理
-        2020 : Ocean Protocol、SingularityNET 等概念项目存在但用户少
-        2022 : Modulus Labs "The Cost of Intelligence" 量化 zkML 成本
-        2023 : EZKL 早期版本，zkML 论文密集涌现
-             : Bittensor 主网迭代，subnet 模型雏形
-        2024 : ORA 提出 opML(arXiv 2401.17555, 01)
-             : Vitalik "Crypto + AI intersection" 文章(01-30)
-             : Eliza、ai16z、Virtuals 等 agent 框架与代币集中爆发
-        2025 : Bittensor dTAO 升级(02)，subnet 数从 ~32 飙到 100+
-             : Lagrange DeepProve-1 完成 GPT-2 完整推理证明(07)
-             : Oasis ROFL 主网上线(07-02)
-             : a16z JOLT Atlas 公布秒级 zkML 证明(08)
-             : Coinbase + Cloudflare 成立 x402 Foundation(09)
-             : Bittensor 首次减半，subnet 数 120+(12)
-        2026 : Bittensor 128 active subnet(04)
-             : x402 Base 上累计 1.19 亿笔交易、年化 ~6 亿美元(03)
-             : zkML 仍以 GPT-2 级别为"完整证明"上限，更大模型靠 opML/TEE
-```
-
-2024 是分水岭：Claude/GPT-4 让"AI 写 Solidity"从 demo 变工作流；主流安全公司体系化嵌入 AI 审计；AI agent + 代币 + intent 合流成为大资金叙事，但投机远多于真实使用。
+- [附录 I. AI×Web3 时间轴](#附录-i-aiweb3-时间轴ai-编程工具与链上-ai-的两条平行历史)
 
 ---
 
 ## 0. 公共讨论的两端为何都不可信
+
+> 模块 11 把 RPC、索引、存储、DePIN compute 这套"链下底座"摆好之后，本模块要回答的是：底座之上跑 AI，公共讨论里的乐观与悲观哪些站得住、哪些不站得住。
 
 > 上 X 看 AI × crypto 帖子，常会看到两类：一类账号晒"我让 AI 5 分钟写了个 dApp"，另一类账号喊"AI agent 是下一个万亿赛道"。**这两类的共同点是，没有人公布他们项目链上昨天有几个用户、合约部署后被独立审计找到几个高危**。
 
@@ -125,7 +79,7 @@ timeline
 - [Stack Overflow 2025](https://survey.stackoverflow.co/2025/ai)（检索 2026-04）：84% 全行业用 AI，"高度信任"历年新低。
 - [METR 2025-07](https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/)（检索 2026-04）：16 位资深开发者做 246 个真实任务，**用 AI 平均慢 19%**，主观却感觉"快 20%"——主观与客观的偏差是本模块所有判断的起点。
 
-本模块目标：用 Trust Model + L0-L3 框架画清"能用、应用、不应过度依赖"的边界。
+本模块目标：用 Trust Model + L0-L3 框架画清"能用、应用、不应过度依赖"的边界。先看哪些已生产化（§1），再看哪些还在涌现（§2 起）；两条平行历史线整理在文末附录 I。
 
 ---
 
@@ -202,60 +156,21 @@ flowchart LR
 - **局限**：Agent 模式追赶 Cursor 较慢，Solidity 专项不如 Claude/Cursor。
 - **建议**：公司只让用 GitHub 生态时够用；个人选型不必默认它。
 
-##### OpenAI Codex（2025 重生版）
+##### 其余工具速览
 
-- **定位**：Codex 名字复活为 autonomous agent（与 2021 版只共享名字）。Copilot 内置，可接管 issue 自开 PR（[GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/openai-codex)，检索 2026-04）。
-- **实测**：通用代码任务接近 Claude Code，Solidity 无公开 benchmark。
-- **局限**：Web3 ecosystem-fit 不如 Claude Code（MCP 生态）。
-- **建议**：观望，等 Solidity 用例。
+主线只详谈 Cursor / Claude Code / Aider / Copilot 四款；其余 9 款压成一张表，深度数据按需挪到附录或官网。
 
-##### Codeium / Windsurf
-
-- **定位**：Codeium 2024 改名 Windsurf，Cascade Agent 模式深度集成（[官方对比](https://windsurf.com/blog/code-assistant-comparison-copilot-tabnine-ghostwriter-codeium)，检索 2026-04）。2025 年增长最快的 AI 编程助手（[Educative](https://www.educative.io/blog/ai-coding-copilots)，检索 2026-04）。
-- **局限**：模型层不及 Claude/GPT 旗舰，复杂多文件改动有时丢上下文。Solidity 上是次选。
-- **建议**：免费层好，预算紧时备用。
-
-##### Continue
-
-- **定位**：开源 VSCode/JetBrains 插件，可挂任意模型。轻量 Cursor 替代，Tab + Chat + 简单 Agent。
-- **局限**：Agent 能力远不如 Cursor / Claude Code。Solidity 用户少。
-- **建议**：仅在必须开源 + 自托管的合规场景下选用。
-
-##### Sourcegraph Cody
-
-- **定位**：Sourcegraph 代码搜索 + LLM，索引整个组织代码。大型多 repo 组织强，单 Solidity 项目少用。
-- **局限**：贵，企业向。
-- **建议**：除非公司已用 Sourcegraph，否则不必。
-
-##### Tabnine
-
-- **定位**：Privacy-first，可在客户 VPC 部署。补全 OK，agent 弱。
-- **局限**：模型代差大，不如 Codeium 免费层。
-- **建议**：仅在"代码不出 VPC"合规场景下选用。
-
-##### Replit Agent 3
-
-- **定位**：浏览器 AI 全栈，2025-09 上线。内置 DB、auth、hosting、30+ 集成（[介绍](https://medium.com/@aftab001x/the-2026-ai-coding-platform-wars-replit-vs-windsurf-vs-bolt-new-f908b9f76325)，检索 2026-04）。极适合"前端 + DB"原型。
-- **局限**：Web3 后端（合约 + RPC + indexer）支持有限，Solidity/审计薄弱。
-- **建议**：链下部分可用；合约部分用 Foundry + Cursor/Claude Code。
-
-##### Bolt.new
-
-- **定位**：StackBlitz 出品，浏览器 Node + 一键部署（[Mocha 2026](https://getmocha.com/blog/best-ai-app-builder-2026/)，检索 2026-04）。前端原型秒级出活。
-- **局限**：合约工程支持薄弱，Web3 靠社区模板。
-- **建议**：Hackathon MVP 可以；生产用 Next.js + CI/CD。
-
-##### v0.dev (Vercel)
-
-- **定位**：一句话/图片 → React + Tailwind shadcn/ui 代码（GPT-4 系列）。dApp UI 草图秒级出活，wagmi/viem 集成顺畅。
-- **局限**：只生成 UI，不写合约/indexer。
-- **建议**：dApp 前端值得用。详见模块 10。
-
-##### Lovable
-
-- **定位**：自然语言 → React + Supabase 全栈应用。8 个月 100M ARR（[官方](https://lovable.dev/guides/best-ai-app-builders)，检索 2026-04）。
-- **局限**：Web3 是边缘场景，集成靠用户粘合。
-- **建议**：链下产品可选；dApp 不必。
+| 工具 | 用途 | 一句评价 |
+|------|------|---------|
+| **OpenAI Codex（2025 重生版）** | Copilot 内置 autonomous agent，可接管 issue 自开 PR（[GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/openai-codex)） | 通用任务接近 Claude Code，Web3 ecosystem-fit 不如 MCP 生态，观望等 Solidity 用例 |
+| **Codeium / Windsurf** | Codeium 2024 改名 Windsurf，Cascade Agent 模式深度集成（[官方](https://windsurf.com/blog/code-assistant-comparison-copilot-tabnine-ghostwriter-codeium)） | 2025 增长最快但模型代差仍在，Solidity 次选，免费层适合预算紧时备用 |
+| **Continue** | 开源 VSCode/JetBrains 插件，可挂任意模型，Tab + Chat + 简单 Agent | 轻量 Cursor 替代，Agent 能力差距明显，仅适合必须开源 + 自托管的合规场景 |
+| **Sourcegraph Cody** | 代码搜索 + LLM，索引整个组织代码 | 大型多 repo 强，单 Solidity 项目少用；公司已用 Sourcegraph 才考虑 |
+| **Tabnine** | Privacy-first，可在客户 VPC 部署 | 补全 OK、agent 弱，模型代差大，仅适合"代码不出 VPC"合规场景 |
+| **Replit Agent 3** | 浏览器 AI 全栈，内置 DB、auth、hosting、30+ 集成（[介绍](https://medium.com/@aftab001x/the-2026-ai-coding-platform-wars-replit-vs-windsurf-vs-bolt-new-f908b9f76325)） | 链下原型快，合约/审计薄弱；Web3 后端仍要 Foundry + Cursor/Claude Code |
+| **Bolt.new** | StackBlitz 出品，浏览器 Node + 一键部署（[Mocha 2026](https://getmocha.com/blog/best-ai-app-builder-2026/)） | 前端原型秒级出活，合约工程支持薄弱；Hackathon MVP 可以、生产请 Next.js + CI/CD |
+| **v0.dev (Vercel)** | 一句话/图片 → React + Tailwind + shadcn/ui，GPT-4 系列 | dApp UI 草图秒出，wagmi/viem 顺畅，只做 UI 不写合约/indexer，详见模块 10 |
+| **Lovable** | 自然语言 → React + Supabase 全栈，8 个月 100M ARR（[官方](https://lovable.dev/guides/best-ai-app-builders)） | 链下产品可选，Web3 边缘场景，集成靠用户粘合，dApp 不必 |
 
 ```mermaid
 quadrantChart
@@ -1318,6 +1233,10 @@ LLM 整合结果 → 自然语言回答
 - 月更：Messari State of report（Akash、Bittensor 等）；
 - 实时：Trail of Bits Blog、OpenZeppelin News、Cyfrin Blog、Lagrange Blog。
 
+### 下一站：模块 13 · NFT / 身份 / 社交
+
+AI agent 要在链上行动，必须先有可验证身份。下一站模块 13 看 ENS / EAS / Soulbound / ERC-6551 这一整套身份基础设施，承接本模块 §3.6 / §4.4 留下的 KYA（Know Your Agent）主题——把"持私钥的实习生"升级成"链上有声誉、可被审计的法人格"。
+
 ---
 
 **核心结论：**
@@ -1562,3 +1481,51 @@ Solver 市场
 ```
 
 关键：Agent 不直接持私钥，不直接签 tx。只有人类（或 ERC-4337 SmartAccount）最终授权。这是 aixbt 黑客事件后的业界共识安全模式。
+
+---
+
+## 附录 I. AI×Web3 时间轴：AI 编程工具与链上 AI 的两条平行历史
+
+> 看这张图的方法：**上半段是工程师手里的工具，下半段是协议层的实验**。两条线在 2024-2026 之间各自加速，但加速的点不一样——一条让工时下降，另一条让"信任假设"下降。本模块所有讨论都建立在这两条线**没合流**这个事实上。
+
+```mermaid
+timeline
+    title AI 编程工具 vs 链上 AI 的双线演化（2020-2026）
+    section AI 编程工具
+        2020 : GPT-3 论文发布，第一次出现"通用文本生成有商用潜力"的信号
+        2021 : OpenAI Codex 发布(06)
+             : GitHub Copilot 技术预览(06-29)
+        2022 : Copilot 商用化(06-21)
+             : Tabnine、Codeium 起步
+        2023 : Copilot Chat 切换 GPT-4
+             : Cursor、Aider 早期版本登场
+        2024 : Cursor 大规模采用，Claude 3.5 Sonnet 发布
+             : Devin 等"AI software engineer"概念出现
+        2025 : Claude Code 发布并成为审计圈首选
+             : METR 实验：AI 让资深 OSS 开发者慢 19%(07)
+             : OpenZeppelin Contracts MCP(07-30)、Cyfrin Aderyn MCP
+             : Trail of Bits Slither-MCP 发布(11-15)
+             : Lovable 8 个月达 100M ARR
+        2026 : Trail of Bits 公开 AI-native 内部基础设施(03-31)
+             : Solidity 调查：88% 月用 AI、61% 首选 Claude Code
+             : Anthropic SCONE-bench：AI 模拟盗取 4.6M 美元(12)
+    section 链上 AI / zkML / 去中心化推理
+        2020 : Ocean Protocol、SingularityNET 等概念项目存在但用户少
+        2022 : Modulus Labs "The Cost of Intelligence" 量化 zkML 成本
+        2023 : EZKL 早期版本，zkML 论文密集涌现
+             : Bittensor 主网迭代，subnet 模型雏形
+        2024 : ORA 提出 opML(arXiv 2401.17555, 01)
+             : Vitalik "Crypto + AI intersection" 文章(01-30)
+             : Eliza、ai16z、Virtuals 等 agent 框架与代币集中爆发
+        2025 : Bittensor dTAO 升级(02)，subnet 数从 ~32 飙到 100+
+             : Lagrange DeepProve-1 完成 GPT-2 完整推理证明(07)
+             : Oasis ROFL 主网上线(07-02)
+             : a16z JOLT Atlas 公布秒级 zkML 证明(08)
+             : Coinbase + Cloudflare 成立 x402 Foundation(09)
+             : Bittensor 首次减半，subnet 数 120+(12)
+        2026 : Bittensor 128 active subnet(04)
+             : x402 Base 上累计 1.19 亿笔交易、年化 ~6 亿美元(03)
+             : zkML 仍以 GPT-2 级别为"完整证明"上限，更大模型靠 opML/TEE
+```
+
+2024 是分水岭：Claude/GPT-4 让"AI 写 Solidity"从 demo 变工作流；主流安全公司体系化嵌入 AI 审计；AI agent + 代币 + intent 合流成为大资金叙事，但投机远多于真实使用。
