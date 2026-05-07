@@ -757,7 +757,7 @@
 <h3 id="12-web3">1.2 攻击者经济学（Web3 独有）</h3>
 <ul>
 <li><strong>TVL 即赏金池</strong>：协议 TVL 决定攻击上限。</li>
-<li><strong>闪电贷把资本成本归零</strong>：同一笔 tx 借还，只需支付约 0.05%（Aave V3）至池费率（Uniswap V3）的手续费，攻击门槛趋近于零。</li>
+<li><strong>闪电贷把资本成本归零</strong>：同一笔 tx 借还，只需支付约 0.05%（Aave V3）的手续费；Uniswap V3 没有独立闪电贷原语，是 <code>flash()</code> callback，费率 = 该池 swap fee tier（0.05/0.3/1%），攻击门槛趋近于零。</li>
 <li><strong>赎金博弈</strong>：Euler 归还 1.97 亿，10% bounty 即可触发谈判。</li>
 <li><strong>DPRK 国家级威胁</strong>：Bybit 14.6 亿（<a href="https://www.fbi.gov/news/press-releases/fbi-dc3-and-npa-identification-of-north-korean-cyber-actors-tracked-as-tradertraitor-responsible-for-theft-of-308-million-from-bitcoindmmcom">FBI</a>），愿意烧 6 个月做长线社工。</li>
 </ul>
@@ -1014,7 +1014,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">safePrice</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>view<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">returns</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint80</span><span style="color: #F8F8F8"> </span><span style="color: #000">rid</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">int256</span><span style="color: #F8F8F8"> </span><span style="color: #000">ans</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">updatedAt</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint80</span><span style="color: #F8F8F8"> </span><span style="color: #000">answeredIn</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>feed<span style="color: #000; font-weight: bold">.</span>latestRoundData<span style="color: #000; font-weight: bold">();</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>ans<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;=</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>BadPrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                                 </span><span style="color: #8F5902; font-style: italic">// ① 负 / 零价</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>answeredIn<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #F8F8F8"> </span>rid<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                       </span><span style="color: #8F5902; font-style: italic">// ② roundId 一致性检查——answeredInRound &lt; roundId 表示 stale</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>answeredIn<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&lt;</span><span style="color: #F8F8F8"> </span>rid<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #F8F8F8">                       </span><span style="color: #8F5902; font-style: italic">// ② roundId 一致性检查——answeredInRound &lt; roundId 表示 stale（Chainlink V3 后 answeredInRound 已 deprecated，常 = roundId；保留检查为兼容旧 feed）</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">block.timestamp</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>updatedAt<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span>heartbeat<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>StalePrice<span style="color: #000; font-weight: bold">();</span><span style="color: #8F5902; font-style: italic">// ③ 新鲜度（ETH/USD 3600s, USDC/USD 86400s）</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #000; font-weight: bold">(</span>ans<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">*</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">10</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">**</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #0000CF; font-weight: bold">18</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">-</span><span style="color: #F8F8F8"> </span>feed<span style="color: #000; font-weight: bold">.</span>decimals<span style="color: #000; font-weight: bold">());</span><span style="color: #F8F8F8">              </span><span style="color: #8F5902; font-style: italic">// ④ decimals 归一</span>
 <span style="color: #000; font-weight: bold">}</span>
@@ -1135,6 +1135,9 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <li><strong>EIP-6780（Cancun）≠ 安全网</strong>：selfdestruct 在非创建 tx 只清 ETH 余额，但 Munchables 证明 deployer 可直接改 implementation 改 storage——<strong>selfdestruct 限制不能让你忽略 deployer/admin 权力</strong>。</li>
 </ol>
 <h3 id="45-bybit-2025-02-21146">4.5 Bybit 案完整攻击链（2025-02-21，14.6 亿美元）</h3>
+<blockquote>
+<p>（本故事横跨签名钓鱼 + 多签 AC + 供应链——签名钓鱼细节见 §5）</p>
+</blockquote>
 <p>来源：<a href="https://www.sygnia.co/blog/sygnia-investigation-bybit-hack/">Sygnia</a>、<a href="https://www.wiz.io/blog/north-korean-tradertraitor-crypto-heist">Wiz</a>、<a href="https://www.ic3.gov/psa/2025/psa250226">FBI IC3 PSA 250226</a>、<a href="https://www.nccgroup.com/research/in-depth-technical-analysis-of-the-bybit-hack/">NCC Group</a>、<a href="https://www.bleepingcomputer.com/news/security/lazarus-hacked-bybit-via-breached-safe-wallet-developer-machine/">BleepingComputer</a>。</p>
 <figure><pre><code class="language-mermaid">timeline
     title Bybit Heist（DPRK / TraderTraitor / UNC4899）
@@ -1268,6 +1271,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>跨链协议：把目标 chainId 编码进签名内容。前端：永远不让用户盲签 hex calldata。</p>
+<p>permit 跨链重放：fork 后 chainId 变更，DOMAIN_SEPARATOR 缓存失效；OZ ERC20Permit 用 _buildDomainSeparator 自动重建。</p>
 <p><strong>Permit2 钓鱼专项防御</strong>：<a href="https://github.com/Uniswap/permit2">Permit2</a> 把"approve 一次给 Permit2、之后签名授权第三方"标准化，但把钓鱼链路从"approve tx"变成"off-chain 签名"，用户感知更弱。
 - 用户：<a href="https://revoke.cash">revoke.cash</a> 撤 unlimited allowance；钱包升级到 Rabby / Frame / Coinbase（已解析 Permit2）；装 ScamSniffer / WalletGuard。
 - 协议：前端 router 调用前询问"绑定到此次 swap 的 amount"，不默认 unlimited；签名展示"允许 X 在 Y 之前转走 Z"。</p>
@@ -1341,13 +1345,14 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 </code></pre></div>
 <p>vault 创建即有 $10^{\text{offset}}$ 虚拟 share + 1 虚拟 asset，攻击者要抬单价需捐 $10^{\text{offset}}$ 倍 victim 存款。<strong>dead shares 不够</strong>：① deployer 可 redeem 抽走；② Sonne Finance 用 dead shares 仍被攻。</p>
 <p><strong>修复 3：明确 round direction</strong> — OZ <code>Math.mulDiv(a, b, c, Rounding.Floor)</code>；deposit 用 floor、redeem 用 floor（始终向协议有利）。</p>
-<p><strong>修复 4：形式化验证关键数学</strong>（附录 B/F）— 用 Halmos / Certora 证明 <code>deposit_after.shares &gt;= floor(expected)</code>、<code>shift_safe(x, n) ⟺ x.leading_zeros &gt;= n</code>。复杂数学协议<strong>单元测试与审计都不够</strong>。</p>
+<p><strong>修复 4：形式化验证关键数学</strong>（附录 B/F）— 用 Halmos / Certora 证明 <code>deposit_after.shares &gt;= floor(expected)</code>、<code>shift_safe(x, n) ⟺ x.leading_zeros &gt; n</code>（左移 n 位需要前 n+1 位为 0 才不丢最高位）。复杂数学协议<strong>单元测试与审计都不够</strong>。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="7-da" id="ch09"><span class="chapter-num">Chapter 09</span><br>7. 跨链桥 / DA 风险（直觉）</h2>
 
 <blockquote>
+<p><strong>本节是概览章</strong>——四段式被压缩为"直觉 + 案例"；详细 PoC 见附录 D。</p>
 <p><strong>TL;DR</strong>：桥 = 把多个链的安全假设取最弱。multisig 桥靠私钥数，light-client / zk 桥靠密码学。DA 拥堵可让 L2 finality 延迟 4h+，影响所有跨 rollup 协议。</p>
 <p><strong>钩子</strong>：2022-2024 三年，桥被打掉 30+ 亿美元。Ronin 朝鲜人钓走 5 个验证者私钥（6.25 亿），Nomad 一行 <code>confirmAt[bytes32(0)] = 1</code> 让 300 个完全不懂代码的人复制 tx 集体洗劫（1.9 亿）。<strong>桥的本质：ETH 主网再坚固，跨过去之后只剩 5 个验证者守着。</strong></p>
 </blockquote>
@@ -1768,6 +1773,46 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">LogicV2</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">balance</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">owner</span><span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// slot 0/1 互换 → storage collision</span>
 </code></pre></div>
 <p>修复：OZ Foundry plugin <code>Upgrades.upgradeProxy</code> 自动 storage layout diff，<strong>每次升级必跑</strong>。UUPS proxy 推荐，LogicV2 必须继承 <code>UUPSUpgradeable</code>，否则升级后 proxy 永冻。</p>
+<p><strong>EIP-7201 命名空间 storage</strong>：<code>bytes32 constant SLOT = keccak256(abi.encode(uint256(keccak256('myapp.storage')) - 1)) &amp; ~bytes32(uint256(0xff));</code> 用 inline assembly 读写。优势：升级时父子合约 layout 完全隔离，新增字段无需考虑继承顺序与 gap。OpenZeppelin v5 已默认。</p>
+<p><strong>UUPS 必须</strong>：① implementation 构造里 <code>_disableInitializers()</code> 防直接初始化；② <code>_authorizeUpgrade(address) internal override onlyOwner</code>——漏写 onlyOwner = 任意人升级。</p>
+<p><strong>CREATE2 撞击</strong>：salt + initCode 任一可控 → 攻击者预测地址 → 提前部署恶意 init code 替代。Tornado Cash relayer / Wintermute 资助合约都中招。</p>
+<h3 id="a7-solidity-bug">A.7 Solidity 编译器 bug 速查</h3>
+<table>
+<thead>
+<tr>
+<th>版本</th>
+<th>Bug</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.8.13</td>
+<td>InternalCallExtBypass</td>
+<td>inline assembly 内部调用绕过 mutability 检查</td>
+</tr>
+<tr>
+<td>0.8.16</td>
+<td>ABIReencoderHeadOverflow</td>
+<td>nested calldata 数组 re-encode 头部越界</td>
+</tr>
+<tr>
+<td>0.8.20</td>
+<td>PUSH0 链兼容</td>
+<td>部分 L2 / 旧 EVM 不识别 PUSH0，部署即 revert</td>
+</tr>
+<tr>
+<td>0.8.26</td>
+<td>transient storage 误解</td>
+<td>tstore/tload 与 storage 语义混淆，跨调用误用</td>
+</tr>
+<tr>
+<td>0.8.28</td>
+<td>via-ir 清空 bug</td>
+<td>optimizer 在特定 pattern 下错误清空局部变量</td>
+</tr>
+</tbody>
+</table>
 <hr />
 
 </section><section class="chapter">

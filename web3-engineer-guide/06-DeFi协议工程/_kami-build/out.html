@@ -686,6 +686,7 @@ L1 货币层    ETH / USDC / DAI / stETH / WBTC    「DeFi 用什么当钱」
 - <strong>LUSD（Liquity）</strong>：极简——只收 ETH、最低抵押率 110%、无治理代币、无可升级合约。SVB 那次反而成了避风港。
 - <strong>GHO（Aave 原生）</strong>：Aave 池抵押品支撑，2026-04 治理把 stkGHO slash 关到 0，新出 sGHO（5% APR，无 slash 无 cooldown）。
 - <strong>crvUSD（LLAMMA 软清算）</strong>：抵押品慢慢被换成稳定币，避免一秒强平。详见附录 A.4。</p>
+<p><strong>Maker DSR / Sky Savings Rate</strong>：DAI/USDS 持有者把币存进 DSR 合约领无风险利率（来源：协议从抵押品借款收的息）；这是 DeFi "risk-free rate" 锚点，sUSDS 是 yield-bearing wrapper。</p>
 <h3 id="23-rwausde-frax-usdm">2.3 合成 / RWA：USDe / Frax / USDM</h3>
 <p><strong>机制一句话（USDe）</strong>：现货 long 1 ETH + 永续 short 1 ETH，组合美元价值不随 ETH 涨跌变化（delta=0），这组合本身就可以当稳定币。</p>
 <figure><img src="diagram-59e13b656b.png" alt="mermaid diagram"></figure>
@@ -765,11 +766,13 @@ $$</p>
 <figure><img src="diagram-68f9c27084.png" alt="mermaid diagram"></figure>
 
 <p>bZx 2020-02 两次事件就是闪电贷+oracle 操纵的组合拳（详见附录 C）。</p>
+<p>正当用途：① 清算 bot；② 抵押品迁移（collateral swap）；③ 债务再融资（debt swap，Aave V3 native）；④ Maker→Spark 一键搬家</p>
 <h3 id="36-il">3.6 无常损失（IL）</h3>
 <blockquote>
 <p>ETH=$3000 时存 1 ETH + 3000 USDC 进池。三个月后 ETH 涨到 $6000 你撤资。直觉：应该是 1 ETH + 3000 USDC = $9000。实际：0.707 ETH + 4243 USDC = $8485。少了 $515。这 $515 就是 IL。</p>
 </blockquote>
 <p>类比：<strong>LP 是荷官</strong>——价格涨时被迫卖 ETH，价格跌时被迫接 ETH。本质是<strong>给市场卖 straddle 期权</strong>，期权金就是手续费。</p>
+<p><strong>LP = 卖 straddle 期权</strong>（同时押涨跌都赔）。下面公式给精确数字，看不懂可记住：价格变动越大、亏越多。</p>
 <p>公式（设价格倍数 $r = p_1/p_0$）：</p>
 <p>$$
 IL(r) = \frac{2\sqrt{r}}{1+r} - 1
@@ -863,6 +866,7 @@ y │╲                       y │   ╲
 </section><section class="chapter">
 <h2 id="5-hf" id="ch06"><span class="chapter-num">Chapter 06</span><br>第 5 章：借贷与健康因子——HF 是抵押品的安全带</h2>
 
+<p><strong>先看 §6 Oracle</strong>：本章 5.2 清算 + 5.4 杠杆都依赖 oracle 准价；先读 §6 再回 §5 更顺。</p>
 <blockquote>
 <p>TL;DR：抵押 10 ETH（$30k）借 $20k USDC，<strong>健康因子 HF</strong>=「抵押×清算阈值 / 借款」。HF&lt;1 时谁都能调用 <code>liquidate()</code> 折价拿走你的抵押品。HF 是借贷协议的核心安全带。</p>
 </blockquote>
@@ -903,7 +907,7 @@ $$</p>
 <p>实际几次后就停——swap 滑点 + gas + borrow rate 累积。<strong>盈利条件</strong>：wstETH staking yield &gt; USDC borrow rate。一旦 yield 跌或 borrow rate 涨，<strong>所有人同时解杠杆</strong>——2025-10 USDe 事件就是这么炸的。</p>
 <h3 id="55">5.5 三类借贷协议（一段话）</h3>
 <ul>
-<li><strong>共享池（Aave V3）</strong>：所有资产共享一个池，多种抵押 + 多种借款，e-mode 给相关组高 LTV。TVL 龙头 ~$26B。</li>
+<li><strong>共享池（Aave V3）</strong>：所有资产共享一个池，多种抵押 + 多种借款，e-mode 给相关组高 LTV。TVL 龙头 ~$26B。<strong>isolation mode</strong>：高风险资产（如长尾 token）作为抵押品时，借款上限被钉死、不能与其他抵押品组合，防一笔坏账拖累整池</li>
 <li><strong>单一基础资产（Compound III / Comet）</strong>：每市场只能借一种资产（USDC），抵押品只能存不能借——主动牺牲资本效率换安全（V2 时代被闪电贷打了多次）。</li>
 <li><strong>隔离市场（Morpho Blue）</strong>：极简五元组 (抵押, 借款, oracle, IRM, LLTV)，无许可建市场，复杂性外包给上层 curator vault。</li>
 </ul>
@@ -1001,6 +1005,7 @@ $$</p>
 </section><section class="chapter">
 <h2 id="7-lst-lrt-eth" id="ch08"><span class="chapter-num">Chapter 08</span><br>第 7 章：LST / LRT 入门——一笔 ETH 干几份工</h2>
 
+<p><strong>为什么需要 restaking</strong>：ETH 质押已 32M ETH 闲置，只为以太坊本身做安全。EigenLayer 让你把 staked ETH 再次抵押给其他服务（DA、oracle、bridge），收第二份费——但叠加 slashing 风险。</p>
 <blockquote>
 <p>TL;DR：原本 32 ETH 起步、本金锁死的 staking，被 Lido 拆成"任意金额 + 流通的 stETH"，开了 LST 时代。然后 EigenLayer 又把同一笔 ETH 出租给多份"工作"（DA、桥、appchain）赚多份收益——这就是 LRT。代价是单点风险叠加：2026-04 Kelp 事件就是这条路的雷。</p>
 </blockquote>
@@ -1121,6 +1126,7 @@ $$</p>
 <h3 id="83-flashbots-mev-boost">8.3 Flashbots + MEV-Boost 架构（一段话）</h3>
 <p>普通 tx 进<strong>公共 mempool</strong>（任何人能看见，被 sandwich）；想做 MEV 的人通过 <strong>Flashbots Relay</strong> 提交"私有 bundle" → <strong>Builder</strong>（Beaverbuild、Titan、BuilderNet）打包 → <strong>MEV-Boost</strong>（跑在 validator 上的 middleware）选最高出价 block 提议。<strong>90%+ 以太坊区块</strong> 走这条路。前两大 builder 占 90%+ 区块——<strong>MEV 中心化</strong> 是 2026 仍未解决的问题。</p>
 <p><strong>BuilderNet</strong>（2024-12 上线）：Flashbots 把所有 builder 迁到一个跑在 TEE（可信执行环境）里的去中心化网络——这是 MEV 历史的转折。<strong>SUAVE</strong> 是下一代：跨链 MEV-aware encrypted mempool，订单加密发送、TEE 里竞标、执行才解密。</p>
+<p><strong>协议侧防御</strong>：commit-reveal（CowSwap）、batch auction（Penumbra）、private RPC（MEV Blocker / Flashbots Protect）、动态滑点（Uniswap V4 hook）</p>
 <h3 id="_9">章末</h3>
 <p>记住 3 句话：① MEV = 区块排序权的市场化定价；② sandwich 恶、清算良、JIT 灰；③ Flashbots 不是消灭 MEV——是把它变成有规则的拍卖。</p>
 <p>练习：你写一个 sandwich bot 抢 100 ETH 的 swap，front-run 50 ETH。如果另一 bot 在你之后又来一笔，结果怎样？</p>
@@ -1506,6 +1512,7 @@ $$</p>
 </section><section class="chapter">
 <h2 id="fve-tokenomics-berachain-pol-real-yield" id="ch17"><span class="chapter-num">Chapter 17</span><br>附录 F：ve-tokenomics + Berachain PoL + Real Yield 辨真伪</h2>
 
+<p>（与模块 15 §5/§7 重叠——本附录给 DeFi 视角，15 章给治理视角）</p>
 <h3 id="f1-ve33">F.1 ve(3,3) 经济学</h3>
 <p>详见附录 A.6。Aerodrome bribe 市场流程：</p>
 <figure><img src="diagram-df52a90aff.png" alt="mermaid diagram"></figure>
@@ -2086,7 +2093,7 @@ $$</p>
 <td>Curve</td>
 <td>StableSwap + crvUSD</td>
 <td>Eth + 多链</td>
-<td>~$2B</td>
+<td>~$2B（按 DefiLlama 当前值复核——半衰期 90 天）</td>
 <td>Ch9</td>
 </tr>
 <tr>

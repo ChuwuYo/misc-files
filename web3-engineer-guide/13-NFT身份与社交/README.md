@@ -93,7 +93,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MyNFT is ERC721URIStorage, Ownable {
     uint256 private _nextId;
-    // why: 自增 ID。比 keccak256(...) 当 ID 简单，且对人类友好（#1, #2, #3）
+    // why: 自增 ID。比 keccak256(...) 当 ID 简单，且对人类友好（生产惯例 `++_nextId` 从 1 起；此处教学用 ++ 后置便于解释 "id 是 0"）
 
     constructor(address owner_) ERC721("MyNFT", "MNFT") Ownable(owner_) {}
 
@@ -152,7 +152,8 @@ ERC-1155 没有 per-id `approve`——原因：钱包里可能几千种 token，
 
 ```solidity
 // pragma solidity 0.8.28; OZ v5.5.0
-import {ERC1155, ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/...";
+import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import {ERC1155Supply} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract GameItems is ERC1155, ERC1155Supply, AccessControl {
@@ -294,6 +295,8 @@ function reveal() external onlyOwner {
 
 **章末**：存储选 IPFS baseURI 作为默认，艺术收藏考虑 Arweave，动态 metadata 加 ERC-4906 事件。tokenURI 后面那串 IPFS / Arweave 哈希其实是另一个独立战场——模块 14 会系统讲存储层怎么把"链下文件永久可用"做成工程问题。下一章先接入 ENS + SIWE 登录。
 
+**主线视角切换**：第 1-4 章是资产层（资产+元数据），第 5-7 章进入身份/声誉/社交层。
+
 ---
 
 ## 第 5 章 ENS 入门：resolve 与 SIWE 登录
@@ -336,9 +339,13 @@ const avatar = await client.getEnsAvatar({ name: 'vitalik.eth' })
 
 **关键**：反向解析需用户主动设置，默认为 null。UI 显示 ENS 名字前先检查 null。
 
+**安全**：viem getEnsName 不做正向校验——必须 `getEnsAddress(name) === address` 二次验证防伪造反向记录。
+
 ### 5.3 ENS 治理边界
 
 `vitalik.eth` 不是不可剥夺的资产：`.eth` controller 由 ENS DAO + root multisig 持有；ENS Labs 有发起提案的实际能力。**你持有的只是到期日前的使用权**。关键身份证明不要只靠 ENS。详见附录 F。
+
+**CCIP-Read (EIP-3668)**：ENS 离链解析机制——合约抛 OffchainLookup error，client 自动去 URL 取数据 + 链上 verify。Coinbase cb.id / Base names / .box 都靠这个；不读这个看不懂当代 ENS 工作流。
 
 ### 5.4 SIWE 登录（Sign-In with Ethereum）
 
@@ -354,21 +361,21 @@ import { cookies } from 'next/headers'
 // 1. 给前端 nonce
 export async function GET() {
   const nonce = generateNonce()
-  cookies().set('siwe_nonce', nonce, { httpOnly: true, secure: true, maxAge: 600 })
+  ;(await cookies()).set('siwe_nonce', nonce, { httpOnly: true, secure: true, maxAge: 600 })
   return new Response(nonce)
 }
 
 // 2. 验证签名
 export async function POST(req: Request) {
   const { message, signature } = await req.json()
-  const nonce = cookies().get('siwe_nonce')?.value
+  const nonce = (await cookies()).get('siwe_nonce')?.value
   if (!nonce) return Response.json({ error: 'no nonce' }, { status: 400 })
   const { data } = await new SiweMessage(message).verify({
     signature,
     nonce,
     domain: 'example.com',  // 必须硬编码，不信任 message 里的 domain
   })
-  cookies().set('user', data.address, { httpOnly: true })
+  ;(await cookies()).set('user', data.address, { httpOnly: true })
   return Response.json({ address: data.address })
 }
 ```
@@ -401,6 +408,8 @@ async function login() {
 - **信任 message.domain**：后端必须硬编码传 domain 给 `verify()`。
 - **把签名当长效 token**：SIWE 签名只换 session/cookie，签名本身一次即丢。
 - **合约钱包（Safe / 4337）**：使用 EIP-1271，需显式传 provider 给 verify。
+
+**SIWF**：基于 fid 的登录标准；与 SIWE 区别——SIWE 用以太坊地址，SIWF 用 Farcaster fid + custody address，附 fname 自动同步。
 
 **章末**：ENS 解决"叫什么"，SIWE 解决"登录"。下一章 EAS 解决"别人怎么证明你"。
 
@@ -452,9 +461,12 @@ const tx2 = await eas.attest({
   data: { recipient: '0xbob...', expirationTime: 0n, revocable: true, data },
 })
 const attestationUID = await tx2.wait()
+// 注意：eas-sdk 2.7+ 已封装：`const uid = await tx.wait();` 直接拿 UID 字符串
 ```
 
 ### 6.2 链上 Gate（合约验证）
+
+**建议先读 §6.3 EAS schema/attest/revoke**——直觉建立后再看本节合约 gate。
 
 ```solidity
 import {IEAS, Attestation} from "@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol";
@@ -492,6 +504,8 @@ contract ReputationGate {
 | 典型用途 | POAP / KYC badge | 链上声誉 / RetroPGF |
 
 EAS 2026 已部署 30+ 链，[easscan.org](https://easscan.org/) 是它的 Etherscan。详细 schema 设计见附录 G。
+
+**身份谱系**：EAS（attest by someone）/ World ID（attest by self + biometric）/ Privado ID + Polygon ID（attest by issuer）/ Sismo（停运）；token-weighted 治理的隐性前提是 1 person 1 vote，PoP 解决这个。
 
 **章末**：EAS 是声誉层的事实标准。主线在此收束资产 + 身份的基础。下一章进入社交层——Farcaster。
 
@@ -725,6 +739,13 @@ function supportsInterface(bytes4 id) public view override(ERC721, ERC2981) retu
 
 P2P `transferFrom` 不走市场，永远绕过 royalty——这是协议层无法阻止的。
 
+### A.6 标准对比补遗
+
+| 标准 | 一句话 |
+|---|---|
+| ERC-7066 lockable | 锁定 NFT 不可转 |
+| ERC-7160 multi-metadata | 一个 tokenId 多组 metadata |
+
 ---
 
 ## 附录 B：NFT 市场份额（OpenSea / Blur / Magic Eden）
@@ -898,6 +919,8 @@ flowchart LR
 - 应用层用 EIP-4494 permit + 即时撤销代替全集合授权
 - 第三方 widget 严格 CSP / SRI
 - 官方公告链上签名验证入口
+
+**合约层 NFT 漏洞**：tokenURI SSRF（malicious URI 调用内网）/ metadata DoS（巨大 JSON）/ Seaport signature malleability（已修）/ ERC-721 reentrancy on _safeMint callback。
 
 ### H.3 Yuga Labs 收购 CryptoPunks（2022-03）
 

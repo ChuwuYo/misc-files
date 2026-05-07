@@ -605,7 +605,7 @@
 <td>Paxos / PBFT / Tendermint / HotStuff</td>
 </tr>
 <tr>
-<td>确定性（允许随机抽签）</td>
+<td>partial sync + VRF 随机化（绕 FLP 用概率终止）</td>
 <td>Algorand</td>
 </tr>
 <tr>
@@ -955,7 +955,7 @@
 │  [block][block]...[block]                           │
 │  ↑12s     ↑12s          ↑12s                        │
 │                                                      │
-│  每 slot：1 个 proposer，1 个 32-人 committee 投票    │
+│  每 slot 一个 committee；validator 集合按 epoch 切成 32 个 committee │
 │  每 epoch 末尾：checkpoint                           │
 └──────────────────────────────────────────────────────┘
 </code></pre></div>
@@ -969,10 +969,11 @@
 </ul>
 <p>→ head = C1（B1 子树中最大的）。绿色路径 = canonical chain。</p>
 <h3 id="55-casper-ffg">5.5 Casper FFG 双轮投票</h3>
+<p>在抛术语前先记口诀：每条链每 epoch 加一次图章——刚加完叫 justified（暂定），下个 epoch 再加同向图章变 finalized（不可回滚）。下面给精确定义。</p>
 <figure><img src="diagram-dacb5808ce.png" alt="mermaid diagram"></figure>
 
 <h3 id="56-slashing">5.6 Slashing 两条戒律</h3>
-<p><strong>No Double Vote</strong>：同一个 epoch 不能签两个不同的 target。<strong>No Surround Vote</strong>：不能让旧投票 (s₁,t₁) 包围新投票 (s₂,t₂)，即不能有 h(s₁) &lt; h(s₂) &lt; h(t₂) &lt; h(t₁)。</p>
+<p><strong>No Double Vote</strong>：同一个 epoch 不能签两个不同的 target。<strong>No Surround Vote</strong>：不能让旧投票 (s₁,t₁) 包围新投票 (s₂,t₂)，即不能有 h(s₁) &lt; h(s₂) &lt; h(t₂) &lt; h(t₁)（h 是 epoch 高度；surround = 新投票 source 早 + target 晚于旧投票，等于"套住"旧投票，被认定为攻击）。</p>
 <p>任一违反 → 立即 slash。这就是 Ethereum 把"经济最终性"量化的方式：要 revert 一个 finalized block，至少要让 1/3 stake 接受 slash。当前总质押 ~3500-3700 万 ETH（2026-04），1/3 ≈ 1200 万 ETH（数百亿美元）。</p>
 <p>注意区分：上述 slash 针对的是 Casper FFG 的 double/surround vote。<strong>LMD-GHOST attestation 重投不直接被 slash</strong>，而是被 fork-choice 经济性惩罚——投错链的 attestation 拿不到正确链上的 reward，长期下来余额相对受损。</p>
 <h3 id="57-inactivity-leak">5.7 Inactivity Leak</h3>
@@ -1004,7 +1005,7 @@
 </thead>
 <tbody>
 <tr>
-<td>通信</td>
+<td>通信（per-node；总消息量 PBFT/Tendermint 都是 O(n²)，HotStuff leader 中转才是 O(n) 总）</td>
 <td>O(n²) all-to-all</td>
 <td>O(n) gossip</td>
 <td>O(n) BLS 聚合</td>
@@ -1090,6 +1091,7 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 <p>工程门槛主要在 threshold signature（BLS 聚合）——这也是为什么 HotStuff 直到 BLS12-381 库成熟后才大规模工业化。来源：Aptos Foundation "Baby Raptr Is Here"（2026-04-27）。</p>
 <hr />
 <p><strong>章末</strong>：AptosBFT v4 → Raptr → Baby Raptr 工业化链路，以及 Sui Mysticeti (DAG 共识)、Narwhal+Bullshark 详见附录 A。</p>
+<p>DAG 共识直觉：Narwhal/Bullshark/Mysticeti 把"打包+排序"拆开——validator 各自打 mempool 包成 DAG 节点，再用 round-based 投票确定全局序。Sui v2 Mysticeti p50 ≈ 67ms。详见附录 D。</p>
 <hr />
 <!-- Sections 20-24: DAG 谱系、IOTA、Hashgraph、Narwhal+Bullshark、Mysticeti 已移至附录 D -->
 
@@ -1212,7 +1214,7 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 <h3 id="86-alpenglowpoh">8.6 Alpenglow：PoH 退役计划</h3>
 <p>2025 年 Anza 提出 Alpenglow，要用 <strong>Votor + Rotor</strong> 替换 PoH + Tower BFT。</p>
 <ul>
-<li><strong>Votor</strong>：把 32 轮确认压缩到 1-2 轮；80% stake 在线时单轮 finality ≈ 150ms</li>
+<li><strong>Votor</strong>：把 32 轮确认压缩到 1-2 轮；80% stake 在线时单轮 finality ≈ 150ms（双路径：fast 80% stake 在线一轮敲定 ~150ms；slow 60% stake 二轮敲定）</li>
 <li><strong>Rotor</strong>：替换 Turbine 数据广播树为 one-hop broadcast</li>
 </ul>
 <p>时间线：
@@ -1599,7 +1601,7 @@ Raptr (2024-09 提案；2025-06 Baby Raptr 主网激活)
 <h3 id="a4-polkadot-babe-grandpa">A.4 Polkadot BABE + GRANDPA</h3>
 <p>BABE（出块，VRF 选 primary leader）+ GRANDPA（终结，一次 finalize 链段的"最长公共前缀"）。两层分工：BABE 出概率块，GRANDPA 把稳定的链段一次性敲死。600 个 active validator（2024），平行链共享中继链 finality。</p>
 <h3 id="a5-algorand-pure-pos">A.5 Algorand Pure PoS</h3>
-<p>每出一块，从全体持币人里私下 VRF 抽签约 1000 人 committee，成员公布 VRF proof 之前连自己都不知道被选中——抗针对性 DDoS。没有 slashing，靠 honest-majority 假设 + committee 频繁换人防御作恶。单轮即 finalize，当前出块 ~3.3 秒，TPS 6000+。</p>
+<p>每出一块，从全体持币人里私下 VRF 抽签约 1000 人 committee，成员公布 VRF proof 之前连自己都不知道被选中——抗针对性 DDoS。没有 slashing，靠 2/3 honest stake 假设 + committee 频繁换人防御作恶。单轮即 finalize，当前出块 ~3.3 秒，TPS 6000+。</p>
 <h3 id="a6-tezos-lpos">A.6 Tezos LPoS</h3>
 <p><strong>Liquid</strong> = 委托不锁仓，钱还在账户里，随时可改委托对象。链上自动协议升级：至 2026-04 已激活 18 次以上（Athens / Babylon / ... / Quebec / Rio），全部由代币持有者投票完成，无需硬分叉。2022 Tenderbake 升级把底层共识改为 BFT 风格。</p>
 <h3 id="a7-paxos-raftcrash-only">A.7 Paxos 与 Raft（crash-only 共识）</h3>
@@ -1668,7 +1670,7 @@ Avalanche（DAG 版本）
 <figure><img src="diagram-241b7a61a1.png" alt="mermaid diagram"></figure>
 
 <h4 id="a104">A.10.4 安全模型</h4>
-<p>抽 20 个邻居的安全性来自概率：攻击者 &lt;20% 节点时，期望拜占庭 &lt;4 个，达不到 α=15 majority。但这条曲线在攻击者份额 ≥50% 时开始失效，70%+ 几乎一定能控制（见习题 8）——所以 Avalanche 的安全边界 ~50%，与 BFT 经典 33% 不同。这点经常被忽视。Avalanche 团队 2024 提的 Frosty 改进加强了 liveness 保证。来源：crypto.unibe.ch/2024/05/21/avalanche.html（2026-04-27）。</p>
+<p>抽 20 个邻居的安全性来自概率：攻击者 &lt;20% 节点时，期望拜占庭 &lt;4 个，达不到 α=15 majority。但这条曲线在攻击者份额 ≥50% 时开始失效，70%+ 几乎一定能控制（见习题 8）——所以 Avalanche 的安全边界 ~50%，与 BFT 经典 33% 不同。这点经常被忽视。Avalanche 团队 2024 提的 Frosty 改进加强了 liveness 保证（原协议在对抗性网络下 liveness 未被证明，Frosty 解决的是 liveness 而非 safety）。来源：crypto.unibe.ch/2024/05/21/avalanche.html（2026-04-27）。</p>
 <h4 id="a105-avalanche">A.10.5 Avalanche 真实部署</h4>
 <p><strong>三链架构</strong>：Avalanche 不是单链，而是 X-Chain（资产）+ P-Chain（治理 + staking）+ C-Chain（EVM 兼容）三链。Snowman 共识跑在 P/C-Chain，Avalanche DAG 共识跑在 X-Chain。</p>
 <p><strong>数字感（2026-04）</strong>：</p>
@@ -1693,7 +1695,7 @@ Avalanche（DAG 版本）
 <p><strong>定理 B.1（拜占庭容错下界）</strong>：要在 n 个节点中容忍 f 个拜占庭故障，n ≥ 3f+1。证明：假设 n = 3f，构造两组"诚实节点"各 f 个，每组加 f 个拜占庭节点分别对两组传不同值——无法区分，反证。</p>
 <p><strong>定理 B.2（FLP）</strong>：在完全异步网络中，即使只有 1 个进程可能 crash，也不存在确定性共识协议能保证终止。证明思路：bi-valent configuration → 任意决策步骤可被对手延迟，始终存在 bi-valent 后继。</p>
 <p><strong>定理 B.3（CAP）</strong>：在出现网络分区时，分布式系统不能同时保证一致性（C）和可用性（A）。</p>
-<p><strong>定理 B.4（Tendermint 安全性）</strong>：若 ≤ f 节点拜占庭（n ≥ 3f+1），则 Tendermint 满足：两个诚实节点不会在同一高度 commit 不同值。证明：两个 quorum 必有 f+1 个诚实重叠，不能同时 prepare 不同值。来源：Buchman et al., arXiv:1807.04938。</p>
+<p><strong>定理 B.4（Tendermint 安全性）</strong>：若 ≤ f 节点拜占庭（n ≥ 3f+1），则 Tendermint 满足：两个诚实节点不会在同一高度 commit 不同值。证明：两个 quorum 必有重叠 f+1 节点中至少 1 个诚实（因拜占庭 ≤ f），不能同时 prepare 不同值。来源：Buchman et al., arXiv:1807.04938。</p>
 <p><strong>定理 B.5（HotStuff 线性通信）</strong>：Chained HotStuff 稳态每 view 通信 O(n)，responsiveness 成立。来源：Yin et al., PODC 2019。</p>
 <hr />
 

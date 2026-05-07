@@ -744,7 +744,7 @@
 <p><strong>TL;DR</strong>：MVP 先用 Alchemy/QuickNode；流量稳定或有隐私/信任需求时自建 reth full；MEV searcher 必须自建。</p>
 <p><strong>钩子</strong>：2026-04-15 凌晨 2 点，某 80M TVL 借贷协议的清算机器人 6 分钟无响应——Alchemy 静默把 <code>eth_getLogs</code> 从 10 RPS 降到 2 RPS，返回 "block range too large" 而不是 429。8000 ETH 头寸滑向坏账。<strong>RPC 才是合约真正活的地方。</strong></p>
 <h3 id="31">3.1 决策树</h3>
-<figure><img src="diagram-1072ce72df.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-5bd7581ce0.png" alt="mermaid diagram"></figure>
 
 <h3 id="32-rpc-2026-04">3.2 主流 RPC 提供商速查 (2026-04)</h3>
 <table>
@@ -822,10 +822,10 @@
 </tbody>
 </table>
 <p>自建额外优势：数据可信、无 rate limit、archive/trace 不限次、隐私（托管商能看到所有查询地址）。</p>
-<h3 id="34-erpc-upstream">3.4 eRPC 网关（多 upstream 聚合）</h3>
-<figure><img src="diagram-f8e729794e.png" alt="mermaid diagram"></figure>
+<h3 id="34-erpc-upstream">3.4 erpc 网关（多 upstream 聚合）</h3>
+<figure><img src="diagram-fd21b16319.png" alt="mermaid diagram"></figure>
 
-<p>eRPC 自带 health check + circuit breaker（lag &gt; 30 块自动剔除）。<code>eth_call</code> cache 30s 可挡 ~80% 请求。</p>
+<p>erpc 自带 health check + circuit breaker（lag &gt; 30 块自动剔除）。<code>eth_call</code> cache 30s 可挡 ~80% 请求。</p>
 <blockquote>
 <p>同步策略（snap sync / checkpoint sync 必开）详见原 §6；自建调优清单见原 §7.5。</p>
 </blockquote>
@@ -835,7 +835,7 @@
 <h2 id="4-validator" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. Validator 入门</h2>
 
 <p><strong>TL;DR</strong>：质押 32 ETH → 获得 validator 身份 → 每个 slot 投票（attestation）→ 偶尔被选中提议区块（proposal）→ 获得 ~3-4% APR。</p>
-<p><strong>钩子</strong>：Validator = 押金 32 ETH 的代议士。投票投错（attestation）扣几 gwei；蓄意双投（同一 slot 签两份不同票）初始罚约 1/32 本金（~1 ETH）+ 强制退出；correlation penalty 视同时被 slash 的 validator 数量叠加，最坏情况趋近全额。2024 年某 staking 服务商机房迁移，工程师把 keystore <code>scp</code> 到新机器后忘了关老 VC，<strong>9 个 validator 触发 double-sign，单次损失 ~16 ETH/个，共赔 144 ETH</strong>（当时约 $50 万）。</p>
+<p><strong>钩子</strong>：Validator = 押金 32 ETH 的代议士。投票投错（attestation）扣几 gwei；蓄意双投（同一 slot 签两份不同票）Pectra (EIP-7251) 后初始 slashing penalty 从 1/32 effective balance 降到 1/4096（~0.0078 ETH，前提 32 ETH validator）；correlation penalty 视同时被 slash 数量叠加，最坏情况趋近全额。2024 年某 staking 服务商机房迁移，工程师把 keystore <code>scp</code> 到新机器后忘了关老 VC，<strong>9 个 validator 触发 double-sign，单次损失 ~16 ETH/个，共赔 144 ETH</strong>（当时约 $50 万）。</p>
 <h3 id="41">4.1 入门流程（直觉版）</h3>
 <figure><img src="diagram-01a67c7ec2.png" alt="mermaid diagram"></figure>
 
@@ -892,7 +892,7 @@ lighthouse<span style="color: #F8F8F8"> </span>vc<span style="color: #F8F8F8"> <
 <h2 id="5-mev-boost" id="ch06"><span class="chapter-num">Chapter 06</span><br>5. MEV-Boost 直觉</h2>
 
 <p><strong>TL;DR</strong>：mev-boost 让 validator 接入第三方 builder 提供的高 MEV 区块，validator 不需要自己搜索 MEV，只需接收出价最高的 block header 并签名。</p>
-<p><strong>钩子</strong>：MEV bundle = 密封投标。Builder（快递员）打包一批交易出价给 validator（拍卖师）；validator 只看到密封的出价金额（blinded header），签名后 relay 才揭示具体 tx 列表（reveal）。一旦签了就必须广播区块，否则视为 missed proposal——损失 proposer reward 并受轻微 inactivity 惩罚，<strong>不构成 slashable offense</strong>（slashing 仅针对双签或 surround vote）。</p>
+<p><strong>钩子</strong>：MEV bundle = 密封投标。Builder（快递员）打包一批交易出价给 validator（拍卖师）；validator 只看到密封的出价金额（blinded header），签名后 relay 才揭示具体 tx 列表（reveal）。一旦签了就必须广播区块，否则视为 missed proposal 仅损失 proposer reward；不触发 inactivity leak（leak 仅在 finality 停滞时启动），<strong>不构成 slashable offense</strong>（slashing 仅针对双签或 surround vote）。</p>
 <h3 id="51-pbs">5.1 PBS 架构（四个角色）</h3>
 <figure><img src="diagram-4ec918dce8.png" alt="mermaid diagram"></figure>
 
@@ -1038,7 +1038,7 @@ pnpm<span style="color: #F8F8F8"> </span>dev<span style="color: #F8F8F8">       
 <tr>
 <td><strong>mainnet</strong></td>
 <td>生产部署</td>
-<td>自建 reth + eRPC 网关</td>
+<td>自建 reth + erpc 网关</td>
 </tr>
 </tbody>
 </table>
@@ -1662,7 +1662,7 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <tr>
 <td>误报率</td>
 <td>高 (只看模板)</td>
-<td>&lt; 1% (BlockSec 称 99% 命中真攻击)</td>
+<td>BlockSec 报告：误报率 &lt; 1%（非命中率 99%）</td>
 <td>&lt; 1% (ML 模型)</td>
 </tr>
 <tr>
@@ -2216,7 +2216,7 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <li>部署合约 -&gt; 立刻转 ownership 给 3/5 Safe multisig</li>
 <li>Safe 签名者: 至少 2 个不同地理 / 不同硬件钱包 / 不同 EOA 类型</li>
 <li>关键参数变更 -&gt; Safe 提案 -&gt; 时间锁 24-48h -&gt; 执行</li>
-<li>紧急 pause -&gt; Safe 1/N (pause 后不能 unpause, 防 1/N 滥权)</li>
+<li>Safe 1/N 紧急 pause（任一签名者可触发）；unpause 必须走 3/5 主签——非"pause 后不能 unpause"</li>
 </ol>
 <h3 id="133-relayer-aws-kms-foundry">13.3 服务器签名 (Relayer): AWS KMS + Foundry</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Foundry 1.0+ 直接调 AWS KMS</span>
@@ -2508,7 +2508,7 @@ bun<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>
 <h3 id="164-4-subgraph-schema-for-uniswap-v3">16.4 习题 4: 设计 Subgraph schema for Uniswap V3</h3>
 <p>(自行作答, 思路提示)</p>
 <p>思路: Pool(id, token0, token1, fee), Position(id, owner, pool, liquidity, tickLower, tickUpper), Swap(id, pool, sender, amount0, amount1, sqrtPrice, tick, ts), Mint, Burn, Collect。关系: Pool 1-N Position, Pool 1-N Swap。derived field: 24h volume / TVL。</p>
-<p>易踩坑: tick 用 BigInt（The Graph schema 类型；合约内为 int24）, liquidity 用 BigInt (u128), 不要 BigDecimal 算定价 (精度丢)。</p>
+<p>易踩坑: tick 用 BigInt 是惯例（Subgraph schema 没 int24）；Int (i32) 也合法（int24 装得进 i32）, liquidity 用 BigInt (u128), 不要 BigDecimal 算定价 (精度丢)。</p>
 <h3 id="165-5-defender-sentinel-tenderly-alert">16.5 习题 5: Defender Sentinel 配置改成 Tenderly Alert</h3>
 <p>(自行作答, 思路提示)</p>
 <p>思路: Sentinel 的 condition (function args/event params) 一对一映射到 Tenderly Alert YAML。Autotask (JS) 改写成 Tenderly Web3 Action (TS, serverless)。Trigger 从 alert callback 改 webhook URL 调 Web3 Action。</p>
@@ -2522,7 +2522,7 @@ bun<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>
 <p>思路: jobs 配 paths-filter, 仅修改 contracts/* trigger。fork: forge test --fork-url $MAINNET_RPC_URL --fork-block-number 22000000。覆盖率上 Codecov, PR 自动评论。</p>
 <h3 id="168-8-rpc-upstream">16.8 习题 8: 设计 RPC 网关多 upstream 配置</h3>
 <p>(自行作答, 思路提示)</p>
-<p>思路: 用 eRPC 配置 (yaml)。upstream 写 [自建 reth, Alchemy, QuickNode, dRPC]。给重 trace 调用单独路由 dRPC (flat 价)。对 eth_call 设 cache 30s。失败自动 fallback。</p>
+<p>思路: 用 erpc 配置 (yaml)。upstream 写 [自建 reth, Alchemy, QuickNode, dRPC]。给重 trace 调用单独路由 dRPC (flat 价)。对 eth_call 设 cache 30s。失败自动 fallback。</p>
 <h3 id="169-9-helios-dapp">16.9 习题 9: Helios + dApp 集成</h3>
 <p>(自行作答, 思路提示)</p>
 <p>思路: viem 的 transport 指 http://127.0.0.1:8545 (Helios), 而非直连 Alchemy。启动时打开 Helios 进程, dApp 通过 http://localhost:8545 透明访问。用户感知不到, 但所有响应都被验证。</p>
@@ -2715,7 +2715,7 @@ tenderly<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 <tr>
 <td>Fresh sync archive</td>
 <td>14 h</td>
-<td>7 d+</td>
+<td>7 d+（hash-based legacy 数字；geth 1.16+ path-based scheme 后 archive 可降到 ~3 TB / 5 天，2025-11+）</td>
 <td>36 h</td>
 <td>48 h</td>
 </tr>
@@ -2729,13 +2729,13 @@ tenderly<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 <tr>
 <td>磁盘 archive</td>
 <td>2.5 TB</td>
-<td>18 TB</td>
+<td>18 TB（同上注：path-based 后 ~3 TB）</td>
 <td>12 TB</td>
 <td>6 TB</td>
 </tr>
 <tr>
 <td>eth_call p99</td>
-<td>8 ms</td>
+<td>8 ms（hot cache；cold 在 30-60ms）</td>
 <td>15 ms</td>
 <td>20 ms</td>
 <td>25 ms</td>
@@ -2749,6 +2749,7 @@ tenderly<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 </tr>
 </tbody>
 </table>
+<p><strong>Era1 文件</strong>：reth/erigon 用 era1 bootstrap archive，14h vs geth 7d 的根因——era1 是 epoch 化的预编译历史数据。</p>
 <h3 id="a4-el">A.4 EL 选型速查</h3>
 <table>
 <thead>
@@ -2869,6 +2870,7 @@ tenderly<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 </section><section class="chapter">
 <h2 id="cvalidator-0x010x02-key" id="ch22"><span class="chapter-num">Chapter 22</span><br>附录 C：Validator 完整流程（0x01/0x02 升级、key 管理）</h2>
 
+<p><strong>前置：附录 H Pectra 时间表</strong>——本附录所有 EIP-7251/7691/7702 内容假定 Pectra 已上线。</p>
 <p><strong>钩子</strong>：2024 年某 staking 服务商机房迁移——工程师 <code>scp</code> keystore 到新机器后忘关老 VC，9 个 validator 触发 double-sign slashing，共赔 144 ETH（~$50 万）。</p>
 <h3 id="c1-solo-staking">C.1 solo staking 全流程</h3>
 <figure><img src="diagram-72dba91ecd.png" alt="mermaid diagram"></figure>
@@ -2919,10 +2921,10 @@ curl<span style="color: #F8F8F8"> </span>-X<span style="color: #F8F8F8"> </span>
 <span style="color: #F8F8F8">  </span>-H<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;Content-Type: application/json&#39;</span><span style="color: #F8F8F8"> </span>--data<span style="color: #F8F8F8"> </span>@bls_to_execution_changes.json
 </code></pre></div>
 <h3 id="c3-consolidation-validator-1">C.3 consolidation（多 validator 合并为 1）</h3>
+<p>EIP-7251 consolidate 系统合约部署在 0x0000...0301，<strong>raw calldata 96 字节</strong>：source_pubkey (48B) || target_pubkey (48B)；cast send 直接传 calldata，无 Solidity 函数签名。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>cast<span style="color: #F8F8F8"> </span>send<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$RPC</span><span style="color: #F8F8F8"> </span>--account<span style="color: #F8F8F8"> </span>deployer<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
-<span style="color: #F8F8F8">  </span><span style="color: #000">$CONSOLIDATION_CONTRACT</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
-<span style="color: #F8F8F8">  </span><span style="color: #4E9A06">&quot;consolidate(address,bytes,bytes)&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
-<span style="color: #F8F8F8">  </span><span style="color: #000">$WITHDRAWAL_ADDRESS</span><span style="color: #F8F8F8"> </span><span style="color: #000">$SOURCE_PUBKEY</span><span style="color: #F8F8F8"> </span><span style="color: #000">$TARGET_PUBKEY</span>
+<span style="color: #F8F8F8">  </span>0x0000000000000000000000000000000000000301<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">$(</span>cast<span style="color: #F8F8F8"> </span>concat-hex<span style="color: #F8F8F8"> </span><span style="color: #000">$SOURCE_PUBKEY</span><span style="color: #F8F8F8"> </span><span style="color: #000">$TARGET_PUBKEY</span><span style="color: #204A87; font-weight: bold">)</span>
 </code></pre></div>
 <p>合并后：source 进入 exit queue；target 收到全部 ETH；余额上限 2048 ETH。</p>
 <h3 id="c4-web3signer-keystore-vc">C.4 web3signer：把 keystore 与 VC 解耦</h3>
@@ -2939,6 +2941,11 @@ prysmctl<span style="color: #F8F8F8"> </span>validator<span style="color: #F8F8F
 lighthouse<span style="color: #F8F8F8"> </span>account<span style="color: #F8F8F8"> </span>validator<span style="color: #F8F8F8"> </span>slashing-protection<span style="color: #F8F8F8"> </span>import<span style="color: #F8F8F8"> </span>/path/to/export.json
 </code></pre></div>
 <p><strong>切换客户端必须做此步</strong>。2024 年至少 3 次大型 slashing 是"迁移没导出 slashing DB"所致。</p>
+<h3 id="c6-beacon-api">C.6 Beacon API 速查</h3>
+<p><strong>Beacon API 速查</strong>：/eth/v1/beacon/headers（区块头）/ /eth/v1/beacon/states/head/validators（validator 状态）/ /eth/v1/validator/duties/attester/{epoch}（attestation 任务）/ /eth/v1/beacon/pool/attester_slashings（slashing 池）</p>
+<h3 id="c7-lido-csm">C.7 Lido CSM 与客户端选型</h3>
+<p><strong>Lido CSM (Community Staking Module)</strong>：Pectra 后让个人 operator onboard Lido 的关键路径——bond 2.4 ETH，绑定 Rated Network performance score。2026 home staker 主流路径。</p>
+<p>32 ETH home staker 选型：Lighthouse（Rust 主流）/ Nimbus（资源最低）/ Teku（机构）；Prysm 占有率高已不推荐独走（client diversity）。</p>
 <blockquote>
 <p>来源: <a href="https://docs.ethstaker.org/upgrades/pectra-features/">EthStaker Pectra Features</a>, <a href="https://eips.ethereum.org/EIPS/eip-3076">EIP-3076</a></p>
 </blockquote>
@@ -3507,7 +3514,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </tr>
 <tr>
 <td>Infura</td>
-<td>request + 系数 (eth_call=80)</td>
+<td>request + 系数 (eth_call=80)（2024 后 Infura 改 daily request 计费，credit 系统已弃用——以官方 docs 为准）</td>
 <td>yes</td>
 <td>partial</td>
 <td>partial</td>
@@ -3675,7 +3682,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </thead>
 <tbody>
 <tr>
-<td><strong>eRPC</strong> (开源)</td>
+<td><strong>erpc</strong> (开源)</td>
 <td>rate limit / cache / failover / multi-upstream, 用 Go, 配置 yaml</td>
 </tr>
 <tr>
@@ -3688,7 +3695,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </tr>
 </tbody>
 </table>
-<figure><img src="diagram-0c006614e9.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-cda859a1d1.png" alt="mermaid diagram"></figure>
 
 <h4 id="i34-nginx-rpc">I.3.4 nginx 暴露自建 RPC</h4>
 <p>见 <code>code/01-reth-lighthouse-sepolia/nginx/nginx.conf</code>. 三层: TLS (Let's Encrypt) / basic auth (htpasswd) / limit_req_zone (50 req/s, 突发 100).</p>
@@ -3947,9 +3954,9 @@ sudo<span style="color: #F8F8F8"> </span>sysctl<span style="color: #F8F8F8"> </s
 </tbody>
 </table>
 <h4 id="i36">I.3.6 多节点高可用拓扑</h4>
-<figure><img src="diagram-9acba29d23.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-18d21ee11c.png" alt="mermaid diagram"></figure>
 
-<p>至少两个机房 (跨 ASN/ISP). eRPC 自带 health check + circuit breaker (lag &gt; 30 块自动剔除). cache (<code>eth_call</code> 30s, <code>eth_chainId</code> 永久) 可挡 ~80% 请求.</p>
+<p>至少两个机房 (跨 ASN/ISP). erpc 自带 health check + circuit breaker (lag &gt; 30 块自动剔除). cache (<code>eth_call</code> 30s, <code>eth_chainId</code> 永久) 可挡 ~80% 请求.</p>
 <hr />
 <h3 id="i4-indexer">I.4 Indexer 全谱系（详细）</h3>
 <p>新人最容易踩的坑：产品经理问 "首页要展示用户最近 30 天所有 swap 记录"，工程师写 <code>eth_getLogs(fromBlock=head-216000)</code> 然后等——15 秒后 RPC 报 "block range too large"，换成分批拉，发现要打 200 多次请求，10 分钟才返回。<strong>用户不会等 10 分钟，前端要"几百毫秒返回"。</strong> 这就是 indexer 存在的理由：监听 logs → 解码 → 写 Postgres → 暴露 GraphQL/SQL，把"链上即时计算"变成"数据库查询"。</p>

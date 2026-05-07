@@ -553,7 +553,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">24</span>
-    <span class="toc-title"><a href="#ch24" style="color:inherit;text-decoration:none">D · 附录 D：Cosmos SDK / CosmWasm 详（原章 13–19）</a></span>
+    <span class="toc-title"><a href="#ch24" style="color:inherit;text-decoration:none">B · 附录 B：Cosmos SDK / CosmWasm 详（原章 13–19）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -593,7 +593,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">32</span>
-    <span class="toc-title"><a href="#ch32" style="color:inherit;text-decoration:none">B · 附录 B：Sui Mysticeti 详 / C · 附录 C：Aptos Block-STM 详（原章 20–26）</a></span>
+    <span class="toc-title"><a href="#ch32" style="color:inherit;text-decoration:none">C · 附录 C：Sui Mysticeti 详 / D · 附录 D：Aptos Block-STM 详（原章 20–26）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -810,13 +810,13 @@ M4 · Bitcoin Script 入门 · M5 · 选哪条链 · M6 · 主线章末</p>
 <h3 id="a-solana-112">附录 A · Solana 详（原章 1–12）</h3>
 <p>账户模型 · PoH · Tower BFT · Sealevel · Anchor · Pinocchio · SPL Token ·
 cNFT + ZK Compression · Firedancer · Jito MEV · Solana Mobile · 工具链</p>
-<h3 id="b-sui-mysticeti-2021">附录 B · Sui Mysticeti 详（原章 20–21 核心）</h3>
-<p>资源模型 · Sui 对象 · Mysticeti DAG · PTB / Capability / Kiosk · zkLogin · Walrus</p>
-<h3 id="c-aptos-block-stm-22">附录 C · Aptos Block-STM 详（原章 22 核心）</h3>
-<p>全局存储 · Block-STM 并行 · Object 模型 + FA · Move Prover · 跨链生态</p>
-<h3 id="d-cosmos-sdk-cosmwasm-1319">附录 D · Cosmos SDK / CosmWasm 详（原章 13–19）</h3>
+<h3 id="b-cosmos-sdk-cosmwasm-1319">附录 B · Cosmos SDK / CosmWasm 详（原章 13–19）</h3>
 <p>app-chain 哲学 · Cosmos SDK · CometBFT · IBC Eureka v10 · CosmWasm 3.0 ·
 Interchain Security · 主流链巡礼</p>
+<h3 id="c-sui-mysticeti-2021">附录 C · Sui Mysticeti 详（原章 20–21 核心）</h3>
+<p>资源模型 · Sui 对象 · Mysticeti DAG · PTB / Capability / Kiosk · zkLogin · Walrus</p>
+<h3 id="d-aptos-block-stm-22">附录 D · Aptos Block-STM 详（原章 22 核心）</h3>
+<p>全局存储 · Block-STM 并行 · Object 模型 + FA · Move Prover · 跨链生态</p>
 <h3 id="e-bitcoin-2737">附录 E · Bitcoin 详（原章 27–37）</h3>
 <p>UTXO · Script · Taproot · Ordinals + Runes · Lightning + LDK · BitVM 2 + Citrea ·
 Stacks · Babylon · RGB + Liquid · 工具链</p>
@@ -827,9 +827,6 @@ Tron · Hedera · 并行 EVM · Hyperliquid · 等</p>
 <p>IBC 协议分层 · Eureka ZK light client · Wormhole / LayerZero 对比 · 跨生态 AI 工具</p>
 <h3 id="5153">收束（原章 51–53）</h3>
 <p>决策建议 · 学习资源 · 配套代码与练习索引 · 来源</p>
-<blockquote>
-<p><strong>文档顺序说明</strong>：附录在正文中按原章节编号排列（A→D→B/C→E→F→G），与目录字母顺序不同，内容不影响，直接跳到对应章节即可。</p>
-</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1037,7 +1034,7 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 2. <code>Counter</code> 是 shared 对象——任何人可 increment，走 Mysticeti 共识排序（旧版约 500ms，Mysticeti v2 显著改善：p50≈67ms, p99≈114ms）。
 3. owned 对象（如 AdminCap）走 fast path，不进共识（~250 ms）。</p>
 <blockquote>
-<p>深入 Aptos 全局存储 + Block-STM、PTB、Move Prover → <strong>附录 B/C</strong></p>
+<p>深入 Aptos 全局存储 + Block-STM、PTB、Move Prover → <strong>附录 C/D</strong></p>
 </blockquote>
 <hr />
 
@@ -1075,7 +1072,7 @@ mychaind<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 
 <p>信任模型：信任 chain A/B 各自共识 + light client 代码，不信任 relayer。</p>
 <blockquote>
-<p>深入 CosmWasm 3.0、Interchain Security、IBC Eureka ZK 细节 → <strong>附录 D/G</strong></p>
+<p>深入 CosmWasm 3.0、Interchain Security、IBC Eureka ZK 细节 → <strong>附录 B/G</strong></p>
 </blockquote>
 <hr />
 
@@ -1191,7 +1188,7 @@ OP_DUP OP_HASH160 &lt;pubkey_hash&gt; OP_EQUALVERIFY OP_CHECKSIG
 2. 主线有没有跑进 16+ 链详细？— 没有。TON/NEAR/JAM/Cardano 等统一放附录 F。
 3. 主线有没有"显然"？— 没有。共识细节引用模块 02，性能基准放附录，主线只讲心智模型 + 最小代码 + 选型。</p>
 <p><strong>学习路径图</strong>：</p>
-<figure><img src="diagram-4bb0241187.png" alt="mermaid diagram"></figure>
+<figure><img src="diagram-a41ba0f3de.png" alt="mermaid diagram"></figure>
 
 <hr />
 
@@ -1465,7 +1462,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <h2 id="3-tower-bft-ncn" id="ch14"><span class="chapter-num">Chapter 14</span><br>3 · Tower BFT 与 NCN</h2>
 
 <blockquote>
-<p>Tower BFT 算法骨架与 PBFT/CometBFT 横向对比见模块 02 §26。本节只讲 Solana 工程师必须知道的两件事：<strong>finality 数字</strong>和 <strong>Jito NCN</strong>。</p>
+<p>Tower BFT 算法骨架与 PBFT/CometBFT 横向对比见模块 02 §6（PBFT 系）/ §7（HotStuff）/ §8（Solana）。本节只讲 Solana 工程师必须知道的两件事：<strong>finality 数字</strong>和 <strong>Jito NCN</strong>。</p>
 </blockquote>
 <p><strong>Finality 数字</strong>（用来回答"我等几秒可以发货"）：</p>
 <ul>
@@ -1864,6 +1861,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </tbody>
 </table>
 <p><strong>重要</strong>：Token-2022 是<strong>并行的另一套 program</strong>，不是 SPL Token 升级版。USDC/USDT 仍在 SPL Token；PayPal PYUSD 等合规稳定币大多用 Token-2022。<strong>客户端必须区分 owner = TokenkegQ... 还是 TokenzQd...</strong>。</p>
+<p>（ZK ElGamal Proof Program 2024-Q1 因漏洞下线，2025-Q3 经审计重启；Token-2022 Confidential Transfer 实际可用性看主网启用日期）</p>
 <h3 id="7x-7">7.x 思考题（章 7）</h3>
 <blockquote>
 <p>Q1：为什么 Solana 把 token 余额做成"独立账户"而不是合约里的 mapping？这种设计在并行执行时有什么收益？</p>
@@ -1969,6 +1967,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </tr>
 </tbody>
 </table>
+<p><strong>Stateless Validators (SIMD-0341)</strong>：Alpenglow 路线下把归档与共识分离——validator 只验当前 slot 状态，历史交给专门 archive 节点。</p>
 <h3 id="9x-9">9.x 思考题（章 9）</h3>
 <blockquote>
 <p>Q1：Solana 客户端多元化与 Ethereum 的 Geth/Besu/Erigon/Nethermind/Reth 多客户端在动机上有什么相似？</p>
@@ -2033,8 +2032,8 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <h3 id="111-saga-seeker">11.1 Saga → Seeker</h3>
 <ul>
 <li><strong>Saga</strong>（2023 上市，2025-09 停止安全补丁）</li>
-<li><strong>Solana Seeker / Chapter 2</strong>（2025-08 起全球出货，截至 2026-04 累计 200,000+ 出货）</li>
-<li><strong>预订量</strong>：发布 72 小时内突破 100 万台，成为 <strong>Web3 历史最大硬件发布</strong></li>
+<li><strong>Solana Seeker / Chapter 2</strong>（2025-08 起全球出货，截至 2026-04 约 200,000 出货 + 100 万预订；预订≠出货）</li>
+<li><strong>预订量</strong>：发布 72 小时内突破 100 万台，成为 <strong>Web3 历史最大硬件发布</strong>（预订数据，非出货）</li>
 <li><strong>价格</strong>：US$450</li>
 <li><strong>板载</strong>：</li>
 <li><strong>Seed Vault</strong>：硬件密钥隔离区</li>
@@ -2147,7 +2146,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <p><strong>2024 Q1 之后的恢复</strong>：</p>
 <ul>
 <li>2024-02-06 是<strong>最后一次主网整链宕机</strong>，至 2026-04 已连续运行约 26 个月（&gt;99.95% 可用性）；</li>
-<li>关键改动：stake-weighted QoS 全量启用、QUIC 取代 UDP、本地 fee market（priority fee per writable account）、<strong>Firedancer / Frankendancer 客户端</strong>逐步分流（占 ~12% stake，2026-Q1）；</li>
+<li>关键改动：stake-weighted QoS 全量启用、QUIC 取代 UDP、本地 fee market（priority fee per writable account）、<strong>Firedancer / Frankendancer 客户端</strong>逐步分流（Frankendancer 占 stake 见 §9，约 21%）；</li>
 <li>客户端多元化是 Ethereum 风格的"软终结"——Agave + Jito-Solana + Frankendancer + Sig（Rust）四客户端并存大幅降低单点 bug 拖垮全网的风险；</li>
 <li>工程影响：2024 年起 Solana 上的高频做市商、稳定币发行方（USDC、PYUSD）、DePIN 项目恢复入场，TVL 与 DEX 量在 2025 年回到历史高位。</li>
 </ul>
@@ -2263,7 +2262,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <hr />
 
 </section><section class="chapter">
-<h2 id="d-dcosmos-sdk-cosmwasm-1319" id="ch24"><span class="chapter-num">Chapter 24</span><br>D · 附录 D：Cosmos SDK / CosmWasm 详（原章 13–19）</h2>
+<h2 id="b-bcosmos-sdk-cosmwasm-1319" id="ch24"><span class="chapter-num">Chapter 24</span><br>B · 附录 B：Cosmos SDK / CosmWasm 详（原章 13–19）</h2>
 
 <hr />
 
@@ -2766,20 +2765,12 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <td>完全 EVM 化（不用 Cosmos）</td>
 <td>Sei EVM-only</td>
 </tr>
-<tr>
-<td>模块化 DA</td>
-<td>Celestia / EigenDA</td>
-</tr>
-<tr>
-<td>AI / Agent</td>
-<td>Allora / Cocoon (TON)</td>
-</tr>
-<tr>
-<td>主权但共享安全</td>
-<td>Replicated Security 消费链</td>
-</tr>
 </tbody>
 </table>
+<p><strong>evmOS（EVM-on-Cosmos SDK v8）</strong>：第三条 EVM 路径——Berachain V2 是 PoL，Sei v2 是 EVM-only，evmOS 是 SDK 模块插拔。</p>
+<p>| 模块化 DA | Celestia / EigenDA |
+| AI / Agent | Allora / Cocoon (TON) |
+| 主权但共享安全 | Replicated Security 消费链 |</p>
 <h3 id="193-ignite">19.3 实战：用 Ignite 起一条链</h3>
 <p>完整步骤见 <code>code/cosmos/README.md</code>。最小路径：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 1) 装 Ignite v28</span>
@@ -2820,7 +2811,7 @@ blogchaind<span style="color: #F8F8F8"> </span>q<span style="color: #F8F8F8"> </
 <hr />
 
 </section><section class="chapter">
-<h2 id="b-bsui-mysticeti-c-captos-block-stm-2026" id="ch32"><span class="chapter-num">Chapter 32</span><br>B · 附录 B：Sui Mysticeti 详 / C · 附录 C：Aptos Block-STM 详（原章 20–26）</h2>
+<h2 id="c-csui-mysticeti-d-daptos-block-stm-2026" id="ch32"><span class="chapter-num">Chapter 32</span><br>C · 附录 C：Sui Mysticeti 详 / D · 附录 D：Aptos Block-STM 详（原章 20–26）</h2>
 
 <hr />
 
@@ -2969,26 +2960,12 @@ public fun transfer&lt;T&gt;(coin: Coin&lt;T&gt;, recipient: address) {
 <td>Aptos Move（含 resource_group）</td>
 <td>Solidity 0.8.x</td>
 </tr>
-<tr>
-<td>包升级</td>
-<td>Package upgrade（不可变 + 新版本指针）</td>
-<td>direct upgrade（同地址覆盖）</td>
-<td>proxy + impl</td>
-</tr>
-<tr>
-<td>标准币</td>
-<td><code>sui::coin::Coin&lt;T&gt;</code></td>
-<td><code>aptos_framework::coin::CoinStore&lt;T&gt;</code></td>
-<td>ERC-20</td>
-</tr>
-<tr>
-<td>FT 标准（新）</td>
-<td><code>sui::token::Token</code></td>
-<td><code>aptos_framework::fungible_asset::FungibleStore</code></td>
-<td>—</td>
-</tr>
 </tbody>
 </table>
+<p><strong>Move 2024 主要变化</strong>：<code>public(package)</code> 替代 <code>friend</code>、宏函数 <code>macro fun</code>、enum 类型——Mysten 新代码全用，老 Move 18 文档不适用。</p>
+<p>| 包升级 | Package upgrade（不可变 + 新版本指针） | direct upgrade（同地址覆盖） | proxy + impl |
+| 标准币 | <code>sui::coin::Coin&lt;T&gt;</code> | <code>aptos_framework::coin::CoinStore&lt;T&gt;</code> | ERC-20 |
+| FT 标准（新） | <code>sui::token::Token</code> | <code>aptos_framework::fungible_asset::FungibleStore</code> | — |</p>
 <h3 id="212-sui">21.2 Sui 对象模型</h3>
 <p>Sui 把"全局状态"砸成无数个互不相干的对象——这是静态并行的核心。</p>
 <h4 id="_10">三种对象所有权</h4>
@@ -3196,7 +3173,7 @@ struct Avatar has key { url: String }
 <p>三种并行思路对比见第 4 章。Block-STM：开发者零负担，但热点账户（万人抢同一池子）退化为串行。</p>
 <h4 id="2026">2026 性能数字</h4>
 <ul>
-<li><strong>Aptos 主网</strong>：sub-50ms 块时间（2025-12 后），22k+ sustained TPS，理论 150k+</li>
+<li><strong>Aptos 主网</strong>：sub-50ms 块时间（测试网 / Raptr 路线，主网未激活），22k+ sustained TPS，理论 150k+</li>
 <li><strong>Sui 主网</strong>：Mysticeti v2 后 p95 90ms，p99 114ms，理论 200k+</li>
 <li><strong>Aptos 2026 路线</strong>：Raptr 共识 + Block-STM v2，目标 sub-block-time 优化</li>
 </ul>
@@ -3249,7 +3226,7 @@ public entry fun mint(creator: &amp;signer, name: String) {
 </tbody>
 </table>
 <h3 id="224-aptos-fafungible-asset">22.4 Aptos FA（Fungible Asset）标准</h3>
-<p>2024-2025 新一代 token 标准 <code>fungible_asset</code> 替代 <code>coin::Coin&lt;T&gt;</code>：</p>
+<p>2024-2025 新一代 token 标准 <code>fungible_asset</code> 替代 <code>coin::Coin&lt;T&gt;</code>（用户实际 import 路径：<code>0x1::fungible_asset</code>；新代码必踩坑）：</p>
 <figure><img src="diagram-7fd6577d9a.png" alt="mermaid diagram"></figure>
 
 <table>
@@ -3655,7 +3632,7 @@ spec increment {
 </ul>
 <h4 id="aptos">Aptos</h4>
 <ul>
-<li><strong>2026-04 状态</strong>：sub-50ms 块时间，22k+ TPS，DeFi TVL ≈ 500M USD，每月 active 开发者 ~465</li>
+<li><strong>2026-04 状态</strong>：sub-50ms 块时间（测试网 / Raptr 路线，主网未激活），22k+ TPS，DeFi TVL ≈ 500M USD，每月 active 开发者 ~465</li>
 <li><strong>打法</strong>：企业级、合规优先</li>
 <li><strong>重点项目</strong>：Thala（DEX + 稳定币）、Aries（货币市场）、Echelon（借贷）、Tapp Network（社交）</li>
 <li><strong>市值</strong>：约 1.38B USD</li>
@@ -3999,6 +3976,7 @@ $$</p>
 <p><strong>场景钩子</strong>：2015 年 Joseph Poon 与 Thaddeus Dryja 在白皮书里写下"Bitcoin 的可扩展性不应该靠加块大小，而靠把支付推到链下"——4 年后 Lightning 主网上线。今天 Block（Jack Dorsey 的 Cash App）、Strike、Binance 出入金、阿根廷的全国支付都跑在 Lightning 上。HTLC 多跳路由的数学非常优雅：要么所有跳成功，要么全不动；中间节点挣 0.001% 路由费、不承担本金风险。但 Lightning 也在悄悄变质——节点数从 2022 年高峰 20,700 跌到 14,940 然后回升至 17,000，<strong>总容量却在持续上升</strong>：钱在向少数机构节点集中。这是去中心化退步还是金融成熟标志？读完这一节自己判断。</p>
 </blockquote>
 <p>Lightning 是基于 Bitcoin 的<strong>链下支付通道网络</strong>：双方在主链上锁资金开通道，链下无限次结算，close 通道把最终状态写回链上。</p>
+<p>（Taproot Assets 在 LN 上发资产，与 §35 RGB 客户端验证不同；详 §35.1）</p>
 <h4 id="_16">单通道生命周期</h4>
 <figure><img src="diagram-db665e3c85.png" alt="mermaid diagram"></figure>
 
@@ -4219,7 +4197,7 @@ $$</p>
 <ul>
 <li><strong>核心机制</strong>：Extractable One-Time Signature (EOTS) —— 如果 staker 在 PoS 链上同高度签了双花，签名能被任何人<strong>提取出私钥</strong>，就能花掉抵押的 BTC（罚没）</li>
 <li><strong>Phase-1（2024-08 启动）</strong>：自托管 staking script 锁仓阶段，2026-04 累计 <strong>57,000+ BTC（~ $4B+ TVL）</strong></li>
-<li><strong>Phase-2（2025-Q1+）</strong>：Babylon Chain 主网，作为 BSN 编排层</li>
+<li><strong>Phase-2（2025-Q1+ 路线，未上主网）</strong>：Babylon Chain 主网，作为 BSN 编排层</li>
 <li><strong>2026 路线</strong>：multi-staking、EVM DeFi、trustless liquidity</li>
 </ul>
 <h3 id="34x-eigenlayer">34.x 与 EigenLayer 的对比</h3>
@@ -4898,7 +4876,7 @@ $$</p>
 <li>取消年度 parachain 拍卖</li>
 <li>改成"按 coretime 块计费"，DOT 直接买 blockspace 资源</li>
 <li><strong>80% coretime 销售收入会被销毁</strong>（2026-03 tokenomics reset）</li>
-<li>总供应硬顶 2.1B DOT（向 Bitcoin 看齐）</li>
+<li>总供应硬顶 2.1B DOT（社区目标 / 通胀改革后销售销毁 + 退出固定通胀，非已立法硬顶；向 Bitcoin 看齐）</li>
 </ul>
 <h4 id="jam">JAM</h4>
 <figure><img src="diagram-7a5c74b572.png" alt="mermaid diagram"></figure>
@@ -4953,6 +4931,7 @@ $$</p>
 </tbody>
 </table>
 <p><strong>JAM 的赌注</strong>：通用区块链的 VM 应是<strong>真实硬件 ISA</strong>（而非 EVM/Move/SVM 这类特化 VM），所有 LLVM 工具链（C++/Rust/Go/Zig）开箱即用。赌赢则区块链工程入场门槛降一个数量级。</p>
+<p><strong>AltVM 趋势</strong>：Arbitrum Stylus（WASM）/ Linea zkVM RISC-V / PolkaVM（JAM PVM mini）——三者都跳出 EVM 字节码，性能 3-100x。</p>
 <h3 id="40x-jam-2026-04">40.x JAM 2026-04 真实状态</h3>
 <table>
 <thead>
@@ -4980,7 +4959,7 @@ $$</p>
 </tr>
 <tr>
 <td>DOT 总供应硬顶</td>
-<td>2.1B（2026-03 tokenomics reset 之后）</td>
+<td>2.1B（社区目标 / 通胀改革后销售销毁 + 退出固定通胀，非已立法硬顶；2026-03 tokenomics reset 之后）</td>
 </tr>
 </tbody>
 </table>

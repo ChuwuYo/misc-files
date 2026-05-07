@@ -643,8 +643,10 @@
 <li><a href="https://www.soliditylang.org/blog/2026/04/15/solidity-developer-survey-2025-results/">Solidity Developer Survey 2025</a>（1,095 开发者，87 国，检索 2026-04）：<strong>88% 月用、58% 日用，45% 不信任 AI 输出</strong>。</li>
 <li><a href="https://survey.stackoverflow.co/2025/ai">Stack Overflow 2025</a>（检索 2026-04）：84% 全行业用 AI，"高度信任"历年新低。</li>
 <li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR 2025-07</a>（检索 2026-04）：16 位资深开发者做 246 个真实任务，<strong>用 AI 平均慢 19%</strong>，主观却感觉"快 20%"——主观与客观的偏差是本模块所有判断的起点。</li>
+<li><strong>何时复制 19% 结论</strong>：① 资深开发者（&gt;5y）；② 最熟悉的代码库；③ 任务 &lt; 1h。<strong>不要复制</strong>：① 新手；② 陌生代码库；③ boilerplate / 集成任务。</li>
 </ul>
 <p>本模块目标：用 Trust Model + L0-L3 框架画清"能用、应用、不应过度依赖"的边界。先看哪些已生产化（§1），再看哪些还在涌现（§2 起）；两条平行历史线整理在文末附录 I。</p>
+<p><strong>L 等级一次定义</strong>：L0 = vibe 工具（无锚定）；L1 = AI 输出 + 静态分析锚定；L2 = + 形式化验证锚定；L3 = + 链上仲裁/抵押锚定。后文不再重复定义。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1246,6 +1248,7 @@
 </table>
 <p><strong>先问"我能否用集中式预言机 + 公开权重 + hash"——够用就别拉 zkML/opML 进来</strong>。</p>
 <h3 id="31-zkml">3.1 zkML：原理、性能瓶颈、当前可证明模型规模</h3>
+<p><strong>前置</strong>：08 §4 trusted setup + 附录 A 多项式承诺。</p>
 <blockquote>
 <p><strong>一句话直觉</strong>：zkML = 给 AI 推理结果开了一张密码学发票。链上合约不需要自己重新跑模型，只要核对发票上的几个椭圆曲线签名，就能确认"这个结果确实来自承诺的模型 + 这个输入"。</p>
 <p><strong>但发票只证明"算账没错"——不证明账单本身合理</strong>：发票上的模型可能是后门权重，输入可能是恶意构造，输出可能毫无业务意义。后面 Trust Model 段落讲的就是这张发票管什么、不管什么。</p>
@@ -1308,6 +1311,7 @@
 </blockquote>
 <p><strong>Trust Model</strong>：信任"在挑战期（~10 分钟）内至少有 1 个节点会复算并发起争议"。任何错误结果只要有 1 个诚实复算者就能被 slash。<strong>opML 不保证</strong>：实时 finality（必须等挑战期）、模型权重隐私（权重通常公开或 hash 公开）、抗 100% 多数共谋（假设至少 1 个诚实节点）。</p>
 <p><strong>适用 L 等级</strong>：L2（ORA 13B demo 已跑通），适合"高频小额、容忍 10 分钟延迟"的链上 AI 调用。</p>
+<p><strong>opML 经济</strong>：复算者 stake bond，挑战成功瓜分恶意 prover bond + gas reimbursement；ORA 默认 challenge bond ≈ 1.5x prover reward。</p>
 <h4 id="321">3.2.1 原理图：交互式争议博弈</h4>
 <figure><img src="diagram-8e5a71acc3.png" alt="mermaid diagram"></figure>
 
@@ -1371,6 +1375,7 @@
 <ul>
 <li><strong>优点</strong>：性能接近原生（H100 confidential computing 性能损失 &lt; 5%）；适合大模型推理，不受 zkML 电路规模限制。</li>
 <li><strong>缺点</strong>：信任根在硬件厂商。Intel SGX 历史上有 <a href="https://en.wikipedia.org/wiki/Software_Guard_Extensions">SGAxe、Plundervolt 等漏洞</a>；NVIDIA H100 confidential computing 未经长期攻击考验。</li>
+<li><strong>TEE 漏洞对照</strong>：Intel SGX（SGAxe 2020 / Plundervolt 2020 / ÆPIC 2022 / Downfall 2023）/ Intel TDX（远程 attestation 历史失败）/ AMD SEV-SNP（CVE-2023-20593）/ NVIDIA H100 CC（较新，未公开重大漏洞）。</li>
 <li><strong>建议</strong>："保护用户数据 + 不愿付 zk 成本"的场景（医疗、私钱包 AI），TEE 是最现实选择。</li>
 </ul>
 <h3 id="34-bittensor-akash-aethir-ionet-hyperbolic-ritual-allora-sentient-atoma-6079">3.4 去中心化推理：Bittensor / Akash / Aethir / io.net / Hyperbolic / Ritual / Allora / Sentient / Atoma / 6079</h3>
@@ -1419,7 +1424,7 @@
 </tbody>
 </table>
 <p>选型原则：先 SLA + 区域延迟，代币价格不是依据。详细经济数据见 <a href="#附录-d-bittensor--akash--tao-经济">附录 D</a>。</p>
-<p><strong>推理网络一览</strong>：Ritual（合约调推理）、Allora（众包模型）、Atoma（Sui TEE）、Sentient AGI（开源社区）——绝大多数仍在测试网 + 小规模用户阶段，不是"明天就能接的 SaaS"。</p>
+<p><strong>三类各取一代表</strong>（其余项目对照表见附录 D）：<strong>Permissionless GPU</strong>（io.net）/ <strong>Verified Inference</strong>（Ritual）/ <strong>Tokenized Compute</strong>（Akash）。绝大多数仍在测试网 + 小规模用户阶段，不是"明天就能接的 SaaS"。</p>
 <h3 id="35-dao">3.5 数据 DAO 与训练数据市场</h3>
 <blockquote>
 <p>一句话直觉：<strong>让用户拥有自己产生的训练数据，模型方付费才能用</strong>——这是 OpenAI 模式的反面实验。Numerai 是这条路上少数走通了的：10 年专注让数据科学家投稿模型，2025-11 拿了 3,000 万美元 D 轮，JPMorgan 承诺最多 5 亿美元资金管理。绝大多数同类项目还在测试 + 找 PMF。</p>
@@ -1495,6 +1500,7 @@
 <p>aixbt 是 Trust Model 失败的教科书：dashboard 密码登入被攻破 → prompt 注入 → "transfer 55.5 ETH" 被执行。<strong>agent 持 EOA 私钥 + dashboard 通过密码登入 = anti-pattern</strong>。</p>
 <p>字段级对比（GitHub stars / 语言 / 真实活跃度 / tx 签名方式）见 <a href="#附录-c-agent-框架字段级">附录 C</a>。</p>
 <p>诚实评估：框架本身有用（elizaOS、uAgents）；代币层投机远大于真实使用；生产 agent 工程不需要代币——普通 Node + ethers/viem + Anthropic API 就够。</p>
+<p><strong>Web2 → Web3 框架迁移</strong>：LangGraph (DAG)、CrewAI (multi-agent role)、AutoGPT (loop) 都是链下 agent；elizaOS / uAgents / Olas / Virtuals / Wayfinder 加了链上 native 接口（钱包、合约调用）。</p>
 <h3 id="37-intent-based-defi-ai-agent">3.7 Intent-based DeFi 与 AI Agent 安全模式</h3>
 <blockquote>
 <p><strong>Intent 范式 = agent 签"我要什么"的约束，Solver 拍卖最优路径。</strong> agent 不持私钥、不能跑路——这是 aixbt 失误后的业界共识安全模式。</p>
@@ -1504,6 +1510,7 @@
 
 <p>主要协议：CoW Swap（月成交 ~18.6 亿美元）、UniswapX、1inch Fusion、Anoma（intent-centric L1）、Across（ERC-7683 跨链）。</p>
 <p>ERC-7521 intent + ERC-4337 账户抽象 = AI agent 安全操作链上的标准范式。EIP 细节与字段见 <a href="#附录-h-intent--erc-7521-详">附录 H</a>。</p>
+<p><strong>Agent 经济三件套</strong>：MCP（agent ↔ 工具）/ A2A（agent ↔ agent，Google 2025-04）/ AP2（Agent Payments Protocol，2025-Q4 草案）。MCP 走 stdio/SSE，A2A 走 HTTP + JSON-RPC，AP2 在 A2A 之上加 ERC-20/x402 支付。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1556,6 +1563,7 @@
 </tbody>
 </table>
 <p>aixbt 黑客事件：<strong>攻击者拿到 dashboard 权限，直接在自然语言里发"transfer 55.5 ETH"指令</strong>——LLM agent 安全模型的典型失败。模块 05 应把 prompt-injection-via-agent-frontend 写成新章节。</p>
+<p><strong>Browser agent 风险</strong>：Anthropic Computer Use / OpenAI Operator 让 agent 控浏览器——aixbt 类 dashboard 攻击会在此重演；零信任原则：每个动作 attest，每个交易过 SmartAccount policy。</p>
 <h4 id="411-2026-04">4.1.1 代币行情快照（2026-04 检索）</h4>
 <p><strong>快照，不是投资建议</strong>。关注点是"市值规模 + 收入相关性"：</p>
 <table>
@@ -1676,6 +1684,7 @@
 </ul>
 <p>x402 = <strong>不靠代币炒作、靠真实集成铺开</strong>的 AI + crypto 基础设施。SaaS 后端 2026 起把 x402 列为可选支付方式不算过早。</p>
 <h3 id="43-vitalik-ai-crypto-2024-2026">4.3 Vitalik 关于 AI + crypto 的演进观点（2024 → 2026）</h3>
+<p><strong>这一节可跳过——主线收益边际递减</strong>；详细演进时间轴见附录 J。以下 8 个子节标记为可跳读。</p>
 <blockquote>
 <p>阅读这一节，不要把 Vitalik 当成"先知"，把他当成<strong>这个生态最公开的"思考变化日志"</strong>——你能看到一个具体技术决策者，在两年内从"AI 当 player / interface / rules / objective"四类应用学，演进到"用 ZK + 客户端验证保留人类对 AI 的控制权"。这条线的方向，比任何具体观点都重要。</p>
 </blockquote>
@@ -1732,6 +1741,7 @@
 <li><strong>2025 AI × crypto 资本流向</strong>（<a href="https://www.panewslab.com/en/articles/ski92qqx">PANews 综述</a>）：约 <strong>7 亿美元</strong> 投资进入 AI × crypto 项目；a16z / Paradigm / Pantera / Galaxy / Sequoia 占据 ~40% 高估值轮次。</li>
 </ul>
 <p>"agent-native 基础设施 + KYA"是未来 2-3 年明确方向；Paradigm 押 Nous Research 说明去中心化 AI 训练不是 hype；VC AUM 收缩意味着进入门槛更看真实业务。</p>
+<p><strong>ERC-8004（Trustless Agents identity，2025）</strong>：标准化 agent 身份链上注册；与 ERC-6551 + EAS attestation 组合 = 完整 KYA。详见模块 13 §6。</p>
 <h3 id="45-ai-drainer">4.5 攻击者的 AI：钓鱼合约与 Drainer 量产</h3>
 <blockquote>
 <p>想象你早上看到一个 dApp 推文——UI 漂亮、合约 verified、推特蓝标三千粉。你按下 Connect Wallet，<strong>钱包弹出 7 个 token 的 unlimited approve</strong>——半小时后你的 USDC、USDT、stETH 全清空。</p>
@@ -1883,6 +1893,7 @@ LLM 整合结果 → 自然语言回答
 <h3 id="73">7.3 演进路径</h3>
 <p>正确做法：(1) agent 生成 calldata → (2) 走 ERC-7521 / ERC-4337 intent 提交 wallet → (3) 用户/钱包侧最终授权。</p>
 <p><strong>"agent 直接持 EOA 私钥" = anti-pattern</strong>——aixbt 失误的根源。</p>
+<p><strong>下一版升级</strong>：ERC-4337 + 7521 让 agent <strong>不持私钥</strong>——agent 生成 UserOp，由 SmartAccount + bundler 走 4337 流程；详见附录 H。</p>
 <hr />
 
 </section><section class="chapter">
@@ -2022,6 +2033,11 @@ LLM 整合结果 → 自然语言回答
 <td>§5.4 工程师技能升级</td>
 <td><strong>00 导论 + 09 替代生态</strong></td>
 <td>00 在"职业方向"补一节"AI 时代的 Web3 工程师"；09（替代生态）补"非 EVM 链上 AI 现状"</td>
+</tr>
+<tr>
+<td>§3.6 / §4.4 KYA</td>
+<td><strong>13 NFT / 身份 / 社交</strong></td>
+<td>13 §6 EAS / ERC-6551 / ERC-8004 落地 KYA</td>
 </tr>
 </tbody>
 </table>

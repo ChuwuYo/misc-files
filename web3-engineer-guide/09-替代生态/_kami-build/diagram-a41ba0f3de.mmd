@@ -1,0 +1,14 @@
+flowchart TB
+    Start([起点: 已熟 Solidity]) --> M0[M0 四大族心智模型<br>30 min]
+    M0 --> M1[M1 Solana 入门<br>Anchor counter<br>60 min 读 + 90 min 动手]
+    M0 --> M2[M2 Move/Sui 入门<br>对象转移示例<br>60 min 读 + 90 min 动手]
+    M0 --> M3[M3 Cosmos 入门<br>ignite + IBC<br>50 min 读 + 90 min 动手]
+    M0 --> M4[M4 Bitcoin Script 入门<br>Taproot + Ordinals<br>40 min 读 + 60 min 动手]
+    M1 & M2 & M3 & M4 --> M5[M5 选哪条链<br>20 min]
+    M5 --> Deep{深入}
+    Deep --> AppA[附录 A Solana 详]
+    Deep --> AppB[附录 B Cosmos 详]
+    Deep --> AppC[附录 C Sui 详]
+    Deep --> AppD[附录 D Aptos 详]
+    Deep --> AppE[附录 E Bitcoin 详]
+    Deep --> AppF[附录 F 其他链]

@@ -796,7 +796,7 @@
 
 <p>【建议】</p>
 <blockquote>
-<p>💡 <strong>第一遍可跳过本节</strong>：17 个版本、每个都有名字和故事，但你第一次读完全可以直接跳到 §3。等你真的写合约碰到 EIP-1559 / EIP-7702 时再回来查这一节，会更有体感。</p>
+<p>💡 <strong>这一节小白可整章跳过</strong>——读到具体 EIP（如 EIP-1559、EIP-7702）时正文会即时讲清；本节只做时间锚定。</p>
 </blockquote>
 <p>EVM 不是一次设计完的。它是被一拳一拳打出来的形状：DAO 被偷过 360 万 ETH，矿工反复用同一段 opcode 拖慢全网，Parity 钱包一夜间冻结 51 万 ETH，rollup 把 calldata 撑到了协议层都开始喘——每一次硬分叉的背后，都是某个真人某天在凌晨三点对着 etherscan 骂街。</p>
 <p>读这一节的正确姿势，是每个版本都问一句"它在收拾哪个烂摊子"。</p>
@@ -819,7 +819,7 @@
 <li><strong>EIP-155（Spurious Dragon）</strong>：交易签名加 chainId，防跨链重放</li>
 </ul>
 <p>来源：<a href="https://eips.ethereum.org/EIPS/eip-150">EIPS/eip-150</a>、<a href="https://rareskills.io/post/eip-150-and-the-63-64-rule-for-gas">RareSkills: 63/64 rule</a>。</p>
-<p><strong>63/64 规则的现实影响</strong>：黄皮书写着栈深度上限 1024，但因为每层 CALL 都掉 1/64 gas，实际能跑到的深度大约是 200~340。如果哪份审计报告还在念叨 "1024 stack depth attack"，那作者多半还活在 2016 年——今天根本到不了 1024。</p>
+<p><strong>63/64 规则的现实影响</strong>：实际 ~340（理论上限 1024，但 63/64 规则把每层 gas 砍到剩 1/64，约 340 层后 gas 不够再调用）。如果哪份审计报告还在念叨 "1024 stack depth attack"，那作者多半还活在 2016 年——今天根本到不了 1024。</p>
 <h3 id="25-byzantium2017-10-16">2.5 Byzantium（2017-10-16）</h3>
 <ul>
 <li><strong>EIP-196 / EIP-197</strong>：bn254 椭圆曲线加法、乘法、配对 precompile（0x06/0x07/0x08），zkSNARK 首次可在主网验证</li>
@@ -1336,6 +1336,7 @@ else:
 </tr>
 </tbody>
 </table>
+<p><strong>最小实例</strong>：0→非零冷写 = 20000（base，slot 从 zero 变非 zero）+ 2100（cold SLOAD 把 slot 加进 access list）= 22100 gas</p>
 <p>读：</p>
 <table>
 <thead>
@@ -1392,7 +1393,7 @@ else:
 <h3 id="45-call-6364-stipend">4.5 CALL 的 63/64 规则与 stipend</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>forward_gas = min(requested, available × 63/64)
 </code></pre></div>
-<p>EIP-150 把这一条加进来防"call depth 攻击"——你最多把当前 gas 的 63/64 转给被调方，剩下 1/64 必须留在自己这层。深度每加一层就掉 1/64，递归到 200~340 层就没 gas 跑了，攻击者再怎么嵌套也炸不到 1024。</p>
+<p>EIP-150 把这一条加进来防"call depth 攻击"——你最多把当前 gas 的 63/64 转给被调方，剩下 1/64 必须留在自己这层。实际 ~340（理论上限 1024，但 63/64 规则把每层 gas 砍到剩 1/64，约 340 层后 gas 不够再调用）——攻击者再怎么嵌套也炸不到 1024。</p>
 <p><code>CALL</code>/<code>CALLCODE</code> 带 value 时额外 +9000 gas，外加给被调方一个 <strong>2300 gas stipend</strong>——历史上是怕你 fallback 里写了点东西突然没钱跑而 revert。<code>STATICCALL</code> / <code>DELEGATECALL</code> 不带 value，没有这层礼物。</p>
 <p>但这个 2300 gas 早就坑过太多人。Istanbul（EIP-1884）把 SLOAD 涨到 800 之后，2300 gas 连读两次 storage 都不够，更别说 EIP-2929 又把 cold SLOAD 涨到 2100。今天还在用 <code>address.transfer(x)</code> 或 <code>address.send(x)</code> 的代码全是定时炸弹——<strong>永远别硬编码 gas 常数</strong>，老老实实写 <code>call{value:x}("")</code> 加 checks-effects-interactions 才是 2026 年的正确姿势。</p>
 <h3 id="46-transient-storage-gaseip-1153">4.6 transient storage 的 gas（EIP-1153）</h3>
@@ -1415,7 +1416,7 @@ fee_per_blob  = blob_base_fee × 131072
   # 若被授权的 authority EOA 已存在（绝大多数情况），退 PER_EMPTY_ACCOUNT_COST - PER_AUTH_BASE_COST = 12500，
   # 净收 PER_AUTH_BASE_COST = 12500 gas。
 </code></pre></div>
-<p>EIP-7623（Pectra）引入 calldata floor——tx 总 gas 不能低于 calldata floor，把"租 calldata 占空间"挤进 blob。</p>
+<p>EIP-7623（Pectra）引入 calldata floor——tx 总 gas 不能低于 calldata floor，把"租 calldata 占空间"挤进 blob。floor cost = 10 gas/byte non-zero, 4 gas/byte zero（无论实际执行多少 gas，至少按这个收）。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1516,7 +1517,7 @@ fee_per_blob  = blob_base_fee × 131072
 <h3 id="55-calldata">5.5 calldata</h3>
 <p>调用方传入的只读字节。<code>bytes calldata</code> 避免拷到 memory 省 gas。注意：constructor 参数附在 initcode 末尾，需 CODECOPY 读，不走 calldata。</p>
 <h3 id="56-code">5.6 code</h3>
-<p>不可变（7702 EOA 例外）。CODECOPY 拷自身代码到 memory；EXTCODECOPY / EXTCODESIZE / EXTCODEHASH 读他人代码。</p>
+<p>code 不可变（EOA 例外：EIP-7702 给 EOA 写 23 字节 designator 0xef0100||addr，执行时 EVM 取 designate 目标的 code 跑——不是真在 EOA 存字节码）。CODECOPY 拷自身代码到 memory；EXTCODECOPY / EXTCODESIZE / EXTCODEHASH 读他人代码。</p>
 <h3 id="57-mermaid">5.7 一张图把六个数据区串起来（Mermaid）</h3>
 <figure><img src="diagram-be2fc20771.png" alt="mermaid diagram"></figure>
 
@@ -1736,14 +1737,14 @@ CREATE2 : keccak256(0xff || sender || salt || keccak256(initCode))[12:32]
 </table>
 <h3 id="63-selfdestructeip-6780">6.3 SELFDESTRUCT（EIP-6780 后弱化）</h3>
 <p>EIP-6780（Cancun）之前：一条指令清零 code + storage，余额转出。Parity 事件的帮凶。</p>
-<p>EIP-6780 之后：只有<strong>同一 tx 内"创建后立刻自毁"</strong>才会真删除，其他情况退化成普通转账——code 和 storage 一动不动。metamorphic contract 模式因此失效。</p>
+<p>EIP-6780 之后：只有<strong>同一 tx 内"创建后立刻自毁"</strong>才会真删除，其他情况退化成普通转账——code 和 storage 一动不动。EIP-6780 后 SELFDESTRUCT 跨 tx 不再清 code，跨 tx metamorphic（CREATE2+SELFDESTRUCT 跨 tx 重部署）失效；同 tx 内 create+selfdestruct 仍可重生。</p>
 <h3 id="64-log">6.4 LOG 系列</h3>
 <p><code>LOG0</code><sub><code>LOG4</code>（<code>0xa0</code></sub><code>0xa4</code>），gas = <code>375 + 8×len(data) + 375×n_topics</code>。</p>
 <p>LOG 不影响 stateRoot，只进 receiptsRoot，前端与 indexer 靠它工作。ERC-20 Transfer 用 LOG3（topic = [事件签名哈希, from, to]，data = amount）。</p>
 <h3 id="65-opcode">6.5 常被误用的环境 opcode</h3>
 <ul>
 <li><strong>ORIGIN（<code>0x32</code>）= tx.origin</strong>：永远不要做权限判断——攻击者可以让你的合约帮他调一个用 <code>tx.origin</code> 鉴权的合约。</li>
-<li><strong>BLOCKHASH（<code>0x40</code>）Pectra 后的 gas 坑</strong>：标价 20 gas，但 Pectra（EIP-2935）后实际走 SLOAD 冷读，第一次 2100 gas。估算时别用旧数。</li>
+<li><strong>BLOCKHASH（<code>0x40</code>）Pectra 后的 gas 坑</strong>：BLOCKHASH opcode 本身仍 20 gas；Pectra (EIP-2935) 后查询超过 256 块的历史时，<strong>调用链上</strong>实际触发系统合约 SLOAD（2100 cold）。估算时别用旧数。</li>
 <li><strong>TIMESTAMP（<code>0x42</code>）</strong>：proposer 可小幅操纵，不要当熵源。</li>
 <li><strong>CALLCODE（<code>0xf2</code>）</strong>：已弃用，反汇编看到即是旧合约，msg.sender 语义有缺陷。</li>
 </ul>
@@ -1800,7 +1801,7 @@ POP
 <p>实际四棵 MPT：State trie（address → Account）、每合约 storage trie、Transactions trie、Receipts trie，四 root 均进区块头。</p>
 <p><strong>痛点</strong>：全节点状态约 350 GB（2026-04）；单槽 Merkle 证明 ~1 KB，数百槽即数百 KB，无状态客户端不可行；扇出 16，典型路径深 7-9 层。</p>
 <h3 id="82-verkle-trees">8.2 Verkle Trees（将来）</h3>
-<p>承诺方案：Pedersen + 椭圆曲线（Banderwagon over BLS12-381）。关键参数：扇出 256、证明 ~150 字节（可批量聚合，证 1000 个 slot 共 ~10 KB）、树深 3-4。一个区块的 witness ~200 KB，任何人能用一块 + witness 在轻硬件上验证状态转移（<strong>无状态客户端</strong>）。代价：椭圆曲线运算比 keccak 慢，节点 CPU 升高。</p>
+<p>承诺方案：Pedersen + 椭圆曲线（Banderwagon——基于 Bandersnatch 的素数阶商群；Bandersnatch 嵌在 BLS12-381 标量域上）。关键参数：扇出 256、证明 ~150 字节（可批量聚合，证 1000 个 slot 共 ~10 KB）、树深 3-4。一个区块的 witness ~200 KB，任何人能用一块 + witness 在轻硬件上验证状态转移（<strong>无状态客户端</strong>）。代价：椭圆曲线运算比 keccak 慢，节点 CPU 升高。</p>
 <p><strong>2026-04 状态</strong>：Verkle 测试网（kaustinen 系列）迭代多轮，geth/reth/besu 均有 Verkle 分支。预计 Hegota（2026-H2 ~ 2027）落主网。</p>
 <p>来源：<a href="https://ethereum.org/roadmap/verkle-trees/">ethereum.org/roadmap/verkle-trees</a>、<a href="https://blog.stake.fish/the-state-of-ethereum-in-2026/">The State of Ethereum in 2026 — stake.fish</a>。</p>
 <h3 id="83">8.3 一个工程师视角的对比表</h3>
@@ -2258,9 +2259,10 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 <li><strong>重入</strong> — checks-effects-interactions 被破坏</li>
 <li><strong>依赖 block.timestamp</strong> — 验证者可小幅操纵</li>
 <li><strong>依赖 BLOCKHASH</strong> — 仅最近 256 块</li>
-<li><strong>假设 1024 stack depth</strong> — 实际 ~340</li>
+<li><strong>假设 1024 stack depth</strong> — 实际 ~340（理论上限 1024，但 63/64 规则把每层 gas 砍到剩 1/64，约 340 层后 gas 不够再调用）</li>
 <li><strong>transfer/send 假设 2300 gas stipend</strong> — 现已无法完成任何有意义操作</li>
 <li><strong>未删 SELFDESTRUCT</strong> — EIP-6780 后危害降低但非零</li>
+<li><strong>CREATE2 撞已有 storage 的地址</strong> — EIP-7610：禁止往已有 storage 的地址重新部署合约（防 CREATE2 撞击导致状态污染）</li>
 </ol>
 <hr />
 

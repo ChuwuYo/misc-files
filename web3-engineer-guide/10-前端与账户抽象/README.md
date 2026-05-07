@@ -224,6 +224,8 @@ function Transfer() {
 | `useChainId` | 当前链 ID |
 | `useEnsName` | ENS 反查 |
 
+**反向解析 + CCIP-Read（EIP-3668）**：vitalik.eth 显示靠 reverse resolver；Coinbase cb.id / Base names 等离链 ENS 全靠 CCIP-Read（链上合约抛 OffchainLookup error，client 去指定 URL 取数据再 verify）。
+
 ### 2.4 SSR 配置（Next.js App Router）
 
 ```tsx
@@ -303,6 +305,12 @@ flowchart TD
   D -- 是 --> G[Privy / Dynamic → 附录 G]
   D -- 否 --> H[Coinbase Smart Wallet + Passkey]
 ```
+
+**EIP-5792 wallet_sendCalls**：原子批量调用 RPC，2026 已是 Coinbase Smart Wallet / MM Smart Account 默认通道——优先于 wagmi useWriteContract（自动批量、原子失败回滚）。
+
+**EIP-7677**：标准化 paymaster RPC 接口，dApp 不绑定特定 paymaster vendor（Pimlico/Stackup/Alchemy）即可使用——配合 5792 是 AA UX 的最后一公里。
+
+**EIP-6963**：钱包注入不再 race window.ethereum——通过 announce/request event 让多个钱包共存。RainbowKit / wagmi 已默认支持。
 
 **章末**：钱包连上了，下一节用它签名和发交易。
 
@@ -456,6 +464,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         const siwe = new SiweMessage(JSON.parse(credentials!.message as string))
         const { data, success } = await siwe.verify({
           signature: credentials!.signature as string,
+          // session 来自 next-auth 服务端 store，非客户端；安装：npm i next-auth
           nonce: session.expectedNonce, // 从服务端存储取，不信任客户端提交的 siwe.nonce
           domain: process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, ''),
         })
@@ -489,6 +498,8 @@ SIWX（Reown，2025）把 SIWE 泛化到任意链（Solana ed25519、Bitcoin BIP
 ---
 
 ## 6. EIP-712 类型化签名
+
+**建议顺序**：先读 §6（EIP-712 typed data）再读 §5（SIWE）——SIWE 本质是 personal_sign 派生，理解 712 后才看清 SIWE 为何重定义文本。
 
 > **TL;DR** EIP-712 把签名从"一串 hex"升级为"一张表单"——domain 隔离跨站重放，每个字段都可读，`verifyingContract` + `chainId` 限定生效范围。签名前必须在 UI 渲染全部字段。
 
@@ -573,6 +584,8 @@ const hash = await smartClient.sendTransaction({
 ```
 
 完整 smartClient 构建代码见 §11 实战项目导览。字段级细节见**附录 A**。
+
+**UserOp 时序**：dApp 构造 callData → SmartAccount 包成 UserOp → Bundler stub estimate（要 paymaster 临时签）→ Bundler real estimate → SmartAccount EOA 签 hash → Bundler 提交 EntryPoint → EntryPoint 验签 + 调 paymaster validatePaymasterUserOp → 调 SmartAccount validateUserOp → 执行 callData。两阶段 paymaster 让 gas 估算和最终签分离。
 
 **章末**：4337 是"造新钱包"的方案。下一节看 7702——"给旧 EOA 长出腿"。
 
@@ -1152,9 +1165,7 @@ struct PackedUserOperation {
 
 ### A.3 userOpHash
 
-```
-userOpHash = keccak256(abi.encode(packUserOp(uo), entryPoint, chainId))
-```
+v0.7：先 hash1 = keccak256(packUserOp(uo))，再 userOpHash = keccak256(abi.encode(hash1, entryPoint, chainId))——两层 hash。
 
 Signer 实际签的就是 userOpHash。
 
@@ -1251,7 +1262,7 @@ const authorization = await wallet.signAuthorization({
 
 // BatchExecutor 合约（Solidity）
 // function executeBatch(Call[] calldata calls) external payable {
-//   require(msg.sender == address(this));
+//   require(msg.sender == address(this)); // （7702 EOA 自调时成立；非自调被其他合约调用会 revert——这是限制不是 bug）
 //   for (uint i; i < calls.length; ++i) {
 //     (bool ok,) = calls[i].to.call{ value: calls[i].value }(calls[i].data);
 //     require(ok);
@@ -1282,11 +1293,11 @@ const hash = await wallet.sendTransaction({
 | `wallet_getCallsStatus` | 查 bundle 状态 + receipts |
 | `wallet_showCallsStatus` | 让 wallet 弹状态 UI |
 
-Capabilities 示例：
+Capabilities 示例（atomic capability：`{ status: 'supported' }` 或 `'ready'`——viem walletActionsErc5792 已实现）：
 ```json
 {
   "0xaa36a7": {
-    "atomicBatch": { "supported": true },
+    "atomic": { "status": "supported" },
     "paymasterService": { "supported": true },
     "sessionKeys": { "supported": false }
   }
@@ -1468,6 +1479,8 @@ function isModuleInstalled(uint256 moduleTypeId, address module, bytes calldata 
 ### G.2 Privy 架构
 
 Shamir 分片存用户设备 / 服务器 / 备份码，重组在 iframe + TEE 里。Email/Google/Apple/X/Telegram/Farcaster 一键登录，自动生成 EVM + Solana + Bitcoin 钱包。`@privy-io/react-auth` + `@privy-io/wagmi`。
+
+**Privy + wagmi 桥接**：`const { wallets } = useWallets(); const wallet = wallets[0]; const provider = await wallet.getEthereumProvider(); const walletClient = createWalletClient({ transport: custom(provider), chain });`
 
 ### G.3 何时不用 WaaS
 

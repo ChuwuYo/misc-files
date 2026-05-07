@@ -821,6 +821,7 @@
 </tr>
 </tbody>
 </table>
+<p><strong>反向解析 + CCIP-Read（EIP-3668）</strong>：vitalik.eth 显示靠 reverse resolver；Coinbase cb.id / Base names 等离链 ENS 全靠 CCIP-Read（链上合约抛 OffchainLookup error，client 去指定 URL 取数据再 verify）。</p>
 <h3 id="24-ssr-nextjs-app-router">2.4 SSR 配置（Next.js App Router）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// app/layout.tsx</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">cookieToInitialState</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
@@ -876,6 +877,9 @@
 <h3 id="35">3.5 选型决策树</h3>
 <figure><img src="diagram-3a89258b83.png" alt="mermaid diagram"></figure>
 
+<p><strong>EIP-5792 wallet_sendCalls</strong>：原子批量调用 RPC，2026 已是 Coinbase Smart Wallet / MM Smart Account 默认通道——优先于 wagmi useWriteContract（自动批量、原子失败回滚）。</p>
+<p><strong>EIP-7677</strong>：标准化 paymaster RPC 接口，dApp 不绑定特定 paymaster vendor（Pimlico/Stackup/Alchemy）即可使用——配合 5792 是 AA UX 的最后一公里。</p>
+<p><strong>EIP-6963</strong>：钱包注入不再 race window.ethereum——通过 announce/request event 让多个钱包共存。RainbowKit / wagmi 已默认支持。</p>
 <p><strong>章末</strong>：钱包连上了，下一节用它签名和发交易。</p>
 <hr />
 
@@ -990,6 +994,7 @@ Resources:
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">SiweMessage</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">JSON</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">parse</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">message</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">))</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">data</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">success</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">verify</span><span style="color: #000; font-weight: bold">({</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">signature</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">signature</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">,</span>
+<span style="color: #F8F8F8">          </span><span style="color: #8F5902; font-style: italic">// session 来自 next-auth 服务端 store，非客户端；安装：npm i next-auth</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">nonce</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">session.expectedNonce</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 从服务端存储取，不信任客户端提交的 siwe.nonce</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">domain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">process.env.NEXTAUTH_URL?.replace</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">/^https?:\/\//</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;&#39;</span><span style="color: #000; font-weight: bold">),</span>
 <span style="color: #F8F8F8">        </span><span style="color: #000; font-weight: bold">})</span>
@@ -1021,6 +1026,7 @@ Resources:
 </section><section class="chapter">
 <h2 id="6-eip-712" id="ch07"><span class="chapter-num">Chapter 07</span><br>6. EIP-712 类型化签名</h2>
 
+<p><strong>建议顺序</strong>：先读 §6（EIP-712 typed data）再读 §5（SIWE）——SIWE 本质是 personal_sign 派生，理解 712 后才看清 SIWE 为何重定义文本。</p>
 <blockquote>
 <p><strong>TL;DR</strong> EIP-712 把签名从"一串 hex"升级为"一张表单"——domain 隔离跨站重放，每个字段都可读，<code>verifyingContract</code> + <code>chainId</code> 限定生效范围。签名前必须在 UI 渲染全部字段。</p>
 </blockquote>
@@ -1104,6 +1110,7 @@ Resources:
 <span style="color: #000; font-weight: bold">})</span>
 </code></pre></div>
 <p>完整 smartClient 构建代码见 §11 实战项目导览。字段级细节见<strong>附录 A</strong>。</p>
+<p><strong>UserOp 时序</strong>：dApp 构造 callData → SmartAccount 包成 UserOp → Bundler stub estimate（要 paymaster 临时签）→ Bundler real estimate → SmartAccount EOA 签 hash → Bundler 提交 EntryPoint → EntryPoint 验签 + 调 paymaster validatePaymasterUserOp → 调 SmartAccount validateUserOp → 执行 callData。两阶段 paymaster 让 gas 估算和最终签分离。</p>
 <p><strong>章末</strong>：4337 是"造新钱包"的方案。下一节看 7702——"给旧 EOA 长出腿"。</p>
 <hr />
 
@@ -1662,8 +1669,7 @@ PIMLICO_API_KEY=pim_...
 </code></pre></div>
 <p>打包节省约 15–30% calldata（无 paymaster 约 10%，复杂批量约 30%）。</p>
 <h3 id="a3-userophash">A.3 userOpHash</h3>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>userOpHash = keccak256(abi.encode(packUserOp(uo), entryPoint, chainId))
-</code></pre></div>
+<p>v0.7：先 hash1 = keccak256(packUserOp(uo))，再 userOpHash = keccak256(abi.encode(hash1, entryPoint, chainId))——两层 hash。</p>
 <p>Signer 实际签的就是 userOpHash。</p>
 <h3 id="a4">A.4 完整流程（时序）</h3>
 <figure><img src="diagram-fdebeef3b5.png" alt="mermaid diagram"></figure>
@@ -1727,7 +1733,7 @@ Authorization {
 
 <span style="color: #8F5902; font-style: italic">// BatchExecutor 合约（Solidity）</span>
 <span style="color: #8F5902; font-style: italic">// function executeBatch(Call[] calldata calls) external payable {</span>
-<span style="color: #8F5902; font-style: italic">//   require(msg.sender == address(this));</span>
+<span style="color: #8F5902; font-style: italic">//   require(msg.sender == address(this)); // （7702 EOA 自调时成立；非自调被其他合约调用会 revert——这是限制不是 bug）</span>
 <span style="color: #8F5902; font-style: italic">//   for (uint i; i &lt; calls.length; ++i) {</span>
 <span style="color: #8F5902; font-style: italic">//     (bool ok,) = calls[i].to.call{ value: calls[i].value }(calls[i].data);</span>
 <span style="color: #8F5902; font-style: italic">//     require(ok);</span>
@@ -1776,10 +1782,10 @@ Authorization {
 </tr>
 </tbody>
 </table>
-<p>Capabilities 示例：
+<p>Capabilities 示例（atomic capability：<code>{ status: 'supported' }</code> 或 <code>'ready'</code>——viem walletActionsErc5792 已实现）：
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">&quot;0xaa36a7&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;atomicBatch&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;supported&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;atomic&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;status&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;supported&quot;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;paymasterService&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;supported&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">&quot;sessionKeys&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">&quot;supported&quot;</span><span style="color: #000; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">false</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">}</span>
@@ -2090,6 +2096,7 @@ Authorization {
 </table>
 <h3 id="g2-privy">G.2 Privy 架构</h3>
 <p>Shamir 分片存用户设备 / 服务器 / 备份码，重组在 iframe + TEE 里。Email/Google/Apple/X/Telegram/Farcaster 一键登录，自动生成 EVM + Solana + Bitcoin 钱包。<code>@privy-io/react-auth</code> + <code>@privy-io/wagmi</code>。</p>
+<p><strong>Privy + wagmi 桥接</strong>：<code>const { wallets } = useWallets(); const wallet = wallets[0]; const provider = await wallet.getEthereumProvider(); const walletClient = createWalletClient({ transport: custom(provider), chain });</code></p>
 <h3 id="g3-waas">G.3 何时不用 WaaS</h3>
 <p>DeFi 老手要求"自己掌控私钥"，强行 WaaS 会被骂。这种情况直接用 RainbowKit + 注入 + WalletConnect。</p>
 <hr />

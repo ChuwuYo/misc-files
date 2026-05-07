@@ -726,6 +726,7 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 timelock<span style="color: #000; font-weight: bold">.</span>grantRole<span style="color: #000; font-weight: bold">(</span>timelock<span style="color: #000; font-weight: bold">.</span>PROPOSER_ROLE<span style="color: #000; font-weight: bold">(),</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #000; font-weight: bold">(</span>governor<span style="color: #000; font-weight: bold">));</span>
 timelock<span style="color: #000; font-weight: bold">.</span>renounceRole<span style="color: #000; font-weight: bold">(</span>timelock<span style="color: #000; font-weight: bold">.</span>DEFAULT_ADMIN_ROLE<span style="color: #000; font-weight: bold">(),</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">msg.sender</span><span style="color: #000; font-weight: bold">);</span>
 </code></pre></div>
+<p><strong>三个 role 直觉</strong>：PROPOSER = 谁能提案（通常给 Governor）；EXECUTOR = 谁能执行已通过提案（给 <code>address(0)</code> = 任何人都能执行，激励 keeper 抢 gas 触发）；CANCELLER = 谁能取消（通常 multisig 紧急权）。</p>
 <h3 id="34">3.4 关键参数对比</h3>
 <table>
 <thead>
@@ -883,6 +884,7 @@ timelock<span style="color: #000; font-weight: bold">.</span>renounceRole<span s
 <blockquote>
 <p>周四下午，Twitter 上一条消息："Beanstalk 刚刚被清空了，$182M。" 链上数据显示：一笔交易，13 秒，Aave 闪电贷 10 亿美元，投票，执行，还款。全程没有人能介入——因为没有 Timelock，没有 snapshot。</p>
 </blockquote>
+<p><strong>先记一个定义</strong>：闪电贷 = 同一笔 tx 内借款 + 还款，不还就 revert——意味着攻击者可以在一个 tx 内拥有任意大 token 余额。</p>
 <p><strong>攻击链路</strong>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. Aave 闪电贷 10 亿 USD
 2. 买 BEAN+3CRV LP → 存 Silo → 获得投票权
@@ -1021,6 +1023,7 @@ OZ VestingWallet — 教学用，简单 cliff + linear
 <li>加入一次黑客松：ETHGlobal / ETHIndia / Encode 任选其一，48 小时内交一份能用的 demo，比读半年文档收获大。</li>
 <li>把这份 guide 中你最有共鸣的一章重写一遍：用你自己的话、自己的代码、自己的故事——能讲清楚才是真懂。</li>
 </ol>
+<p><strong>继续学习资源</strong>：newsletter — Bankless / Week in Ethereum / a16z crypto；X 账号 — @VitalikButerin / @gakonst / @transmissions11；podcast — Bankless / Empire / Unchained；研究 — Galaxy Research / Delphi Digital / Messari。</p>
 <p><strong>致谢 + 反馈</strong>：</p>
 <p>这份 guide 是公共物品，MIT License，欢迎 fork、欢迎纠错、欢迎补充案例。每一个 issue 和 PR 都会被认真对待。链上见。</p>
 <hr />
@@ -1428,6 +1431,7 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 <p><strong>Llama</strong>（DAO 角色权限公司，非 Meta Llama）：按金额分层授权——$50 万以下由 roles 多签批；$50-500 万代币投票；$500 万以上 supermajority + 7 天 timelock。客户：Uniswap、Optimism、Aave、GMX 等。</p>
 <h3 id="93-daohausmoloch-v3">9.3 DAOhaus（Moloch v3）</h3>
 <p><strong>DAOhaus</strong>：Moloch v3 框架现代化界面。核心：shares（有投票权）+ loot（无投票权可分国库）+ <strong>ragequit</strong>（少数派拿回 share 对应国库份额退出）+ Guild Kick。适合"小而美、对内信任高"的工会型 DAO（公会、研究小组、捐赠俱乐部）。</p>
+<p><strong>rage quit</strong>：MolochDAO 2019 创新——成员任何时候可按比例提走金库份额退出，无需大多数同意。这解决 51% 攻击 + 少数派被绑定的问题，是 DAO 设计史最有影响的工程创新之一。</p>
 <h3 id="94-hats-protocol">9.4 Hats Protocol</h3>
 <p><strong>Hats Protocol</strong>：<strong>链上角色协议</strong>——把"角色"tokenize 成 ERC-1155 NFT（"hat"）。戴上"安全官" hat 就有暂停权限，戴上"财务官" hat 就能动用 100 万以下国库。每个 hat 由上层 admin hat 颁发/撤销。</p>
 <p><strong>Hats Tree</strong>：
@@ -1545,6 +1549,7 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 <p><strong>Squads</strong>：Solana 事实标准多签，托管 $100 亿+（Helium、Jito、Pyth）。来源：<a href="https://squads.xyz/">Squads</a>。</p>
 <p>V4 (2024-2025)：time locks、spending limits、roles + sub-accounts、多方支付 / lookup tables。</p>
 <p><strong>Solana 多签差异</strong>：无 <code>delegatecall</code>，多签控制的"账户"是 PDA（Program Derived Address）。</p>
+<p><strong>Realms (SPL Governance)</strong>：Solana DAO 主流框架——MNDE/MNGO/Marinade 全用；与 EVM Governor 对应，但走 SPL token + PDA 投票账户。比单纯 Squads 多签强大。</p>
 <h3 id="105-safe-foundry-fork">10.5 Safe 实操（Foundry fork 模拟）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// test/SafeFork.t.sol</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;forge-std/Test.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
@@ -1629,7 +1634,9 @@ governor<span style="color: #000; font-weight: bold">.</span>execute<span style=
 <li><strong>2024 年 7 月 CMP-289 风波</strong>（第 5 章已讲）：Humpy 几乎抢走 5% 国库。</li>
 <li><strong>2025-2026 反应</strong>：上线 30% 储备的 staking 模块给 COMP holder + 加强提案审查 + emergency multisig。</li>
 </ul>
-<h3 id="116">11.6 思考题</h3>
+<h3 id="116-ens-dao">11.6 ENS DAO</h3>
+<p><strong>ENS DAO</strong>：1T1V + 委托制度（Working Group）范本；<code>controller</code> / <code>metagovernance</code> / <code>public goods</code> 三 working group 各管一摊；delegate platform 公开拉票——值得作为"非协议费 DAO"治理的标杆案例。</p>
+<h3 id="117">11.7 思考题</h3>
 <ol>
 <li>比较 Uniswap（纯 1T1V）和 Optimism（双院制），哪种制度更难被巨鲸俘获？给出至少两个机制理由。</li>
 <li>Sky Endgame 把 MakerDAO 拆成多个 SubDAO，每个都有独立代币。这是"分权"还是"稀释治理"？写出两边各一个论点。</li>
@@ -1660,6 +1667,7 @@ $$</p>
 <p>每人有 voice credit V，投 k 票成本 k²。100 credit 可拆为：1 议题 10 票 / 4 议题 5 票 / 100 议题 1 票。强度可表达，边际成本陡升。落地：RxC 社区（2019+）、Colorado 州议会（2019 预算）、Optimism Citizens House（RPGF R4-R6 变体）。</p>
 <h3 id="124">12.4 抗女巫的本质难题</h3>
 <p>身份层是根权衡：以太坊地址可女巫；KYC 牺牲抗审查；POH/Worldcoin 引入信任锚。工程最稳做法 = 分层 stamp（Gitcoin Passport），下游协议自设阈值。</p>
+<p><strong>proof-of-personhood（PoP）</strong>：World ID（biometric）/ Gitcoin Passport（聚合多源 stamps）/ BrightID（社交图谱）/ Proof of Humanity（视频 + 担保）——是 1 person 1 vote、QV、QF 的共同前提，无 PoP 这些机制都退化为 Sybil game。</p>
 <h3 id="126">12.6 思考题</h3>
 <ol>
 <li>用 QF 公式手算：项目 A 有 4 个捐款 [4, 4, 4, 4]，项目 B 有 16 个捐款 [1, 1, ..., 1]。它们的 QF 匹配各是多少？</li>
@@ -1791,6 +1799,7 @@ $$</p>
 - 一些项目"为 RPGF 而做"，工艺品味劣化。
 - Citizens 选择本身是政治问题——谁来认证？</p>
 <p><strong>Round 6 的具体数据</strong>：78/102 Citizens 投票 + 60/76 Guest Voters 投票，1:1 加权。Guest Voters 是被邀请的特邀投票人，扩大了"集体智慧"的输入。</p>
+<p><strong>Polis (Pol.is)</strong>：审议式治理工具，台湾 vTaiwan 2014 起用——用户投票 + 算法找"桥接共识"，输出共识 cluster 而非简单多数。是 RPGF 之外另一条非代币治理路径。</p>
 <h3 id="145">14.5 思考题</h3>
 <ol>
 <li>RPGF 与 QF 的根本区别是什么？什么类型的项目更适合 RPGF、什么更适合 QF？</li>

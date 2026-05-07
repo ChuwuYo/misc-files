@@ -682,6 +682,7 @@
 </ul>
 <p>「零知识」在 rollup 里不是必需的——严格说叫「validity rollup」更准确，行业沿用了 zk 这个名字。</p>
 <h3 id="43-zkevm">4.3 zkEVM 类型与选型</h3>
+<p><strong>为什么要分 Type</strong>：编译器和工具链不同——Type 1 完全等价 EVM（gas 一致），Type 4 把 Solidity 编译到自定义 VM（zkSync/Starknet via Kakarot），开发者体验和 prover 性能各有取舍。</p>
 <table>
 <thead>
 <tr>
@@ -764,6 +765,7 @@
 </tbody>
 </table>
 <p><strong>关键</strong>：DA 不在 L1 上，就不能等同于 Rollup 安全。</p>
+<p><strong>ZK + 链下 DA = Validium；Optimistic + 链下 DA = Optimium</strong>——把 calldata 从 L1 移走能省 90% 成本，但 DA 委托给链下 committee（弱信任）。</p>
 <h3 id="53-blob-da">5.3 blob「免费午餐」与外部 DA</h3>
 <p>EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Celestia/EigenDA）的成本优势大幅减弱。</p>
 <p>外部 DA 仍有意义的场景：极致吞吐（EigenDA 100 MB/s）、Cosmos 生态对齐（Celestia）、blob 拥堵时的缓冲。</p>
@@ -781,7 +783,7 @@
 <h3 id="61-l2">6.1 六条主流 L2 一段话介绍</h3>
 <p><strong>Arbitrum One</strong>（Optimistic，Stage 1）：技术最深——双轨执行（native + WAVM）、BoLD permissionless 欺诈证明、Stylus（Rust/C++ 合约 10-100× 性能）。Arbitrum + Base 合计占 L2 TVS 75%+。适合：DeFi 主资金、需要 Rust 合约优化的场景。</p>
 <p><strong>OP Mainnet</strong>（Optimistic，Stage 1）：框架战争赢家——OP Stack 派生链（Base、Mode、Worldchain、Ink、Unichain 等数十条）共享 sequencer 规划和 OP Token 治理（Superchain）。适合：想接入 Superchain 流量、生态优先的项目。</p>
-<p><strong>Base</strong>（Optimistic，Stage 1）：Coinbase 自营，MetaMask 之外最大的 Web2 → Web3 入口。USDC 直接打入交易所、App Store 推送。月 sequencer 收入 $1–3M，是 sequencer 中心化商业价值的最佳样本。适合：面向 Coinbase 用户的消费级 dApp。</p>
+<p><strong>Base</strong>（Optimistic，Stage 1）：Coinbase 自营，MetaMask 之外最大的 Web2 → Web3 入口。USDC 直接打入交易所、App Store 推送。月 sequencer 收入 $1–3M（来源：MEV + priority fee 内化；sequencer 不出 block 直接卖排序权给 builder），是 sequencer 中心化商业价值的最佳样本。适合：面向 Coinbase 用户的消费级 dApp。</p>
 <p><strong>zkSync Era</strong>（ZK，Stage 0）：ZK 系唯一独立 rollup 框架（ZK Stack / Hyperchain）、原生账户抽象（所有账户即合约）、Volition（每笔交易自选 Rollup/Validium）。底层 EraVM 不是 EVM，需 zkSolc 编译器。适合：需要原生 AA 或 ZK Stack 部署自己链的场景。</p>
 <p><strong>Scroll</strong>（ZK，Stage 1）：ZK 阵营第一个达 Stage 1，Euclid 升级（2025-04）换用 OpenVM RISC-V zkVM，吞吐 5×、成本 -50%。Type-2 EVM 等价，主网工具链（Hardhat/Foundry）开箱即用。适合：需要 ZK 快速终局 + 完整 EVM 兼容的场景。</p>
 <p><strong>Linea</strong>（ZK，Stage 0）：Consensys 自营，MetaMask 集成最深，LXP 积分吸引流量。2024-06 Velocore 黑客事件中<strong>手动暂停 sequencer</strong>——这是它仍 Stage 0 的核心原因。适合：MetaMask 用户基础的项目，但需接受当前 Stage 0 风险。</p>
@@ -1307,7 +1309,7 @@
 <td>universal</td>
 <td>200B–2KB</td>
 <td>200–500k gas</td>
-<td>几乎所有现代 zkEVM 落 L1</td>
+<td>几乎所有现代 zkEVM 落 L1（proof of proof：把 100 个 batch proof 压成 1 个 L1 verify，是 zkSync/Linea L1 提交频次的关键）</td>
 </tr>
 </tbody>
 </table>
@@ -1350,6 +1352,8 @@
 </table>
 <h3 id="d3-zkvm-zkevm">D.3 趋势：zkVM 取代 zkEVM</h3>
 <p>EVM 编译成 RISC-V，通用 zkVM（SP1、Risc Zero、OpenVM）证明 RISC-V 指令——证明系统可复用，不再需要针对 EVM 写专用电路。Scroll Euclid 升级（2025-04）是最大的生产实例。</p>
+<p><strong>Native rollup</strong>（EIP-7903 EXECUTE precompile 提案）：L1 直接验证 EVM 执行——L2 不再需要自建 prover，写状态变化直接走 L1 opcode。</p>
+<p><strong>为什么 zkVM 取代专用电路</strong>：① 写 Rust/RISC-V 比写电路 DSL 快 10×；② 通用 prover 可被多协议共享；③ 单点 prover 优化（Pippenger MSM、GPU sumcheck）福利所有应用。</p>
 <h3 id="d4">D.4 可信设置风险</h3>
 <ul>
 <li><strong>Groth16</strong>：per-circuit，toxic waste 泄漏则可伪造任意证明；</li>
@@ -1457,6 +1461,7 @@
 </tbody>
 </table>
 <p><strong>结论</strong>：如果不是极致吞吐场景，直接用 Ethereum blob 通常是最佳决策。</p>
+<p><strong>state diff vs full tx data</strong>：zkSync Era 用 state diff 压缩（只发送状态变化），calldata 体积比 Optimism（发送全部 tx data）小 3-5 倍——但牺牲了重构 tx 历史的能力（区块浏览器需 trace 重放）。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1542,6 +1547,8 @@
 </tr>
 </tbody>
 </table>
+<h3 id="f5-pre-confirmation">F.5 Pre-confirmation</h3>
+<p><strong>Pre-confirmation</strong>：sequencer 在 L1 终局前给软确认 + 经济抵押。Taiko Based、Espresso、Surge、Gattaca 都在做——把 L2 用户体验从 1 块（~12s）压到 100ms 级。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1835,7 +1842,7 @@
 <tr>
 <td>Polygon zkEVM</td>
 <td>Type-2/3</td>
-<td>Stage 0（<strong>2026-07 退役</strong>）</td>
+<td>Stage 0（<strong>2026-07 退役</strong>，迁移路径：AggLayer CDK Validium，Polygon 主推链栈方案）</td>
 <td>Plonky2</td>
 <td>Ethereum blob</td>
 </tr>

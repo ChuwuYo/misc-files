@@ -672,7 +672,7 @@
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;a&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;bc&quot;</span><span style="color: #000; font-weight: bold">))</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">==</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;ab&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;c&quot;</span><span style="color: #000; font-weight: bold">))</span>
 <span style="color: #8F5902; font-style: italic">// 两边都拼成 0x616263；encodePacked 不写 string 长度前缀</span>
 </code></pre></div>
-<p><code>("a","bc")</code> 和 <code>("ab","c")</code> 哈希一模一样——攻击者可以用一个 username 撞另一个 username 的权限。</p>
+<p><code>("a","bc")</code> 和 <code>("ab","c")</code> 哈希一模一样（两边都是 string 类型；不同类型不会撞）——攻击者可以用一个 username 撞另一个 username 的权限。</p>
 <p>审计要点：<code>abi.encodePacked(...)</code> 后跟 ≥2 个 <code>string</code>/<code>bytes</code> 必须改用 <code>abi.encode</code>，或先单独哈希再拼接：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encodePacked<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;a&quot;</span><span style="color: #000; font-weight: bold">),</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;bc&quot;</span><span style="color: #000; font-weight: bold">)))</span>
 </code></pre></div>
@@ -762,6 +762,7 @@ Verify(Q=d·G, m, (r, s)):
   accept iff r ≡ x&#39; (mod n)
 </code></pre></div>
 <p>签名结果是 <code>(r, s)</code>——两个 32 字节的数。你不需要记这个公式，只要知道：(1) 签名要私钥 d 和一个一次性随机数 k；(2) 验证要公钥 Q、消息哈希、签名 (r, s)。</p>
+<p>看不懂可跳过——记住 (r, s) 由私钥 d + 一次性 nonce k 算出，k 重用就泄私钥。</p>
 <h3 id="32-nonce-ps3">3.2 nonce 重用 = 私钥泄露（PS3 灾难）</h3>
 <p>2010 年圣诞节，fail0verflow 团队在柏林 27C3 大会现场展示——索尼 PS3 固件里 ECDSA 的 nonce k 是个写死的常量。整台游戏机的信任链当场崩塌。</p>
 <p>推导（拿张纸都能算）：两条用同一个 k 签的不同消息 <code>(z1, r, s1)</code> 和 <code>(z2, r, s2)</code>：</p>
@@ -822,6 +823,7 @@ keccak256(X ‖ Y)  (32B)
 <li><code>ecrecover</code> 异常时返回 <code>address(0)</code>；和默认值 0 比较是经典伪造入口，要么用 OZ 要么显式 <code>!= address(0)</code>。</li>
 </ul>
 <p>小练习：用 Python <code>eth_keys</code> 对消息 <code>b"hello"</code> 签名，得到 <code>(v, r, s)</code>；然后构造 <code>(v, r, n-s)</code>（注意修正 v 的 yParity），验证两个签名都能恢复出同一个地址。这就是 malleability。</p>
+<p>主线之外你会撞见的三种签名：Schnorr（Bitcoin Taproot，BIP-340，64 字节、聚合友好）、Ed25519（Solana / Cosmos / NEAR，确定性 nonce）、BLS（以太坊共识层 attestation 聚合，签名 96 字节、可聚合）。详见附录 D。</p>
 <blockquote>
 <p>Schnorr / EdDSA / BLS / MuSig2 等其它签名方案见<strong>附录 D</strong>。</p>
 </blockquote>
@@ -1495,6 +1497,7 @@ Verify: e(π, [τ-z]_2) == e(C - [y]_1, [1]_2)
 </tbody>
 </table>
 <p>KZG 常数证明但需 trusted setup；FRI 透明且抗量子但证明较大——STARK（FRI 系）与 SNARK（KZG/IPA 系）的路线分歧本质在此。</p>
+<p>注：Pedersen 是承诺方案（无证明大小概念），此处指 sigma protocol 搭配的证明大小。</p>
 <h3 id="b6-zk-poseidon">B.6 zk 友好哈希：Poseidon</h3>
 <p>zkEVM 团队最痛的事是在电路里<strong>模拟 Keccak</strong>。Keccak 当年是按比特设计的（一堆 XOR 和 AND），可在 zk 电路里每个比特操作都得展开成一条 R1CS 约束——Keccak 一次 ~15 万、SHA-256 一次 ~2.7 万约束。MPT 状态树读一个 slot 要算 32 层 Keccak——480 万约束。</p>
 <p>Poseidon（Grassi 等 USENIX'21）反其道而行：直接在有限域上做 add / mul / x⁵，每个操作就 1 条约束。最终 ~250 约束/哈希。</p>
@@ -1798,7 +1801,7 @@ y² = x³ - 3x + b      (a = -3，与 k1 的 a=0 是关键区别)
 </ul>
 <p>Cosmos/Polkadot 一句话：Cosmos/Tendermint 共识用 ed25519，用户默认 secp256k1（Bitcoin 兼容）；Polkadot 默认 sr25519，备选 ed25519/ecdsa。</p>
 <h3 id="c6-bn254alt_bn128-zk">C.6 BN254（alt_bn128）：以太坊 zk 的过渡曲线</h3>
-<p>Barreto-Naehrig 曲线（2005），基域 p ≈ 254 bit，嵌入度 k = 12。2017 年 Kim-Barbulescu exTNFS 把安全性从 128 bit 削到 ~100 bit，新协议必须迁移。</p>
+<p>Barreto-Naehrig 曲线（2005），基域 p ≈ 254 bit，嵌入度 k = 12。2017 年 Kim-Barbulescu exTNFS 把安全性从 128 bit 削到 ~100 bit（保守估；Barbulescu-Duquesne 2017 给 ~110 bit），新协议必须迁移。</p>
 <table>
 <thead>
 <tr>
@@ -1835,7 +1838,7 @@ y² = x³ - 3x + b      (a = -3，与 k1 的 a=0 是关键区别)
 嵌入度 k = 12
 G1 ⊂ E(F_p),   G2 ⊂ E(F_{p²}) 的扭子群
 </code></pre></div>
-<p>Sean Bowe 2017 年为 Zcash Sapling 设计，名字里的 12 是嵌入度、381 是基域比特数。抗 exTNFS 后真实安全 ~128 bit，比 BN254 多 ~30 bit 裕度——新协议都从 BN254 迁过来。后量子时代 pairing 仍基于 ECDLP，Shor 算法一上场全死，必须迁到 STARK 路线。</p>
+<p>Sean Bowe 2017 年为 Zcash Sapling 设计，名字里的 12 是嵌入度、381 是基域比特数。（注：BLS = Barreto-Lynn-Scott，曲线名；签名方案 BLS = Boneh-Lynn-Shacham，同名不同物。）抗 exTNFS 后真实安全 ~128 bit，比 BN254 多 ~30 bit 裕度——新协议都从 BN254 迁过来。后量子时代 pairing 仍基于 ECDLP，Shor 算法一上场全死，必须迁到 STARK 路线。</p>
 <p>以太坊共识层（Beacon Chain）核心：</p>
 <ul>
 <li>验证者私钥 32B、公钥 48B（G1 压缩）、签名 96B（G2 压缩）。</li>
@@ -1940,7 +1943,7 @@ P_output   = P_internal + t·G
 <p>Tweak 让 key path 与 script path 在链上不可区分。Bitcoin P2TR 输出占比已超 35%。</p>
 <p>以太坊目前无 Schnorr 预编译，合约模拟 ~200k gas，实务做法是链下 Schnorr/MuSig 聚合 → 链上 ECDSA 提交。</p>
 <h3 id="d3-bls">D.3 BLS 签名</h3>
-<p>每 12 秒以太坊网络要确认 100 万+ 验证者投票。BLS（Boneh-Lynn-Shacham 2001）的魔法是：n 个不同人对<strong>同一条消息</strong>的签名，可以直接相加合成一个 96 字节的总签名，验证只要一次 pairing。这就是为什么以太坊共识层选 BLS——没有它 PoS 在工程上根本跑不起来。</p>
+<p>每 12 秒以太坊网络要确认 100 万+ 验证者投票。BLS（Boneh-Lynn-Shacham 2001）的魔法是：n 个不同人对同一条消息聚合验证最便宜（1 次 pairing）；不同消息也支持，验证从 1 次变 n+1 次 pairing。这就是为什么以太坊共识层选 BLS——没有它 PoS 在工程上根本跑不起来。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>KeyGen: sk ∈ Z_r,  pk = sk·G1
 Sign(m): σ = sk·H(m)                          (H: hash-to-G2)
 Verify: e(G1, σ) == e(pk, H(m))
@@ -2044,7 +2047,7 @@ Verify: e(G1, σ) == e(pk, H(m))
 <li><strong>Withdrawal key</strong>：<code>m/12381/3600/i/0</code>（提款凭证，冷存）</li>
 <li><strong>Signing key</strong>：<code>m/12381/3600/i/0/0</code>（attestation/block 签名，热钱包）</li>
 </ul>
-<p>12381 = BLS12-381；3600 = ETH2 SLIP-44 编号。密钥派生是 EIP-2333（HKDF 方案），不是 BIP-32 的椭圆曲线加法。</p>
+<p>12381 = BLS12-381；3600 = ETH2 SLIP-44 编号。密钥派生是 EIP-2333（HKDF 方案），不是 BIP-32 的椭圆曲线加法。与 BIP-32 关键区别：BIP-32 是椭圆曲线点加法派生，EIP-2333 是模 r 拉伸（HKDF）；Validator keystore 用错路径就源于此。</p>
 <p>精致点：checksum 用 <code>decryption_key</code> 后 16 字节，AES key 用前 16 字节——即使 checksum 被取仍得不到完整 AES key（envelope encryption）。</p>
 <hr />
 
@@ -2059,6 +2062,7 @@ Verify: e(G1, σ) == e(pk, H(m))
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>f(x) = s + a_1·x + a_2·x² + ... + a_{t-1}·x^{t-1}
 </code></pre></div>
 <p>给 n 人各发 share <code>(i, f(i))</code>。任意 t 个可用拉格朗日插值还原 <code>f(0) = s</code>；t−1 个对 s 完全无信息（信息论安全）。</p>
+<p>DKG（分布式密钥生成）：t-of-n 签名前必须先生成共享私钥，每方生成自己 share 但没人知道完整私钥；常见 Pedersen DKG / GG18 DKG。MPC 钱包工程上最易出错环节。</p>
 <h3 id="e3-ecdsa">E.3 门限 ECDSA</h3>
 <p>ECDSA 签名 <code>s = k^(-1)·(z + r·d)</code> 非线性，门限化麻烦：</p>
 <table>
@@ -2120,6 +2124,9 @@ Verify: e(G1, σ) == e(pk_agg, H(m))
 <p>n 人 2 轮通信产生一个合法 BIP-340 Schnorr 签名，第一轮可在不知道消息时预做完。</p>
 <p>工程优势：(1) 输出是合法 BIP-340 签名，Bitcoin 节点无需升级；(2) 链上多签与单签不可区分；(3) n-of-n 压成 64B 签名 + 32B 公钥。</p>
 <p>FROST（Komlo-Goldberg 2020）是 Schnorr 的 t-of-n 版本（MuSig2 是 n-of-n），IETF CFRG RFC 草案最终阶段，Coinbase EdDSA 门限与 Dfinity chain-key signing 都用 FROST 思路。</p>
+<blockquote>
+<p>一句对比：FROST = Schnorr 的 t-of-n（任意 t 人即可），MuSig2 = n-of-n（所有人必签）；FROST 已为 RFC 9591（2024-12）。</p>
+</blockquote>
 <h3 id="e6-mpc">E.6 MPC：广义多方协作计算</h3>
 <p>门限签名是 MPC 的特例。MPC：n 方各持私有输入 <code>x_i</code>，共同计算 <code>f(x_1,...,x_n)</code> 而不暴露自己的 <code>x_i</code>。经典构造：Yao Garbled Circuits（两方）、GMW + BMR（n 方）、SPDZ（预处理模型）。</p>
 <p>Web3 用途：MPC 钱包（ZenGo / Fordefi / Web3Auth）、跨链桥（ChainSafe）、隐私 DEX。</p>

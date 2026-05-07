@@ -43,6 +43,8 @@ function deposit() external payable {
 
 **陷阱**：`tx.origin` 是「发起整条调用链的最初 EOA」，不是 sender。**永远用 `msg.sender` 做鉴权**，`tx.origin` 在多层合约调用下会被钓鱼合约冒充。
 
+**receive vs fallback**：合约要能接 ETH，必须显式声明 `receive() external payable {}`（仅触发于纯 ETH 转账 + 空 calldata）或 `fallback() external payable {}`（兜底，匹配不到任何函数 selector 时进入，可带 calldata）。两者都没写 → 任何向合约直接转账的 tx 都 revert。普通 `external payable` 函数只能在用户主动调用该函数时收 ETH，不响应纯转账。
+
 ### 1.2 值类型表（够用版）
 
 | 类型 | 字节 | 用在哪 |
@@ -166,9 +168,12 @@ modifier onlyOwner() {
 }
 
 function withdraw() external onlyOwner {
-    payable(owner).transfer(address(this).balance);
+    (bool ok, ) = payable(owner).call{value: address(this).balance}("");
+    require(ok, "ETH transfer failed");
 }
 ```
+
+为什么不用 `.transfer()`：它强制 2300 gas stipend，Istanbul 硬分叉后 SLOAD 涨价 + EIP-1884 让多签 / proxy 钱包的 fallback 普遍超出 2300 → 转账 revert。统一改用 `call{value: x}("")` 并 `require(ok)`，§8.1 主线还会再讲一次 CEI 防重入。
 
 OZ v5 的 `Ownable` / `AccessControl` 已经把守门员写好且审计过——生产里直接 inherit，**不要自己写**。
 
@@ -197,6 +202,8 @@ try IERC20(token).transfer(to, amt) returns (bool ok) {
 ```
 
 只能用在**外部合约调用**上（同合约函数 revert 直接冒泡）。要点：被调方按 EIP-150 拿走你 63/64 的剩余 gas，所以 catch 块里别指望还有多少 gas 可花。
+
+**try/catch 的局限**：① 只能 catch `Error(string)` / `Panic(uint)` / 未知 bytes 三类标准 revert；② OOG（out-of-gas）会冒泡到外层无法被捕获；③ 调到不存在合约（地址里没代码）的低层 revert 也不进 catch；④ 嵌套场景里子 call A → B 中 B 的 revert 不会被 A 这一层之外的 try/catch 捕获——只有最外层包住 A 的 try 才接得住。需要"无论如何不让外层失败"时，请用 `address.call{...}(...)` 自己判断 `bool ok`。
 
 ### 2.6 view 不是真承诺：审计时别松懈
 
@@ -244,7 +251,7 @@ function _transfer(address from, address to, uint256 amt) internal {
 contract Token {
     mapping(address => uint256) public balances;  // slot 0（mapping 占位）
     uint256 public totalSupply;                   // slot 1
-    string public name;                           // slot 2
+    string public name;                           // slot 2（短串：slot 自身存 length×2 + 数据；length>31 时数据另存 keccak256(slot) 起的连续位置，详见附录 A）
 }
 ```
 
@@ -284,6 +291,16 @@ contract NotPacked {
 
 - 记住 3 句话：① 用户看的走 event，合约读的走 storage；② event 加 `indexed` 才能被前端按值过滤（最多 3 个）；③ 状态变量按声明顺序铺 slot，小整数挤一起省 gas。
 - 1 道小练习：写一个 `SimpleVault`，存 ETH 时 emit `Deposited(address indexed user, uint256 value)`；提现时 emit `Withdrawn(...)`。
+
+### 3.7 interface vs abstract vs library
+
+进入第 4 章前先把三种"非合约"代码单元区分清楚——后面 `IERC20` 接口、`import {ERC20}` 抽象基类、`SafeERC20` 库全要靠它们。
+
+- **interface**：只声明不实现，不能有 state、不能有 constructor，函数全是 external。用于跨合约调用时声明对方的 ABI（如 `IERC20(token).transfer(...)`）。
+- **abstract contract**：可以部分实现，可以有 state、constructor、internal 函数；但只要存在未实现的 virtual 函数就不能直接部署，必须被继承后由子合约补全。OZ 的 `ERC20.sol` 本身可部署，但 `AccessControl` 等是 abstract。
+- **library**：无 storage、无 state，所有函数被 internal 调用时直接内联到调用合约（external 函数才需要 delegatecall 链接）。用于纯函数工具集，如 `SafeERC20`、`MerkleProof`、`SignatureChecker`。
+
+第 4 章起 `IERC20` `import {ERC20}` `using SafeERC20 for IERC20` 全靠这三个机制。
 
 ---
 
@@ -352,9 +369,7 @@ constructor(address admin, uint256 cap) ERC20("MyToken", "MTK") {
 }
 
 function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
-    if (totalSupply() + amount > MINT_CAP) {
-        revert MintCapExceeded(amount, MINT_CAP);
-    }
+    require(amount <= MINT_CAP - totalSupply(), "exceeds cap");
     _mint(to, amount);
 }
 ```
@@ -362,6 +377,8 @@ function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
 `immutable` 嵌进字节码、不占 storage、读 cap 不烧 SLOAD。
 
 ### 4.4 加 Permit：用户免一次 approve tx
+
+**EIP-712 速览**：以太坊里所有签名最终都是对 32 字节 hash 做 ECDSA。早期 dApp 直接让用户签 `keccak256(abi.encode(...))`，钱包只能显示 `0xabc...` 让用户盲签。EIP-712 把这个 hash 拆成结构化输入——`domain`（name / version / chainId / verifyingContract，绑定到本合约本链防重放）+ `typed data`（业务字段 owner / spender / value / nonce / deadline 等），钱包能解析后以人类可读的形式展示给用户。最终 hash = `keccak256("\x19\x01" ++ domainSeparator ++ structHash)`，OZ 提供 `_hashTypedDataV4(structHash)` 直接算。Permit / Permit2 / SIWE / 签名 voucher mint / 链下订单簿全用此规范——后面 §5.4 签名 mint、附录 G Permit2 都会复用。
 
 老 ERC-20 用户买代币要先 `approve` 再 `transferFrom`，两笔 tx 等 24 秒。EIP-2612 用一个 EIP-712 签名替代 onchain approve——签名免费、即时。OZ 直接给你：
 
@@ -443,7 +460,7 @@ contract MyNFT is ERC721, Ownable {
     constructor(address owner) ERC721("MyNFT", "MNFT") Ownable(owner) {}
 
     function mint(address to) external onlyOwner returns (uint256 id) {
-        id = nextTokenId++;
+        id = nextTokenId++;  // 教学写法，从 0 起；生产惯例是 `++nextTokenId`，从 1 起——0 在不少前端 / 索引器里是"未设置"边界值
         _safeMint(to, id);
     }
 }
@@ -756,6 +773,8 @@ cast estimate $TOKEN "deposit(uint256)" 1000
 
 调试链上交易、查 storage、解码事件都靠它。
 
+**function selector**：`cast 4byte` / `cast sig` 背后只是 `bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb`——calldata 前 4 字节就是这个 selector，EVM 用它把 tx 路由到对应函数。同样的逻辑撑起了 proxy 的 fallback 转发、Diamond 的多 facet 路由、ABI 解码、`forge cast 4byte-decode` 反查未知 calldata 等所有"按签名分发"的场景。
+
 ### 7.5 完整一条龙
 
 ```bash
@@ -788,6 +807,8 @@ cast call $DEPLOYED_ADDR "totalSupply()(uint256)" --rpc-url $SEPOLIA_RPC_URL
 > TL;DR：CEI（Checks-Effects-Interactions）防重入；Pull-over-Push 不主动给用户打钱；其余高级 proxy / EIP-7702 / Permit2 进附录；学完能避开 90% 的初级安全坑。
 
 每种模式背后都是一桩血案——TheDAO（$60M）→ CEI；Parity multisig（$30M + $280M 永久冻结）→ initializer 检查；Audius 治理 proxy（$6M）→ ERC-7201。**主线只讲两个能挡 90% 初级问题的模式**。
+
+**前置：call / delegatecall / staticcall 三件套**。EVM 提供三种低层调用——`call` 是普通外部调用，被调方的 `msg.sender` = 当前合约，状态写入对方 storage；`delegatecall` 借对方代码在自己 storage 上执行，`msg.sender` 与 `msg.value` 保留为最初调用者，proxy / Diamond / 多数 library 都靠它；`staticcall` 等同于 view 模式 call，被调方写状态会立即 revert，常用于不可信的只读探测。三者都返回 `(bool ok, bytes memory data)`，**调用失败不会自动 revert**——必须手动 `require(ok)`，否则会得到静默吞掉的错。
 
 ### 8.1 CEI：Checks → Effects → Interactions
 
@@ -853,6 +874,8 @@ function claim() external {
 坏邻居只能伤害自己，不会卡死所有人。
 
 ### 8.3 升级合约：UUPS 推荐，其他模式见附录 D
+
+> **新人可跳过本节**：UUPS 涉及 proxy + delegatecall + storage 布局兼容，是中阶话题。**附录 D（Diamond / EIP-2535）会把代理体系完整展开**，本节只给"一句话总结 + 一个最小例子"，看个轮廓即可，第一遍就跳过来不影响后续章节。
 
 合约部署后想改逻辑（修 bug、加功能），用 proxy 模式。**新项目首选 UUPS**——升级逻辑放在实现合约里，proxy 只做 delegatecall，gas 几乎零开销。
 

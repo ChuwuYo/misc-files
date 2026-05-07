@@ -527,7 +527,7 @@
     <span class="toc-page">·</span>
   </div>
 </section>
-<p>版本：2026-04-27。工具链：Circom 2.2.2、snarkjs 0.7.6、SP1 v5 Hypercube、Risc0 v3.0.5、Noir 1.0 pre-release、Plonky3 2026-03 production-ready、S-two 2.0.0。</p>
+<p>版本：2026-04-27。工具链：Circom 2.2.2、snarkjs 0.7.6、SP1 v5 Hypercube、Risc0 v3.0.5、Noir 1.0 pre-release、Plonky3 2026-03 production-ready、Stwo 2.0.0。</p>
 <blockquote>
 <p><strong>读者画像</strong>：刚学完 Solidity，零密码学背景。目标：能用 zkVM 写出第一个 ZK 应用。
 主线 ≤ 30 页 PDF；数学推导与系统深度剖析见附录 A–H。</p>
@@ -652,7 +652,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 </tr>
 </tbody>
 </table>
-<p>工程上还要两个：<strong>Knowledge Soundness</strong>（prover 真的知道 witness，不只是猜）和 <strong>Succinctness</strong>（proof 短、verifier 快——SNARK 里的 S）。</p>
+<p>工程上还要两个：<strong>Knowledge Soundness</strong>（prover 真的知道 witness，不只是猜；反例：光证明"存在 x 满足 P" 不够；要证明"你算得出 x"——extractor 能从 prover 提取 witness，否则 prover 可能在猜）和 <strong>Succinctness</strong>（proof 短、verifier 快——SNARK 里的 S）。</p>
 <h3 id="snark-vs-stark">SNARK vs STARK：一张对比表</h3>
 <table>
 <thead>
@@ -686,7 +686,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <tr>
 <td>代表</td>
 <td>Groth16、PLONK、Halo2</td>
-<td>STARK、S-two、Plonky3</td>
+<td>STARK、Stwo、Plonky3</td>
 </tr>
 </tbody>
 </table>
@@ -719,7 +719,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <p>Prover 持有 L2 所有交易的执行细节，向 L1 合约证明「这批交易执行后，新状态根是 X」。</p>
 <ul>
 <li>业务方写 Solidity，ZK 在后台透明运行；</li>
-<li>主流：zkSync Era（Type 4）、Scroll、Linea（Type 2）、Starknet（Cairo VM，不在 EVM 兼容类型框架；Kakarot 跑在其上属 Type 3/4）；</li>
+<li>主流：zkSync Era（Type 4）、Scroll、Linea（Type 2）、Starknet（Cairo VM 原生，不在 Type 1-4；Kakarot 是其上 EVM 兼容层）；</li>
 <li>目标：SP1 Hypercube 已实现 12 秒内证完 ETH L1 区块（real-time proving）。</li>
 </ul>
 <h3 id="2zkbridge">场景 2：zkBridge（替代多签）</h3>
@@ -797,6 +797,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <h2 id="4-trusted-setup1-of-n" id="ch05"><span class="chapter-num">Chapter 05</span><br>第 4 章 Trusted Setup：1-of-N 信任假设</h2>
 
 <blockquote>
+<p><strong>只用 zkVM 可跳过本章</strong>——SP1/Risc0/Plonky3 都是 STARK 系不需要 setup。本章用得到 Groth16/PLONK 时再回查（§7 Circom 实战）。</p>
 <p><strong>TL;DR</strong>：SNARK 需要一次「生成公共参数」的仪式（ceremony）。只要参与者中至少一个人诚实销毁了自己的随机数，整个系统就是安全的。以太坊 KZG ceremony 有 14 万人参与。</p>
 </blockquote>
 <h3 id="_17">钩子</h3>
@@ -879,7 +880,7 @@ snarkjs<span style="color: #F8F8F8"> </span>groth16<span style="color: #F8F8F8">
        ↓
   链上 Solidity verifier 验 proof（~250B，~3ms）
 </code></pre></div>
-<p>代价：zkVM 比手写电路慢约 3–5 倍（2026 年数据）。收益：你不用懂电路、不用调约束、不用担心 under-constrained。</p>
+<p>代价：zkVM 比手写电路慢约 3–5 倍（2026 年数据）（限定：通用 RV32IM 程序；EVM 区块证明上 SP1 Hypercube 已反超手写电路）。收益：你不用懂电路、不用调约束、不用担心 under-constrained。</p>
 <h3 id="sp1-vs-risc0">SP1 vs Risc0：选型速查</h3>
 <table>
 <thead>
@@ -1482,7 +1483,7 @@ out === 1 - in;
 <li>SP1 Hypercube real-time proving：<a href="https://blog.succinct.xyz/real-time-proving-16-gpus/">https://blog.succinct.xyz/real-time-proving-16-gpus/</a></li>
 <li>Plonky3 production-ready：<a href="https://polygon.technology/blog/polygon-plonky3-the-next-generation-of-zk-proving-systems-is-production-ready">https://polygon.technology/blog/polygon-plonky3-the-next-generation-of-zk-proving-systems-is-production-ready</a></li>
 <li>Risc0 形式化验证：<a href="https://risczero.com/blog/RISCZero-formally-verified-zkvm">https://risczero.com/blog/RISCZero-formally-verified-zkvm</a></li>
-<li>S-two 上 Starknet 主网：<a href="https://www.starknet.io/blog/s-two-is-live-on-starknet-mainnet-the-fastest-prover-for-a-more-private-future/">https://www.starknet.io/blog/s-two-is-live-on-starknet-mainnet-the-fastest-prover-for-a-more-private-future/</a></li>
+<li>Stwo 上 Starknet 主网：<a href="https://www.starknet.io/blog/s-two-is-live-on-starknet-mainnet-the-fastest-prover-for-a-more-private-future/">https://www.starknet.io/blog/s-two-is-live-on-starknet-mainnet-the-fastest-prover-for-a-more-private-future/</a></li>
 <li>Aztec Alpha mainnet：<a href="https://aztec.network/blog/announcing-the-alpha-network">https://aztec.network/blog/announcing-the-alpha-network</a></li>
 <li>Aleo Circle USDCx：<a href="https://aleo.org/post/aleo-circle-launch-of-usdcx/">https://aleo.org/post/aleo-circle-launch-of-usdcx/</a></li>
 </ul>
@@ -1497,6 +1498,7 @@ out === 1 - in;
 <h3 id="a1">A.1 有限域与椭圆曲线基础</h3>
 <p><strong>有限域 F_p</strong>：把整数运算关进时钟（mod p，p 为质数）。ZK 的核心性质——Schwartz-Zippel 引理——在有限域上成立：两个不同 ≤d 次多项式在随机点 r 重合概率 ≤ d/|F|，|F|≈2^254 时约 2^-234。</p>
 <p>主流 ZK 用域：BN254（EVM，254bit）、BabyBear/M31（STARK，31bit SIMD 友好）、Goldilocks（Plonky2，64bit）、GF(2^k)（Binius，加法=XOR）。</p>
+<p><strong>NTT (number theoretic transform)</strong>：FFT 在有限域版本，多项式乘法/插值 O(n log n)；Plonky2 选 Goldilocks 因 2^32 阶子群存在（NTT-friendly），M31 选 Circle STARK 因素 2 子群不够大。</p>
 <p><strong>椭圆曲线群</strong>：点加法作为群运算，给 G 和 [k]G 反求 k 不可行（离散对数难）。KZG、Groth16 的安全基础。</p>
 <p><strong>双线性配对</strong>：e([a]P, [b]Q) = e(P,Q)^{ab}，能验「点之间乘法关系」不暴露标量。KZG 打开证明和 Groth16 verifier 的核心步骤。</p>
 <h3 id="a2-pcs">A.2 多项式承诺（PCS）三算法接口</h3>
@@ -1505,6 +1507,7 @@ open(f, z) -&gt; (v, π)    # 声称 f(z)=v 并附证明
 verify(cm, z, v, π) -&gt; bool
 </code></pre></div>
 <h3 id="a3-kzg10">A.3 KZG10：除法构造</h3>
+<p><strong>配对直觉</strong>：e: G1×G2→GT 满足 e([a]P,[b]Q) = e(P,Q)^(ab)——把"群指数"放进配对里能验等式，是 KZG 的灵魂。</p>
 <p>给定 p(X)，证明 p(z)=v：</p>
 <ol>
 <li>构造商多项式 q(X) = (p(X) − v) / (X − z)（p(z)−v=0 保证整除）；</li>
@@ -1514,6 +1517,7 @@ verify(cm, z, v, π) -&gt; bool
 <p>proof = 1 个曲线点（~48B），verifier 时间 ~3ms（1 次配对）。代价：Trusted Setup（τ 泄露可伪造任意 proof）。</p>
 <h3 id="a4-fri">A.4 FRI：折叠证明低次性</h3>
 <p>FRI（Fast Reed-Solomon IOP of Proximity）：纯哈希，抗量子，无 setup。</p>
+<p><strong>FRI 关键</strong>：commit phase（多轮折叠把 deg n 多项式压到常数）+ query phase（验证者随机抽点验一致性）；安全来自 Reed-Solomon proximity testing，不是单纯次数减半。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>轮 0: f(X) = f_even(X²) + X·f_odd(X²)
 轮 1: Verifier 给随机 β；新函数 f&#39;(Y) = f_even(Y) + β·f_odd(Y)（次数减半）
 ...
@@ -1608,8 +1612,8 @@ verify(cm, z, v, π) -&gt; bool
 <p>Plonky2：Goldilocks + FRI + PLONKish，无 setup，抗量子，递归 ~200ms。</p>
 <p>Plonky3（2026-03 production-ready）：<strong>工具包</strong>，域/哈希/PCS/算术化均可换。BabyBear+Poseidon2+FRI 是 SP1 默认配置。SP1 Hypercube 在此基础上实现 real-time ETH L1 proving。</p>
 <p>适用：写新 zkVM / 定制 STARK / 抗量子 + GPU 友好。</p>
-<h3 id="b5-stark-s-two2018-2026">B.5 STARK / S-two（2018 / 2026）</h3>
-<p>STARK：AIR 算术化 + FRI，透明（无 setup），抗量子，proof ~几十–几百 KB。S-two（2026-01 Starknet 主网）：Circle STARK + M31 域，比 Stone 快 1 个数量级，已完全开源（crates.io）。</p>
+<h3 id="b5-stark-stwo2018-2026">B.5 STARK / Stwo（2018 / 2026）</h3>
+<p>STARK：AIR 算术化 + FRI，透明（无 setup），抗量子，proof ~几十–几百 KB。Stwo（2026-01 Starknet 主网）：Circle STARK + M31 域，比 Stone 快 1 个数量级，已完全开源（crates.io）。</p>
 <h3 id="b6">B.6 其他系统速查</h3>
 <table>
 <thead>
@@ -1715,7 +1719,7 @@ verify(cm, z, v, π) -&gt; bool
 <ul>
 <li>业务零改动 → Type 1/2（Taiko/Scroll/Linea）；</li>
 <li>prover 最快 → Type 4（zkSync/Starknet）；</li>
-<li>ZK 原生体验 → Starknet（Cairo + S-two）。</li>
+<li>ZK 原生体验 → Starknet（Cairo + Stwo）。</li>
 </ul>
 <hr />
 
@@ -1725,6 +1729,7 @@ verify(cm, z, v, π) -&gt; bool
 <blockquote>
 <p>折叠是「先累积不 SNARK，最后一次性 SNARK」。适合长链增量计算（IVC）。</p>
 </blockquote>
+<p><strong>IVC（Incrementally Verifiable Computation）</strong>：每步计算附一个 proof 证明前一步 + 当前步——Nova 论文标题就是 IVC。<strong>PCD（Proof-Carrying Data）</strong>：IVC 的多方推广，每个节点带 proof。</p>
 <h3 id="d1">D.1 为什么需要折叠</h3>
 <p>经典递归 SNARK 每层都做完整验证（KZG 配对 / FRI query）——每层贵。折叠把多个 instance 累积（fold）成一个，最后只 SNARK 一次。</p>
 <p>类比：信用卡月底结清，平时只记账。</p>
@@ -1778,6 +1783,7 @@ verify(cm, z, v, π) -&gt; bool
 <blockquote>
 <p>数据来源：a16z/zkvm-benchmarks、Succinct zkvm-perf、zkbenchmarks.com、Fenbushi 2025-06、各家 release notes。<strong>所有数字均为 self-reported，建议查最近 4 周官方数据。</strong></p>
 </blockquote>
+<p><strong>MSM (multi-scalar multiplication)</strong> 占 Groth16/PLONK prover 60-80% 时间，所有 GPU 加速绕不开。Pippenger 算法把 n 个标量乘加 O(n/log n) 优化 → 选 GPU 时优先看 MSM throughput（GB/s）。</p>
 <h3 id="e1-fibonacci-1000-cycles">E.1 Fibonacci 1000 万 cycles</h3>
 <table>
 <thead>
@@ -1820,7 +1826,7 @@ verify(cm, z, v, π) -&gt; bool
 <td>~1MB</td>
 </tr>
 <tr>
-<td>Cairo + S-two 2.0</td>
+<td>Cairo + Stwo 2.0</td>
 <td>CPU</td>
 <td>~30s</td>
 <td>~80KB</td>
@@ -1864,7 +1870,7 @@ verify(cm, z, v, π) -&gt; bool
 <td>GPU 集群</td>
 </tr>
 <tr>
-<td>Cairo + S-two</td>
+<td>Cairo + Stwo</td>
 <td>几十秒级</td>
 <td>CPU</td>
 </tr>
@@ -1892,7 +1898,7 @@ verify(cm, z, v, π) -&gt; bool
 </tr>
 <tr>
 <td>Cairo / Starknet</td>
-<td>Cairo + S-two</td>
+<td>Cairo + Stwo</td>
 <td>—</td>
 </tr>
 <tr>
@@ -2000,18 +2006,20 @@ verify(cm, z, v, π) -&gt; bool
 <p>Gabizon-Williamson。用 sorted-by-T 辅助列 s，论证 witness 列 f 与表 T 的多重集关系。被 UltraPLONK、Halo2、Plonky2 吸收。成本 O(|T| + |f|)，适合小表。</p>
 <h3 id="g3-lassosetty-thaler-wahby-2024">G.3 Lasso（Setty-Thaler-Wahby 2024）</h3>
 <p>a16z 的突破：结构化大表（如 2^32 RISC-V 指令集）用 sumcheck + sparse poly commit，把代价从 O(|T|) 降到 O(|f|)。Jolt zkVM 的核心赌注——「整个 RISC-V 执行就是一个超大查找表」。</p>
-<h3 id="g4-twistshoutjolt-2025">G.4 Twist/Shout（Jolt 2025）</h3>
+<p><strong>Sumcheck</strong>：交互式协议把多变量多项式求和归约为单点求值——zkML（DeepProve）和 Jolt 的核心引擎；prover 复杂度近线性。</p>
+<h3 id="g4-twistshoutjolt-thaler-2024-12">G.4 Twist/Shout（Jolt Thaler 2024-12 论文）</h3>
 <p>Lasso 的进一步优化：Twist 把一类 lookup 转成更紧的 product 论证；Shout 批量化 lookup 配 GPU。Jolt 2026 主线已切此配置。</p>
 <h3 id="g5-custom-gate">G.5 Custom Gate</h3>
 <p>PLONK 默认门：<code>q_M·a·b + q_L·a + q_R·b + q_O·c + q_C = 0</code>。Custom gate 把更多列打包成单门——Halo2 Poseidon2 round 用 5 列 + 多 selector，一行做完 S-box + MDS 矩阵乘（原本 R1CS 几十行）。</p>
 <h3 id="g6-domain-extensioncircle-stark">G.6 Domain Extension（Circle STARK）</h3>
-<p>传统 STARK 在小域（M31）上 FFT 不友好（M31 没有 2 的幂次单位根）。Circle STARK（S-two 的核心创新）把乘法域换成圆群，在 M31 上做高效 FFT——这是 S-two 比 Stone 快一个数量级的根本原因。</p>
+<p>传统 STARK 在小域（M31）上 FFT 不友好（M31 没有 2 的幂次单位根）。Circle STARK（Stwo 的核心创新）把乘法域换成圆群，在 M31 上做高效 FFT——这是 Stwo 比 Stone 快一个数量级的根本原因。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="h-fiat-shamir-under-constrained" id="ch18"><span class="chapter-num">Chapter 18</span><br>附录 H 安全深度：Fiat-Shamir / Under-Constrained 漏洞剖析</h2>
 
 <blockquote>
+<p><strong>建议主线读完直接读本附录</strong>——三大红线（front-running、Fiat-Shamir frozen heart、under-constrained）是 ZK 工程师上线前必读。</p>
 <p>适合 L3 阅读，是主线第 8 章安全红线的深度展开。</p>
 </blockquote>
 <h3 id="h1-fiat-shamir">H.1 Fiat-Shamir 变换原理</h3>
@@ -2060,7 +2068,7 @@ verify(cm, z, v, π) -&gt; bool
 <p>Noir 的 <code>unconstrained</code> 函数编译成 Brillig 字节码，只在 prover 端执行，不进电路。任何 <code>unconstrained</code> 函数的返回值，必须在调用方 <code>assert</code> 约束——否则等价于 Circom 的 <code>&lt;--</code>。</p>
 <h3 id="h5">H.5 真实漏洞案例</h3>
 <ul>
-<li><strong>Aztec Connect 多重花费</strong>（2022）：nullifier 计算缺约束，允许同一 note 被花费多次；</li>
+<li><strong>Aztec Connect 多重花费</strong>（2023-06 audit 发现，未上主网（demo 阶段，未造成损失））：nullifier 计算缺约束，允许同一 note 被花费多次；</li>
 <li><strong>ZK Email under-constrained</strong>（早期版本）：DKIM 域名验证电路缺约束，允许构造假邮件地址；</li>
 <li><strong>gnark 的 Fiat-Shamir bug</strong>（2023）：与 frozen heart 类似，transcript 不完整；</li>
 <li><strong>Halo2 query collision</strong>（2024）：某些边缘电路下 verifier 接受非法 proof，已 patch（版本 ≥ 2024-Q3）。</li>

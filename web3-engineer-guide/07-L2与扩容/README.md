@@ -174,6 +174,8 @@ sequenceDiagram
 
 ### 4.3 zkEVM 类型与选型
 
+**为什么要分 Type**：编译器和工具链不同——Type 1 完全等价 EVM（gas 一致），Type 4 把 Solidity 编译到自定义 VM（zkSync/Starknet via Kakarot），开发者体验和 prover 性能各有取舍。
+
 | 类型 | EVM 等价度 | 代表 | 部署注意 |
 |---|---|---|---|
 | Type-1 | 完全等价，能验证主网区块 | Taiko | 最兼容 |
@@ -213,6 +215,8 @@ sequenceDiagram
 
 **关键**：DA 不在 L1 上，就不能等同于 Rollup 安全。
 
+**ZK + 链下 DA = Validium；Optimistic + 链下 DA = Optimium**——把 calldata 从 L1 移走能省 90% 成本，但 DA 委托给链下 committee（弱信任）。
+
 ### 5.3 blob「免费午餐」与外部 DA
 
 EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Celestia/EigenDA）的成本优势大幅减弱。
@@ -237,7 +241,7 @@ EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Cele
 
 **OP Mainnet**（Optimistic，Stage 1）：框架战争赢家——OP Stack 派生链（Base、Mode、Worldchain、Ink、Unichain 等数十条）共享 sequencer 规划和 OP Token 治理（Superchain）。适合：想接入 Superchain 流量、生态优先的项目。
 
-**Base**（Optimistic，Stage 1）：Coinbase 自营，MetaMask 之外最大的 Web2 → Web3 入口。USDC 直接打入交易所、App Store 推送。月 sequencer 收入 $1–3M，是 sequencer 中心化商业价值的最佳样本。适合：面向 Coinbase 用户的消费级 dApp。
+**Base**（Optimistic，Stage 1）：Coinbase 自营，MetaMask 之外最大的 Web2 → Web3 入口。USDC 直接打入交易所、App Store 推送。月 sequencer 收入 $1–3M（来源：MEV + priority fee 内化；sequencer 不出 block 直接卖排序权给 builder），是 sequencer 中心化商业价值的最佳样本。适合：面向 Coinbase 用户的消费级 dApp。
 
 **zkSync Era**（ZK，Stage 0）：ZK 系唯一独立 rollup 框架（ZK Stack / Hyperchain）、原生账户抽象（所有账户即合约）、Volition（每笔交易自选 Rollup/Validium）。底层 EraVM 不是 EVM，需 zkSolc 编译器。适合：需要原生 AA 或 ZK Stack 部署自己链的场景。
 
@@ -536,7 +540,7 @@ graph LR
 | Groth16 | per-circuit | 200B | ~200k gas | 早期 zkSync Lite |
 | PLONK / Halo2 | universal | 1–10 KB | 200–500k gas | Aztec、应用层 |
 | STARK | none | 50–200 KB | 1–5M gas | Starknet、zkSync Boojum 内层 |
-| 递归 SNARK | universal | 200B–2KB | 200–500k gas | 几乎所有现代 zkEVM 落 L1 |
+| 递归 SNARK | universal | 200B–2KB | 200–500k gas | 几乎所有现代 zkEVM 落 L1（proof of proof：把 100 个 batch proof 压成 1 个 L1 verify，是 zkSync/Linea L1 提交频次的关键） |
 
 ### D.2 现代 zkEVM 证明系统
 
@@ -551,6 +555,10 @@ graph LR
 ### D.3 趋势：zkVM 取代 zkEVM
 
 EVM 编译成 RISC-V，通用 zkVM（SP1、Risc Zero、OpenVM）证明 RISC-V 指令——证明系统可复用，不再需要针对 EVM 写专用电路。Scroll Euclid 升级（2025-04）是最大的生产实例。
+
+**Native rollup**（EIP-7903 EXECUTE precompile 提案）：L1 直接验证 EVM 执行——L2 不再需要自建 prover，写状态变化直接走 L1 opcode。
+
+**为什么 zkVM 取代专用电路**：① 写 Rust/RISC-V 比写电路 DSL 快 10×；② 通用 prover 可被多协议共享；③ 单点 prover 优化（Pippenger MSM、GPU sumcheck）福利所有应用。
 
 ### D.4 可信设置风险
 
@@ -611,6 +619,8 @@ DA_cost_per_tx = (compressed_calldata_bytes / DA_capacity_bytes_per_unit) × DA_
 
 **结论**：如果不是极致吞吐场景，直接用 Ethereum blob 通常是最佳决策。
 
+**state diff vs full tx data**：zkSync Era 用 state diff 压缩（只发送状态变化），calldata 体积比 Optimism（发送全部 tx data）小 3-5 倍——但牺牲了重构 tx 历史的能力（区块浏览器需 trace 重放）。
+
 ---
 
 ## 附录 F：Based Rollup / Shared Sequencer
@@ -669,6 +679,10 @@ graph TB
 | Scroll | Euclid 升级已 permissionless sequencer（2025-04） |
 | Starknet | 全 validator 自跑 sequencer，目标 2026 |
 | Taiko | based sequencing，天然去中心化 |
+
+### F.5 Pre-confirmation
+
+**Pre-confirmation**：sequencer 在 L1 终局前给软确认 + 经济抵押。Taiko Based、Espresso、Surge、Gattaca 都在做——把 L2 用户体验从 1 块（~12s）压到 100ms 级。
 
 ---
 
@@ -823,7 +837,7 @@ graph TB
 | Linea | Type-2 | Stage 0 | Vortex / PLONK | Ethereum blob |
 | Starknet | non-EVM（Cairo） | Stage 0 | Stone STARK | Ethereum blob |
 | Taiko Alethia | Type-1（based） | Stage 0 | SP1 + RISC0 + TEE 多证明 | Ethereum blob |
-| Polygon zkEVM | Type-2/3 | Stage 0（**2026-07 退役**） | Plonky2 | Ethereum blob |
+| Polygon zkEVM | Type-2/3 | Stage 0（**2026-07 退役**，迁移路径：AggLayer CDK Validium，Polygon 主推链栈方案） | Plonky2 | Ethereum blob |
 | Aztec | non-EVM（Noir） | pre-stage | Ultra Honk | Ethereum blob |
 
 ### H.7 跨链消息协议快速对比
