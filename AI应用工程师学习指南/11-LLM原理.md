@@ -903,12 +903,7 @@ gantt
 - **优先把关键信息放头尾**：第 16 章 RAG 会反复提，retrieved chunk 要放在 prompt 的头部或尾部，不要放中段。
 - **prompt 不要塞满**：哪怕模型支持 128K，实际用 16K-32K 是「最甜」区间。塞到 100K 不仅慢、贵，还掉准确率。
 - **prefill 成本**：长 prompt 的第一 token 延迟（TTFT）和 prompt 长度成线性甚至超线性关系。50K 输入的 TTFT 可能要 5-15 秒，UX 不友好——长 context 配 streaming UI 时要给用户「正在思考」的过渡态。
-- **prompt caching 大有可为，但各家差异大**：
-  - **Anthropic**：手动开关，需要在 system / user 块上加 `cache_control: {"type": "ephemeral"}` 标记缓存断点，最多 4 个；命中按基础价 **10%** 计，**写入**比基础价贵 25%（5 分钟 TTL）或 100%（1 小时 TTL）。
-  - **OpenAI**：自动缓存，prompt 前缀 ≥ 1024 token 自动启用，无需声明；命中按基础价 **50%** 计（部分模型 25%），写入不收溢价。
-  - **DeepSeek**：自动 disk 级缓存，命中按基础价 **10%**（DeepSeek-V3 / R1 都启用），是国产 API 里成本压得最低的一档。
-  - **Gemini**：分隐式（自动）和显式（创建 CachedContent，按存储 + 命中两段计费），适合长文档反复问。
-  - **应用工程师 takeaway**：RAG / Agent 系统把不变的 prefix（system prompt + 示例 + 工具定义）放最前并在 Anthropic 上手动打 cache，能省 70%+ 成本；OpenAI 不用动手但要把变量放尾部。
+- **prompt caching 大有可为，但各家差异大**：四家厂商（Anthropic / OpenAI / Gemini / DeepSeek）在「手动 vs 自动」「折扣率」「TTL」「写入溢价」上差别很大，命中折扣从 OpenAI 的 50% 到 DeepSeek 的 ~98% 不等。应用工程师 takeaway：把不变的 prefix（system prompt + 示例 + 工具定义）放最前、变量放尾部，命中率能从 30% 拉到 80%+。**具体折扣率与配置详见第 22 章 §Prompt Caching**。
 
 ---
 

@@ -434,12 +434,9 @@ flowchart TD
 ```mermaid
 flowchart TB
     Data[关键数据]
-    Data --> L1[热: IPFS pin × 3 家]
-    Data --> L2[温: Filecoin via FIL+]
-    Data --> L3[冷: Arweave 永久]
-    L1 -.即时访问.-> L1
-    L2 -.低成本批量.-> L2
-    L3 -.最终保险.-> L3
+    Data --> L1[热: IPFS pin × 3 家<br/>即时访问]
+    Data --> L2[温: Filecoin via FIL+<br/>低成本批量]
+    Data --> L3[冷: Arweave 永久<br/>最终保险]
 ```
 
 迁移 playbook（平台关停应对）：90 天公告期 → 盘点 CID registry → CAR 导出 → 新平台上传 → hash 校验 → 更新链上 contenthash。

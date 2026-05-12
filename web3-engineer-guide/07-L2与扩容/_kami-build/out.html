@@ -990,7 +990,7 @@
 <tr>
 <td>Circle CCTP</td>
 <td>$0（仅 gas）</td>
-<td>13-19 分钟（attestation）</td>
+<td><strong>V2 Fast Transfer &lt; 30 秒</strong>（自 2025-03 上线）；V1 约 13-19 分钟</td>
 <td>无限</td>
 <td><strong>是（原生）</strong></td>
 </tr>
@@ -1039,12 +1039,12 @@
 </tbody>
 </table>
 <p><strong>Li.Fi SDK 使用伪代码</strong>（截至 2026-04 的 v3 API）：</p>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">LiFi</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">ChainId</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">CoinKey</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@lifi/sdk&#39;</span>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createConfig</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">getQuote</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">executeRoute</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">ChainId</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@lifi/sdk&#39;</span>
 
-<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">lifi</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">LiFi</span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">integrator</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;my-dapp&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">})</span>
+<span style="color: #000">createConfig</span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">integrator</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;my-dapp&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">})</span>
 
 <span style="color: #8F5902; font-style: italic">// 1. 拿报价：USDC Arbitrum → USDC Base</span>
-<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">quote</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">lifi</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">getQuote</span><span style="color: #000; font-weight: bold">({</span>
+<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">quote</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">getQuote</span><span style="color: #000; font-weight: bold">({</span>
 <span style="color: #F8F8F8">  </span><span style="color: #000">fromChain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">ChainId.ARB</span><span style="color: #000; font-weight: bold">,</span>
 <span style="color: #F8F8F8">  </span><span style="color: #000">toChain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">ChainId.BAS</span><span style="color: #000; font-weight: bold">,</span>
 <span style="color: #F8F8F8">  </span><span style="color: #000">fromToken</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;0xaf88d065e77c8cC2239327C5EDb3A432268e5831&#39;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// USDC.arb</span>
@@ -1058,8 +1058,8 @@
 <span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">quote</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">estimate</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">executionDuration</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 780s</span>
 <span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">quote</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">toolDetails</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">name</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8">           </span><span style="color: #8F5902; font-style: italic">// &#39;Circle CCTP&#39;</span>
 
-<span style="color: #8F5902; font-style: italic">// 3. 执行：SDK 自动处理 approve + bridge call</span>
-<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">execution</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">lifi</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">executeRoute</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">signer</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">quote</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #8F5902; font-style: italic">// 3. 执行：SDK 自动处理 approve + bridge call（v3 函数式 API）</span>
+<span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">execution</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">executeRoute</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">quote</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">  </span><span style="color: #000">updateRouteHook</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">route</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">console</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">log</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">route</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">steps</span><span style="color: #000; font-weight: bold">[</span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #000; font-weight: bold">].</span><span style="color: #000">execution</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">status</span><span style="color: #000; font-weight: bold">),</span>
 <span style="color: #000; font-weight: bold">})</span>
 
@@ -2083,7 +2083,7 @@
 <p>本节解释一个 2024-2026 年的明显趋势：<strong>几乎所有 Top-20 CEX 都在做自己的 L2/L1</strong>。不是技术叙事——是赤裸裸的商业模式必然。</p>
 </blockquote>
 <h4 id="2026-04">现象（截至 2026-04）</h4>
-<p>至少 9 家中心化交易所已上线或运营自家公链：Coinbase <strong>Base</strong>（OP Stack，2023-08）、Kraken <strong>Ink</strong>（OP Stack，2024-12）、OKX <strong>X Layer</strong>（Polygon CDK，2024-04）、Binance <strong>opBNB</strong>（OP Stack，2023-09）+ <strong>BNB Chain</strong>（自有 L1）、KuCoin <strong>KCC</strong>（PoSA，2021）、HTX <strong>Heco</strong>（PoSA，2020 已基本停滞）、Crypto.com <strong>Cronos</strong> + <strong>Cronos zkEVM</strong>（Cosmos + ZK Stack）、Bitget <strong>BWB Chain</strong>（OP Stack，2025）、HashKey Group <strong>HashKey Chain</strong>（zkSync ZK Stack，2024-10）。</p>
+<p>至少 9 家中心化交易所已上线或运营自家公链：Coinbase <strong>Base</strong>（OP Stack，2023-08）、Kraken <strong>Ink</strong>（OP Stack，<strong>主网 2025-01-06 上线</strong>，2024-12 是 testnet）、OKX <strong>X Layer</strong>（Polygon CDK，2024-04）、Binance <strong>opBNB</strong>（OP Stack，2023-09）+ <strong>BNB Chain</strong>（自有 L1）、KuCoin <strong>KCC</strong>（PoSA，2021）、HTX <strong>Heco</strong>（PoSA，2020 已基本停滞）、Crypto.com <strong>Cronos</strong> + <strong>Cronos zkEVM</strong>（Cosmos + ZK Stack）、Bitget <strong>Morph</strong>（与 Consensys 合作，2025；BWB 是 token 名非链名）、HashKey Group <strong>HashKey Chain</strong>（zkSync ZK Stack，2024-10）。</p>
 <h4 id="4">动机分析（4 条）</h4>
 <ol>
 <li><strong>流量自留</strong>：用户从 CEX 提币本来流出生态——一旦提到 ETH 主网或第三方 L2，下次回来概率 &lt; 30%。建自家 L2 后，用户提币 = 留在 CEX 控股链，复购率 + 衍生品交叉销售飙升</li>
@@ -2217,10 +2217,10 @@
 <td>已基本停滞</td>
 </tr>
 <tr>
-<td>BWB Chain</td>
+<td>Morph</td>
 <td>Bitget</td>
 <td>2025-Q1</td>
-<td>OP Stack</td>
+<td>与 Consensys 合作（混合 Rollup）</td>
 <td>Stage 0</td>
 <td>$50M</td>
 <td>20k-80k</td>

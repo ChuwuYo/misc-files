@@ -488,7 +488,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">11</span>
-    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">第 10 章：巨鲸跟单 + 聪明钱</a></span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">附录 O. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -513,7 +513,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">16</span>
-    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 N：商户支付与 OTC 链路</a></span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 P. 商户支付与 OTC 链路</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -570,7 +570,7 @@
 <p>读者：刚学完基础 Solidity 的 Web2 工程师，没碰过 DeFi。读完主线（约 3-4 周）能理解 AMM、借贷、稳定币三个核心机制，知道为什么 UST 会崩、Mango 怎么被掏空。</p>
 <p><strong>承上</strong>：模块 04 让你写得出合约，模块 05 让你写得安全。本模块把这两件事丢进真实战场——AMM、借贷、稳定币、MEV——看它们怎么互相缠成一台 1500 亿美元的金融机器。代码在前两模块只是文本，到这里才变成持续吞吐资金的活物：每一行 modifier 背后都有真金白银在过桥。</p>
 <p><strong>主线读法</strong>：每章一个机制，每节 ≤ 800 字，看完都能用一句话复述。读到不懂的地方先跳过，不要陷在数学里——所有数学细节都收进了附录。</p>
-<p>主线 10 章，附录 14 篇。TVL/APY 为 2026-04 数据，对照 <a href="https://defillama.com/">DefiLlama</a> 当前值——DeFi 半衰期 90 天。</p>
+<p>主线 9 章，附录 15 篇。TVL/APY 为 2026-04 数据，对照 <a href="https://defillama.com/">DefiLlama</a> 当前值——DeFi 半衰期 90 天。</p>
 <section class="chapter">
 <h2 id="_1" id="ch01"><span class="chapter-num">Chapter 01</span><br>章节地图</h2>
 
@@ -584,13 +584,12 @@
  7. LST / LRT 入门（一笔 ETH 干几份工）
  8. MEV 入门（链上的高频交易）
  9. 风险全景（UST + Mango + 五条铁律 + 行业级历史教训）
-10. 巨鲸跟单 + 聪明钱（Nansen / Arkham / Dune / Whale Alert / PoR）
 </code></pre></div></p>
+<p>工具栈 + 链上 alpha 实战见 <a href="#附录-o-巨鲸跟单--聪明钱链上-alpha-工具栈">附录 O</a></p>
 <p><strong>附录</strong>（不按顺序，需要时再翻）：
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>A. AMM 数学（V3 sqrtPriceX96 / V4 hooks / Curve LLAMMA / Balancer / ve(3,3)）
 B. 借贷数学（jump rate 公式 / Aave Umbrella / Compound III / Morpho / Maple）
 C. 12+ 真实事件 postmortem（除 UST/Mango 外的全部）
-N. 商户支付与 OTC 链路（Coinbase Commerce / BitPay / MoonPay / 三地入金）
 D. 衍生品（GMX / Hyperliquid / Synthetix / 期权）
 E. Pendle PT/YT 数学
 F. ve-tokenomics + Berachain PoL + Real Yield 辨真伪
@@ -601,6 +600,8 @@ J. Foundry 实战指南骨架
 K. DeFi 速查图（一页打印版）
 L. 术语小词典
 M. 学习路径与项目案例
+O. 巨鲸跟单 + 聪明钱（Nansen / Arkham / Dune / Whale Alert / PoR）
+P. 商户支付与 OTC 链路（Coinbase Commerce / BitPay / MoonPay / 三地入金）
 </code></pre></div></p>
 <hr />
 
@@ -670,7 +671,7 @@ L1 货币层    ETH / USDC / DAI / stETH / WBTC    「DeFi 用什么当钱」
 <td>USDC</td>
 <td>Circle</td>
 <td>~$60B</td>
-<td>SVB 2023-03 短期脱锚到 $0.88</td>
+<td>SVB 2023-03 短期脱锚到 $0.87</td>
 </tr>
 <tr>
 <td>FDUSD</td>
@@ -686,7 +687,7 @@ L1 货币层    ETH / USDC / DAI / stETH / WBTC    「DeFi 用什么当钱」
 </tr>
 </tbody>
 </table>
-<p><strong>钩子事件</strong>：2023-03-10 SVB 倒闭，Circle 在该行有 $33 亿 USDC 储备无法即时取出，USDC 跌到 $0.88，DAI 也跟着脱锚（PSM 把 USDC 当储备）。整个周末没人能在合约层做任何事——问题在合约<strong>外</strong>。这是法币稳定币的"链上代码再安全也救不了你"教学时刻。</p>
+<p><strong>钩子事件</strong>：2023-03-10 SVB 倒闭，Circle 在该行有 <strong>$3.3B</strong> USDC 储备无法即时取出，USDC 跌到 $0.87，DAI 也跟着脱锚（PSM 把 USDC 当储备）。整个周末没人能在合约层做任何事——问题在合约<strong>外</strong>。这是法币稳定币的"链上代码再安全也救不了你"教学时刻。</p>
 <p><strong>USDC 工程细节</strong>：USDC 是可升级合约，Circle 能冻结任意地址（Tornado Cash 制裁数小时内执行）。Aave/Compound 默认接受这个风险（一次乱冻结毁掉信任，Circle 不会乱来）；LUSD 刻意不收 USDC 抵押当避风港，2023-03 一度溢价到 $1.05。</p>
 <p><strong>选哪个</strong>：借贷主资产用 USDC（合规深）；CEX 永续保证金用 USDT（流动性深）；机构合规通道用 PYUSD/RLUSD。</p>
 <h3 id="22-cdpdai-lusd">2.2 超额抵押（CDP）：DAI / LUSD</h3>
@@ -754,7 +755,7 @@ L1 货币层    ETH / USDC / DAI / stETH / WBTC    「DeFi 用什么当钱」
 </table>
 <p>剩下零散在 Polygon / Avalanche / Arbitrum / Base / Aptos / TON 等。<strong>做支付选 TRC-20，做 DeFi 选 ERC-20</strong>——同一种代币、不同的工程现实。</p>
 <p><strong>Tether 增发监控（市场 alpha 信号）</strong>：</p>
-<p>Tether 印钞地址（Treasury）是公开的——历史主地址 <code>0x5754...284D8</code>（ETH）、<code>TKHuVq...rHFQ</code>（TRON）等。典型路径：</p>
+<p>Tether 印钞地址（Treasury）是公开的——历史主地址 <code>0x5754284f345afc66a98fbB0a0Afe71e0F007B949</code>（ETH）、<code>TKHuVq...rHFQ</code>（TRON）等。典型路径：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Tether Treasury 印钞 (mint USDT)
    → 转入 CEX 热钱包（Bitfinex / Binance / OKX）
    → CEX 内部分配
@@ -837,7 +838,7 @@ L1 货币层    ETH / USDC / DAI / stETH / WBTC    「DeFi 用什么当钱」
 </tbody>
 </table>
 <p>经验：USDC 跨链走 CCTP，USDT 跨链走 Stargate/cBridge，L2 之间走 Orbiter。</p>
-<p><strong>出入金链路</strong>（法币 → 链上 → 钱包，2026-04 主流路径）：</p>
+<p><strong>出入金链路</strong>（法币 → 链上 → 钱包，2026-04 主流路径，<strong>前端 SDK 集成 + 商户网关详见 <a href="../10-前端与账户抽象/README.md">10 §10.6</a></strong>）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>Wise / 银行电汇 →（合规通道）→ MoonPay / Ramp / Transak → 信用卡/SEPA 买入 USDC
    →（CEX 充值）→ Binance / OKX / Coinbase
    →（链上提币）→ TRC-20 USDT / ERC-20 USDC / Solana USDC
@@ -1381,7 +1382,7 @@ $$</p>
    ├ 6 月被 BlockFi / Genesis / Voyager 追保 → 35 亿美元爆仓 → 6/27 BVI 申请破产
 Celsius Network
    ├ Mashinsky &quot;Banking is dead&quot; 庞氏 yield；CEL 代币内部对敲
-   ├ 7/13 申请破产；Mashinsky 2023-07 被起诉、2024-12 认罪 + 2025-05 判 12 年
+   ├ 7/13 申请破产；Mashinsky **2024-12-03 plea guilty 认罪**（两项 fraud），2025-05-08 判 12 年
 Voyager Digital
    ├ 借 3AC ~$650M 无抵押 → 6/30 暂停提款 → 7/5 破产 → FTX 一度收购但跟着崩
 BlockFi
@@ -1395,8 +1396,8 @@ Genesis Trading（DCG 子公司）
 <p>时间线：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>2023-03-08 周三：SVB 公布 $18B 浮亏 + 募资失败 → 挤兑
 2023-03-09 周四：硅谷创业公司全网 wire transfer 撤资
-2023-03-10 周五：FDIC 接管 SVB；Circle 公告其 $40B 储备中 $33B 在 SVB
-2023-03-11 周六：USDC 跌到 $0.88；DAI 跟脱（PSM 把 USDC 当储备 → 详见 §2.2）
+2023-03-10 周五：FDIC 接管 SVB；Circle 公告 $40B 总储备中 **$3.3B 困在 SVB**
+2023-03-11 周六：USDC 跌到 $0.87；DAI 跟脱（PSM 把 USDC 当储备 → 详见 §2.2）
 2023-03-12 周日：FDIC + Treasury + Fed 宣布全额担保 SVB 存款
 2023-03-13 周一：USDC 回锚 $0.999；Circle 公告资金已转 BNY Mellon
 </code></pre></div>
@@ -1444,6 +1445,7 @@ Genesis Trading（DCG 子公司）
 <p><strong>为什么市场没崩</strong>：① 信托人采取"渐进释放" + 分多个交易所，规避单笔冲击；② 早期持有人 cost basis $50-200，落袋后再投资概率高；③ ETF 通道吸纳能力（贝莱德 IBIT 同期持续吸 BTC）。</p>
 <p><strong>工程启示</strong>：① <strong>托管侧的 reorg buffer 不仅是技术问题</strong>——分发节奏、KYC 通道、税务认领期都是工程参数；② DeFi 协议设计大额提款时也应有"分批 + 节流"机制（Aave 提款冷却、Lido withdrawal queue 都从这类教训而来）；③ 历史欠账的释放是<strong>周期性 alpha 信号</strong>：监控 trustee 钱包 + 交易所入金可提前对冲。</p>
 <p><strong>D. FTX 全景（2022-11 → 2024-2025 还款）</strong></p>
+<p>（<strong>简版攻击面对照见 <a href="../05-智能合约安全/README.md">05 故事 3</a></strong>）</p>
 <p>简表：</p>
 <table>
 <thead>
@@ -1483,21 +1485,21 @@ Genesis Trading（DCG 子公司）
 <hr />
 
 </section><section class="chapter">
-<h2 id="10" id="ch11"><span class="chapter-num">Chapter 11</span><br>第 10 章：巨鲸跟单 + 聪明钱</h2>
+<h2 id="o-alpha" id="ch11"><span class="chapter-num">Chapter 11</span><br>附录 O. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</h2>
 
 <blockquote>
-<p>TL;DR：链上数据是<strong>公开的、连续的、永不丢失的</strong>——这意味着任何"聪明钱"的足迹都暴露在外。本章是数据驱动 alpha 的工程视角：用四个工具栈把"看到 → 标签 → 信号 → 跟单"做成 pipeline，再用 PoR 监控守住反向风险。</p>
+<p>TL;DR：链上数据是<strong>公开的、连续的、永不丢失的</strong>——这意味着任何"聪明钱"的足迹都暴露在外。本附录是数据驱动 alpha 的工程视角：用四个工具栈把"看到 → 标签 → 信号 → 跟单"做成 pipeline，再用 PoR 监控守住反向风险。</p>
 </blockquote>
 <p>DeFi 工程师的判断力一半来自源码，一半来自<strong>链上行为数据</strong>。聪明钱（smart money）不是玄学——是<strong>有标签 + 有历史回撑 + 有可复现胜率</strong>的地址簇。下面四件工具是 2026-04 实战栈。</p>
-<h3 id="101-nansen-smart-money">10.1 Nansen Smart Money</h3>
+<h3 id="o1-nansen-smart-money">O.1 Nansen Smart Money</h3>
 <p><strong>定位</strong>：标签库最大（1.5 亿+ 地址实体标签）、机构覆盖最深。</p>
 <p><strong>核心 alpha 提取</strong>：① <strong>Smart Money dashboard</strong>——按"过去 30 天 ROI" / "持仓集中度" / "活跃度"筛选 top 1000 地址；② <strong>Token God Mode</strong>——任意 ERC-20 看 top holders + 入场成本 + 浮盈分布；③ <strong>Wallet Profiler</strong>——单地址画像：胜率、持仓时长、惯用 DEX、关联实体。</p>
 <p><strong>典型用法</strong>：发现某新代币 Smart Money 净流入连续 3 天 → 反查这些地址历史胜率 &gt; 70% → 跟单（小仓位 + 严格止损）。</p>
-<h3 id="102-arkham-entity">10.2 Arkham Entity 实体追踪</h3>
+<h3 id="o2-arkham-entity">O.2 Arkham Entity 实体追踪</h3>
 <p><strong>定位</strong>：实体级图谱（把分散地址聚成"3AC"、"Justin Sun"、"Tether Treasury"等实体）。</p>
 <p><strong>核心功能</strong>：① <strong>Visualizer</strong>——画出实体间资金流向图（3AC → Genesis → DCG 那种）；② <strong>Ultra</strong>（赏金市场）——悬赏让别人去揭示某地址背后的实体（"谁是 Wintermute 的对手方？"）；③ <strong>Entity-level Alert</strong>——某实体大额转账即时推送（比 address-level 噪声低得多）。</p>
 <p><strong>典型用法</strong>：监控 Tether Treasury 实体 → 印钞 → 转 CEX → 现货上涨 alpha（详 §2.4）。</p>
-<h3 id="103-dune-copy-trade">10.3 Dune copy-trade 信号</h3>
+<h3 id="o3-dune-copy-trade">O.3 Dune copy-trade 信号</h3>
 <p><strong>定位</strong>：开源 SQL dashboard 平台，DeFi 数据的 GitHub。</p>
 <p><strong>工作流</strong>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>1. 在 dune.com 搜 &quot;copy trade&quot; / &quot;smart money&quot; / &quot;MEV&quot;
@@ -1508,11 +1510,11 @@ Genesis Trading（DCG 子公司）
 </code></pre></div>
 <p><strong>优势</strong>：完全可定制 + 完全免费（社区版）；<strong>劣势</strong>：标签靠社区维护，新地址覆盖滞后于 Nansen/Arkham。</p>
 <p><strong>经典 dashboard</strong>：① "Hyperliquid Whale Trades" by 21co；② "Aave V3 Liquidation Bot Tracker"；③ "PumpFun Smart Money"。</p>
-<h3 id="104-whale-alert">10.4 Whale Alert 信号工程</h3>
+<h3 id="o4-whale-alert">O.4 Whale Alert 信号工程</h3>
 <p><strong>定位</strong>：Twitter/Telegram bot，实时推送大额转账。</p>
 <p><strong>实战配置</strong>：① <strong>阈值过滤</strong>——默认 $1M+ 噪声大（CEX 内部归集占大头），调到 $5M-$10M 看真实信号；② <strong>链 + 资产白名单</strong>——只看 BTC/ETH/USDT/USDC + 关心的几条链；③ <strong>方向标签</strong>——"unknown wallet → exchange"是潜在抛压、"exchange → unknown"是潜在囤积；④ <strong>联动 Arkham</strong>——Whale Alert 给地址，Arkham 给实体身份。</p>
 <p><strong>经验</strong>：单条 Whale Alert 不构成信号；<strong>连续 3 条同方向 + 时间窗 &lt; 6h</strong> 才有 alpha。</p>
-<h3 id="105-por">10.5 PoR 交易所储备金证明（反向风险）</h3>
+<h3 id="o5-por">O.5 PoR 交易所储备金证明（反向风险）</h3>
 <p>跟单聪明钱是进攻面；监控 PoR（Proof of Reserves）是防守面——<strong>别让你跟单的钱本身都在一个会破产的 CEX 里</strong>。</p>
 <p><strong>主流 PoR 实现</strong>：</p>
 <table>
@@ -1811,10 +1813,10 @@ $$</p>
 <hr />
 
 </section><section class="chapter">
-<h2 id="n-otc" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 N：商户支付与 OTC 链路</h2>
+<h2 id="p-otc" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 P. 商户支付与 OTC 链路</h2>
 
 <p>主线 §2.4 讲了稳定币流通分布；本附录补"链上→链下→商户/用户"的完整支付与 OTC 工程链路（截至 2026-04）。</p>
-<h3 id="n1">N.1 加密商户支付网关</h3>
+<h3 id="p1">P.1 加密商户支付网关</h3>
 <table>
 <thead>
 <tr>
@@ -1863,7 +1865,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="n2-usdt-trc20">N.2 USDT-TRC20 商户场景（东南亚 / 拉美 / 非洲现实）</h3>
+<h3 id="p2-usdt-trc20">P.2 USDT-TRC20 商户场景（东南亚 / 拉美 / 非洲现实）</h3>
 <p><strong>为什么 TRC-20 是事实标准</strong>：① gas 几乎为 0（带宽 + 能量机制）；② TRON 钱包工具齐（imToken / Tokenpocket / Trust Wallet）；③ Tether 与 Justin Sun 关系紧密、流动性最深；④ OTC 网络 9 年沉淀。</p>
 <p><strong>典型场景</strong>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>菲律宾家政工 → 香港雇主月薪 USDT
@@ -1875,7 +1877,7 @@ $$</p>
   → 直接转工厂钱包（取代 SWIFT 节省 3-5 天 + $30 电报费）
 </code></pre></div>
 <p><strong>商户收银台 SDK</strong>：① 自建（监听 TRC-20 事件 + 校验金额/时间窗）；② <strong>NowPayments / Plisio / CryptoCloud</strong> 第三方收银台（支持 100+ 币、自动结算）。</p>
-<h3 id="n3-2026-04">N.3 法币出入金渠道矩阵（2026-04）</h3>
+<h3 id="p3-2026-04">P.3 法币出入金渠道矩阵（2026-04）</h3>
 <table>
 <thead>
 <tr>
@@ -1931,7 +1933,7 @@ $$</p>
 </tbody>
 </table>
 <p><strong>实战经验</strong>：① 小额（&lt; $1k）走 MoonPay/Ramp；② 大额（&gt; $10k）走 CEX（Coinbase/Binance/Kraken）；③ DApp 嵌入选 Onramper（一次集成多个供应商）；④ 美国合规要求高的 fintech 选 Stripe Crypto。</p>
-<h3 id="n4-vs-vs">N.4 香港 vs 新加坡 vs 美国 入金差异</h3>
+<h3 id="p4-vs-vs">P.4 香港 vs 新加坡 vs 美国 入金差异</h3>
 <table>
 <thead>
 <tr>

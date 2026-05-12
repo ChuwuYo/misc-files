@@ -4,17 +4,13 @@
 >
 > 本章默认 Python 3.13+，所有示例在 macOS / Linux 下验证。Windows 用户请自行替换路径分隔符。
 >
-> **前置假设**：本书不教 Python 基础语法。本章默认你 `def`、`class`、`import`、`with`、`try/except` 都写过，至少跟着教程做过一两个能跑的小程序。如果还没到这一步，先回序言看推荐的 Python 入门资源（廖雪峰 / Real Python / 官方 Tutorial），再回来读这一章——否则你会在 2.1 节就被术语劝退。
->
-> **看不懂可以先跳过**：2.2 类型系统进阶（PEP 695 / ParamSpec）、2.4 后半段（TPM 限流）、2.6 末尾的 OTel 注入、2.8 后半段（snapshot 测试），第一遍读不下去都可以直接跳到下一节，等你真做项目卡住了再回头查。本章是「字典」，不是「小说」。
+> **前置假设**：本书不教 Python 基础语法。本章默认你 `def`、`class`、`import`、`with`、`try/except` 都写过，至少跟着教程做过一两个能跑的小程序。否则先回序言看推荐的 Python 入门资源（廖雪峰 / Real Python / 官方 Tutorial），再回来读——否则你会在 2.1 节就被术语劝退。本章是「字典」，不是「小说」，看不懂的小节直接跳，章末有「读不下去怎么办」自救清单。
 
 ### 真实场景：为什么需要「工程化」
 
 想象一下你在 2026 年加入了一家 AI 创业公司，第一周老板扔给你一个 issue：「我们的 RAG 客服机器人在用户问长问题时偶尔超时，帮忙看下。」你打开仓库，发现里面有 `pyproject.toml`、CI 在跑 `ruff check` 和 `mypy --strict`、日志是 JSON 格式、调 LLM 的代码全是 `async def` 和 `@retry` 装饰器。你之前写的 Python 都是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」——这套陌生的东西到底是什么？
 
-这就是本章要解决的问题。第 01 章讲过 AI 应用工程师的画像、薪资、门槛，反复强调一句话：这一行真正稀缺的是「能交付完整闭环」的人——能把 RAG 从 60% 推到 90%、能让 Agent 在 200 步内不偏题、能把 P95 延迟压在 3 秒以内。这些活儿没有一项能在脚本式 Python 上长出来。现代 AI 工程团队的代码库长的是另一副样子：pyproject.toml、ruff、mypy strict、async、结构化日志、pytest fixture、Dockerfile。
-
-所以如果你过去的 Python 体验是「装个 Anaconda、pip install 一堆包、写个 main.py 跑一下」，那么进 AI 工程团队的第一周你大概率会被同事的 pyproject.toml、CI 里的 ruff check、被 mypy 红出半屏的 PR 击中。本章把这些工具一次性讲清，并用一个贯穿全章的小项目串起来：**一个调用 LLM API 的 CLI 工具 `askbot`**，从 `uv init` 到 `docker build`，每节都给它加一块。
+第 01 章讲过这一行真正稀缺的是「能交付完整闭环」的人——能把 RAG 从 60% 推到 90%、能让 Agent 在 200 步内不偏题、能把 P95 延迟压在 3 秒以内。这些活儿没有一项能在脚本式 Python 上长出来。本章把现代 AI 工程团队那套工具链（pyproject.toml、ruff、mypy strict、async、结构化日志、pytest fixture、Dockerfile）一次性讲清，并用一个贯穿全章的小项目串起来：**一个调用 LLM API 的 CLI 工具 `askbot`**，从 `uv init` 到 `docker build`，每节都给它加一块。
 
 ### 术语速查（先扫一眼，看不懂留个印象，正文再细讲）
 
@@ -40,7 +36,7 @@
 ## 章节速览
 
 - 2.1 工具链选型，为什么是 uv + ruff + mypy
-- 2.2 类型系统：PEP 695 / Protocol / TypedDict / ParamSpec
+- 2.2 类型系统：为什么写类型注解，进阶语法（Protocol / 泛型 / 装饰器）按需读
 - 2.3 Pydantic v2：模型、validator、settings
 - 2.4 异步：asyncio 基础、Semaphore 限流、httpx
 - 2.5 错误处理：tenacity 重试、断路器、幂等
@@ -50,6 +46,14 @@
 - 2.9 把 askbot 拼起来
 - 2.10 打包与分发：wheel + Docker
 - 2.11 pre-commit + CI
+
+> **本章三档读法**（不知道从哪下嘴时先看这个）：
+>
+> - **必读 6 节**（覆盖 80% 工程能力）：2.1 工具链 / 2.3 Pydantic / 2.4 异步 / 2.5 错误处理 / 2.7 项目结构 / 2.9 askbot 拼起来。
+> - **选读 3 节**（用到再回来）：2.2 类型系统、2.6 日志、2.8 测试。
+> - **进阶 2 节**（真要发版部署再读）：2.10 打包与分发、2.11 pre-commit + CI。
+>
+> 第一遍按「必读 6 节」走一遍能跑通 askbot，就算这章过关了；选读和进阶部分先扫标题留个印象，工作里撞到再回来查。
 
 ## 2.1 工具链：2026 年的现实
 
@@ -66,11 +70,9 @@
 | 重试 | 自己写 try/except | **tenacity** | 装饰器式，async 友好 |
 | 日志 | logging | **structlog**（结构化）/ loguru（脚本/原型） | 结构化日志直接进 ELK/Loki |
 
-注：2026 年 3 月 OpenAI 宣布收购 Astral（uv / ruff / ty 背后的公司）。两个工具仍然是 MIT/Apache 2.0 开源许可，短期不会有破坏性变化，但你应该意识到这条工具链的战略地位。
+代价是接受单一供应商（Astral）和一个新二进制——值得。AI 项目依赖图常常 80–200 个包，pip 解析一次 30 秒起步，uv 通常 1–3 秒搞定，一年下来省的时间是几十小时。
 
-### 为什么不再推 pip + venv + black + flake8
-
-不是它们坏了，而是你每多花 30 秒等装包、每多 30 秒等 lint，一年下来就是几十小时。AI 项目依赖图常常 80–200 个包，pip 解析一次 30 秒起步，uv 通常 1–3 秒搞定。代价是接受单一供应商（Astral）和一个新二进制——值。
+> <small>**背景知识（可跳）**：2026 年 3 月 OpenAI 宣布收购 Astral（uv / ruff / ty 背后的公司）。两个工具仍然是 MIT/Apache 2.0 开源许可，短期不会有破坏性变化——零基础读者不必纠结这条产业八卦，知道「uv 现在被大厂背书、近期不会消失」就够了。</small>
 
 ### 安装 uv
 
@@ -85,7 +87,9 @@ brew install uv
 uv --version   # 2026 年 5 月已到 0.11.x；本章命令在 0.4+ 都能跑
 ```
 
-uv 不需要预先安装 Python。它会按需下载并缓存指定版本，避免和系统 Python 打架。背后用的是 Astral 自家的 python-build-standalone，比 pyenv 编译快几个数量级，也避开了 macOS 系统 Python 那堆 OpenSSL 链接问题。
+uv 不需要预先安装 Python。它会按需下载并缓存指定版本，避免和系统 Python 打架。
+
+> <small>**背景知识（可跳）**：uv 背后用的是 Astral 自家的 python-build-standalone 预编译版，比 pyenv 现编译快几个数量级，也避开了 macOS 系统 Python 那堆 OpenSSL 链接问题。零基础读者只要记住「`uv python install 3.13` 一行搞定，不用自己折腾 pyenv 和编译错误」。</small>
 
 几个常用子命令的对应关系，方便 pip / poetry 用户切换：
 
@@ -157,11 +161,7 @@ packages = ["src/askbot"]
 
 > 这里所有 `>=` 写的是「写本书时的下限」，到 2026 年 5 月 ruff 已发到 0.15.x、mypy 出到 2.0、httpx 0.28.x。把下限定保守、由 `uv lock` 锁具体版本，是兼容性最稳的做法。
 
-注意几个 2026 年的细节：
-
-- `requires-python = ">=3.13"`：写死下限，CI 一致、镜像可复现。
-- `[dependency-groups]`：PEP 735 标准化的依赖组，替代了 `[tool.poetry.group.dev]` 和 `[project.optional-dependencies]` 的尴尬。
-- `[project.scripts]`：一个 entry point 让 `pip install askbot` 之后能直接 `askbot` 命令调用，不用再 `python -m askbot`。
+几个 2026 年的细节：`requires-python = ">=3.13"` 写死下限保证 CI 一致、镜像可复现；`[dependency-groups]` 是 PEP 735 标准化的依赖组，替代了 `[tool.poetry.group.dev]` 与 `[project.optional-dependencies]` 的尴尬；`[project.scripts]` 让 `pip install askbot` 之后能直接 `askbot` 命令调用，不用 `python -m askbot`。
 
 ### 配置 ruff 和 mypy
 
@@ -310,11 +310,11 @@ source = ["src/askbot"]
 
 ---
 
-## 2.2 类型系统精通：让 IDE 帮你抓 bug
+## 2.2 类型系统：让 IDE 帮你抓 bug
 
-> **难度提示**：这一节后半段（PEP 695 泛型、ParamSpec）是高阶内容。第一遍读如果觉得绕，看完「为什么 AI 工程更需要类型」「类型注解的三种姿势」「Protocol」「TypedDict」四小节就够，剩下的等你写到自己的装饰器再回来查。
+> **白话先看这段（零基础必读）**：Python 本来是「动态语言」——变量不写类型也能跑，传错类型要到运行时才炸。类型注解就是手动给变量贴个标签（`x: int`、`def add(a: int, b: int) -> int`），告诉编辑器和 mypy 这种工具「这个东西应该是什么类型」。**Python 运行时不会强制检查**（你传 `str` 进来照样能跑），但 mypy 会在你写代码时就把「int 当 str 用」这种低级错标红。可以理解成「给变量贴标签，让 IDE 帮你 review」。
 >
-> **类型注解是什么**：在变量或函数参数后面写一个冒号 + 类型，比如 `def add(a: int, b: int) -> int`，告诉编辑器和静态检查工具「这个参数应该是什么类型」。Python 运行时**不会**强制检查（传 str 也不会报错），但 mypy 会在你写代码时就把错误标红。可以理解成「给变量贴标签」。
+> **难度地图**：本节前半（「为什么 AI 工程更需要类型」「类型注解的三种姿势」「Protocol」「TypedDict」）每个 AI 工程师都要会。后半的 **PEP 695 泛型 / ParamSpec** 是 Python 高级类型系统，给写库作者和写装饰器的人用——零基础读者**第一遍可整段跳**，只看「为什么 AI 工程更需要类型」这一节就够，等真正要写自己的 `@retry` 装饰器时再回来。
 
 ### 为什么 AI 工程更需要类型
 
@@ -409,7 +409,7 @@ def dispatch(call: ToolCall) -> None:
     # print(call["unknown"])  # mypy 直接报红
 ```
 
-不要对所有 dict 都套 TypedDict——经验法则是「跨函数边界、跨进程边界、能被序列化的」用 Pydantic 模型；只在内部局部传一下的用 TypedDict。一个区别是：TypedDict 没有运行时校验，类型错了 mypy 会报、但运行时还是会跑过去。Pydantic 会在 `model_validate` 时立刻抛 ValidationError。LLM 返回值这种「不可信输入」必须用 Pydantic。
+经验法则：「跨函数边界、跨进程边界、能被序列化的」用 Pydantic 模型；只在内部局部传的用 TypedDict。两者关键差别（运行时校验）见下面「类型与运行时的边界」。
 
 ### ParamSpec：写正确的装饰器
 
@@ -484,11 +484,13 @@ add("1", "2")  # mypy 红；但实际跑会返回 "12"，因为 str 也支持 +
 
 ## 2.3 Pydantic v2：AI 应用的护城河
 
+> **一句话先记住**：Pydantic 把外部进来的 JSON 自动变成「有类型保证」的 Python 对象，少写一堆 `if "xxx" not in data: raise`。它是 LLM 应用调工具、结构化输出的命根子。
+>
 > **本节核心**：Pydantic 是 Python 生态最重要的数据校验库。你写一个继承 `BaseModel` 的类，它就能（1）把外部传进来的 JSON / dict 自动校验、转换成有类型保证的 Python 对象（错了立刻抛异常）；（2）反向生成 JSON Schema 描述这个数据结构。LLM 应用 90% 的「调用工具 / 结构化输出」全靠它。
 >
 > **JSON Schema 是什么**：一份用 JSON 写的「数据形状说明书」，告诉别人「这个 JSON 应该有哪些字段、每个字段什么类型」。LLM 调用 Function Calling 时就是把这份说明书喂给模型，让模型按格式输出。
 >
-> **「v2」是什么**：Pydantic 2024 年发的大版本，底层用 Rust 重写了，速度比 v1 快 5–50 倍。本书全部用 v2，老教程里 `from pydantic import validator`（v1）这种写法已经过时。
+> **「v2」是什么**：Pydantic 2024 年发的大版本，<small>底层用 Rust 重写（pydantic-core），速度比 v1 快 5–50 倍</small>。本书全部用 v2，老教程里 `from pydantic import validator`（v1）这种写法已经过时。
 
 ### 为什么 AI 应用离不开它
 
@@ -742,9 +744,9 @@ class Settings(BaseSettings):
 
 LLM API 的调用是 IO 密集型——99% 时间在等网络。同步代码一次只能等一个请求；async 代码同样的进程能同时等 50 个。在 RAG、批量评测、多 Agent 并行这些场景里，async 不是优化，是基本功。
 
-Python 3.13 的 free-threading（无 GIL）按 PEP 703 走的是 Phase I——构建产物存在但**仍是实验性、非默认**；2025 年 6 月 PEP 779 通过后，3.14 进入 Phase II——free-threaded 构建**官方支持但仍非默认**，距离 Phase III「成为默认构建」还有几年。但即便你跑无 GIL Python，对 IO 密集场景几乎没收益（因为 GIL 在 IO 时本来就释放），所以 LLM 应用的并发依旧靠 async。
+Python 3.13 的 free-threading（无 GIL）按 PEP 703 走 Phase I（实验性非默认）；2025 年 6 月 PEP 779 通过后 3.14 进入 Phase II（官方支持仍非默认），距 Phase III 默认构建还有几年。但对 IO 密集场景几乎没收益（GIL 在 IO 时本来就释放），LLM 应用的并发依旧靠 async。
 
-什么时候该考虑 free-threading？答案是「CPU 密集 + 多核」的混合负载，比如本地推理（llama.cpp Python 绑定）、向量计算（不走 GPU 的小批量场景）、PDF/HTML 解析这种纯 CPU 的预处理。3.13 上单线程开销约 40%，3.14 已缩到 10% 上下，是可以认真考虑的选项。生产建议：先在 CI 里加一个 free-threaded 版本的矩阵，观察哪些第三方包不兼容；主要风险是带 C 扩展的包（torch、numpy、cryptography）需要专门构建的 wheel。
+什么时候考虑 free-threading？「CPU 密集 + 多核」的混合负载——本地推理（llama.cpp 绑定）、不走 GPU 的小批量向量计算、PDF/HTML 解析。3.13 单线程开销约 40%，3.14 已缩到 10%。生产建议：在 CI 加 free-threaded 矩阵，观察哪些第三方包不兼容；主要风险是带 C 扩展的包（torch、numpy、cryptography）需要专门 wheel。
 
 ### 三个易错概念先讲清
 
@@ -813,7 +815,7 @@ async def example() -> None:
         print(t.result())
 ```
 
-`lambda p=p:` 是为了**冻结每次循环的 p 值到默认参数**——直接 `lambda: ask(p)` 在所有 lambda 真正被调用时再去查 p，而 list comprehension 结束后 p 已经被绑到最后一个值（Python 闭包延迟绑定，不是按值捕获）。注意此处生成器表达式 `(... for p in prompts)` 由于 list comprehension 立即求值后再调用 lambda，所以全部 lambda 看到的是最后一次循环的 p；用 `p=p` 默认参数把当前 p 拍进 lambda 自己的作用域才安全。这是 async 新手最常踩的坑之一。更直接的写法是把限流逻辑下沉到调用本身，调用端就不再需要 lambda：
+`lambda p=p:` 用默认参数把当前 p 冻结进 lambda 自己的作用域——直接 `lambda: ask(p)` 由于 Python 闭包延迟绑定，所有 lambda 真正被调用时去查的是 list 循环结束后的最后一个 p 值。这是 async 新手最常踩的坑之一。更直接的写法是把限流逻辑下沉到调用本身，调用端就不再需要 lambda：
 
 ```python
 sem = asyncio.Semaphore(8)
@@ -897,21 +899,7 @@ httpx 的 timeout 有 4 个维度（connect / read / write / pool），不写就
 
 ### requests 党的迁移指南
 
-如果你过去一直用 requests，httpx 的好消息是 API 几乎一模一样：
-
-```python
-# 同步 API（先平移过来）
-import httpx
-r = httpx.get("https://example.com")  # 和 requests.get 一样
-r.json()
-r.status_code
-
-# 异步 API（迁移后再升级）
-async with httpx.AsyncClient() as c:
-    r = await c.get("https://example.com")
-```
-
-迁移分两步走：第一步把 `import requests` 改 `import httpx`，几乎零成本；第二步把热路径换成 AsyncClient。不要一上来就 async 全家桶，循序渐进风险更低。
+httpx 的同步 API 和 requests 几乎一模一样（`httpx.get(url).json()` 直接平移）。迁移分两步：第一步把 `import requests` 改 `import httpx`，零成本；第二步把热路径换成 `async with httpx.AsyncClient() as c`。不要一上来就 async 全家桶，循序渐进风险更低。
 
 ---
 
@@ -1873,30 +1861,6 @@ dist
 
 不要把 model 权重塞镜像。GB 级文件用启动时下载 + 持久卷（K8s PVC / docker volume），镜像本身只装代码。否则镜像体积爆炸，CI 推拉慢半小时起。
 
-### 镜像层缓存的常见误区
-
-很多人写 Dockerfile 都犯过：
-
-```dockerfile
-# 反例：每次代码改动都重装依赖
-COPY . .
-RUN uv sync --frozen
-```
-
-正确：
-
-```dockerfile
-# 先装依赖（依赖不变就命中缓存）
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project
-
-# 后拷源码（源码改动只触发这一层重建）
-COPY src ./src
-RUN uv sync --frozen --no-editable
-```
-
-代码变更频率远高于依赖变更，让依赖装在前面、源码后面，能让 90% 的 build 直接复用 cache。10 GB 内存的 builder 节点上一个项目 build 时间从 90 秒降到 8 秒不夸张。
-
 ### 这个 Dockerfile 在 CI 里能直接跑吗
 
 不能直接抄进 CI 就完。两个隐藏前提，文档不写 CI 一定会翻车：
@@ -2004,25 +1968,13 @@ jobs:
 
 ### 读不下去怎么办
 
+- **不知道哪些可以跳**：翻回章节速览下面的「本章三档读法」——必读 6 节先走通，选读 / 进阶用到再回来。
 - **被术语劝退**：回到章首的「术语速查」，每次卡住就回去看一眼那张表。
 - **代码看不懂**：照着敲，跑起来。看代码不如跑代码。Python 工具链最大的好处是「报错信息能直接 Google」。
 - **类型系统/装饰器晕了**：跳过 2.2 后半段（PEP 695、ParamSpec），先把 askbot 跑通；这部分等你做项目卡了再回头。
+- **Pydantic 一上来一堆概念**：先抓住「`Model.model_validate(payload)` 把脏 JSON 变干净对象、`Model.model_json_schema()` 反向生成 Schema 喂 LLM」这两句话，其它都是细节。
 - **async 完全没感觉**：去廖雪峰或 Real Python 找一篇 `asyncio` 入门通读一遍再回来，本章不是 async 教学。
-- **Docker 没装过**：先去看官方 Get Started（<https://docs.docker.com/get-started/>），10 分钟够用。
-
-### 本章学到的东西一览
-
-回头看，本章把 askbot 从空目录推到了一个可发布的 CLI：
-
-- 工具链：uv 一统江湖，ruff 替掉一打老工具
-- 类型：PEP 695 + Protocol + TypedDict + ParamSpec，给关键边界上锁
-- Pydantic v2：模型定义、JSON Schema 生成、settings 收口
-- 异步：asyncio.gather / TaskGroup / Semaphore 限流，httpx AsyncClient 单例
-- 重试：tenacity 装饰器 + 幂等 key + pybreaker
-- 日志：structlog 结构化 + ContextVar 传 request_id + OTel 简介
-- 测试：pytest-asyncio + pytest-httpx mock，断言不变量而非字符串
-- 打包：uv build → wheel；多阶段 Dockerfile → 200 MB 镜像
-- 卡口：pre-commit + ruff + mypy
+- **Docker 没装过**：先去看官方 Get Started（<https://docs.docker.com/get-started/>），10 分钟够用，2.10 节可以放到那之后再读。
 
 往下走，第 03 章会补一层"看模型不再发怵"的数学直觉：cosine similarity 在 RAG 里到底测的是什么、softmax/温度采样在调什么、KL 散度为什么是 RLHF 的命门、AdamW 那几个超参各自管什么。代码全部跑得起来，最后用不到 50 行从零写一个 self-attention 收尾。askbot 这条主线会在第 14 章 Prompt 工程化、第 15 章 LangChain/LlamaIndex 实战回来——目前它只是一个套了壳子的 HTTP 客户端，有了工程地基才方便长肉。
 

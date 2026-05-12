@@ -493,27 +493,27 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">12</span>
-    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">10.5 dApp 合规：前端拦截 + 链上合规设计</a></span>
+    <span class="toc-title"><a href="#ch12" style="color:inherit;text-decoration:none">11. dApp 合规：前端拦截 + 链上合规设计</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">13</span>
-    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">10.6 前端集成法币出入金（On/Off-Ramp）</a></span>
+    <span class="toc-title"><a href="#ch13" style="color:inherit;text-decoration:none">12. 前端集成法币出入金（On/Off-Ramp）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">14</span>
-    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">11. 实战项目导览（code/）</a></span>
+    <span class="toc-title"><a href="#ch14" style="color:inherit;text-decoration:none">13. 实战项目导览（code/）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">15</span>
-    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">12. 习题与解答</a></span>
+    <span class="toc-title"><a href="#ch15" style="color:inherit;text-decoration:none">14. 习题与解答</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
     <span class="toc-num">16</span>
-    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">13. 参考资料</a></span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">15. 参考资料</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -579,11 +579,11 @@
 <li><a href="#8-eip-7702-直觉eoa-升级">8. EIP-7702 直觉：EOA 升级</a></li>
 <li><a href="#9-钓鱼防御-5-条">9. 钓鱼防御 5 条</a></li>
 <li><a href="#10-smart-account-选型">10. Smart Account 选型</a></li>
-<li><a href="#105-dapp-合规前端拦截--链上合规设计">10.5 dApp 合规：前端拦截 + 链上合规设计</a></li>
-<li><a href="#106-前端集成法币出入金onoff-ramp">10.6 前端集成法币出入金（On/Off-Ramp）</a></li>
-<li><a href="#11-实战项目导览code">11. 实战项目导览（code/）</a></li>
-<li><a href="#12-习题与解答">12. 习题与解答</a></li>
-<li><a href="#13-参考资料">13. 参考资料</a></li>
+<li><a href="#11-dapp-合规前端拦截--链上合规设计">11. dApp 合规：前端拦截 + 链上合规设计</a></li>
+<li><a href="#12-前端集成法币出入金onoff-ramp">12. 前端集成法币出入金（On/Off-Ramp）</a></li>
+<li><a href="#13-实战项目导览code">13. 实战项目导览（code/）</a></li>
+<li><a href="#14-习题与解答">14. 习题与解答</a></li>
+<li><a href="#15-参考资料">15. 参考资料</a></li>
 </ul>
 <h3 id="_2">附录</h3>
 <ul>
@@ -1060,11 +1060,13 @@ Resources:
 <span style="color: #F8F8F8">        </span><span style="color: #000">signature</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">label</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;Signature&#39;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">type</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;text&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
 <span style="color: #F8F8F8">      </span><span style="color: #000; font-weight: bold">},</span>
 <span style="color: #F8F8F8">      </span><span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #000">authorize</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">credentials</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic">// 从服务端 cookie 取 nonce，不信任客户端 message.nonce；签发处见 §5.2 /auth/nonce 路由</span>
+<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">cookies</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;next/headers&#39;</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">expectedNonce</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">cookies</span><span style="color: #000; font-weight: bold">()).</span><span style="color: #000">get</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;siwe_nonce&#39;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">value</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #000">SiweMessage</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">JSON</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">parse</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">message</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">))</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">data</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">success</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">siwe</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">verify</span><span style="color: #000; font-weight: bold">({</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">signature</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">credentials</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">signature</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">as</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #000; font-weight: bold">,</span>
-<span style="color: #F8F8F8">          </span><span style="color: #8F5902; font-style: italic">// session 来自 next-auth 服务端 store，非客户端；安装：npm i next-auth</span>
-<span style="color: #F8F8F8">          </span><span style="color: #000">nonce</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">session.expectedNonce</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 从服务端存储取，不信任客户端提交的 siwe.nonce</span>
+<span style="color: #F8F8F8">          </span><span style="color: #000">nonce</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">expectedNonce</span><span style="color: #000; font-weight: bold">,</span>
 <span style="color: #F8F8F8">          </span><span style="color: #000">domain</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">process.env.NEXTAUTH_URL?.replace</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">/^https?:\/\//</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;&#39;</span><span style="color: #000; font-weight: bold">),</span>
 <span style="color: #F8F8F8">        </span><span style="color: #000; font-weight: bold">})</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #000">success</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">null</span>
@@ -1181,7 +1183,7 @@ Resources:
 <span style="color: #F8F8F8">  </span><span style="color: #000">data</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">encodeFunctionData</span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">abi</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">erc20Abi</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">functionName</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;transfer&#39;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">args</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">TO</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">1</span><span style="color: #000">_000_000n</span><span style="color: #000; font-weight: bold">]</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}),</span>
 <span style="color: #000; font-weight: bold">})</span>
 </code></pre></div>
-<p>完整 smartClient 构建代码见 §11 实战项目导览。字段级细节见<strong>附录 A</strong>。</p>
+<p>完整 smartClient 构建代码见 §13 实战项目导览。字段级细节见<strong>附录 A</strong>。</p>
 <p><strong>UserOp 时序</strong>：dApp 构造 callData → SmartAccount 包成 UserOp → Bundler stub estimate（要 paymaster 临时签）→ Bundler real estimate → SmartAccount EOA 签 hash → Bundler 提交 EntryPoint → EntryPoint 验签 + 调 paymaster validatePaymasterUserOp → 调 SmartAccount validateUserOp → 执行 callData。两阶段 paymaster 让 gas 估算和最终签分离。</p>
 <p><strong>章末</strong>：4337 是"造新钱包"的方案。下一节看 7702——"给旧 EOA 长出腿"。</p>
 <hr />
@@ -1330,13 +1332,13 @@ Resources:
 <hr />
 
 </section><section class="chapter">
-<h2 id="105-dapp" id="ch12"><span class="chapter-num">Chapter 12</span><br>10.5 dApp 合规：前端拦截 + 链上合规设计</h2>
+<h2 id="11-dapp" id="ch12"><span class="chapter-num">Chapter 12</span><br>11. dApp 合规：前端拦截 + 链上合规设计</h2>
 
 <blockquote>
 <p><strong>TL;DR</strong> 截至 2026-04，主流 DeFi 前端（Uniswap / Aave / dYdX / Lido）默认拦 OFAC SDN list 地址；合约端则用 USDC blacklist、Pausable、Privacy Pools 三件套兜底。"代码即法律"在 Tornado Cash 之后正式让位给"代码 + 制裁清单 + KYT"。</p>
 </blockquote>
 <p><strong>钩子</strong>：2022-08 OFAC 把 Tornado Cash 直接列进 SDN——这不是制裁某个人，而是制裁一段代码。第二天，Uniswap、Aave、dYdX、1inch 的前端集体灰掉了一批以太坊地址。链上合约还在跑，前端按钮按不下去——这就是"合规在前端"的诞生现场。</p>
-<h3 id="1051-ofac-sdn-list">10.5.1 OFAC SDN list 拦截（前端实现）</h3>
+<h3 id="111-ofac-sdn-list">11.1 OFAC SDN list 拦截（前端实现）</h3>
 <p><strong>数据源三档</strong>（截至 2026-04）：</p>
 <table>
 <thead>
@@ -1384,12 +1386,12 @@ Resources:
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">useAccount</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">useDisconnect</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">useEffect</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;react&#39;</span>
 
+<span style="color: #8F5902; font-style: italic">// ❌ 不要 NEXT_PUBLIC_*（暴露 key 到 bundle）</span>
+<span style="color: #8F5902; font-style: italic">// ✅ 走 /api/screen route 代理：**Chainalysis API key 不可暴露到客户端**，必须 server route 代理</span>
 <span style="color: #204A87; font-weight: bold">async</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">screen</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">`0x${</span><span style="color: #204A87; font-weight: bold">string</span><span style="color: #4E9A06">}`</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
-<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">fetch</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;https://public.chainalysis.com/api/v1/address/&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+</span><span style="color: #F8F8F8"> </span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
-<span style="color: #F8F8F8">    </span><span style="color: #000">headers</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;X-API-Key&#39;</span><span style="color: #CE5C00; font-weight: bold">:</span><span style="color: #F8F8F8"> </span><span style="color: #000">process</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">env</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">NEXT_PUBLIC_CHAINALYSIS_KEY</span><span style="color: #CE5C00; font-weight: bold">!</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">},</span>
-<span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">})</span>
-<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">j</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">json</span><span style="color: #000; font-weight: bold">()</span>
-<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #000">j</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">identifications</span><span style="color: #CE5C00; font-weight: bold">?</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">length</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 命中 SDN / sanctioned entity</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">res</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">fetch</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;/api/screen?address=&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">+</span><span style="color: #F8F8F8"> </span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">isSanctioned</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">await</span><span style="color: #F8F8F8"> </span><span style="color: #000">res</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">json</span><span style="color: #000; font-weight: bold">()</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">return</span><span style="color: #F8F8F8"> </span><span style="color: #000">isSanctioned</span><span style="color: #F8F8F8"> </span><span style="color: #8F5902; font-style: italic">// 命中 SDN / sanctioned entity</span>
 <span style="color: #000; font-weight: bold">}</span>
 
 <span style="color: #204A87; font-weight: bold">export</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">useOfacGuard</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1411,7 +1413,7 @@ Resources:
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>工程化要点：① 拦截要在签名前——上链后再发现已经晚了；② log 要保留至少 5 年（FinCEN 要求）；③ 假阳性走人工申诉通道。</p>
-<h3 id="1052-tornado-cash">10.5.2 Tornado Cash 后续与合约级合规</h3>
+<h3 id="112-tornado-cash">11.2 Tornado Cash 后续与合约级合规</h3>
 <p><strong>时间线</strong>：</p>
 <table>
 <thead>
@@ -1430,8 +1432,8 @@ Resources:
 <td>TC 开发者 Roman Storm 在美被起诉</td>
 </tr>
 <tr>
-<td>2024-08</td>
-<td>第五巡回上诉法院（Coin Center 案）裁定 OFAC 越权——智能合约不是"财产"</td>
+<td>2024-11-26</td>
+<td><strong>Van Loon v. Treasury</strong>（第五巡回判决）裁定 OFAC 越权——智能合约不是"财产"；Coin Center 案（第六巡回）已驳回</td>
 </tr>
 <tr>
 <td>2025-03</td>
@@ -1446,15 +1448,15 @@ Resources:
 <p>启示：<strong>前端按 SDN 拦截仍是行业最低门槛</strong>——监管允许移除≠允许给制裁个人提供服务；合约层则需要"可治理"。</p>
 <p><strong>合约级合规四件套</strong>：</p>
 <ol>
-<li><strong>USDC / USDT blacklist</strong>：Circle / Tether 内置 <code>freeze(address)</code>，已冻结金额累计 &gt;10 亿美元（2024-2025 数据）。集成稳定币的 dApp 必须假设余额可能"突然为零"，不要写"假定永远转得动"的逻辑。</li>
+<li><strong>USDC / USDT blacklist</strong>：两家都不叫 <code>freeze</code>——USDC（Centre 合约）走 <code>blacklist(address)</code> + <code>isBlacklisted(address)</code>；USDT 用驼峰双词 <code>addBlackList(address)</code> + <code>isBlackListed(address)</code> + <code>destroyBlackFunds(address)</code>（销毁余额）。已冻结金额累计 &gt;10 亿美元（2024-2025 数据）。集成稳定币的 dApp 必须假设余额可能"突然为零"，不要写"假定永远转得动"的逻辑。</li>
 <li><strong>ERC-20 Pausable</strong>：合约自带紧急暂停开关，由多签或 timelock 控制——大型借贷协议（Aave / Compound）标配。</li>
 <li><strong>Privacy Pools</strong>（Buterin 等 2023 论文）：合规化混币——用户在存款时可选 association set，证明"我不来自这五个被标记地址"。Railway / 0xbow 已落地，<strong>截至 2026-04</strong> 主网月活 ~3 万。</li>
 <li><strong>可升级 + governor 投票</strong>：制裁清单更新时不需要重新部署，由 DAO 投票把目标地址加入合约级 deny list。</li>
 </ol>
-<h3 id="1053-travel-rulefatf">10.5.3 Travel Rule（FATF）</h3>
-<p>≥ $1000 跨 VASP 转账需附 sender / recipient KYC 信息（IVMS101 报文格式）；CEX、托管钱包、稳定币发行方必修。dApp 自托管钱包不在范围内，但<strong>对接 CEX 出入金时</strong>会被拉进合规链路（见 §10.6）。</p>
+<h3 id="113-travel-rulefatf">11.3 Travel Rule（FATF）</h3>
+<p>≥ $1000 跨 VASP 转账需附 sender / recipient KYC 信息（IVMS101 报文格式）；CEX、托管钱包、稳定币发行方必修。dApp 自托管钱包不在范围内，但<strong>对接 CEX 出入金时</strong>会被拉进合规链路（见 §12）。</p>
 <p>实现方协议：TRP（Travel Rule Protocol）、Sygna Bridge、Notabene、Veriscope。</p>
-<h3 id="1054">10.5.4 司法辖区合规速查</h3>
+<h3 id="114">11.4 司法辖区合规速查</h3>
 <table>
 <thead>
 <tr>
@@ -1473,7 +1475,7 @@ Resources:
 </tr>
 <tr>
 <td>欧盟</td>
-<td>MiCA（2024-12 全面生效）</td>
+<td>MiCA（<strong>稳定币 2024-06-30 / CASP 2024-12-30 / 过渡期至 2026-07-01</strong>）</td>
 <td>CASP 牌照</td>
 <td>稳定币储备透明、市场操纵</td>
 </tr>
@@ -1502,13 +1504,13 @@ Resources:
 <hr />
 
 </section><section class="chapter">
-<h2 id="106-onoff-ramp" id="ch13"><span class="chapter-num">Chapter 13</span><br>10.6 前端集成法币出入金（On/Off-Ramp）</h2>
+<h2 id="12-onoff-ramp" id="ch13"><span class="chapter-num">Chapter 13</span><br>12. 前端集成法币出入金（On/Off-Ramp）</h2>
 
 <blockquote>
 <p><strong>TL;DR</strong> 截至 2026-04，主流方案是聚合器（Onramper / Mt Pelerin / Toggle）一行 SDK 接多渠道，单点 SDK（MoonPay / Transak / Ramp / Stripe Crypto / Coinbase Onramp）按需补充。手续费 1—5%，KYC 5—15 分钟，UX 决定 Web2 用户能否过门槛。</p>
 </blockquote>
 <p><strong>钩子</strong>：2024 Stripe 重启加密支付，2025-Q1 收购 Bridge（11 亿美元）+ Privy（2 亿美元）——支付巨头补齐 on-ramp 是行业大事。dApp 工程师面前的现实题：用户钱包余额=0，怎么三分钟拿到 100 USDC？</p>
-<h3 id="1061">10.6.1 聚合器优先</h3>
+<h3 id="121">12.1 聚合器优先</h3>
 <table>
 <thead>
 <tr>
@@ -1540,7 +1542,7 @@ Resources:
 </tbody>
 </table>
 <p><strong>为什么先选聚合器</strong>：①一份合规协议覆盖多个渠道；②某个 provider 在某地区被切断（合规风波常见）时自动 fallback；③用户始终拿到接近最优汇率。</p>
-<h3 id="1062-sdk-2026-04">10.6.2 单点 SDK 对比矩阵（截至 2026-04）</h3>
+<h3 id="122-sdk-2026-04">12.2 单点 SDK 对比矩阵（截至 2026-04）</h3>
 <table>
 <thead>
 <tr>
@@ -1597,7 +1599,9 @@ Resources:
 </tbody>
 </table>
 <p><strong>选型一句话版</strong>：欧洲选 Ramp，美国选 Stripe / Coinbase Onramp，全球选 MoonPay 或 Onramper，B2B 选 Toggle，要非托管选 Mt Pelerin。</p>
-<h3 id="1063-moonpay-sdk">10.6.3 集成代码示例（MoonPay SDK）</h3>
+<h3 id="123-moonpay-sdk">12.3 集成代码示例（MoonPay SDK）</h3>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>pnpm<span style="color: #F8F8F8"> </span>add<span style="color: #F8F8F8"> </span>@moonpay/moonpay-js
+</code></pre></div>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #4E9A06">&#39;use client&#39;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">loadMoonPay</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@moonpay/moonpay-js&#39;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">useAccount</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
@@ -1629,7 +1633,7 @@ Resources:
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>工程要点：① <code>walletAddress</code> 必须由后端 HMAC 签名再拼到 URL，否则前端能被改成攻击者地址；② sandbox 用测试卡 <code>4000 0566 5566 5556</code>；③ webhook 监听 <code>transaction_completed</code> 入账后再放行业务流。</p>
-<h3 id="1064">10.6.4 商户加密支付（"接收"端）</h3>
+<h3 id="124">12.4 商户加密支付（"接收"端）</h3>
 <p>收法币 → 链上资产是 <strong>on-ramp</strong>；收链上资产 → 法币是 <strong>merchant payment</strong>：</p>
 <table>
 <thead>
@@ -1662,7 +1666,7 @@ Resources:
 </tr>
 </tbody>
 </table>
-<h3 id="1065-2026-04">10.6.5 香港 / 新加坡 / 美国 入金合规速差（截至 2026-04）</h3>
+<h3 id="125-2026-04">12.5 香港 / 新加坡 / 美国 入金合规速差（截至 2026-04）</h3>
 <table>
 <thead>
 <tr>
@@ -1697,13 +1701,13 @@ Resources:
 <hr />
 
 </section><section class="chapter">
-<h2 id="11-code" id="ch14"><span class="chapter-num">Chapter 14</span><br>11. 实战项目导览（code/）</h2>
+<h2 id="13-code" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. 实战项目导览（code/）</h2>
 
 <blockquote>
 <p>前面 10 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：<code>pnpm dev</code> 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。</p>
 <p>把它当作"读完前 10 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。</p>
 </blockquote>
-<h3 id="111">11.1 目录结构</h3>
+<h3 id="131">13.1 目录结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/
 ├── package.json                 # pin 全部版本
 ├── pnpm-lock.yaml              # pnpm 9.15
@@ -1749,7 +1753,7 @@ Resources:
         ├── useSmartAccount.ts
         └── useSiweLogin.ts
 </code></pre></div>
-<h3 id="112">11.2 启动</h3>
+<h3 id="132">13.2 启动</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87">cd</span><span style="color: #F8F8F8"> </span>code
 cp<span style="color: #F8F8F8"> </span>.env.example<span style="color: #F8F8F8"> </span>.env.local<span style="color: #F8F8F8">      </span><span style="color: #8F5902; font-style: italic"># 填 RPC、Pimlico key、WC projectId</span>
 pnpm<span style="color: #F8F8F8"> </span>install
@@ -1764,7 +1768,7 @@ NEXT_PUBLIC_RPC_MAINNET=https://eth-mainnet.g.alchemy.com/v2/KEY
 NEXT_PUBLIC_RPC_BASE=https://base-mainnet.g.alchemy.com/v2/KEY
 PIMLICO_API_KEY=pim_...
 </code></pre></div>
-<h3 id="113">11.3 跑通的几条主线</h3>
+<h3 id="133">13.3 跑通的几条主线</h3>
 <ol>
 <li>连钱包 → 读 ETH 余额（<code>useBalance</code>，默认 Sepolia）。</li>
 <li><code>useReadContract</code> 读 USDC balanceOf/decimals/symbol。</li>
@@ -1774,7 +1778,7 @@ PIMLICO_API_KEY=pim_...
 <li>ERC-4337 UserOp：permissionless 创建 Safe smart account，Pimlico paymaster，bundler 广播。</li>
 <li>EIP-7702 batched tx：viem <code>signAuthorization</code> 挂载 BatchExecutor，单笔做多事。</li>
 </ol>
-<h3 id="114-walkthrough">11.4 关键代码 walkthrough</h3>
+<h3 id="134-walkthrough">13.4 关键代码 walkthrough</h3>
 <p><code>src/lib/wagmi.ts</code> 即 §2.1 Config（chains: sepolia/mainnet/base，injected + walletConnect + coinbaseWallet + safe，cookieStorage + ssr=true）。</p>
 <p><code>src/lib/aa.ts</code> 把 Safe smart account + Pimlico paymaster + bundler 串成一个 <code>smartClient</code>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">createSmartAccountClient</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;permissionless&#39;</span>
@@ -1888,12 +1892,12 @@ PIMLICO_API_KEY=pim_...
 <span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic">// ...</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<h3 id="115">11.5 项目级安全约定</h3>
+<h3 id="135">13.5 项目级安全约定</h3>
 <p>write 前必跑 <code>useSimulateContract</code> 并同步显示结果；typed data 签名前渲染 <code>&lt;TypedDataPreview/&gt;</code>；Permit2 deadline ≤ 5 分钟；7702 永远 chain_id != 0；SIWE nonce verify 后即销毁。</p>
 <hr />
 
 </section><section class="chapter">
-<h2 id="12" id="ch15"><span class="chapter-num">Chapter 15</span><br>12. 习题与解答</h2>
+<h2 id="14" id="ch15"><span class="chapter-num">Chapter 15</span><br>14. 习题与解答</h2>
 
 <blockquote>
 <p>这一节六道题是对前 10 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。</p>
@@ -2021,7 +2025,7 @@ PIMLICO_API_KEY=pim_...
 <hr />
 
 </section><section class="chapter">
-<h2 id="13" id="ch16"><span class="chapter-num">Chapter 16</span><br>13. 参考资料</h2>
+<h2 id="15_1" id="ch16"><span class="chapter-num">Chapter 16</span><br>15. 参考资料</h2>
 
 <ul>
 <li>viem 官方文档（v2.43.3，与模块 13 一致）：https://viem.sh/</li>

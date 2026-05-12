@@ -752,6 +752,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 </ul>
 <p><strong>用户侧自验</strong>（伪代码）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># pip install merkle-proof-verifier</span>
+<span style="color: #8F5902; font-style: italic"># 包名仅示意（PyPI 未发布）；实际可用 hashlib 手写约 10 行验证</span>
 <span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #000">binance_por</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">import</span> <span style="color: #000">fetch_self_proof</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">verify_inclusion</span>
 
 <span style="color: #000">proof</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000">fetch_self_proof</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">user_id</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">asset</span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #4E9A06">&quot;BTC&quot;</span><span style="color: #000; font-weight: bold">)</span>  <span style="color: #8F5902; font-style: italic"># JSON: {leaf, siblings, root, total_sum}</span>
@@ -782,9 +783,13 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
     // 关键 1：和等式
     node_sum &lt;== left_sum + right_sum + amount;
 
-    // 关键 2：无负余额（range proof，64 bit 足够）
-    component rc = Num2Bits(64);
-    rc.in &lt;== amount;
+    // 关键 2：无负余额——LessThan + 上界，单 Num2Bits 不够（域元素 mod p 问题）
+    // 约束：用 LessThan 限制 balance ∈ [0, 2^64)
+    // Num2Bits 单独不够——域元素 mod p 时 -1 也能分解为 64-bit
+    component lt = LessThan(64);
+    lt.in[0] &lt;== amount;
+    lt.in[1] &lt;== 2**64;
+    lt.out === 1;
 
     // 关键 3：哈希绑定
     component h = Poseidon(5);
@@ -816,13 +821,13 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <tr>
 <td>Binance</td>
 <td>月度</td>
-<td>v1 Merkle Sum</td>
+<td>zkSNARK PoR（2022-12 起，Polyhedra zkProver / Plonky2，非纯 Merkle Sum）</td>
 <td>BTC/ETH/USDT 等 9 资产</td>
 </tr>
 <tr>
 <td>OKX</td>
-<td>周度</td>
-<td>v2 zkPoR</td>
+<td>月度</td>
+<td>v2 zkPoR（截至 2026-04 仍月度发布，非每周）</td>
 <td>22 资产</td>
 </tr>
 <tr>

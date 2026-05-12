@@ -595,7 +595,6 @@
 <p><strong>主线</strong>（§1-§19）→ <strong>附录</strong>（A-I 按需深入）。前八节是"能跑起来"的最小闭环，§9 起是把它运营好的工程化，§14 是 CEX 工程视角。</p>
 <figure><img src="diagram-e205208672.png" alt="mermaid diagram"></figure>
 
-<p>附录 H2 在后，主线优先。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1892,7 +1891,7 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <li><strong>黑客地址 → exploit tx</strong>：从 Tenderly / Etherscan 看 root tx，找到 attacker EOA。</li>
 <li><strong>资金分支映射</strong>：Arkham Visualizer 输入 attacker，按 hop 展开，标注每条分支的"目的地类型"（CEX / mixer / bridge / 长期持有）。</li>
 <li><strong>跨链追踪</strong>：如果走 bridge（LayerZero / Axelar / Across），跨链 source tx → dest tx 的关联通过 <code>messageHash</code> / <code>nonce</code>；Allium 的 <code>bridge.transfers</code> 表直接给映射。</li>
-<li><strong>CEX 入金锁定</strong>：如果分支落到 CEX hot wallet，截图 + 时间戳 + 金额，发邮件给 CEX 安全团队（Binance/Coinbase 都有 abuse@）申请冻结。具体取证方法交叉参考 <a href="../05-智能合约安全/README.md">模块 05 §1.3 链上取证</a>。</li>
+<li><strong>CEX 入金锁定</strong>：如果分支落到 CEX hot wallet，截图 + 时间戳 + 金额，发邮件给 CEX 安全团队（Binance/Coinbase 都有 abuse@）申请冻结。具体取证方法交叉参考 <a href="../05-智能合约安全/README.md">模块 05 §1.4 反追踪剧本</a>。</li>
 </ol>
 <blockquote>
 <p>五大 mixer / privacy 工具（Tornado Cash / Railgun / Aztec / Privacy Pools / FixedFloat）追踪难度依次递减，详见模块 05。</p>
@@ -1901,7 +1900,7 @@ cast<span style="color: #F8F8F8"> </span>rpc<span style="color: #F8F8F8"> </span
 <ol>
 <li><strong>DeFi 攻击溯源</strong>：Forta + Arkham 组合，自动化产出"被打协议 + 黑客资金路径"——这是 SecOps / DAO Treasury 团队的日常需求。</li>
 <li><strong>巨鲸 / 聪明钱跟单</strong>：Arkham Entity Alert + Nansen Smart Money（付费）+ Whale Alert，组合成"top 100 trader 跟单信号源"——Crypto Twitter 上很多账号靠这个流量起家。</li>
-<li><strong>交易所 PoR + 负债侧攻击面</strong>：交叉参考 <a href="../08-合规与监管/README.md">模块 08 PoR</a>——Etherscan/Arkham 看 CEX 储备地址，Dune query 看 24h 净流入流出，配合 PoR Merkle proof，能在 CEX "半夜偷偷搬家"前 2-6 小时提前警报（FTX 倒闭前几天链上数据已发出信号）。</li>
+<li><strong>交易所 PoR + 负债侧攻击面</strong>：交叉参考 <a href="../08-零知识证明/README.md">模块 08 零知识证明 §场景 5 PoR</a>——Etherscan/Arkham 看 CEX 储备地址，Dune query 看 24h 净流入流出，配合 PoR Merkle proof，能在 CEX "半夜偷偷搬家"前 2-6 小时提前警报（FTX 倒闭前几天链上数据已发出信号）。</li>
 </ol>
 <blockquote>
 <p>Arkham vs Nansen：Arkham 偏"实体识别 + 资金流向图"，UI 友好免费多；Nansen 偏"标签 + 聪明钱信号"，订阅 $150-1500/月。两者搭配是机构 OSINT 标配。</p>
@@ -2644,6 +2643,8 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </ol>
 <h4 id="forta-agent-sar-ready">Forta agent 输出 SAR-ready 数据（实战代码）</h4>
 <p>合规团队需要 <strong>Suspicious Activity Report (SAR)</strong> 格式的 finding——固定字段 + 可审计 trail。下面这段 Forta agent 把 SAR 关键字段直接放进 finding metadata：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>npm<span style="color: #F8F8F8"> </span>i<span style="color: #F8F8F8"> </span>@fortanetwork/forta-bot
+</code></pre></div>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// agent.ts — Forta SAR-ready transfer monitor</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">Finding</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">FindingSeverity</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">FindingType</span><span style="color: #000; font-weight: bold">,</span>
 <span style="color: #F8F8F8">         </span><span style="color: #000">HandleTransaction</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">TransactionEvent</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #000">ethers</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;@fortanetwork/forta-bot&#39;</span><span style="color: #000; font-weight: bold">;</span>
@@ -2705,11 +2706,11 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 
 <p>模块 11 前 13 章把"链/合约/RPC/索引/监控/CI/密钥"讲透了——但全书最缺的视角是 <strong>CEX 工程</strong>。CEX 不写合约，但它跑着比一般 DeFi 协议<strong>大两个数量级</strong>的工程系统：每秒数千笔充值 webhook、跨 5+ 链的扫块 + reorg 处理、热/温/冷三层资金流转、机构托管 + MPC 钱包决策。CEX 工程师面试也最缺好资料。这一章给你一份"如果明天去 CEX 报到，第一周该看的图谱"。</p>
 <blockquote>
-<p>业务交叉：模块 04 中心化交易所；模块 08 合规与监管 PoR 章；模块 13 §合规节点服务（本模块上一节）。</p>
+<p>业务交叉：模块 04 中心化交易所；模块 08 合规与监管 PoR 章；<strong>本模块 11 §13</strong> 合规节点服务（上一节）。</p>
 </blockquote>
 <h3 id="141">14.1 多链充提系统</h3>
 <p>充提系统是 CEX 工程"看起来最简单实际最容易出血的"系统——一个 reorg、一个 memo 漏读、一个扫块器 lag，就是真金白银的损失。</p>
-<h4 id="1411-deposit-address-hd-vs-memo">14.1.1 deposit address 池：HD 派生 vs 单一汇集 + memo</h4>
+<h4 id="deposit-address-hd-vs-memo">deposit address 池：HD 派生 vs 单一汇集 + memo</h4>
 <table>
 <thead>
 <tr>
@@ -2747,7 +2748,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 <blockquote>
 <p>XRP / Stellar / EOS / TON 是行业里 memo/tag 模型的"老大难"——用户漏填 memo 占客服工单 #1。规模大的 CEX 都做了"memo missing detector"——24h 内未匹配的入金按金额 + 时间窗口启发式归还。</p>
 </blockquote>
-<h4 id="1412-5">14.1.2 扫块器：5 链对比</h4>
+<h4 id="5">扫块器：5 链对比</h4>
 <table>
 <thead>
 <tr>
@@ -2796,7 +2797,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </tr>
 </tbody>
 </table>
-<h4 id="1413-reorg-buffer-user-credit-confirmation">14.1.3 reorg buffer 深度策略（user-credit confirmation）</h4>
+<h4 id="reorg-buffer-user-credit-confirmation">reorg buffer 深度策略（user-credit confirmation）</h4>
 <table>
 <thead>
 <tr>
@@ -2846,7 +2847,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </tbody>
 </table>
 <p>CEX 通常"按链动态"——头部 CEX 还会<strong>根据 mempool / hashrate</strong> 临时上调 BTC confirmation 阈值（如算力骤降时从 6 升到 12）。</p>
-<h4 id="1414-to-credit">14.1.4 用户 to-credit 状态机</h4>
+<h4 id="to-credit">用户 to-credit 状态机</h4>
 <figure><img src="diagram-769a6c0492.png" alt="mermaid diagram"></figure>
 
 <p>KYT 命中（详见 §13.8）的入金不能直接退回——必须 freeze + SAR 上报。</p>
@@ -2888,7 +2889,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </table>
 <figure><img src="diagram-b1197d7dbe.png" alt="mermaid diagram"></figure>
 
-<h4 id="1421-nonce-gas-merkle">14.2.1 批量提币：nonce 串行 + gas 调度 + Merkle 签名</h4>
+<h4 id="nonce-gas-merkle">批量提币：nonce 串行 + gas 调度 + Merkle 签名</h4>
 <p>EVM 链上 1 个钱包发多笔 tx 必须 nonce 串行——否则后一笔会被前一笔卡住。CEX 的"批量提币批次"标准做法：</p>
 <ol>
 <li><strong>批次组装</strong>：5-10 min 一个批次，把这个窗口内同链同币种的提币聚合；</li>
@@ -2896,7 +2897,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 <li><strong>Merkle root 一次签名</strong>：把 N 笔 tx 哈希组成 Merkle tree，root 用 HSM/MPC 签一次，每笔 tx 复用 sigsplit（如 Coinbase 自家方案）；</li>
 <li><strong>失败 tx 单独重发</strong>：mempool 丢弃的 tx 走 Flashbots Protect 重提交。</li>
 </ol>
-<h4 id="1422-audit-trail">14.2.2 审计签名链（audit trail）</h4>
+<h4 id="audit-trail">审计签名链（audit trail）</h4>
 <p>每笔出币必须留 4 列 audit trail：</p>
 <table>
 <thead>
@@ -2973,14 +2974,14 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </tr>
 </tbody>
 </table>
-<h4 id="1431">14.3.1 关键差异化</h4>
+<h4 id="_6">关键差异化</h4>
 <ul>
 <li><strong>Anchorage</strong> 是唯一拿到美国联邦银行执照（OCC charter）的——上市公司 + 银行系客户的合规要求只有它能满足；</li>
 <li><strong>Copper ClearLoop</strong> 让客户<strong>资金留在 Copper 托管，但能在合作 CEX 上交易</strong>——避免 FTX 式风险（资金不进 CEX 钱包），机构 prime broker 标配；</li>
 <li><strong>Fireblocks Key Link</strong> 让客户已有的 HSM/MPC 系统直接接入 Fireblocks workflow——不用迁 key，最大客户群转换成本最低；</li>
 <li><strong>BitGo</strong> 的 Trust Charter 让它可作为"qualified custodian"被部分 ETF 选中。</li>
 </ul>
-<h4 id="1432-mpc-vs-multisig">14.3.2 MPC 钱包 vs Multisig 决策树</h4>
+<h4 id="mpc-vs-multisig">MPC 钱包 vs Multisig 决策树</h4>
 <figure><img src="diagram-2917e595ea.png" alt="mermaid diagram"></figure>
 
 <table>
@@ -3024,7 +3025,7 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 </tr>
 </tbody>
 </table>
-<p>模块 13 §13.2-§13.6 已给协议方 / 个人 / 嵌入式钱包视角；本节补的是<strong>机构托管</strong>这一层。</p>
+<p><strong>本模块 §13.2-§13.6</strong> 已给协议方 / 个人 / 嵌入式钱包视角；本节补的是<strong>机构托管</strong>这一层。</p>
 <h3 id="144-reorg">14.4 链特异性 reorg 处理事故回顾</h3>
 <p>CEX 充提工程师必须熟悉的"教科书事故"：</p>
 <table>
@@ -3381,7 +3382,7 @@ tenderly<span style="color: #F8F8F8"> </span>tx<span style="color: #F8F8F8"> </s
 <p><strong>下一站</strong>：节点、RPC、indexer、监控、CI/CD、密钥、CEX 工程——这一模块把"合约之外"的工程基底铺到了能 24/7 跑生产的程度。但 §18 只是预览了 AI 在告警分类、calldata 解码、subgraph 脚手架上的浅层应用，下一模块 <a href="../12-AI×Web3/README.md">12-AI×Web3</a> 把 AI 真正接进开发全链路：审计辅助、链上数据分析自动化、AI Agent 钱包、链上推理服务——把这一模块搭好的基础设施变成"AI 能调用的链上能力"。</p>
 <hr />
 <hr />
-<h1 id="_6">附录</h1>
+<h1 id="_7">附录</h1>
 <blockquote>
 <p>附录按需深入，不影响主线阅读。主线（§1-§19）已覆盖跑节点 + indexer + CI + 监控 + 密钥 + CEX 工程的端到端工程闭环；附录提供内部架构、完整操作手册、高级话题。</p>
 </blockquote>
@@ -4053,7 +4054,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 <span style="color: #000; font-weight: bold">});</span>
 </code></pre></div>
 <p>完整验证脚本见 <code>code/05-helios-light-client/verify-balance.ts</code>.</p>
-<h5 id="_7">性能 / 局限</h5>
+<h5 id="_8">性能 / 局限</h5>
 <table>
 <thead>
 <tr>
@@ -4102,7 +4103,7 @@ curl<span style="color: #F8F8F8"> </span>-s<span style="color: #F8F8F8"> </span>
 </tr>
 </tbody>
 </table>
-<h5 id="_8">多链支持</h5>
+<h5 id="_9">多链支持</h5>
 <p>Helios 支持 Ethereum mainnet、OP Stack (Optimism / Base, 通过 derive 关系信任 L1)、其他 EVM (Polygon / Arbitrum, 实验性).</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>helios<span style="color: #F8F8F8"> </span>opstack<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span>--network<span style="color: #F8F8F8"> </span>optimism<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>

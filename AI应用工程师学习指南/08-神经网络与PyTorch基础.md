@@ -2,9 +2,7 @@
 
 > **章首钩子**：第 7 章你用 SBERT 把一段评论压成 384 维向量，当黑盒用了。本章我们把这个黑盒拧开盖子——你会发现里面只是一堆矩阵乘法 + 一层激活函数，循环若干遍。读完这一章，你能从零写一个能识别手写数字的神经网络，准确率 98%，CPU 上几分钟跑完。这是你第一个能甩给同事看的"AI 作品"。
 
-> 从这一章开始，我们正式踏入深度学习。前七章里你已经把 Python、NumPy、概率统计、机器学习的基本盘搭好了。现在该让神经网络登场，并把工程上能跑、能调、能上线的那一套 PyTorch 工具链建立起来。
-
-为什么 ReviewLens 那条 LightGBM 的链路跑通之后还要换神经网络？不是"LLM 火了所以要学"，是工程上的一个临界点：当输入是结构化表格、特征工程能榨出来的信号还有富余时，GBDT 仍然是默认选择；但一旦输入是图像、长文本、语音、视频这种高维非结构化数据，你写的每一个手工特征都开始事倍功半，甚至要靠堆几百维 embedding 才能勉强让 GBDT 看到一点语义——这时候神经网络的价值就出来了：**它替你做特征学习**。第 7 章里我们让 SBERT 把文本压成 384 维向量，本质就是一次微型的"端到端表示学习"，只不过我们把它当黑盒用了。本章开始把这个黑盒打开。
+为什么 ReviewLens 那条 LightGBM 的链路跑通之后还要换神经网络？不是"LLM 火了所以要学"，是工程上的一个临界点：当输入是结构化表格、特征工程能榨出来的信号还有富余时，GBDT 仍然是默认选择；但一旦输入是图像、长文本、语音、视频这种高维非结构化数据，你写的每一个手工特征都开始事倍功半，甚至要靠堆几百维 embedding 才能勉强让 GBDT 看到一点语义——这时候神经网络的价值就出来了：**它替你做特征学习**。
 
 这一章的目标是把"会写一个能跑的训练脚本"这件事彻底吃透，而不是塞满公式和论文引用。深度学习的工程门槛被远远低估，论文里那些漂亮算法跑通需要的胶水代码、超参选择、调试经验，从来不会在论文里写。这章就是补这一块。
 
@@ -149,13 +147,11 @@ d.sum(dim=1, keepdim=True)                   # 保留维度
 
 几个新手最容易翻车的点：
 
-**`view` vs `reshape`**：`view` 要求张量在内存里连续（contiguous），不连续会报错；`reshape` 在不连续时会自动复制。要省内存就用 `view`，不想踩坑就 `reshape`。
+**`view` vs `reshape` 与连续性**：Tensor 在内存里的存放顺序是有讲究的。`transpose`、`permute`、`narrow` 这类操作只改 stride 不改实际内存布局，结果不连续。`view` 要求连续，碰到不连续会报错；`reshape` 不要求，必要时会自动复制。卷积、矩阵乘对连续输入有更快路径，碰到性能问题先 `tensor.is_contiguous()` 检查一下，不连续就 `.contiguous()`，往往有显著加速。要省内存就用 `view`，不想踩坑就 `reshape`。
 
 **广播规则**：跟 NumPy 完全一样。从最右侧维度开始对齐，要么相等、要么其中一个是 1、要么其中一个不存在。`(3,1,4) + (2,4)` 会广播成 `(3,2,4)`。
 
 **就地操作**：方法名带下划线后缀的是就地修改，比如 `x.add_(1)` 等价于 `x += 1`。在 autograd 里就地操作有时会破坏计算图，能用非就地就用非就地。
-
-**连续性（contiguous）**：Tensor 在内存里的存放顺序是有讲究的。`transpose`、`permute`、`narrow` 这类操作只改 stride 不改实际内存布局，结果不连续；`view` 要求连续，`reshape` 不要求但有时会复制；`flatten` 内部会按需 copy。卷积、矩阵乘等算子对连续输入有更快的实现路径，碰到性能问题先 `tensor.is_contiguous()` 检查一下，不连续就 `.contiguous()` 一下，往往有显著加速。
 
 **梯度版本**：每个 Tensor 还带一个隐式的 version counter，每次就地修改都会让它递增。autograd 在反向传播时检查这个计数，如果发现某个用过的张量被就地改了，会抛 "one of the variables needed for gradient computation has been modified" 错误，强制你写正确的代码。这个机制虽然偶尔烦人，但帮我们避开了无数难调的梯度 bug。
 
@@ -409,7 +405,7 @@ class AffineNorm(nn.Module):
 
 这个例子覆盖了几乎所有要点：注册参数、用 tensor API 写计算、形状无关（最后一维做 norm，前面随便几个维度都行）。
 
-写自定义层时容易翻车的几个细节。第一是初始化，PyTorch 默认对 Linear 用 Kaiming uniform，Conv 类似，但你自己 `nn.Parameter(torch.empty(...))` 创建出来的张量值是随机的、未初始化的，必须显式调用初始化函数比如 `nn.init.kaiming_normal_` 或者用 `torch.zeros / torch.ones / torch.randn` 给个明确分布。第二是 dtype 一致性，Parameter 默认是 fp32，如果你模型整体跑在 bf16 下，Parameter 会被自动转换；但如果你在 forward 里用 `torch.tensor(...)` 临时构造常量张量，记得指定 `dtype=x.dtype` 跟随输入，否则会有自动类型提升导致计算掉回 fp32。第三是 device 一致性，自定义层里手动构造的张量要 `.to(x.device)` 或者用 `torch.zeros_like(x)`，否则模型 `.to('cuda')` 之后这个临时张量还在 CPU 上，前向直接报错。
+写自定义层时容易翻车的几个细节。第一是初始化：`nn.Parameter(torch.empty(...))` 创建出来的张量值是随机的、未初始化的，必须显式调用 `nn.init.kaiming_normal_` 之类的初始化函数。第二是 dtype/device 一致性：forward 里用 `torch.tensor(...)` 临时构造的常量张量要指定 `dtype=x.dtype`、`.to(x.device)`，或者直接用 `torch.zeros_like(x)`，否则会触发自动类型提升或跨设备报错。
 
 ### 8.3.5 train/eval 模式
 
@@ -662,9 +658,9 @@ NLP 训练里几乎离不开自定义 collate。
 1. CPU 上做（在 Dataset 的 `__getitem__` 里，用 torchvision.transforms 或 albumentations）；
 2. GPU 上做（在 forward 里，用 kornia 之类的库）。
 
-CPU 增强简单稳定但会变成数据加载瓶颈；GPU 增强要小心显存和 batch 一致性。开始就用 CPU 增强，profile 出来确实是数据加载慢，再考虑迁到 GPU。
+CPU 增强简单稳定但会变成数据加载瓶颈；GPU 增强要小心显存和 batch 一致性。开始就用 CPU 增强，profile 出来确实是数据加载慢再考虑迁 GPU。
 
-判断瓶颈的简单方法：在训练循环里记录每个阶段的耗时。如果 GPU 利用率经常掉到 50% 以下，说明 GPU 在等数据，瓶颈是数据加载或 H2D 拷贝。先调高 `num_workers`、开 `pin_memory`、看看 `prefetch_factor` 改 4 有没有用。这些都试过还是 GPU 等数据，就该考虑减小图像分辨率、提前缓存到 LMDB/WebDataset、或者把增强搬到 GPU。`nvidia-smi -l 1` 是粗略观察 GPU 利用率的好工具，配合 `torch.profiler` 能拿到更细的 timeline。
+判断瓶颈最简单的办法：`nvidia-smi -l 1` 粗看 GPU 利用率，配合 `torch.profiler` 拿细 timeline。GPU 利用率经常掉到 50% 以下，说明在等数据，先调高 `num_workers`、开 `pin_memory`、`prefetch_factor` 改 4 试试；这些都试过还在等数据，就考虑减小图像分辨率、提前缓存到 LMDB/WebDataset、或者把增强搬到 GPU。
 
 ---
 
@@ -830,9 +826,9 @@ optimizer = Lion(
 
 什么时候考虑 Lion：训练 LLM/扩散模型这种大模型大 batch 场景，且显存吃紧。日常项目继续 AdamW 即可。
 
-Lion 跟 AdamW 的迁移有几个隐藏陷阱。第一是学习率范围完全不同，把 AdamW 配置直接套上去 Lion 会发散。规则是 AdamW 的 lr 除以 3-10 再开始扫，weight_decay 乘 3-10。第二是 Lion 对学习率比 AdamW 更敏感，最优区间窄一些，Sweep 时步长要小。第三是 Lion 没有 epsilon 这种"分母兜底"机制，sign 函数在零附近不连续，所以梯度噪声很小的时候表现可能不稳定，这也是它在小 batch 上吃亏的原因。理解这些差异之后再决定换不换，比看完一篇博客就立刻 all-in 要靠谱得多。
+Lion 跟 AdamW 的迁移有几个隐藏陷阱。第一是学习率范围完全不同，把 AdamW 配置直接套上去 Lion 会发散：规则是 AdamW 的 lr 除以 3-10 再开始扫。第二是 Lion 对学习率比 AdamW 更敏感，最优区间窄，Sweep 时步长要小。第三是 Lion 没有 epsilon 这种"分母兜底"机制，sign 函数在零附近不连续，梯度噪声小时表现可能不稳定，这也是它在小 batch 上吃亏的原因。
 
-第四个隐藏陷阱单独点出来：**Lion 的 weight_decay 在更新规则里和 sign(c_t) 是相加的，不是被 sqrt(v_t) 缩放过的**。意味着 wd 项的影响幅度跟 sign 项基本同量级——Lion 配 wd=0.1 配 lr=1e-4，每步参数实际衰减 1e-5，**比 AdamW 同 lr 配 wd=0.01 的有效衰减要快得多**。生产里见过的故事：把 AdamW 的 (lr=3e-4, wd=0.01) 转 Lion，按建议改成 (lr=3e-5, wd=0.1)，跑了几千步发现模型大量参数往零靠，等效正则强度过头。安全做法是 wd 先乘 3 而不是 10 起步，盯 weight 范数曲线，掉得太快再下调。
+**最容易踩的一个坑是 wd 的相对强度**：Lion 的 weight_decay 在更新规则里和 sign(c_t) 是相加的，不是被 sqrt(v_t) 缩放过的，wd 项幅度跟 sign 项基本同量级。Lion 配 wd=0.1、lr=1e-4，每步参数实际衰减 1e-5，**比 AdamW 同 lr 配 wd=0.01 的有效衰减要快得多**。生产里见过的故事：把 AdamW 的 (lr=3e-4, wd=0.01) 直接转 Lion 的 (lr=3e-5, wd=0.1)，跑几千步发现模型大量参数往零靠，等效正则过头。安全做法是 wd 先乘 3 起步而不是直接乘 10，盯 weight 范数曲线，掉得太快再下调。
 
 ### 8.7.4 学习率调度
 
@@ -904,9 +900,7 @@ LLM 推理首选 `reduce-overhead`，训练默认 `default` 就够。
 
 **首次运行慢**：第一次会编译，可能要几十秒到几分钟。之后就快了。所以 benchmark 时要 warmup 几个 batch 再测。
 
-**torch.compile vs torch.jit**：老 API `torch.jit.trace` 和 `torch.jit.script` 现在基本进入维护模式。torch.jit 的痛点是要么不支持控制流（trace），要么得重写代码符合 TorchScript 的 Python 子集（script）。`torch.compile` 通过 graph break 机制能优雅处理任何 Python 代码：编译能编的部分，编不了的部分回落到 eager，整体不会因为一个不支持的操作就报错。新代码一律用 `torch.compile`，老代码迁移没动力就先放着。
-
-**`torch.compile` 跟旧 JIT 的本质差别**：老的 `torch.jit.trace` 通过执行一次 forward 把动态控制流"烤死"成静态图，看到 if 走哪边就只保留那一边，换个输入分支错了直接静默出错。`torch.jit.script` 不靠 trace 而是直接编译 Python 源码，但只支持 TorchScript 这个 Python 子集，自定义类、第三方库、复杂控制流经常报"unsupported"。`torch.compile` 的杀手锏叫 graph break：碰到无法编译的代码（比如 `.item()`、Python 全局变量访问、外部 C 扩展调用）它不会报错，而是把这一段切出去回落到 eager，前后能编译的部分各自编译。结果是你写的 Python 代码可以原封不动地塞进去，性能下界是 eager 模式（不会变慢），上界是全图编译。这种渐进式优化的 UX 是 torch.compile 比 jit 好用太多的根本原因。
+**torch.compile vs torch.jit**：老 API `torch.jit.trace` 和 `torch.jit.script` 现在基本进入维护模式。`torch.jit.trace` 通过跑一次 forward 把动态控制流"烤死"成静态图，看到 if 走哪边就只保留那一边，换个输入分支错了直接静默出错；`torch.jit.script` 不靠 trace 而是直接编译 Python 源码，但只支持 TorchScript 这个 Python 子集，自定义类、第三方库、复杂控制流经常报"unsupported"。`torch.compile` 的杀手锏叫 graph break：碰到无法编译的代码（比如 `.item()`、Python 全局变量访问、外部 C 扩展调用）它不会报错，而是把这一段切出去回落到 eager，前后能编译的部分各自编译。结果是你写的 Python 代码可以原封不动地塞进去，性能下界是 eager（不会变慢），上界是全图编译——这种渐进式优化的 UX 是 torch.compile 比 jit 好用太多的根本原因。新代码一律用 `torch.compile`，老代码迁移没动力就先放着。
 
 **graph breaks 是性能损失**：把模型迁移到 `torch.compile` 后，建议用 `fullgraph=True` 跑一次，看哪些地方有 graph break，逐个消除：
 
@@ -1460,38 +1454,23 @@ python train.py --epochs 20
 
 下一章我们把"图像"这个数据类型严肃对待，引入卷积神经网络，看看为什么 CNN 在 Fashion-MNIST 上能轻松超过 MLP 的天花板。再之后是 RNN/Transformer，是大模型的算力账，是从训练到部署的工程化。
 
-工程上几条值得带走的原则：
-
-- 写设备无关代码，永远用 `device = get_device()` 这种封装；
-- 训练脚本里区分 train/eval 模式，验证用 `inference_mode`；
-- DataLoader 默认开 `pin_memory`、`persistent_workers`、合理 `num_workers`；
-- 分类任务最后一层输出 logits，让 CrossEntropyLoss 处理 log-softmax；
-- 默认 AdamW + 余弦调度 + bf16 autocast；
-- 学习率比模型架构更重要，先调它；
-- `torch.compile` 是免费午餐，新代码默认开；
-- 保存 `state_dict` 而不是整个模型；
-- 用 Fashion-MNIST 检验 MLP 的天花板，建立"任务难度感"。
-
-把这些落到肌肉记忆，深度学习篇后续章节就只是在 MLP 这个骨架上换零件了。
-
 最后给一份"最小可行训练脚本"的检查清单，写新项目时可以从头到尾过一遍：
 
-- 设备选择封装好，CPU/CUDA/MPS 三种环境都能跑；
-- 随机种子固定（虽然不一定能完全复现，至少能减小每次跑的差异）；
+- 设备选择封装好（`get_device()`），CPU/CUDA/MPS 三种环境都能跑；
+- 随机种子固定（不一定完全复现，至少减小每次跑的差异）；
 - 数据集均值方差用真实数据算或者从可信来源抄，别瞎填；
-- DataLoader 参数：训练 shuffle，验证不 shuffle，pin_memory 跟着 CUDA 走，num_workers 起步 2-4；
-- 模型最后一层输出 logits，不加 softmax/sigmoid；
-- 优化器 AdamW，lr 3e-4，weight_decay 0.01-0.1，betas 默认；
-- 调度器 CosineAnnealingLR 或 OneCycleLR，T_max 设成总 step 数或总 epoch 数；
-- 训练循环五步法，evaluate 用 `inference_mode`；
-- 保存 state_dict、optimizer state、当前 epoch、val_acc，文件名带 epoch 编号；
+- DataLoader 参数：训练 shuffle，验证不 shuffle，`pin_memory` 跟着 CUDA 走，`num_workers` 起步 2-4，开 `persistent_workers`；
+- 模型最后一层输出 logits，不加 softmax/sigmoid（让 CrossEntropyLoss 处理 log-softmax）；
+- 优化器默认 AdamW（lr 3e-4，weight_decay 0.01-0.1，betas 默认），调度器 CosineAnnealingLR 或 OneCycleLR；
+- 训练循环五步法，evaluate 用 `inference_mode`，train/eval 模式正确切换；
+- 保存 `state_dict`（带 optimizer state、当前 epoch、val_acc），而不是整个模型；
 - 日志至少打 train_loss、train_acc、val_loss、val_acc、lr，越详细越好调；
 - 模型架构相关的超参（hidden_dim、num_layers）单独做成可配参数，方便 ablation；
-- 默认开 `torch.compile` 和 bf16 autocast（CUDA 环境下），CPU 环境下退回 eager；
+- 默认开 `torch.compile` + bf16 autocast（CUDA 环境下），CPU 环境下退回 eager；
 - 梯度裁剪在 Transformer 必加，MLP 可选；
-- 第一次跑设少 epoch（比如 1-2 个）确认 pipeline 能跑通再扩展到完整训练。
+- 第一次跑设少 epoch（1-2 个）确认 pipeline 能跑通再扩展。
 
-这些东西没有一条是某个论文的核心贡献，但少了任何一条都能让你的项目卡上半天到几天。深度学习工程的复杂度不在算法，而在每个不起眼细节加起来对正确性和性能的累积影响。
+这里头没有一条是某个论文的核心贡献，但少了任何一条都能让你的项目卡上半天到几天。深度学习工程的复杂度不在算法，而在每个不起眼细节加起来对正确性和性能的累积影响。把这些落到肌肉记忆，深度学习篇后续章节就只是在 MLP 这个骨架上换零件——记住一条总纲：**学习率比架构更重要，先调它**。
 
 ---
 

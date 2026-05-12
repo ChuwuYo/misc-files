@@ -951,8 +951,7 @@ Tron · Hedera · 并行 EVM · Hyperliquid · 等</p>
 <h3 id="m13">M1.3 三个关键数字</h3>
 <ul>
 <li>事务包大小上限：<strong>1232 字节</strong>（每个账户占 32B，复杂操作要用 ALT lookup table）</li>
-<li>optimistic confirmation：<strong>1-2 s</strong>（CEX 充值用这个）</li>
-<li>rooted finality：<strong>~12.8 s</strong>（跨链桥用这个）</li>
+<li>Solana: optimistic confirmation <strong>1-2 s</strong>（CEX 充值用）/ rooted (finalized) <strong>~12.8 s = 32 slot</strong>（机构用 / TradFi 桥）</li>
 </ul>
 <blockquote>
 <p>深入 Sealevel 调度、Pinocchio 零依赖、Firedancer 客户端、Jito MEV → <strong>附录 A</strong></p>
@@ -964,7 +963,7 @@ Tron · Hedera · 并行 EVM · Hyperliquid · 等</p>
 
 <blockquote>
 <p><strong>TL;DR</strong>：Move = 物理金条。<code>Coin&lt;T&gt;</code> 没有 <code>copy/drop</code> 能力，编译期保证不能复制不能丢失。Sui 把资产做成独立对象，owned 对象天然并行。</p>
-<p><strong>场景钩子</strong>：2019 年 Facebook Libra 的技术总监 Sam Blackshear 翻完 Solidity 漏洞库后决定：<strong>绝不能让资产是个数字</strong>。数字可加可减可忘记，重入/溢出/意外销毁全从这里来。他设计了 Move：资产是<strong>线性类型对象</strong>，编译期禁止复制和凭空丢弃。Diem 被监管干掉，Move 活了，分裂成 Sui 和 Aptos 两支。</p>
+<p><strong>场景钩子</strong>：2019 年 Facebook Libra 的技术总监 Sam Blackshear 翻完 Solidity 漏洞库后决定：<strong>绝不能让资产是个数字</strong>。数字可加可减可忘记，重入/溢出/意外销毁全从这里来。他设计了 Move：资产是<strong>线性类型对象</strong>（更精确是 affine type：不可复制、可显式销毁 via <code>drop</code> ability；附录 0.2 已展开），编译期禁止复制和凭空丢弃。Diem 被监管干掉，Move 活了，分裂成 Sui 和 Aptos 两支。</p>
 </blockquote>
 <h3 id="m21-ability">M2.1 能力系统（四个 ability）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>// Coin 只有 key + store，没有 copy/drop
@@ -1456,7 +1455,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <li>验证人重放时可跳过冗余时间戳验证</li>
 </ol>
 <p>常见误解："Solana 用 PoH 替代了 PoS"——错。共识仍是 Tower BFT（PoS + 指数 lockout），PoH 只决定"事务在 leader 视角下的先后"。</p>
-<h3 id="2x-2">2.x 思考题（章 2）</h3>
+<h3 id="21-2">2.1 思考题（章 2）</h3>
 <blockquote>
 <p>Q1：leader 故意提前 PoH 时钟（多算几粒沙），后续验证人能发现吗？怎么发现？</p>
 <p>Q2：PoH 的"单线程不可加速"为什么是优势而不是缺陷？</p>
@@ -1483,7 +1482,7 @@ DEX 撮合账户       ←  owner = DEX Program
 <li><strong>TipRouter NCN（首个）</strong>：MEV tip 去中心化分配</li>
 </ul>
 <p><strong>NCN ≠ EigenLayer AVS</strong>：EigenLayer 是 <strong>stake-restake</strong>——同一份 ETH 质押被多个 AVS 约束 slash 域。Jito NCN 是 <strong>operator-reuse</strong>——复用 Solana 验证人节点（operator）跑额外共识轮，安全押金用独立 vault token（JitoSOL/JTO），与 Solana 主网共识 stake 不共享 slash。<strong>EigenLayer 重用 stake，Jito 重用 operator</strong>。</p>
-<h3 id="3x-3">3.x 思考题（章 3）</h3>
+<h3 id="32-3">3.2 思考题（章 3）</h3>
 <blockquote>
 <p>Q1：NCN 与 Cosmos 的 Interchain Security 在"借安全"思想上有何相似？slash 域上有何不同？</p>
 </blockquote>
@@ -1683,7 +1682,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <li>内核级基础设施：Token、System、AddressLookupTable 都是 native</li>
 </ul>
 <p>学习路径：先 Anchor → 读 Phoenix DEX / Mango v4 native 源码 → 看穿 Anchor 宏展开。</p>
-<h3 id="5x-5">5.x 思考题（章 5）</h3>
+<h3 id="51-5">5.1 思考题（章 5）</h3>
 <blockquote>
 <p>Q1：Anchor 的 <code>has_one</code> 约束在编译期生成什么代码？为什么它比 runtime require 更安全？</p>
 <p>Q2：什么时候 Anchor 的"自动反序列化"是缺点而不是优点？</p>
@@ -1867,7 +1866,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </table>
 <p><strong>重要</strong>：Token-2022 是<strong>并行的另一套 program</strong>，不是 SPL Token 升级版。USDC/USDT 仍在 SPL Token；PayPal PYUSD 等合规稳定币大多用 Token-2022。<strong>客户端必须区分 owner = TokenkegQ... 还是 TokenzQd...</strong>。</p>
 <p>（ZK ElGamal Proof Program 2024-Q1 因漏洞下线，2025-Q3 经审计重启；Token-2022 Confidential Transfer 实际可用性看主网启用日期）</p>
-<h3 id="7x-7">7.x 思考题（章 7）</h3>
+<h3 id="71-7">7.1 思考题（章 7）</h3>
 <blockquote>
 <p>Q1：为什么 Solana 把 token 余额做成"独立账户"而不是合约里的 mapping？这种设计在并行执行时有什么收益？</p>
 <p>Q2：Token-2022 transfer hook 与 ERC-1363 的相似与差异？</p>
@@ -1941,7 +1940,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <figure><img src="diagram-2431f44097.png" alt="mermaid diagram"></figure>
 
 <p><strong>意义</strong>：单一客户端是单点风险（Solana 2022-2023 因同一 bug 多次停机）。Firedancer（Jump Crypto 纯 C 重写）目标 1M TPS，2026-Q1 主网上线至今 <strong>100% 在线</strong>。协议规范（SIMD）比源码更重要；Anchor/BPF 程序不受客户端切换影响。</p>
-<h3 id="9x-2026-04">9.x 数字与里程碑（2026-04 实测）</h3>
+<h3 id="91-2026-04">9.1 数字与里程碑（2026-04 实测）</h3>
 <table>
 <thead>
 <tr>
@@ -1973,7 +1972,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </tbody>
 </table>
 <p><strong>Stateless Validators (SIMD-0341)</strong>：Alpenglow 路线下把归档与共识分离——validator 只验当前 slot 状态，历史交给专门 archive 节点。</p>
-<h3 id="9x-9">9.x 思考题（章 9）</h3>
+<h3 id="92-9">9.2 思考题（章 9）</h3>
 <blockquote>
 <p>Q1：Solana 客户端多元化与 Ethereum 的 Geth/Besu/Erigon/Nethermind/Reth 多客户端在动机上有什么相似？</p>
 <p>Q2：纯 C 重写如何降低硬件门槛？这与"去中心化"目标如何相关？</p>
@@ -2182,12 +2181,8 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 </thead>
 <tbody>
 <tr>
-<td>Bonding curve 内可买池</td>
-<td>≈ 75%（800M 个）</td>
-</tr>
-<tr>
-<td>Migration 时迁到 AMM 的储备</td>
-<td>≈ 25%（200M 个）</td>
+<td>Bonding curve 内可买池 + Migration 迁池</td>
+<td><strong>bonding curve 80%（800M）/ Raydium 迁池 20%（200M）</strong></td>
 </tr>
 <tr>
 <td><strong>dev / creator 自留</strong></td>
@@ -2205,13 +2200,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <blockquote>
 <p><strong>anti-snipe 工程</strong>：creator 在 migration 之前不能买自己的 token（合约硬阻止）；很多新 launchpad（Believe、Moonshot、LetsBonk）都抄了这个设计——它解决了 2021 BSC 时代"creator 自买拉盘 + dump"的经典 rug 路径。</p>
 </blockquote>
-<p><strong>Fee 路由（2026-04 当前版本）</strong>：</p>
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>单笔 swap 1% fee
-  ├── 0.40% → Pump.fun 协议金库
-  ├── 0.30% → token creator（可由 creator 关闭，关闭后归协议）
-  ├── 0.20% → Raydium 兼容层 / 流动性激励
-  └── 0.10% → Jito tip（MEV 防护）
-</code></pre></div>
+<p><strong>Fee 路由（2026-04 当前版本）</strong>：<strong>单笔 1% fee 全归 Pump.fun 协议</strong>；creator fee（最高 0.05% 量级）通过 PumpSwap 迁池后另行结算——四档拆分非公开机制</p>
 <h4 id="launchpad">其他主要 launchpad 速览</h4>
 <table>
 <thead>
@@ -2354,7 +2343,7 @@ tests/counter.ts               ← TypeScript 客户端，用 IDL 做类型化 R
 <li>写 native Solana program：还会犯账户 ordering 错误，<strong>需人审</strong></li>
 <li>写 Token-2022 集成：扩展太多，AI 经常生成"看似对但 mint extension 没启用"的代码 → <strong>必须验证</strong></li>
 </ul>
-<h3 id="12x-counter-anchor">12.x 实战：Counter Anchor 程序</h3>
+<h3 id="121-counter-anchor">12.1 实战：Counter Anchor 程序</h3>
 <p>完整代码见 <code>code/solana/</code>。最小跑通路径：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 1) 起本地 validator（独立终端）</span>
 solana-test-validator<span style="color: #F8F8F8"> </span>--reset
@@ -2375,7 +2364,7 @@ anchor<span style="color: #F8F8F8"> </span>build<span style="color: #F8F8F8"> </
 pnpm<span style="color: #F8F8F8"> </span>install
 anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</span><span style="color: #F8F8F8"> </span>--skip-local-validator
 </code></pre></div>
-<h3 id="12x-solana">12.x 思考题（Solana 总章）</h3>
+<h3 id="122-solana">12.2 思考题（Solana 总章）</h3>
 <blockquote>
 <p><strong>Q1</strong>：cNFT 的"链上 root + 链下 leaf"有什么风险？如果 indexer 全部下线，资产还存在吗？</p>
 </blockquote>
@@ -2598,7 +2587,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 - <strong>ZK light client</strong>：在 Ethereum 验证 Cosmos 区块头时用 Succinct SP1 生成 zk proof，避免在 EVM 上跑昂贵的 CometBFT 验签
 - <strong>首笔交易</strong>：2025-03-28 ATOM ↔ Ethereum 跨链转账成功
 - <strong>市场覆盖</strong>：连接 120+ Cosmos 链 + Ethereum，目标市值覆盖 260B+ USD</p>
-<h3 id="16x-16">16.x 思考题（章 16）</h3>
+<h3 id="163-16">16.3 思考题（章 16）</h3>
 <blockquote>
 <p>Q1：IBC Eureka 用 ZK light client 让 Ethereum 能"廉价验证"CometBFT 区块头——这与 LayerZero、Wormhole 的"信任 oracle 集合"设计有什么本质差异？</p>
 <p>Q2：如果 chain B 的 ⅔ 验证人作恶，chain A 上的 voucher 会怎样？谁来兜底？</p>
@@ -2685,7 +2674,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <h4 id="cosmwasm-vs-module">CosmWasm 合约 vs module 决策树</h4>
 <figure><img src="diagram-727f7e47a9.png" alt="mermaid diagram"></figure>
 
-<h3 id="17x-cosmwasm-30-ibcv2sylvia2026-04">17.x CosmWasm 3.0 与 IBCv2、Sylvia（2026-04）</h3>
+<h3 id="171-cosmwasm-30-ibcv2sylvia2026-04">17.1 CosmWasm 3.0 与 IBCv2、Sylvia（2026-04）</h3>
 <table>
 <thead>
 <tr>
@@ -2712,7 +2701,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 </tr>
 </tbody>
 </table>
-<h3 id="17x-17">17.x 思考题（章 17）</h3>
+<h3 id="172-17">17.2 思考题（章 17）</h3>
 <blockquote>
 <p>Q1：CosmWasm 异步 sub-message 模型避免了哪类 EVM 攻击？复杂业务时该如何组织代码？</p>
 <p>Q2：在何种情况下你会选 module（写进链）而非 CosmWasm 合约？</p>
@@ -2758,7 +2747,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 <figure><img src="diagram-6a9cd29756.png" alt="mermaid diagram"></figure>
 
 <p>跨链双向质押，谁的安全谁出钱。与 EigenLayer"统一 ETH 担保所有 AVS"截然不同——Cosmos 走"每条链安全外推 + 内引"路线。</p>
-<h3 id="18x-ics-pss-mesh-2026-04">18.x ICS / PSS / Mesh 路线图（2026-04）</h3>
+<h3 id="181-ics-pss-mesh-2026-04">18.1 ICS / PSS / Mesh 路线图（2026-04）</h3>
 <table>
 <thead>
 <tr>
@@ -2785,7 +2774,7 @@ anchor<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</sp
 </tr>
 </tbody>
 </table>
-<h3 id="18x-18">18.x 思考题（章 18）</h3>
+<h3 id="182-18">18.2 思考题（章 18）</h3>
 <blockquote>
 <p>Q1：Replicated Security 让小链共享 Hub 验证人，PSS 让验证人 opt-in，Mesh 让两边互相质押——三者在去中心化与启动成本上各有什么权衡？</p>
 <p>Q2：Babylon BTC staking 与 ICS/Mesh 是不是冲突？还是互补？</p>
@@ -3007,7 +2996,7 @@ public fun transfer&lt;T&gt;(coin: Coin&lt;T&gt;, recipient: address) {
 </tbody>
 </table>
 <p><code>Coin</code> 只有 <code>key, store</code>，无 <code>copy, drop</code>——编译器禁止复制或丢弃，一行能力声明替代了 SafeMath + reentrancy guard。</p>
-<h3 id="20x-20">20.x 思考题（章 20）</h3>
+<h3 id="201-20">20.1 思考题（章 20）</h3>
 <blockquote>
 <p>Q1：Move 的 <code>Coin&lt;T&gt;</code> 类型只有 <code>key, store</code>、没有 <code>copy, drop</code>——这两条限制堵死了哪些 Solidity 漏洞类别？</p>
 <p>Q2：Diem 项目失败但 Move 活了——这种"语言可独立生存"在区块链史上有先例吗？</p>
@@ -3231,7 +3220,7 @@ public entry fun reset(_cap: &amp;AdminCap, c: &amp;mut Counter) {
 </tbody>
 </table>
 <p>优先用 owned 对象享 fast path；shared 对象仅在必须共享状态时用（DEX 池子、拍卖、leaderboard）。</p>
-<h3 id="21x-21">21.x 思考题（章 21）</h3>
+<h3 id="214-21">21.4 思考题（章 21）</h3>
 <blockquote>
 <p>Q1：Sui 的 fast path（owned object 不走共识）是它能 &lt; 300ms 的关键——为什么 Solana 没有这种"绕过共识"路径？</p>
 <p>Q2：shared object 的写仍要走 Mysticeti 共识——这与 EVM 合约状态写在并发性上有何相同/不同？</p>
@@ -3413,7 +3402,7 @@ public entry fun mint(creator: &amp;signer, name: String) {
 </tbody>
 </table>
 <p>与 Sui 的"新版本指针"思路不同：Aptos <strong>同地址覆盖 + 兼容性检查</strong>，类似 EVM proxy 但内置。</p>
-<h3 id="22x-22">22.x 思考题（章 22）</h3>
+<h3 id="226-22">22.6 思考题（章 22）</h3>
 <blockquote>
 <p>Q1：Block-STM 假设"事务大多互不冲突"——在什么场景下这个假设会失效？届时性能如何退化？</p>
 <p>Q2：Aptos <code>move_to / borrow_global / move_from</code> 与 Sui <code>transfer::transfer / share_object</code> 在"状态可变性"语义上有何关键不同？</p>
@@ -3578,7 +3567,7 @@ spec increment {
 </tr>
 </tbody>
 </table>
-<h3 id="24x-24">24.x 思考题（章 24）</h3>
+<h3 id="241-24">24.1 思考题（章 24）</h3>
 <blockquote>
 <p>Q1：Move Prover 能在什么意义上"替代审计"？哪些方面无论如何都需要人工审计？</p>
 <p>Q2：为什么 Solidity 圈极少做这种工作？SMTChecker / Certora 又能走多远？</p>
@@ -3744,7 +3733,7 @@ spec increment {
 </code></pre></div>
 <p>早期 Sui SDK 包名是 <code>@mysten/sui.js</code>，已<strong>弃用</strong>。新名 <code>@mysten/sui</code>（2.x）是 1.x 后的主流（2026-04 实测最新版 2.15.0）。<code>@mysten/sui/transactions</code> 里的 <code>Transaction</code> 类（旧名 <code>TransactionBlock</code>）已重命名。</p>
 <p>PTB 详解与代码示例见第 23 章。</p>
-<h3 id="26x-move">26.x Move 生态主流链速览</h3>
+<h3 id="262-move">26.2 Move 生态主流链速览</h3>
 <h4 id="sui_1">Sui</h4>
 <ul>
 <li><strong>2026-04 状态</strong>：Mysticeti v2 主网，DeFi TVL ≈ 1B USD，每月 active 开发者 ~954</li>
@@ -3769,7 +3758,7 @@ spec increment {
 <li>2025 把 IOTA 完全改造成 Move 链（基于 Sui 代码 fork）</li>
 <li>在欧洲（特别是德国 Tangle 社区）活跃，企业 IoT 场景</li>
 </ul>
-<h3 id="26x-move-ai">26.x Move 生态的 AI 工具成熟度</h3>
+<h3 id="263-move-ai">26.3 Move 生态的 AI 工具成熟度</h3>
 <p>Move 生态 AI 工具成熟度弱，比 Cosmos 还弱一档，比 Bitcoin 强。主因：Move 语料量小（Sui+Aptos 项目 &lt; 2000，与 Solidity 50000+ 差两个数量级）；Sui/Aptos 方言不兼容导致 LLM 频繁混搭；linear types 在训练集占比极低，模型常忘"coin 必须被消耗"。</p>
 <p>实测：
 - 写 Sui Move counter / coin / NFT：<strong>容易出错</strong>，频繁混淆 owned/shared，容易漏 <code>transfer::transfer</code> 导致编译失败
@@ -3782,7 +3771,7 @@ spec increment {
 <li><strong>Aptos Build</strong>：Aptos Foundation 推 builder kit，含 LLM 助手</li>
 <li>整体仍处于"基建期"</li>
 </ul>
-<h3 id="26x-move_1">26.x Move 实战：环境与编译</h3>
+<h3 id="264-move">26.4 Move 实战：环境与编译</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># Sui</span>
 brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </span>sui<span style="color: #F8F8F8">                          </span><span style="color: #8F5902; font-style: italic"># 或 cargo install --locked --git ...</span>
 sui<span style="color: #F8F8F8"> </span>--version<span style="color: #F8F8F8">                             </span><span style="color: #8F5902; font-style: italic"># 1.40+</span>
@@ -3799,7 +3788,7 @@ aptos<span style="color: #F8F8F8"> </span>init<span style="color: #F8F8F8"> </sp
 aptos<span style="color: #F8F8F8"> </span>move<span style="color: #F8F8F8"> </span>publish
 aptos<span style="color: #F8F8F8"> </span>move<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>--function-id<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;default::counter::initialize&#39;</span>
 </code></pre></div>
-<h3 id="26x-move_2">26.x 思考题（Move 总章）</h3>
+<h3 id="265-move">26.5 思考题（Move 总章）</h3>
 <blockquote>
 <p><strong>Q1</strong>：Sui 无需 <code>mapping(address=&gt;uint256)</code> 也能实现 ERC20-like 资产，为什么？代价是什么？</p>
 <p><strong>Q2</strong>：Aptos 用乐观并行（Block-STM）、Sui 用静态并行（owner 隔离）——各自适合什么场景？</p>
@@ -3897,7 +3886,7 @@ Parser.parseError (https://mermaid-cli-intercept.invalid/opt/homebrew/lib/node_m
 </tbody>
 </table>
 <p>UTXO 最大好处不是性能，是<strong>隐私 + 简单性</strong>：同一笔钱可用完全不同地址收，链上看不出同一人——这是 Bitcoin/Cardano/Litecoin/Zcash 坚持 UTXO 的原因。</p>
-<h3 id="27x-27">27.x 思考题（章 27）</h3>
+<h3 id="271-27">27.1 思考题（章 27）</h3>
 <blockquote>
 <p>Q1：UTXO 模型在 BTC、Cardano、Litecoin、Zcash 都被使用——它们各自添加了什么扩展？</p>
 <p>Q2：把 UTXO set 当作"链状态"——它的增长曲线是什么样？为什么 BTC 节点不像 Ethereum 那样饱受状态膨胀困扰？</p>
@@ -3977,7 +3966,7 @@ OP_DUP OP_HASH160 &lt;20-byte pubkey hash&gt; OP_EQUALVERIFY OP_CHECKSIG
 </tbody>
 </table>
 <p>bech32m（<code>bc1p...</code>）与 bech32（<code>bc1q...</code>）<strong>不兼容</strong>——用错编码收款会丢失资产，钱包必须正确识别版本号。</p>
-<h3 id="28x-28">28.x 思考题（章 28）</h3>
+<h3 id="281-28">28.1 思考题（章 28）</h3>
 <blockquote>
 <p>Q1：Bitcoin Script 故意不图灵完备——这是设计选择还是技术限制？</p>
 <p>Q2：为什么 Bitcoin Core 不直接接受 EVM 兼容？社区的论点是什么？</p>
@@ -4017,7 +4006,7 @@ $$</p>
 <li><strong>Taproot 钱包覆盖率</strong>：~80%（主流钱包都支持 send/receive bc1p）</li>
 <li><strong>真正大量 script-path 用例</strong>：Ordinals、Runes、BitVM 桥、协议级 multi-sig（FROST、MuSig2）</li>
 </ul>
-<h3 id="29x-29">29.x 思考题（章 29）</h3>
+<h3 id="291-29">29.1 思考题（章 29）</h3>
 <blockquote>
 <p>Q1：Taproot 的 key-path 与 script-path 在链上"长得一样"——这是不是一种隐私？</p>
 <p>Q2：BIP-340 tagged hash 防御了什么类型的攻击？</p>
@@ -4084,7 +4073,7 @@ $$</p>
 <li>网络费收入（含 inscription/Runes）累计 <strong>$458M+</strong></li>
 <li>BRC-20 → Runes 迁移仍在进行；BRC-20 总市值已显著萎缩</li>
 </ul>
-<h3 id="30x-30">30.x 思考题（章 30）</h3>
+<h3 id="301-30">30.1 思考题（章 30）</h3>
 <blockquote>
 <p>Q1：Inscription 把"任意数据"塞进 witness——这与 OP_RETURN 的"协议级 80 字节限制"在状态膨胀上有何不同？</p>
 <p>Q2：Runes vs BRC-20 vs cNFT vs ZK Compression——它们都是"省 storage"的不同思路，谁更可持续？</p>
@@ -4155,7 +4144,7 @@ $$</p>
 <li>Binance、OKX 等 CEX 大幅 Lightning 化</li>
 <li>节点数下降但<strong>容量持续上升</strong>——通道集中化（机构节点）成为现实</li>
 </ul>
-<h3 id="31x-31">31.x 思考题（章 31）</h3>
+<h3 id="311-31">31.1 思考题（章 31）</h3>
 <blockquote>
 <p>Q1：Lightning 节点数下降但容量上升——这是去中心化退步还是金融成熟标志？</p>
 <p>Q2：HTLC 在中间节点崩溃时如何保证原子？timeout 路径是否有"卡住"风险？</p>
@@ -4232,7 +4221,7 @@ $$</p>
 <li>应用：<strong>cBTC</strong>、ctUSD 稳定币、链上借贷</li>
 <li>意义：第一个让 BTC 进入 DeFi 级别可用性的 trust-minimized rollup</li>
 </ul>
-<h3 id="32x-32">32.x 思考题（章 32）</h3>
+<h3 id="323-32">32.3 思考题（章 32）</h3>
 <blockquote>
 <p>Q1：BitVM 2 的"existential honesty (1-of-n)"安全假设——这是一个什么样的进步？</p>
 <p>Q2：Citrea 用 inscription 写 ZK proof 数据——为什么不用 OP_RETURN？</p>
@@ -4300,7 +4289,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="33x-33">33.x 思考题（章 33）</h3>
+<h3 id="331-33">33.1 思考题（章 33）</h3>
 <blockquote>
 <p>Q1：Stacks 的 PoX 让矿工"消耗 BTC"——这与 PoW、PoS 在经济模型上有何不同？</p>
 <p>Q2：sBTC 的联邦签名者集合（14+）相比 BitVM 2 桥的"1-of-n existential honesty"安全性如何对比？</p>
@@ -4322,7 +4311,7 @@ $$</p>
 <li><strong>Phase-2（2025-Q1+ 路线，未上主网）</strong>：Babylon Chain 主网，作为 BSN 编排层</li>
 <li><strong>2026 路线</strong>：multi-staking、EVM DeFi、trustless liquidity</li>
 </ul>
-<h3 id="34x-eigenlayer">34.x 与 EigenLayer 的对比</h3>
+<h3 id="342-eigenlayer">34.2 与 EigenLayer 的对比</h3>
 <table>
 <thead>
 <tr>
@@ -4359,7 +4348,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="34x-34">34.x 思考题（章 34）</h3>
+<h3 id="343-34">34.3 思考题（章 34）</h3>
 <blockquote>
 <p>Q1：BTC 持有者愿不愿意为了 PoS 链奖励冒"被 slash"风险？这种激励能否平衡？</p>
 <p>Q2：Babylon 的 EOTS 数学保证 vs EigenLayer 的合约 slashing——哪种在长尾事件下更稳健？</p>
@@ -4510,7 +4499,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="35x-35">35.x 思考题（章 35）</h3>
+<h3 id="354-35">35.4 思考题（章 35）</h3>
 <blockquote>
 <p>Q1：BTC L2 数量爆炸，但只有少数有真实 TVL——筛选标准应该是什么？</p>
 <p>Q2：后量子签名为什么先在 Liquid 而不是 BTC 主网试？</p>
@@ -4594,7 +4583,7 @@ $$</p>
 <h2 id="37-bitcoin" id="ch51"><span class="chapter-num">Chapter 51</span><br>37 · Bitcoin 学习路径</h2>
 
 <p>推荐顺序：Mastering Bitcoin (3e) → Programming Bitcoin → BIP 精读 (32/39/44/141/340/341/342) → Bitcoin Optech 周报 → 实战 (bitcoinjs-lib / btcd / rust-bitcoin) → L2 选型。完整资源见第 52 章。</p>
-<h3 id="37x-bitcoin">37.x 思考题（Bitcoin 总章）</h3>
+<h3 id="371-bitcoin">37.1 思考题（Bitcoin 总章）</h3>
 <blockquote>
 <p><strong>Q1</strong>：为什么 Bitcoin 主链不实现智能合约？这种保守是设计选择还是技术限制？</p>
 <p><strong>Q2</strong>：BIP-340 tagged hash 的"两次 SHA256(tag)"为什么这么写？防御了什么攻击？</p>
@@ -4944,7 +4933,7 @@ $$</p>
 <tr>
 <td><strong>Notcoin</strong></td>
 <td>2024-01 启动 / 2024-05 TGE</td>
-<td>5000 万</td>
+<td>Notcoin <strong>约 3500 万玩家</strong>（官方 TGE 时 35M；5000 万含 bot/Sybil）</td>
 <td>TGE 估值 ~$2B；空投惠及 600 万钱包；后续 -70%</td>
 <td><strong>拉取期短（4 个月）+ 空投预期清晰</strong> = 用户体感正面</td>
 </tr>
@@ -5015,7 +5004,7 @@ $$</p>
 <li><strong>签名前显示原文</strong>：TonConnect / Tonkeeper 会展示原始 cell 解码后的 method + args，bot 内的"代签 UI"必须让用户看到这一层；</li>
 <li><strong>限额触发二次确认</strong>：单笔 &gt; $50 / 单日累计 &gt; $200 强制 Telegram 内 OTP 或 wallet 内人脸（@wallet 支持）。</li>
 </ol>
-<h3 id="38x-38">38.x 思考题（章 38）</h3>
+<h3 id="388-38">38.8 思考题（章 38）</h3>
 <blockquote>
 <p>Q1：TON 的 actor 模型异步消息相比 EVM 同步 call 有何优劣？</p>
 <p>Q2：Tact 与 FunC：什么时候选哪个？</p>
@@ -5115,7 +5104,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="39x-2026-04-near">39.x 2026-04 实测（NEAR）</h3>
+<h3 id="391-2026-04-near">39.1 2026-04 实测（NEAR）</h3>
 <table>
 <thead>
 <tr>
@@ -5146,7 +5135,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="39x-39">39.x 思考题（章 39）</h3>
+<h3 id="392-39">39.2 思考题（章 39）</h3>
 <blockquote>
 <p>Q1：Chain Signatures vs LayerZero / Wormhole / CCIP——它们都解决"跨链"，但出发点完全不同？</p>
 <p>Q2：Intents 抽象掉"路径"——这与 Cowswap、UniswapX、1inch Fusion 在思路上有何相似？</p>
@@ -5248,7 +5237,7 @@ $$</p>
 </table>
 <p><strong>JAM 的赌注</strong>：通用区块链的 VM 应是<strong>真实硬件 ISA</strong>（而非 EVM/Move/SVM 这类特化 VM），所有 LLVM 工具链（C++/Rust/Go/Zig）开箱即用。赌赢则区块链工程入场门槛降一个数量级。</p>
 <p><strong>AltVM 趋势</strong>：Arbitrum Stylus（WASM）/ Linea zkVM RISC-V / PolkaVM（JAM PVM mini）——三者都跳出 EVM 字节码，性能 3-100x。</p>
-<h3 id="40x-jam-2026-04">40.x JAM 2026-04 真实状态</h3>
+<h3 id="401-jam-2026-04">40.1 JAM 2026-04 真实状态</h3>
 <table>
 <thead>
 <tr>
@@ -5279,7 +5268,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="40x-40">40.x 思考题（章 40）</h3>
+<h3 id="402-40">40.2 思考题（章 40）</h3>
 <blockquote>
 <p>Q1：JAM 与 EVM L2 / Cosmos 的本质差异是什么？为什么走 RISC-V PVM？</p>
 <p>Q2：Polkadot 取消 parachain 拍卖、改 Coretime 这一变更对开发者意味着什么？</p>
@@ -5382,7 +5371,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="41x-2026-04-cardano">41.x 2026-04 真实状态（Cardano）</h3>
+<h3 id="411-2026-04-cardano">41.1 2026-04 真实状态（Cardano）</h3>
 <table>
 <thead>
 <tr>
@@ -5425,7 +5414,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="41x-41">41.x 思考题（章 41）</h3>
+<h3 id="412-41">41.2 思考题（章 41）</h3>
 <blockquote>
 <p>Q1：eUTXO 模型与 BTC UTXO 在"可编程性"上的差异？为什么能跑 DeFi 而 BTC 不行？</p>
 <p>Q2：Hydra head 与 Lightning channel 在思想上有何相似？</p>
@@ -5447,7 +5436,7 @@ $$</p>
 </ul>
 <h3 id="422-2026">42.2 2026 监管定性</h3>
 <p>2026-04-05 SEC + CFTC 联合把 <strong>ALGO 归类为 commodity</strong>——少数获得明确合规归类的主流公链之一。</p>
-<h3 id="42x-2026-04-algorand">42.x 2026-04 真实状态（Algorand）</h3>
+<h3 id="423-2026-04-algorand">42.3 2026-04 真实状态（Algorand）</h3>
 <table>
 <thead>
 <tr>
@@ -5474,7 +5463,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="42x-42">42.x 思考题（章 42）</h3>
+<h3 id="424-42">42.4 思考题（章 42）</h3>
 <blockquote>
 <p>Q1：Pure PoS（VRF 委员会）vs Tendermint BFT vs Tower BFT 在抗分叉上的差异？</p>
 </blockquote>
@@ -5534,7 +5523,7 @@ $$</p>
 <li>2021 NFT 黄金期：Hic Et Nunc（HEN）→ Objkt → fxhash 是 Tezos 上"生成艺术"主市场</li>
 <li>2024+：转向 RWA、Etherlink 上 EVM DeFi、链上音乐发行</li>
 </ul>
-<h3 id="43x-43">43.x 思考题（章 43）</h3>
+<h3 id="434-43">43.4 思考题（章 43）</h3>
 <blockquote>
 <p>Q1：Tezos 的"链可自我修正而无需硬分叉"是不是去中心化加速的关键？</p>
 </blockquote>
@@ -5590,7 +5579,7 @@ $$</p>
 </table>
 <h3 id="443-2026-aicaffeine">44.3 2026 焦点：链上 AI（Caffeine 路线）</h3>
 <p>引入 <strong>GPU subnet</strong> 跑 AI 工作负载，链上托管模型权重，canister 提供推理 API，支持 Llama/Mistral 链上版本。</p>
-<h3 id="44x-2026-04-icp">44.x 2026-04 实测（ICP）</h3>
+<h3 id="444-2026-04-icp">44.4 2026-04 实测（ICP）</h3>
 <table>
 <thead>
 <tr>
@@ -5621,7 +5610,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="44x-44">44.x 思考题（章 44）</h3>
+<h3 id="445-44">44.5 思考题（章 44）</h3>
 <blockquote>
 <p>Q1：ICP 的 Chain Key Bitcoin 让 canister 直接持有 BTC 私钥（threshold ECDSA）——这是不是比 BitVM 桥更简洁？信任假设差在哪？</p>
 </blockquote>
@@ -5723,7 +5712,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="45x-45">45.x 思考题（章 45）</h3>
+<h3 id="454-45">45.4 思考题（章 45）</h3>
 <blockquote>
 <p>Q1：Filecoin、Walrus、Arweave、EigenDA、Celestia 都有"DA / 存储"标签——它们之间的真实差异？</p>
 </blockquote>
@@ -5759,7 +5748,7 @@ $$</p>
 </tr>
 <tr>
 <td>单笔转账成本</td>
-<td>≈ $0.5（比 Ethereum 低 100 倍，比 BSC 略高）</td>
+<td><strong>$0.1-3 视 energy 状态</strong>（比 Ethereum 低 100 倍，比 BSC 略高）</td>
 </tr>
 <tr>
 <td>主要市场</td>
@@ -5825,7 +5814,7 @@ $$</p>
 <td><strong>Energy</strong></td>
 <td>合约执行的"算力"（USDT 转账 ≈ 64,285 energy）</td>
 <td><strong>0</strong>（必须自己搞）</td>
-<td>燃 TRX（每 energy ≈ 0.00021 TRX，约 $0.5/笔）或质押/租赁</td>
+<td>燃 TRX（每 energy ≈ 0.00021 TRX，约 <strong>$0.1-3 视 energy 状态</strong>）或质押/租赁；未租 energy 时燃 TRX 约 <strong>$1.5-3</strong>；租 energy 后约 <strong>$0.1-0.3</strong>；带宽免费时段散户感官"几乎零成本"</td>
 </tr>
 <tr>
 <td><strong>TRX 燃烧</strong></td>
@@ -5876,7 +5865,7 @@ $$</p>
 <span style="color: #204A87; font-weight: bold">if</span> <span style="color: #000">energy_avail</span> <span style="color: #CE5C00; font-weight: bold">&lt;</span> <span style="color: #000">need_energy</span><span style="color: #000; font-weight: bold">:</span>
     <span style="color: #8F5902; font-style: italic"># 实际生产：调 TronEnergy.market / FeeFreeing 的 SDK</span>
     <span style="color: #8F5902; font-style: italic"># 或直接：质押 TRX 自己换（FreezeBalanceV2）</span>
-    <span style="color: #000">txn</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">trx</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">freeze_balance</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">100_000_000</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #4E9A06">&quot;ENERGY&quot;</span><span style="color: #000; font-weight: bold">)</span>
+    <span style="color: #000">txn</span> <span style="color: #CE5C00; font-weight: bold">=</span> <span style="color: #000; font-weight: bold">(</span><span style="color: #000">client</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">trx</span><span style="color: #CE5C00; font-weight: bold">.**</span><span style="color: #000">freeze_balance_v2</span><span style="color: #CE5C00; font-weight: bold">**</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">addr</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #0000CF; font-weight: bold">100_000_000</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #4E9A06">&#39;ENERGY&#39;</span><span style="color: #000; font-weight: bold">)</span>  <span style="color: #8F5902; font-style: italic"># Stake 2.0；旧 freeze_balance 已弃用</span>
                 <span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">build</span><span style="color: #000; font-weight: bold">()</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">sign</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">pk</span><span style="color: #000; font-weight: bold">)</span><span style="color: #CE5C00; font-weight: bold">.</span><span style="color: #000">broadcast</span><span style="color: #000; font-weight: bold">())</span>
     <span style="color: #204A87">print</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;staked 100 TRX for energy:&quot;</span><span style="color: #000; font-weight: bold">,</span> <span style="color: #000">txn</span><span style="color: #000; font-weight: bold">[</span><span style="color: #4E9A06">&quot;txid&quot;</span><span style="color: #000; font-weight: bold">])</span>
 
@@ -5934,7 +5923,7 @@ $$</p>
 </blockquote>
 <h3 id="465-tron-usdt">46.5 Tron USDT 的现实定位与合规风险地图</h3>
 <blockquote>
-<p>与 <a href="../06-DeFi与稳定币/">模块 06 §2.5</a> 的 USDT 跨链流通图交叉引用：USDT 在 Tron 是"事实跨境美元"，但合规边界极其敏感。</p>
+<p>与 <a href="**../06-DeFi协议工程/**">模块 06 <strong>§2.4</strong></a> 的 USDT 跨链流通图交叉引用：USDT 在 Tron 是"事实跨境美元"，但合规边界极其敏感。</p>
 </blockquote>
 <p><strong>主战场地图（2026-04 经验数据，按交易笔数密度排序）</strong>：</p>
 <table>
@@ -5986,7 +5975,7 @@ $$</p>
 <li><strong>大陆 9.24 通知</strong>：在大陆境内为 Tron 项目工作 / 持仓 / 提供技术服务都属于"金融违法风险敞口"——见<strong>附录 X</strong>。</li>
 </ul>
 <p><strong>结论</strong>：Tron 是工程师<strong>必须能读、能转、能聚合</strong>，但<strong>少主动建产品</strong>的链。把它当 USDT 的"运输管道"用，别当"创业平台"用。</p>
-<h3 id="46x-46">46.x 思考题（章 46）</h3>
+<h3 id="466-46">46.6 思考题（章 46）</h3>
 <blockquote>
 <p>Q1：Tron 的合规风险与"事实使用量"——工程师该如何看待这种"非主流但巨大"的市场？</p>
 <p>Q2：Energy 租赁市场是 Tron "几乎零费"假象的真实底层；如果监管要求"所有手续费必须由用户原生支付"，这套机制会出什么问题？</p>
@@ -6039,7 +6028,7 @@ $$</p>
 - 用 LLM function-calling 调度 HTS / HSCS / HCS API
 - 集成 Stablecoin Studio（合规稳定币发行）
 - McLaren F1 是首批用 Hedera Agent Lab 做"赛车数据 NFT"的合作方</p>
-<h3 id="47x-2026-04-hedera">47.x 2026-04 真实状态（Hedera）</h3>
+<h3 id="473-2026-04-hedera">47.3 2026-04 真实状态（Hedera）</h3>
 <table>
 <thead>
 <tr>
@@ -6066,7 +6055,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="47x-47">47.x 思考题（章 47）</h3>
+<h3 id="474-47">47.4 思考题（章 47）</h3>
 <blockquote>
 <p>Q1：Hedera 的企业治理委员会与 Cosmos / Solana 的去中心化路线——哪种更适合 RWA？</p>
 </blockquote>
@@ -6183,7 +6172,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="48x-48">48.x 思考题（章 48）</h3>
+<h3 id="483-48">48.3 思考题（章 48）</h3>
 <blockquote>
 <p>Q1：Sei v2 离开 Cosmos 拥抱纯 EVM、Berachain V2 抛弃 Polaris 改用 BeaconKit——这两个动作对 Cosmos 阵营是不是打击？</p>
 </blockquote>
@@ -6376,7 +6365,7 @@ $$</p>
 </tr>
 </tbody>
 </table>
-<h3 id="49x-49">49.x 思考题（章 49）</h3>
+<h3 id="495-49">49.5 思考题（章 49）</h3>
 <blockquote>
 <p>Q1：Monad 乐观并行 + MonadDB vs Sei v2 OCC + Geth fork——两种"并行 EVM"思路本质差异？</p>
 <p>Q2：Hyperliquid HIP-3 让任何人质押 500k HYPE 即可部署 perp 市场——这种"permissionless 衍生品市场"会带来哪些 MEV / 操纵风险？</p>

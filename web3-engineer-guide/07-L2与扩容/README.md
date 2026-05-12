@@ -346,7 +346,7 @@ flowchart TD
 | Allbridge Core | 0.30% | 3-5 分钟 | $500k | 否（aUSDC） |
 | deBridge DLN | 0.04% | 1-2 分钟（intent） | $5M | 否 |
 | Squid (Axelar 聚合) | 0.10-0.25% | 2-5 分钟 | $1M | 部分（CCTP 路由） |
-| Circle CCTP | $0（仅 gas） | 13-19 分钟（attestation） | 无限 | **是（原生）** |
+| Circle CCTP | $0（仅 gas） | **V2 Fast Transfer < 30 秒**（自 2025-03 上线）；V1 约 13-19 分钟 | 无限 | **是（原生）** |
 
 **结论（截至 2026-04）**：USDC 跨 EVM **首选 CCTP**（无桥风险）；速度敏感选 Across（< 1 分钟）；非 USDC 资产选 Stargate v2 或 LayerZero OFT。
 
@@ -373,12 +373,12 @@ flowchart TD
 **Li.Fi SDK 使用伪代码**（截至 2026-04 的 v3 API）：
 
 ```ts
-import { LiFi, ChainId, CoinKey } from '@lifi/sdk'
+import { createConfig, getQuote, executeRoute, ChainId } from '@lifi/sdk'
 
-const lifi = new LiFi({ integrator: 'my-dapp' })
+createConfig({ integrator: 'my-dapp' })
 
 // 1. 拿报价：USDC Arbitrum → USDC Base
-const quote = await lifi.getQuote({
+const quote = await getQuote({
   fromChain: ChainId.ARB,
   toChain: ChainId.BAS,
   fromToken: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // USDC.arb
@@ -392,8 +392,8 @@ console.log(quote.estimate.toAmountUSD)      // 999.85
 console.log(quote.estimate.executionDuration) // 780s
 console.log(quote.toolDetails.name)           // 'Circle CCTP'
 
-// 3. 执行：SDK 自动处理 approve + bridge call
-const execution = await lifi.executeRoute(signer, quote, {
+// 3. 执行：SDK 自动处理 approve + bridge call（v3 函数式 API）
+const execution = await executeRoute(quote, {
   updateRouteHook: (route) => console.log(route.steps[0].execution?.status),
 })
 
@@ -965,7 +965,7 @@ graph TB
 
 #### 现象（截至 2026-04）
 
-至少 9 家中心化交易所已上线或运营自家公链：Coinbase **Base**（OP Stack，2023-08）、Kraken **Ink**（OP Stack，2024-12）、OKX **X Layer**（Polygon CDK，2024-04）、Binance **opBNB**（OP Stack，2023-09）+ **BNB Chain**（自有 L1）、KuCoin **KCC**（PoSA，2021）、HTX **Heco**（PoSA，2020 已基本停滞）、Crypto.com **Cronos** + **Cronos zkEVM**（Cosmos + ZK Stack）、Bitget **BWB Chain**（OP Stack，2025）、HashKey Group **HashKey Chain**（zkSync ZK Stack，2024-10）。
+至少 9 家中心化交易所已上线或运营自家公链：Coinbase **Base**（OP Stack，2023-08）、Kraken **Ink**（OP Stack，**主网 2025-01-06 上线**，2024-12 是 testnet）、OKX **X Layer**（Polygon CDK，2024-04）、Binance **opBNB**（OP Stack，2023-09）+ **BNB Chain**（自有 L1）、KuCoin **KCC**（PoSA，2021）、HTX **Heco**（PoSA，2020 已基本停滞）、Crypto.com **Cronos** + **Cronos zkEVM**（Cosmos + ZK Stack）、Bitget **Morph**（与 Consensys 合作，2025；BWB 是 token 名非链名）、HashKey Group **HashKey Chain**（zkSync ZK Stack，2024-10）。
 
 #### 动机分析（4 条）
 
@@ -987,7 +987,7 @@ graph TB
 | Ink | Kraken | 2024-12 | OP Stack（Superchain） | **Stage 1** | $250M | 80k-200k | Kraken Trade、Aerodrome (forked) | Kraken USDC 直通 | 美国 + 欧洲合规零售 |
 | KCC | KuCoin | 2021-05 | PoSA EVM | N/A | $30M | 10k-30k | MojitoSwap | KuCoin USDT | 衰退中 |
 | Heco | HTX (火币) | 2020-12 | PoSA EVM | N/A | $20M | 5k-20k | MDEX | HTX USDT | 已基本停滞 |
-| BWB Chain | Bitget | 2025-Q1 | OP Stack | Stage 0 | $50M | 20k-80k | BitgetSwap | Bitget USDT | 衍生品交叉用户 |
+| Morph | Bitget | 2025-Q1 | 与 Consensys 合作（混合 Rollup） | Stage 0 | $50M | 20k-80k | BitgetSwap | Bitget USDT | 衍生品交叉用户 |
 | HashKey Chain | HashKey | 2024-10 | ZK Stack | Stage 0 | $40M | 5k-15k | HashKey Exchange、HSK | HashKey USDC | 香港持牌合规 |
 
 #### 工程师视角选 L2

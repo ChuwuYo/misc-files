@@ -550,8 +550,8 @@
 <h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 开场：四个数字，一个共同点</h2>
 
 <ul>
-<li><strong>2016-06-17 · The DAO · 6000 万美元</strong>——一个 30 行合约把以太坊劈成 ETH / ETC 两条链。</li>
-<li><strong>2022-03-29 · Ronin Bridge · 6.25 亿美元</strong>——5/9 个签名节点被钓鱼，桥被搬空。</li>
+<li><strong>2016-06-17 · The DAO · 约 360 万 ETH，当时市值约 5000-6000 万美元（攻击日 ETH 价波动较大）</strong>——一个 30 行合约把以太坊劈成 ETH / ETC 两条链。</li>
+<li><strong>Ronin 链上攻击 2022-03-23，Sky Mavis 公开披露 2022-03-29 · Ronin Bridge · 6.25 亿美元</strong>——5/9 个签名节点被钓鱼，桥被搬空。</li>
 <li><strong>2025-02-21 · Bybit · 14.6 亿美元</strong>——前端供应链 + 盲签，三个钱包人按下了"确认"。</li>
 <li><strong>2025-05-22 · Cetus（Sui）· 2.23 亿美元</strong>——一行 shift wrap，AMM 报价被改写。</li>
 </ul>
@@ -685,11 +685,11 @@
 <tr>
 <td>2016-06-17</td>
 <td><strong>The DAO</strong></td>
-<td>6000 万</td>
+<td>约 360 万 ETH（当时市值约 5000-6000 万美元，攻击日 ETH 价波动较大）</td>
 <td>重入（§故事1）</td>
 </tr>
 <tr>
-<td>2022-03-29</td>
+<td>2022-03-23（披露 2022-03-29）</td>
 <td><strong>Ronin Bridge #1</strong></td>
 <td>6.25 亿</td>
 <td>跨链桥·私钥钓鱼</td>
@@ -754,7 +754,7 @@
 
 <blockquote>
 <p><strong>TL;DR</strong>：代码即结算，bug 即损失，没有客服。攻击者只问三个问题，漏洞本质是找到打破不变量但合约不 revert 的路径。</p>
-<p><strong>钩子</strong>：2016 年 6 月 17 日，The DAO 合约里 6000 万美元被 36 笔相同的 <code>withdraw</code> 抽走。社区 72 小时后硬分叉——今天的 ETH 是"赖账分支"，ETC 是"我认账"那条。<strong>一个 30 行合约改写了整个生态的公司法</strong>。</p>
+<p><strong>钩子</strong>：2016 年 6 月 17 日，The DAO 合约里约 360 万 ETH（当时市值约 5000-6000 万美元，攻击日 ETH 价波动较大）被 36 笔相同的 <code>withdraw</code> 抽走。社区 72 小时后硬分叉——今天的 ETH 是"赖账分支"，ETC 是"我认账"那条。<strong>一个 30 行合约改写了整个生态的公司法</strong>。</p>
 </blockquote>
 <p>前置依赖：04-Solidity 的 <code>storage layout</code>、<code>delegatecall</code>、<code>call</code> 语义、gas 模型。</p>
 <h3 id="11">1.1 攻击者只问三个问题</h3>
@@ -824,7 +824,7 @@
 <blockquote>
 <p>本节是重入主讲（漏洞 + PoC + 真实案例）；CEI 模式直觉补充见模块 04 §8.1</p>
 <p><strong>TL;DR</strong>：<code>call</code> 把执行权交出去，对方可以回调你。状态没更新时被回调 = 重入。修复：CEI 顺序 + <code>nonReentrant</code>。read-only 重入是 view 函数读到脏状态用于定价。</p>
-<p><strong>钩子</strong>：银行柜员把钱递出去之后才在账本上划掉余额——你拿到现金，转身又排队，账本说"你还有 1 ETH"，柜员说"好的，再来一份"。重入就是这种"趁柜员转身的瞬间二次取款"。The DAO 2016 年用这招抽走 6000 万；Curve Vyper 编译器 2023 年被同招换皮，赔进去 7000 万。</p>
+<p><strong>钩子</strong>：银行柜员把钱递出去之后才在账本上划掉余额——你拿到现金，转身又排队，账本说"你还有 1 ETH"，柜员说"好的，再来一份"。重入就是这种"趁柜员转身的瞬间二次取款"。The DAO 2016 年用这招抽走约 360 万 ETH（当时市值约 5000-6000 万美元，攻击日 ETH 价波动较大）；Curve Vyper 编译器 2023 年被同招换皮，赔进去 7000 万。</p>
 </blockquote>
 <h3 id="21">2.1 漏洞描述</h3>
 <p><code>call</code> 是执行权移交。对方拿到 CPU 可反调你，此时"未更新的状态"在他眼里仍是真的。一句话总结：重入 = <strong>状态可观察性与状态正确性的时序冲突</strong>——你已经把钱转出去了，但账本还没改，对方就趁这个空档再来一次。</p>
@@ -868,7 +868,7 @@
 <tr>
 <td>The DAO</td>
 <td>2016-06-17</td>
-<td>约 360 万 ETH（当时约 5500 万美元）</td>
+<td>约 360 万 ETH，当时市值约 5000-6000 万美元（攻击日 ETH 价波动较大）</td>
 <td>单函数 → ETH/ETC 硬分叉</td>
 </tr>
 <tr>
@@ -1068,7 +1068,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 </code></pre></div>
 <p>注：Aave V3 <code>CLSynchronicityPriceAdapter</code> 已弱化 <code>answeredInRound</code>，新代码以 <code>updatedAt + answer &gt; 0</code> 为主。</p>
 <p><strong>修复 2：TWAP</strong>——Uniswap V3 <code>observe()</code> 取 ≥ 30min 累积 tick；持续操纵每块 0.3% 手续费 + 套利反推，总成本约 $\Delta x$ 量级，不再免费。<strong>TWAP 不防短期 depeg，需配合 deviation 熔断</strong>。</p>
-<p><strong>修复 3：Pyth pull oracle</strong>——必用 <code>getPriceNoOlderThan(feedId, 60)</code>，过滤 conf 区间（<code>conf/price &lt; 1%</code>，<code>* 100</code> 是常用阈值；<code>* 10000</code> 在 thin liquidity 时段会全部 revert）。</p>
+<p><strong>修复 3：Pyth pull oracle</strong>——必用 <code>getPriceNoOlderThan(feedId, 60)</code>，过滤 conf 区间：若 <code>conf * 100 &gt; price</code>（即 conf/price &gt; 1%）则拒绝喂价；信任度越低 conf 越大（<code>* 10000</code> 在 thin liquidity 时段会全部 revert）。</p>
 <p><strong>修复 4：架构层</strong>——① 长尾资产降低 LTV 上限；② Median oracle 至少 (n/2)+1 源攻击成本独立；③ deviation &gt; X% 熔断走 keeper；④ 监控 §17.7。</p>
 <p>操纵成本工具：<a href="https://defillama.com">DefiLlama Pool Liquidity</a>、<a href="https://tenderly.co">Tenderly Simulator</a>、fork mainnet <code>swap</code> 测前后差异。</p>
 <hr />
@@ -1188,7 +1188,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <p>来源：<a href="https://www.sygnia.co/blog/sygnia-investigation-bybit-hack/">Sygnia</a>、<a href="https://www.wiz.io/blog/north-korean-tradertraitor-crypto-heist">Wiz</a>、<a href="https://www.ic3.gov/psa/2025/psa250226">FBI IC3 PSA 250226</a>、<a href="https://www.nccgroup.com/research/in-depth-technical-analysis-of-the-bybit-hack/">NCC Group</a>、<a href="https://www.bleepingcomputer.com/news/security/lazarus-hacked-bybit-via-breached-safe-wallet-developer-machine/">BleepingComputer</a>。</p>
 <figure><pre><code class="language-mermaid">timeline
     title Bybit Heist（DPRK / TraderTraitor / UNC4899）
-    数月前 : 假招聘 + 钓鱼 macOS dev → Safe{Wallet} 一名 Developer (Developer1)，攻击者拿到其 AWS session token 直接侵入 Safe AWS 基础设施
+    数月前 : 假招聘 + social engineering → Safe Wallet 开发者 Developer1 的 **Docker container 内 AWS STS token** 被攻击者通过 social engineering 拿到（非 macOS keychain），直接侵入 Safe AWS 基础设施
     2025-02-04 : macOS RAT 持久化
     2025-02-17 : AWS C2 上线
     2025-02-19 15:29 UTC : 替换 app.safe.global S3 JS（仅对 Bybit cold wallet 生效）
@@ -1268,7 +1268,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <tr>
 <td>Wormhole</td>
 <td>2022-02-02</td>
-<td>3.2 亿美元</td>
+<td><strong>$326M</strong>（约 3.26 亿美元）</td>
 <td>Solana sysvar 校验绕过（详见 §10.2）</td>
 </tr>
 <tr>
@@ -1392,7 +1392,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>vault 创建即有 $10^{\text{offset}}$ 虚拟 share + 1 虚拟 asset，攻击者要抬单价需捐 $10^{\text{offset}}$ 倍 victim 存款。<strong>dead shares 不够</strong>：① deployer 可 redeem 抽走；② Sonne Finance 用 dead shares 仍被攻。</p>
-<p><strong>修复 3：明确 round direction</strong> — OZ <code>Math.mulDiv(a, b, c, Rounding.Floor)</code>；deposit 用 floor、redeem 用 floor（始终向协议有利）。</p>
+<p><strong>修复 3：明确 round direction</strong> — OZ <code>Math.mulDiv(a, b, c, Rounding.Floor)</code>；OZ ERC4626 v5：deposit floor shares / mint ceil assets / withdraw ceil shares / redeem floor assets——统一对协议有利。</p>
 <p><strong>修复 4：形式化验证关键数学</strong>（附录 B/F）— 用 Halmos / Certora 证明 <code>deposit_after.shares &gt;= floor(expected)</code>、<code>shift_safe(x, n) ⟺ x.leading_zeros &gt; n</code>（左移 n 位需要前 n+1 位为 0 才不丢最高位）。复杂数学协议<strong>单元测试与审计都不够</strong>。</p>
 <hr />
 
@@ -1402,7 +1402,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 <blockquote>
 <p><strong>本节是概览章</strong>——四段式被压缩为"直觉 + 案例"；详细 PoC 见附录 D。</p>
 <p><strong>TL;DR</strong>：桥 = 把多个链的安全假设取最弱。multisig 桥靠私钥数，light-client / zk 桥靠密码学。DA 拥堵可让 L2 finality 延迟 4h+，影响所有跨 rollup 协议。</p>
-<p><strong>钩子</strong>：2022-2024 三年，桥被打掉 30+ 亿美元。Ronin 朝鲜人钓走 5 个验证者私钥（6.25 亿），Nomad 一行 <code>confirmAt[bytes32(0)] = 1</code> 让 300 个完全不懂代码的人复制 tx 集体洗劫（1.9 亿）。<strong>桥的本质：ETH 主网再坚固，跨过去之后只剩 5 个验证者守着。</strong></p>
+<p><strong>钩子</strong>：2022-2024 三年，桥被打掉 30+ 亿美元。Ronin 朝鲜人钓走 <strong>4 个验证者私钥</strong>被钓鱼 + <strong>1 个 Axie DAO 临时授权</strong>未撤销 = 5/9 阈值（07 §G.2 同步描述）（6.25 亿），Nomad 一行 <code>confirmAt[bytes32(0)] = 1</code> 让 300 个完全不懂代码的人复制 tx 集体洗劫（1.9 亿）。<strong>桥的本质：ETH 主网再坚固，跨过去之后只剩 5 个验证者守着。</strong></p>
 </blockquote>
 <h3 id="71">7.1 桥的信任假设分层</h3>
 <figure><img src="diagram-5b8a1241d9.png" alt="mermaid diagram"></figure>
@@ -1462,7 +1462,7 @@ Expecting '()', 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'SOLID_A
 </code></pre></div>
 <p>然后在 <code>forge test</code> 里加 <code>invariant_</code> 函数让 fuzzer 持续跑。<strong>没有不变量的合约没有安全基线</strong>。</p>
 <h3 id="4_1">铁律 4：监控 = 安全带</h3>
-<p>合约上线 ≠ 安全结束。最低配置：OZ Defender Sentinel 监控 TVL 5 分钟流出 &gt; 5%，自动调 <code>pause()</code>。Euler Finance 被攻 1.97 亿——Forta bot 4 分钟报警，响应人员 8 小时后才到。<strong>报警 + 自动 pause 才是安全带</strong>。</p>
+<p>合约上线 ≠ 安全结束。最低配置：OZ Defender Sentinel（<strong>2026-07-01 关停</strong>，迁移到 oz-monitor alpha；详见 11 §10.1）监控 TVL 5 分钟流出 &gt; 5%，自动调 <code>pause()</code>。Euler Finance 被攻 1.97 亿——Forta bot 4 分钟报警，响应人员 8 小时后才到。<strong>报警 + 自动 pause 才是安全带</strong>。</p>
 <h3 id="5clear-signing">铁律 5：Clear Signing，绝不盲签</h3>
 <p>硬件钱包只有 5 行屏幕。<code>Safe.execTransaction</code> 嵌套 calldata → 运维眼睛里是一串十六进制 → Bybit 14.6 亿蒸发。规则：<strong>不解码不签</strong>。工具：<a href="https://tenderly.co/transaction-simulator">Tenderly Simulator</a>、<a href="https://calldata.swiss-knife.xyz/">calldata.swiss-knife.xyz</a>。</p>
 <hr />
@@ -1652,7 +1652,7 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <tbody>
 <tr>
 <td>2014-02-24 <strong>Mt.Gox</strong></td>
-<td>85 万 BTC（约 4.5 亿美元当时；2025 估值 &gt; 800 亿）</td>
+<td>失踪约 85 万 BTC（约 20 万被找回，净损失 ~65 万；剩 14.2 万由信托方持有待分发）；剩余 14.2 万 BTC 按 2026-04 价位约 <strong>$135 亿美元</strong>（按 ~$95k/BTC 估）</td>
 <td>tx malleability + 内部 SQL 直改余额 + 长期失窃未察觉（2011 起持续被掏）</td>
 <td>链上 ≠ 链上账本；交易所不能用单一 hot wallet + 内部数据库做账</td>
 </tr>
@@ -1697,7 +1697,7 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <tr>
 <td>2025-02-21 <strong>Bybit</strong></td>
 <td>14.6 亿美元（401k ETH）</td>
-<td>Safe{Wallet} S3 供应链 + 盲签（Developer1 macOS RAT → AWS session token → 仅对 Bybit cold wallet 注入恶意 JS）</td>
+<td>Safe Wallet S3 供应链 + 盲签（Safe Wallet 开发者 Developer1 的 <strong>Docker container 内 AWS STS token</strong> 被攻击者通过 social engineering 拿到（非 macOS keychain）→ 仅对 Bybit cold wallet 注入恶意 JS）</td>
 <td><strong>唯一一例 CEX 智能合约层巨亏</strong>——但根因仍是供应链而非 Solidity bug。访问控制边界延伸到 AWS IAM + 招聘流程</td>
 </tr>
 </tbody>
@@ -1716,19 +1716,22 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <tbody>
 <tr>
 <td>2022-06 <strong>3AC</strong></td>
-<td>1000 亿+ AUM 归零，传染连锁</td>
+<td>巅峰 AUM <strong>约 $100 亿</strong>（10B USD），崩盘负债 ~35 亿美元，传染连锁</td>
 <td>GBTC 折价套利 + stETH 杠杆 + Luna depeg 同时引爆</td>
 <td>中心化对手方 = 零地址透明度，无法链上监控暴雷</td>
 </tr>
 <tr>
 <td>2022-11-08 <strong>FTX</strong></td>
-<td>80 亿+ 客户资金缺口，FTT 跳水 95%</td>
-<td>FTT 抵押套娃 + Alameda 借 FTT 自融 + CZ 一条 tweet 引爆挤兑 → SBF 25 年监禁（2024-03-28 判决，<a href="https://www.justice.gov/usao-sdny/pr/samuel-bankman-fried-sentenced-25-years-orchestrating-multiple-fraudulent-schemes">DOJ</a>）</td>
+<td>80 亿+ 客户资金缺口</td>
+<td>CZ 一条 tweet 引爆挤兑 → SBF 25 年监禁（2024-03-28 判决，<a href="https://www.justice.gov/usao-sdny/pr/samuel-bankman-fried-sentenced-25-years-orchestrating-multiple-fraudulent-schemes">DOJ</a>）</td>
 <td>平台币不能当抵押品；客户资金必须 segregated 钱包；POR 必须独立审计 + Merkle 证明</td>
 </tr>
 </tbody>
 </table>
-<p><strong>共性</strong>：不是"被攻击"是"自我崩塌"。挤兑触发条件是宏观（Luna / 美联储加息）+ 微观（CZ tweet）的合流，工程师能做的是 <strong>POR (Proof of Reserves) 透明化</strong>——Kraken / Binance / Bybit 在 FTX 后都接入 zk-POR，让客户能链上验证负债侧 = 资产侧。</p>
+<blockquote>
+<p><strong>简版</strong>——FTX 财务/还款全景见 <a href="../06-DeFi协议工程/README.md">06 §9.8</a></p>
+</blockquote>
+<p><strong>共性</strong>：不是"被攻击"是"自我崩塌"。挤兑触发条件是宏观（Luna / 美联储加息）+ 微观（CZ tweet）的合流，工程师能做的是 <strong>POR (Proof of Reserves) 透明化</strong>——Kraken / Binance 月度 v1 Merkle Sum Tree；Bybit / OKX 升级到 v2 zkPoR（详见 <a href="../08-零知识证明/README.md">08 §场景5</a>），让客户能链上验证负债侧 = 资产侧。</p>
 <h4 id="4_2">4. 监管挤兑（合规真空 / 银行通道）</h4>
 <table>
 <thead>
@@ -2019,7 +2022,7 @@ Expecting 'EOF', 'SPACE', 'NEWLINE', 'title', 'acc_title', 'acc_descr', 'acc_des
 <span style="color: #F8F8F8">  </span><span style="color: #000; font-weight: bold">).</span><span style="color: #000">then</span><span style="color: #000; font-weight: bold">((</span><span style="color: #000">x</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #000">x</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">json</span><span style="color: #000; font-weight: bold">());</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">r</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">result</span><span style="color: #000; font-weight: bold">[</span><span style="color: #000">token</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">toLowerCase</span><span style="color: #000; font-weight: bold">()];</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">is_honeypot</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">throw</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #C00; font-weight: bold">Error</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;Honeypot detected&#39;</span><span style="color: #000; font-weight: bold">);</span>
-<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">Number</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0.1</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`卖出税 ${</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">*</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span><span style="color: #4E9A06">}%`</span><span style="color: #000; font-weight: bold">);</span>
+<span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">Number</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">0.1</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">`卖出税 ${</span><span style="color: #204A87">Number</span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">sell_tax</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">*</span><span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">100</span><span style="color: #4E9A06">}%`</span><span style="color: #000; font-weight: bold">);</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">cannot_sell_all</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">throw</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">new</span><span style="color: #F8F8F8"> </span><span style="color: #C00; font-weight: bold">Error</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;合约禁止全额卖出&#39;</span><span style="color: #000; font-weight: bold">);</span>
 <span style="color: #F8F8F8">  </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">hidden_owner</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">||</span><span style="color: #F8F8F8"> </span><span style="color: #000">sec</span><span style="color: #000; font-weight: bold">.</span><span style="color: #000">can_take_back_ownership</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">===</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;1&#39;</span><span style="color: #000; font-weight: bold">)</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000">warnUser</span><span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&#39;owner 权限可被收回，疑似 rug pull&#39;</span><span style="color: #000; font-weight: bold">);</span>
@@ -2227,7 +2230,7 @@ echidna<span style="color: #F8F8F8"> </span>MyTest.sol<span style="color: #F8F8F
 <td><a href="https://www.halborn.com/blog/post/explained-the-wormhole-hack-february-2022">Halborn</a></td>
 </tr>
 <tr>
-<td>2022-03-29</td>
+<td>2022-03-23（披露 2022-03-29）</td>
 <td><strong>Ronin Bridge #1</strong></td>
 <td>6.25 亿</td>
 <td>验证者私钥钓鱼（DPRK）</td>

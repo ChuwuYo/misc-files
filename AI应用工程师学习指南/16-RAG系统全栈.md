@@ -367,7 +367,7 @@ def rrf_merge(rank_lists: list[list[str]], k: int = 60) -> list[str]:
     return sorted(scores, key=scores.get, reverse=True)
 ```
 
-Anthropic 的 contextual retrieval 实验显示：纯 dense baseline top-20 失败率 5.7%；加上 contextual embedding（不含 BM25）降到 3.7%（-35%）；contextual embedding + contextual BM25 降到 2.9%（-49%）；最后再加 reranker 降到 1.9%（-67%）。两条 sparse/dense 路并行，是最便宜的提升。
+Anthropic 的 contextual retrieval 实验里，纯 dense baseline 加上 contextual BM25 之后，top-20 失败率从 3.7% 降到 2.9%——也就是 sparse 路并入贡献了大约 22% 的相对下降。完整的对比表会在 §5.4 和 §6.6 给出。两条 sparse/dense 路并行，是最便宜的提升。
 
 ### 4.4 多向量检索：ColBERT 与 ColPali
 
@@ -722,7 +722,7 @@ contextualized = f"{contextualize(whole_doc, chunk)}\n\n{chunk}"
 
 每个 chunk 都过一遍 LLM，听起来贵——但 Anthropic 用 prompt cache 把整本文档缓存住，每个 chunk 只需要付 chunk 那部分 token 的钱，**总成本约 $1.02 / 百万 tokens**。
 
-数据：纯 contextual embedding 把 top-20 失败率从 5.7% 降到 3.7%（35% 相对下降）。配合 contextual BM25 降到 2.9%（49%），再加 reranker 累计降到 1.9%（67%）。
+收益数据见 §5.4 的失败率对照表——contextual embedding 单点贡献了 35% 相对下降，是这条链路里和 reranker 并列的两个"单点 ROI 之王"。
 
 **这个方法的优雅之处**：它不要求改 embedding 模型、不要求改向量库、不要求改 LLM，只在 ingest 阶段多调一次廉价 LLM。能加进任何现有 pipeline。
 

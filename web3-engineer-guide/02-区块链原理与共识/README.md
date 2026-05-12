@@ -1350,4 +1350,3 @@ BFT 协议的 n ≥ 3f+1 不是抽象数字，是工程的 hard requirement。
 
 ---
 
-<!-- Sections 43-55: MEV、ePBS、SSF、VDF、Restaking、History Expiry、Verkle Trees、Bitcoin Covenants 等前沿主题见专项文档 -->

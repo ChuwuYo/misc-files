@@ -191,16 +191,16 @@ brew install bitcoin    # macOS
 | 编号 | 名字 | 哪里讲 |
 |---|---|---|
 | EIP-1559 | Type 2 交易 / base fee | 03-EVM §3 |
-| EIP-712 | Typed-data signing | 01-密码学 §10 / 04-Solidity §5 |
-| EIP-2098 | Compact signature | 01-密码学 §10 |
-| EIP-2612 | ERC20 Permit | 04-Solidity §9.6 |
-| EIP-4337 | Account Abstraction | 10-前端 §15-16 |
+| EIP-712 | Typed-data signing | 01-密码学 §4.3 / 04-Solidity §4.4 / 10-前端 §6 |
+| EIP-2098 | Compact signature | 01-密码学 §4.2 |
+| EIP-2612 | ERC20 Permit | 04-Solidity §4.4 |
+| EIP-4337 | Account Abstraction | 10-前端 §7 / 附录 A |
 | EIP-4844 | Blob transactions | 03-EVM §3 / 07-L2 §5 |
-| EIP-7702 | EOA 升级（Pectra） | 04-Solidity §9.8 / 10-前端 §15A |
-| EIP-7579 | 模块化 Smart Account | 10-前端 §15A |
-| EIP-7521 | Generic intents | 06-DeFi §5 / 10-前端 §16F |
-| ERC-4626 | Tokenized vault | 04-Solidity §6 / 06-DeFi §3 |
-| ERC-2535 | Diamond proxy | 04-Solidity §9.9 |
+| EIP-7702 | EOA 升级（Pectra） | 04-Solidity 附录 F / 10-前端 §8 / 附录 B |
+| EIP-7579 | 模块化 Smart Account | 10-前端 附录 F |
+| EIP-7521 | Generic intents | 06-DeFi 附录 H.5 |
+| ERC-4626 | Tokenized vault | 06-DeFi 附录 B（隔离市场 / Yearn V3） |
+| ERC-2535 | Diamond proxy | 04-Solidity 附录 D |
 
 ### 5.2 真实事故（金额 ≥$50M）速查
 
@@ -210,12 +210,12 @@ brew install bitcoin    # macOS
 | 2016-06 | The DAO | $60M | 05-安全 §1 / 02-共识 §32 |
 | 2020-04 | dForce | $25M | 05-安全 §2.5 |
 | 2021-08 | Poly Network | $611M | 05-安全 §11 |
-| 2022-02 | Wormhole | $326M | 07-L2 §11.2 / 05-安全 §11 |
-| 2022-03 | Ronin | $625M | 07-L2 §11.3 / 05-安全 §11 |
-| 2022-08 | Nomad | $190M | 07-L2 §11.4 |
+| 2022-02 | Wormhole | $326M | 07-L2 §7.2 / 06-DeFi 附录 C.2 |
+| 2022-03 | Ronin | $625M | 07-L2 §7.2 / 06-DeFi 附录 C.1 |
+| 2022-08 | Nomad | $190M | 07-L2 §7.2 / 05-安全 附录 D.2 / 06-DeFi 附录 C.6 |
 | 2022-10 | Mango Markets | $114M | 06-DeFi §6 / 05-安全 §3 |
 | 2023-03 | Euler V1 | $197M | 06-DeFi §6 / 05-安全 §6 |
-| 2023-07 | Curve（Vyper bug）| $73M | 04-Solidity §13.3 / 06-DeFi §6 |
+| 2023-07 | Curve（Vyper bug）| $73M | 05-安全 附录 D.4 / 06-DeFi 附录 C.15 |
 | 2023-11 | KyberSwap | $48M | 06-DeFi §6 |
 | 2024-03 | Munchables | $62M（追回）| 06-DeFi §6 / 05-安全 §4 |
 | 2024-09 | Penpie | $27M | 05-安全 §2.5 |

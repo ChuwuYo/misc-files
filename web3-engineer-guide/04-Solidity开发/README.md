@@ -167,7 +167,8 @@ modifier onlyOwner() {
     _;  // 函数体在这里展开
 }
 
-function withdraw() external onlyOwner {
+function withdraw() external onlyOwner nonReentrant {
+    // CEI：本函数无 storage 写入；外部 call 在最后一步，且叠加 nonReentrant 双保险（modifier 见 §8.2）
     (bool ok, ) = payable(owner).call{value: address(this).balance}("");
     require(ok, "ETH transfer failed");
 }
@@ -783,6 +784,7 @@ forge build && forge test
 
 # 2. 本地部署到 anvil 演练
 anvil &
+export ANVIL_PK=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  # anvil 默认账户 #0
 forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --private-key $ANVIL_PK
 
 # 3. Sepolia 实战

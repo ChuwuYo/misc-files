@@ -10,7 +10,7 @@
 
 **大陆境内 dev**（截至 2026-04）：2021-09-24 央行十部委通知（"924 通知"）把"虚拟货币相关业务活动"定性为非法金融活动，但**写代码、做开源贡献、领工资**本身在司法实践中未被列为禁止行为。红线在三处：（1）**不发币**——任何指向境内用户的 token launch 都踩 ICO 禁令；（2）**不做面向 C 端的 token economic 设计**——白皮书署名、TGE 操盘等留痕极重；（3）**接外包要谨慎**——为境外项目方写"上线即发币"的合约，按帮助信息网络犯罪活动罪（帮信罪）和非法经营罪都有判例。建议：贡献开源协议、给基础设施公司远程打工（薪资走 USDC + 香港/新加坡持牌 OTC 出金）相对安全；自己起项目优先注册海外实体。
 
-**香港持牌路径**：2024-08 *稳定币条例*由 HKMA 主导，**2025-08-01 正式生效**；SFC 1/4/7/9 号牌覆盖证券交易/资管，VATP（虚拟资产交易平台）牌照独立发放。HashKey、OSL 是首批持牌 CEX；StanChart、京东币链科技、圆币科技是首批入沙盒的稳定币发行人候选。香港护照/居留权 + 持牌机构 employment 是合规含金量最高的中文圈路径。
+**香港持牌路径**：*稳定币条例*由 HKMA 主导，**2025-05 通过 / 2025-08-01 生效（公众咨询期 2024-08，2024-12 立法会一读）**；SFC 1/4/7/9 号牌覆盖证券交易/资管，VATP（虚拟资产交易平台）牌照独立发放。HashKey、OSL 是首批持牌 CEX；StanChart、京东币链科技、圆币科技是首批入沙盒的稳定币发行人候选。香港护照/居留权 + 持牌机构 employment 是合规含金量最高的中文圈路径。
 
 **出海路径**：Singapore PSA（MAS DPT 牌照，2024 起 retail 接入收紧，机构端仍开放）、Dubai VARA（2022 设立，对 DeFi/RWA 较友好，OKX/Bybit/Binance 多家拿牌）、Bali / Chiang Mai / Lisbon 远程节点（数字游民签证 + 海外实体雇佣，无牌照负担但需自管 KYC 和报税）。
 
@@ -144,7 +144,7 @@ graph TD
 
 > TL;DR：Web3 不是平稳增长的工程领域，是被一连串**爆炸性事件**塑造出来的。每个事件都对应一类现在还在写的代码、还在跑的合规规则。下面 11 个节点是 Web2 工程师的"心智锚点"，详细技术机制见各对应模块。
 
-**2014-02 Mt.Gox 崩盘**：日本东京交易所丢失约 85 万 BTC（当时市值 4.5 亿美元，2026-04 价位约 600 亿美元）。表层归因为 transaction malleability 攻击，深层是 Karpelès 长期挪用与会计造假。这件事直接催生了**现代 Proof-of-Reserves（PoR）**实践和"not your keys, not your coins"行业口号。详见 11 章基础设施。
+**2014-02 Mt.Gox 崩盘**：日本东京交易所丢失约 85 万 BTC（2014-02 约 4.5 亿美元；2026-04 价位约 800 亿美元）。表层归因为 transaction malleability 攻击，深层是 Karpelès 长期挪用与会计造假。这件事直接催生了**现代 Proof-of-Reserves（PoR）**实践和"not your keys, not your coins"行业口号。详见 11 章基础设施。
 
 **2016-06 The DAO 攻击**：Slock.it 募资 1.5 亿美元的链上风投基金被 reentrancy 攻击抽走 360 万 ETH（约 6000 万美元）。社区分裂导致 ETH/ETC 硬分叉——这是历史上第一次"代码即法律 vs 救济持币人"的公开对立。**reentrancy 从此成为安全教科书第一章**，OZ ReentrancyGuard 是每个新人写的第一个 modifier。详见 05 章。
 
@@ -152,7 +152,7 @@ graph TD
 
 **2020 夏 DeFi Summer + 流动性挖矿**：Compound 6 月推出 COMP 治理代币空投，开启"yield farming"狂潮，TVL 从 10 亿美元 6 个月内冲到 200 亿美元。Uniswap V2、Yearn、Curve、Aave 在这个窗口同步爆发。**这是 Web2 工程师第一次大规模涌入 Solidity 写合约**，也是现代 DeFi 协议工程的诞生。详见 06 章。
 
-**2022-05 Luna/UST 崩塌**：Terra 算法稳定币 UST 脱钩，Luna 从 80 美元一周内跌到 0.0001 美元（19000 倍稀释），蒸发约 600 亿美元。Do Kwon 后被韩国和美国双双起诉。**这一事件让"算稳"在监管层成为脏词**，直接推动了美国 GENIUS Act（2024 年提案、2025 年初通过）和欧盟 MiCA（2024-12 全面生效）对储备金型稳定币的强制 1:1 fiat backing。
+**2022-05 Luna/UST 崩塌**：Terra 算法稳定币 UST 脱钩，Luna 从 80 美元一周内跌到 0.0001 美元（19000 倍稀释），蒸发约 600 亿美元。Do Kwon 后被韩国和美国双双起诉。**这一事件让"算稳"在监管层成为脏词**，直接推动了美国 GENIUS Act（2024 年提案、2025 年初通过）和欧盟 MiCA（**稳定币 2024-06-30 / CASP 2024-12-30 / 过渡期至 2026-07-01**）对储备金型稳定币的强制 1:1 fiat backing。
 
 **2022-06/07 暑假连锁清算**：Luna 暴雷触发 3AC（Three Arrows Capital）追加保证金失败 → 借出方 Celsius、Voyager、BlockFi 接连冻结提现 → 2023-01 Genesis 申请破产。串联机制是**未公开的链下信贷敞口**，同一份抵押被多家 prime broker 重复计入。教训：CeFi 黑箱的风险在 DeFi 之外，PoR + 链上抵押证明从此成为 CEX 合规底线。
 
@@ -162,7 +162,7 @@ graph TD
 
 **2023-03 SVB → USDC 脱钩**：硅谷银行倒闭，Circle 披露 33 亿美元储备卡在 SVB，USDC 跌至 0.87。FDIC 周末紧急接管后恢复脱钩。这件事让全行业重写**储备金披露规则**——Circle 改为月度 attestation + 每日 Treasury 持仓公开，Tether 也被迫加速透明化。稳定币工程师从此默认要做"reserve composition + redemption proof"集成。
 
-**2024-07 Mt.Gox 14 万 BTC 还款分发**：破产管理人 Nobuaki Kobayashi 启动 10 年来首次大规模分发，约 14.2 万 BTC 通过 Kraken/Bitstamp/BitGo 等交易所打给债权人。市场短期承压（BTC 从 7 万跌至 5.4 万）。这是流动性风险管理（cliff vesting → linear unlock 设计）的真实压力测试，token 解锁曲线设计的反面教材。详见 15 章。
+**2024-07 Mt.Gox 14 万 BTC 还款分发**：破产管理人 Nobuaki Kobayashi 启动 10 年来首次大规模分发，约 14.2 万 BTC 通过 Kraken / Bitstamp / **SBI VC Trade** 等交易所打给债权人。市场短期承压（BTC 从 7 万跌至 5.4 万）。这是流动性风险管理（cliff vesting → linear unlock 设计）的真实压力测试，token 解锁曲线设计的反面教材。详见 15 章。
 
 **2025-02 Bybit Hack 14.6 亿美元**：朝鲜 Lazarus Group 攻陷 Safe{Wallet} 一名前端开发者的 AWS session token，篡改 Safe UI 让 Bybit 多签签名人在不知情下批准了恶意交易，从 cold wallet 转走 40.1 万 ETH。**史上单笔最大加密盗窃**。教训：multisig 不是终点，前端供应链 + 签名内容验证（blind signing 是头号反派）才是。详见 05 章 + 11 章。
 

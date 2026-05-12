@@ -1,6 +1,6 @@
 # 模块 13：NFT / 身份 / 社交
 
-> 2017 年，两个加拿大人用一段 Python 脚本在以太坊上发了 1 万个像素头像，免费送给任何人——他们怕没人要，连合约都没写好就上线了。这就是 CryptoPunks，ERC-721 的灵感来源。八年后，#5822 卖了 8000 ETH。
+> 2017 年，两个纽约人（Larva Labs 联合创始人 Matt Hall 和 John Watkinson）用一段 Python 脚本在以太坊上发了 1 万个像素头像，免费送给任何人——他们怕没人要，连合约都没写好就上线了。这就是 CryptoPunks，ERC-721 的灵感来源。八年后，#5822 卖了 8000 ETH。
 
 NFT 不是 JPEG 图片，是**给链上 256 位整数绑定语义**的通用机制。绑张图是收藏品，绑个名字是 ENS，绑个声誉是 Soulbound，绑个钱包是 ERC-6551——同一抽象，不同语义，像数字所有权证书。
 
@@ -380,25 +380,31 @@ export async function POST(req: Request) {
 }
 ```
 
-```ts
-// 前端 viem + wagmi
+```tsx
+// 前端 viem + wagmi：hooks 必须在组件顶层调用（Rules of Hooks）
 import { createSiweMessage } from 'viem/siwe'
 import { useSignMessage, useAccount } from 'wagmi'
 
-async function login() {
+function LoginButton() {
   const { address } = useAccount()
   const { signMessageAsync } = useSignMessage()
-  const nonce = await fetch('/auth/nonce').then(r => r.text())
-  const message = createSiweMessage({
-    domain: 'example.com', address: address!, statement: 'Sign in',
-    uri: 'https://example.com/login', version: '1', chainId: 1, nonce,
-    issuedAt: new Date(), expirationTime: new Date(Date.now() + 3_600_000),
-  })
-  const signature = await signMessageAsync({ message })
-  await fetch('/auth/verify', {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ message, signature }),
-  })
+
+  async function handleLogin() {
+    if (!address) return
+    const nonce = await fetch('/auth/nonce').then(r => r.text())
+    const message = createSiweMessage({
+      domain: 'example.com', address, statement: 'Sign in',
+      uri: 'https://example.com/login', version: '1', chainId: 1, nonce,
+      issuedAt: new Date(), expirationTime: new Date(Date.now() + 3_600_000),
+    })
+    const signature = await signMessageAsync({ message })
+    await fetch('/auth/verify', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ message, signature }),
+    })
+  }
+
+  return <button onClick={handleLogin}>Sign in with Ethereum</button>
 }
 ```
 

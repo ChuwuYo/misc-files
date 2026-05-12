@@ -378,7 +378,7 @@ storageRoot bytes32    (该账户 storage trie 的根)
 
 分两类：
 
-| | EOA | CA |
+| **维度** | EOA | CA |
 |---|---|---|
 | **创建方式** | 算 secp256k1 公钥 → keccak256 后 20 字节 | 由其他账户的 CREATE/CREATE2 部署 |
 | **codeHash** | 空 `keccak256("")` 或（Pectra 后）designator hash | 部署字节码哈希 |
