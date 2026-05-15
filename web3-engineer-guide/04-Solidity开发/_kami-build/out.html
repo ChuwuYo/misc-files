@@ -638,8 +638,8 @@
 <p>省 gas、读起来意图清楚——审计员看到 <code>immutable</code> 就知道不会变。</p>
 <h3 id="_1">章末</h3>
 <ul>
-<li>记住 3 句话：① <code>tx.origin</code> 永远不做鉴权，用 <code>msg.sender</code>；② <code>storage</code> 是别名指针，<code>memory</code> 是复制；③ 不变的值用 <code>immutable</code>。</li>
-<li>1 道小练习：写一个 <code>Counter</code> 合约，用 <code>mapping(address =&gt; uint256)</code> 给每个用户记次数，外部函数只用 <code>external + calldata</code>。</li>
+<li>3 句速记：①<code>tx.origin</code> 永不鉴权；②<code>storage</code> 别名指针、<code>memory</code> 复制；③不变的值用 <code>immutable</code>。</li>
+<li>钩子：下章学函数四修饰词与 modifier。</li>
 </ul>
 <hr />
 
@@ -727,8 +727,8 @@
 <p><code>view</code> 是编译期检查，不是运行时强制。一个用汇编 <code>sstore</code> 的函数挂 <code>view</code> 标签照样能写状态。审计别人的代码时，看到 <code>view</code> 仍要追每个外部调用——它可能 delegate 到一个改 storage 的实现。</p>
 <h3 id="_2">章末</h3>
 <ul>
-<li>记住 3 句话：① 对外函数永远写 <code>external</code>；② 权限用 OZ 的 <code>Ownable</code> / <code>AccessControl</code>；③ 错误用 <code>error</code>，不用 <code>require(c, "string")</code>。</li>
-<li>1 道小练习：给 §1.6 的 Vault 加一个 <code>setFee(uint256)</code> 函数，只允许 owner 调用，超过 1000（10%）revert 自定义错误。</li>
+<li>3 句速记：①对外函数写 <code>external</code>；②权限用 OZ <code>Ownable</code>/<code>AccessControl</code>；③错误用 <code>error</code> 不用 require 字符串。</li>
+<li>钩子：下章看 event 与 storage 的成本对决。</li>
 </ul>
 <hr />
 
@@ -784,8 +784,8 @@
 <p><code>tstore</code> / <code>tload</code> 在事务内有效，事务结束自动清零，写一次 100 gas。OZ v5.2+ 的 <code>ReentrancyGuardTransient</code> 把锁开销从每次 ~10000 gas 降到 ~200。<strong>主线只需要会用 OZ 现成的，不需要自己写汇编</strong>——细节进附录 E。</p>
 <h3 id="_3">章末</h3>
 <ul>
-<li>记住 3 句话：① 用户看的走 event，合约读的走 storage；② event 加 <code>indexed</code> 才能被前端按值过滤（最多 3 个）；③ 状态变量按声明顺序铺 slot，小整数挤一起省 gas。</li>
-<li>1 道小练习：写一个 <code>SimpleVault</code>，存 ETH 时 emit <code>Deposited(address indexed user, uint256 value)</code>；提现时 emit <code>Withdrawn(...)</code>。</li>
+<li>3 句速记：①用户看走 event、合约读走 storage；②<code>indexed</code> 才能被前端按值过滤（≤3 个）；③小整数挤一起省 slot。</li>
+<li>钩子：下章写一份生产级 ERC-20。</li>
 </ul>
 <h3 id="37-interface-vs-abstract-vs-library">3.7 interface vs abstract vs library</h3>
 <p>进入第 4 章前先把三种"非合约"代码单元区分清楚——后面 <code>IERC20</code> 接口、<code>import {ERC20}</code> 抽象基类、<code>SafeERC20</code> 库全要靠它们。</p>
@@ -855,7 +855,16 @@
 </code></pre></div>
 <p><code>immutable</code> 嵌进字节码、不占 storage、读 cap 不烧 SLOAD。</p>
 <h3 id="44-permit-approve-tx">4.4 加 Permit：用户免一次 approve tx</h3>
-<p><strong>EIP-712 速览</strong>：以太坊里所有签名最终都是对 32 字节 hash 做 ECDSA。早期 dApp 直接让用户签 <code>keccak256(abi.encode(...))</code>，钱包只能显示 <code>0xabc...</code> 让用户盲签。EIP-712 把这个 hash 拆成结构化输入——<code>domain</code>（name / version / chainId / verifyingContract，绑定到本合约本链防重放）+ <code>typed data</code>（业务字段 owner / spender / value / nonce / deadline 等），钱包能解析后以人类可读的形式展示给用户。最终 hash = <code>keccak256("\x19\x01" ++ domainSeparator ++ structHash)</code>，OZ 提供 <code>_hashTypedDataV4(structHash)</code> 直接算。Permit / Permit2 / SIWE / 签名 voucher mint / 链下订单簿全用此规范——后面 §5.4 签名 mint、附录 G Permit2 都会复用。</p>
+<p><strong>EIP-712 速览（先看类比）</strong>：以太坊签名像在白纸上盖手印。早期 dApp 让钱包签 <code>keccak256(abi.encode(...))</code>——白纸上一行 <code>0xabc...</code>，用户盲签，钓鱼网站趁机塞别的。EIP-712 把白纸换成「正式合同纸」：抬头、章节、字段名都印好，钱包能解析后以人话展示「你要授权 USDC 1000 给 0xUniswap，5 分钟内有效」。</p>
+<p>它把签名内容拆两块：</p>
+<ul>
+<li><strong>domain</strong>（合同抬头）：<code>name</code> / <code>version</code> / <code>chainId</code> / <code>verifyingContract</code>——绑死「哪条链、哪个合约」防签名被拿去别处重放。</li>
+<li><strong>typed data</strong>（合同正文）：业务字段，如 permit 的 <code>owner / spender / value / nonce / deadline</code>。</li>
+</ul>
+<p>最终 hash 拼装公式：<code>keccak256("\x19\x01" ++ domainSeparator ++ structHash)</code>——<code>\x19\x01</code> 是 EIP-712 的「这是结构化签名」魔术前缀，跟 EIP-191 普通 <code>eth_sign</code> 区分。OZ 提供 <code>_hashTypedDataV4(structHash)</code> 一行算完。</p>
+<blockquote>
+<p>💡 <strong>复用范围</strong>：Permit / Permit2 / SIWE 登录 / 签名 voucher mint / 链下订单簿（Opensea、CowSwap）全是这套规范。后面 §5.4 voucher mint、附录 G Permit2 都会再用——记住「domain + typed data + \x19\x01」三件套即可。</p>
+</blockquote>
 <p>老 ERC-20 用户买代币要先 <code>approve</code> 再 <code>transferFrom</code>，两笔 tx 等 24 秒。EIP-2612 用一个 EIP-712 签名替代 onchain approve——签名免费、即时。OZ 直接给你：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>ERC20Permit<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
@@ -897,8 +906,8 @@
 <p>这就是审计员愿意签字的最小生产代币：明确权限、有上限、permit 免一次 tx、Burnable 提供退出路径。</p>
 <h3 id="_4">章末</h3>
 <ul>
-<li>记住 3 句话：① ERC-20 自己写 transferFrom 是面试题，生产用 OZ；② 任何 mint 函数必须加 onlyRole 或 onlyOwner；③ permit 永远跟 transferFrom 打包同一笔 tx。</li>
-<li>1 道小练习：把上面这份合约加一个 <code>pause()</code> 功能（用 OZ 的 <code>ERC20Pausable</code>），暂停时禁止所有 transfer。</li>
+<li>3 句速记：①自写 transferFrom 是面试题，生产用 OZ；②mint 必须 onlyRole/onlyOwner；③permit 与 transferFrom 同笔 tx 打包。</li>
+<li>钩子：下章写 ERC-721 + 版税。</li>
 </ul>
 <hr />
 
@@ -957,38 +966,52 @@
 </code></pre></div>
 <p>EIP-2981 是「市场愿意配合」的协议，不是链上强制——市场可以无视。但所有主流市场都遵守。</p>
 <h3 id="54-mint">5.4 加签名 mint：白名单不上链</h3>
-<p>白名单如果存 mapping 太贵（每个地址 22100 gas）。改用 EIP-712 签名：owner 离线签 <code>(to, tokenId, deadline)</code> voucher，用户调 <code>mintWithVoucher(voucher, sig)</code> 兑换。</p>
+<p>白名单如果存 mapping 太贵（每个地址 22100 gas，1 万人就是 2 亿 gas）。改用 EIP-712 签名：owner 离线签 <code>(to, tokenId, deadline)</code> voucher，用户调 <code>mintWithVoucher(voucher, sig)</code> 兑换。</p>
+<p><strong>直觉</strong>：voucher 像演唱会的电子票——主办方提前签发（链下、免费），观众入场时门禁扫码（链上、付 mint gas）。链上只验签名 + 记一次「已使用」，省下「先把 1 万张身份证写进数据库」的钱。</p>
+<p>合约骨架（拆三段看）：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>EIP712<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@openzeppelin/contracts/utils/cryptography/EIP712.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>ECDSA<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@openzeppelin/contracts/utils/cryptography/ECDSA.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">VoucherNFT</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">is</span><span style="color: #F8F8F8"> </span>ERC721<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>EIP712<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
 <span style="color: #F8F8F8">    </span>using<span style="color: #F8F8F8"> </span>ECDSA<span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">for</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #000; font-weight: bold">;</span>
 
+<span style="color: #F8F8F8">    </span><span style="color: #8F5902; font-style: italic">// ① typehash：voucher 的「字段结构」哈希，构造时定死</span>
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">constant</span><span style="color: #F8F8F8"> </span>VOUCHER_TYPEHASH<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>
 <span style="color: #F8F8F8">        </span><span style="color: #4E9A06">&quot;MintVoucher(address to,uint256 tokenId,uint256 deadline)&quot;</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">);</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">immutable</span><span style="color: #F8F8F8"> </span>signer<span style="color: #000; font-weight: bold">;</span>
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>used<span style="color: #000; font-weight: bold">;</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public </span><span style="color: #000">immutable</span><span style="color: #F8F8F8"> </span>signer<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">            </span><span style="color: #8F5902; font-style: italic">// 谁有权签发</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">mapping</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=&gt;</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bool</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">public</span><span style="color: #F8F8F8"> </span>used<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8">       </span><span style="color: #8F5902; font-style: italic">// 用过的 tokenId</span>
 
 <span style="color: #F8F8F8">    </span>error<span style="color: #F8F8F8"> </span>Expired<span style="color: #000; font-weight: bold">();</span>
 <span style="color: #F8F8F8">    </span>error<span style="color: #F8F8F8"> </span>AlreadyUsed<span style="color: #000; font-weight: bold">();</span>
 <span style="color: #F8F8F8">    </span>error<span style="color: #F8F8F8"> </span>BadSig<span style="color: #000; font-weight: bold">();</span>
 
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">constructor</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">signer_</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>ERC721<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;VoucherNFT&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;VN&quot;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>EIP712<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;VoucherNFT&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;1&quot;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
-<span style="color: #F8F8F8">        </span>signer<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>signer_<span style="color: #000; font-weight: bold">;</span>
-<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
-
-<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">mintWithVoucher</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">id</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">deadline</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>sig<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">constructor</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">signer_</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">        </span>ERC721<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;VoucherNFT&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;VN&quot;</span><span style="color: #000; font-weight: bold">)</span>
+<span style="color: #F8F8F8">        </span>EIP712<span style="color: #000; font-weight: bold">(</span><span style="color: #4E9A06">&quot;VoucherNFT&quot;</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;1&quot;</span><span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8">               </span><span style="color: #8F5902; font-style: italic">// EIP-712 domain</span>
+<span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span>signer<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>signer_<span style="color: #000; font-weight: bold">;</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span>
+</code></pre></div>
+<p>核心函数 <code>mintWithVoucher</code>——四步检查后再 mint：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">mintWithVoucher</span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">address</span><span style="color: #F8F8F8"> </span><span style="color: #000">to</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">id</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">uint256</span><span style="color: #F8F8F8"> </span><span style="color: #000">deadline</span><span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">bytes</span><span style="color: #F8F8F8"> </span><span style="color: #000">calldata</span><span style="color: #F8F8F8"> </span>sig<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
+<span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic">// ② Checks：先验四个字段</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span><span style="color: #204A87; font-weight: bold">block.timestamp</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&gt;</span><span style="color: #F8F8F8"> </span>deadline<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>Expired<span style="color: #000; font-weight: bold">();</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>used<span style="color: #000; font-weight: bold">[</span>id<span style="color: #000; font-weight: bold">])</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>AlreadyUsed<span style="color: #000; font-weight: bold">();</span>
-<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">digest</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>_hashTypedDataV4<span style="color: #000; font-weight: bold">(</span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encode<span style="color: #000; font-weight: bold">(</span>VOUCHER_TYPEHASH<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>id<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>deadline<span style="color: #000; font-weight: bold">)));</span>
+<span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">bytes32</span><span style="color: #F8F8F8"> </span><span style="color: #000">digest</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span>_hashTypedDataV4<span style="color: #000; font-weight: bold">(</span>
+<span style="color: #F8F8F8">            </span><span style="color: #204A87">keccak256</span><span style="color: #000; font-weight: bold">(</span>abi<span style="color: #000; font-weight: bold">.</span>encode<span style="color: #000; font-weight: bold">(</span>VOUCHER_TYPEHASH<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>id<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>deadline<span style="color: #000; font-weight: bold">))</span>
+<span style="color: #F8F8F8">        </span><span style="color: #000; font-weight: bold">);</span>
 <span style="color: #F8F8F8">        </span><span style="color: #204A87; font-weight: bold">if</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">(</span>digest<span style="color: #000; font-weight: bold">.</span>recover<span style="color: #000; font-weight: bold">(</span>sig<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">!=</span><span style="color: #F8F8F8"> </span>signer<span style="color: #000; font-weight: bold">)</span><span style="color: #F8F8F8"> </span>revert<span style="color: #F8F8F8"> </span>BadSig<span style="color: #000; font-weight: bold">();</span>
+
+<span style="color: #F8F8F8">        </span><span style="color: #8F5902; font-style: italic">// ③ Effects → Interactions（CEI 顺序，§8.1）</span>
 <span style="color: #F8F8F8">        </span>used<span style="color: #000; font-weight: bold">[</span>id<span style="color: #000; font-weight: bold">]</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">true</span><span style="color: #000; font-weight: bold">;</span>
 <span style="color: #F8F8F8">        </span>_safeMint<span style="color: #000; font-weight: bold">(</span>to<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>id<span style="color: #000; font-weight: bold">);</span>
 <span style="color: #F8F8F8">    </span><span style="color: #000; font-weight: bold">}</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
-<p>四个安全字段缺一不可：<code>to</code>（防别人冒领）、<code>id</code>（防换货）、<code>deadline</code>（防陈年签名复活）、<code>used</code> mapping（防重放）。</p>
+<p>四个安全字段缺一不可：<code>to</code>（防别人冒领你的票）、<code>id</code>（防被换成更值钱的票）、<code>deadline</code>（防陈年签名复活）、<code>used</code> mapping（防同一张票刷两次）。</p>
+<blockquote>
+<p>⚠️ <strong>常见栽法</strong>：① 漏掉 <code>to</code> → 任何人监听 mempool 抢先用同一签名；② 漏掉 <code>deadline</code> → 一年后被人翻出签名 mint；③ 用 <code>tokenId</code> 当 <code>used</code> key 但允许 owner 改 nextTokenId → 老 voucher 复活；④ <code>signer</code> 用普通 EOA 不轮换 → 私钥泄露全套白名单作废，建议用多签 + 可 <code>setSigner</code> 升级。</p>
+</blockquote>
+<p><code>_hashTypedDataV4</code> 干的事就是 §4.4 那条公式：<code>keccak256("\x19\x01" ++ domainSeparator ++ structHash)</code>——OZ 替你拼好。</p>
 <h3 id="55-erc-721-vs-erc-1155">5.5 ERC-721 vs ERC-1155：什么时候选哪个</h3>
 <table>
 <thead>
@@ -1011,8 +1034,8 @@
 <p>1155 一笔 tx 能 batch transfer 多种 token，省 gas。本主线只覆盖 721，1155 用法基本一样（OZ 同样有现成实现）。</p>
 <h3 id="_5">章末</h3>
 <ul>
-<li>记住 3 句话：① 永远用 <code>_safeMint</code>，不用 <code>_mint</code>；② tokenURI 共享 baseURI 比每个 token 单独存便宜；③ 白名单用 EIP-712 voucher，不要 mapping。</li>
-<li>1 道小练习：把 §5.1 的 NFT 加上 <code>_setDefaultRoyalty(creator, 500)</code> 收 5% 二级市场版税。</li>
+<li>3 句速记：①永远用 <code>_safeMint</code>；②tokenURI 共享 baseURI 更省；③白名单用 EIP-712 voucher 不用 mapping。</li>
+<li>钩子：下章用 Foundry 给合约铺测试。</li>
 </ul>
 <hr />
 
@@ -1157,8 +1180,8 @@ forge<span style="color: #F8F8F8"> </span>coverage<span style="color: #F8F8F8"> 
 <p>PR 流程跑 <code>forge snapshot --check</code>：gas 涨了拒绝合并。这是工业级项目守护 gas 的标准做法。</p>
 <h3 id="_6">章末</h3>
 <ul>
-<li>记住 3 句话：① 测试用 Solidity 写，命名 <code>test_</code> / <code>testFuzz_</code>；② <code>vm.prank</code> 伪装 sender，<code>vm.expectRevert</code> 检查异常；③ fuzz 用 <code>bound</code> 限制输入，比 <code>vm.assume</code> 高效。</li>
-<li>1 道小练习：给 §4.6 的 MyToken 写 4 个测试：① 初始 supply 为 0；② admin 能 mint；③ 非 admin mint revert；④ fuzz transfer 保守恒。</li>
+<li>3 句速记：①测试用 Solidity 写，前缀 <code>test_</code>/<code>testFuzz_</code>；②<code>vm.prank</code> 伪装 sender、<code>vm.expectRevert</code> 检异常；③fuzz 用 <code>bound</code> 比 <code>vm.assume</code> 高效。</li>
+<li>钩子：下章把合约部署到 Sepolia。</li>
 </ul>
 <hr />
 
@@ -1271,8 +1294,8 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 </code></pre></div>
 <h3 id="_7">章末</h3>
 <ul>
-<li>记住 3 句话：① 部署脚本用 Solidity 写（forge script）；② 私钥永远不进 git，testnet 用 keystore，mainnet 用硬件钱包；③ <code>--verify</code> 自动通过 Etherscan 验证，省手工提交。</li>
-<li>1 道小练习：把 §4.6 的 MyToken 部署到 Sepolia，用 cast 验证 totalSupply 为 0、admin 是部署者。</li>
+<li>3 句速记：①部署脚本用 <code>forge script</code>；②私钥不进 git，testnet keystore、mainnet 硬钱包；③<code>--verify</code> 自动过 Etherscan。</li>
+<li>钩子：下章看 CEI 与 Pull-over-Push 两条安全底线。</li>
 </ul>
 <hr />
 
@@ -1286,7 +1309,7 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <p><strong>前置：call / delegatecall / staticcall 三件套</strong>。EVM 提供三种低层调用——<code>call</code> 是普通外部调用，被调方的 <code>msg.sender</code> = 当前合约，状态写入对方 storage；<code>delegatecall</code> 借对方代码在自己 storage 上执行，<code>msg.sender</code> 与 <code>msg.value</code> 保留为最初调用者，proxy / Diamond / 多数 library 都靠它；<code>staticcall</code> 等同于 view 模式 call，被调方写状态会立即 revert，常用于不可信的只读探测。三者都返回 <code>(bool ok, bytes memory data)</code>，<strong>调用失败不会自动 revert</strong>——必须手动 <code>require(ok)</code>，否则会得到静默吞掉的错。</p>
 <h3 id="81-ceichecks-effects-interactions">8.1 CEI：Checks → Effects → Interactions</h3>
 <p>本节给直觉 + 一例代码；完整漏洞家族 + 真实案例见模块 05 §2。</p>
-<p>2016 年 6 月，TheDAO 单笔 tx 内 splitDAO 递归约 30 次抽走约 360 万 ETH。攻击者用了一个简单的招式：在合约 <code>transfer ETH</code> 给他时，<code>receive()</code> fallback 里再调一次 <code>withdraw</code>——余额更新永远到不了。这次事故让以太坊硬分叉。</p>
+<p>2016 年 TheDAO 用 <code>receive()</code> fallback 递归回调 <code>withdraw</code>，单笔 tx 抽走约 360 万 ETH 并导致以太坊硬分叉——详见 05-智能合约安全 §故事1。</p>
 <p><strong>CEI 是答案</strong>：先检查参数（Checks）、再改状态（Effects）、<strong>最后</strong>做外部调用（Interactions）。违反它是 90% 重入漏洞的源头。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic">// 错例：余额更新在转账后</span>
 <span style="color: #204A87; font-weight: bold">function</span><span style="color: #F8F8F8"> </span><span style="color: #000">withdraw</span><span style="color: #000; font-weight: bold">()</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">external</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1306,6 +1329,9 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <span style="color: #F8F8F8">    </span><span style="color: #204A87; font-weight: bold">require</span><span style="color: #000; font-weight: bold">(</span>ok<span style="color: #000; font-weight: bold">);</span>
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
+<blockquote>
+<p>⚠️ <strong>CEI 不是装饰</strong>：错例里只要 <code>msg.sender</code> 是合约且 <code>receive()</code> 再调一次 <code>withdraw</code>，余额永远归零不到——TheDAO 就死在这一行的顺序错了。审计时拿尺子量每个 <code>.call</code> 之后还有没有 storage 写，有就是炸弹。</p>
+</blockquote>
 <p>兜底再加一层：用 OZ 的 <code>ReentrancyGuard</code>：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>ReentrancyGuard<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@openzeppelin/contracts/utils/ReentrancyGuard.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
@@ -1333,6 +1359,9 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <span style="color: #000; font-weight: bold">}</span>
 </code></pre></div>
 <p>坏邻居只能伤害自己，不会卡死所有人。</p>
+<blockquote>
+<p>⚠️ <strong>Push 模式两个变种 DoS</strong>：① 某地址变成合约且 <code>receive()</code> 故意 revert → 整批分发卡死；② 用户列表里混入超长 calldata 或合约钱包 gas 估算爆 → block gas limit 直接 OOG。改 Pull 后这两条都自动消失。</p>
+</blockquote>
 <h3 id="83-uups-d">8.3 升级合约：UUPS 推荐，其他模式见附录 D</h3>
 <blockquote>
 <p><strong>新人可跳过本节</strong>：UUPS 涉及 proxy + delegatecall + storage 布局兼容，是中阶话题。<strong>附录 D（Diamond / EIP-2535）会把代理体系完整展开</strong>，本节只给"一句话总结 + 一个最小例子"，看个轮廓即可，第一遍就跳过来不影响后续章节。</p>
@@ -1398,10 +1427,9 @@ cast<span style="color: #F8F8F8"> </span>call<span style="color: #F8F8F8"> </spa
 <p>每条都对应过真实事故。</p>
 <h3 id="_8">章末</h3>
 <ul>
-<li>记住 3 句话：① CEI——Checks → Effects → Interactions；② 别主动给用户打钱，让他们 claim；③ 升级用 UUPS + OZ 工具检查 storage layout。</li>
-<li>1 道小练习：写一个 <code>VulnerableBank</code>（违反 CEI）+ 一个 <code>Attacker</code> 合约抽干它，再把 bank 改成 CEI 顺序，验证攻击失败。</li>
+<li>3 句速记：①CEI：Checks→Effects→Interactions；②别主动打钱，让用户 claim；③升级用 UUPS + OZ 检查 storage layout。</li>
+<li>钩子：模块 05 看 12 类漏洞 + 审计工具链——把「能跑」升级成「不被抽干」。</li>
 </ul>
-<p>✦ <strong>下一站</strong>：你已经能写 Solidity 了，但能写 ≠ 能写对。本章 8 条 checklist 只是开胃菜——下一站模块 05 系统看 12 类漏洞 + 真实事故复盘 + 审计工具链（Slither / Echidna / Foundry invariant），这是合约工程师上线前的必修课，也是把「能跑」升级成「不被抽干」的那一步。</p>
 <hr />
 <h1 id="_9">附录</h1>
 <p>主线学完之后看的硬核话题。每条附录都是「主线提一句、附录展开」的模式——审计、面试、读 Uniswap V4 / Aave V4 源码时回来翻。</p>

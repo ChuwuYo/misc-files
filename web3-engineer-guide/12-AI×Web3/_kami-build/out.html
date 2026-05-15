@@ -562,6 +562,9 @@
 <p>所有性能、行情、资本动作均附 URL；区分"已生产化 / 刚刚涌现 / 仍是 hype"三档。</p>
 <p><strong>前置</strong>：模块 11（基础设施与工具）——RPC、索引、存储、DePIN compute 是本模块"链下推理 + 链上验证"的运行底座。<strong>后续</strong>：模块 13（NFT 身份与社交）——AI agent 经济需要可验证身份，KYA（Know Your Agent）、Soulbound、信誉系统在那里展开。</p>
 <h3 id="_1">阅读纲领：两把尺子</h3>
+<blockquote>
+<p>后面会出现大量名词——zkML / opML / TEE / Bittensor / Eliza / Olas / Virtuals / aixbt / x402——这些<strong>不要硬背</strong>。先把两把尺子刻进脑子，遇到新名字就把它"挂"到尺子上，95% 的判断就有锚点了。两把尺子分别管：<strong>它信任谁</strong>（一句话）+ <strong>它处在工程成熟度的哪一档</strong>（L0-L3）。</p>
+</blockquote>
 <p><strong>尺子一：Trust Model（信任谁、信任什么）</strong></p>
 <p>每个原语必须能一句话回答。四类类比先记住：</p>
 <table>
@@ -638,6 +641,7 @@
 <p>模块 11 把 RPC、索引、存储、DePIN compute 这套"链下底座"摆好之后，本模块要回答的是：底座之上跑 AI，公共讨论里的乐观与悲观哪些站得住、哪些不站得住。</p>
 <p>上 X 看 AI × crypto 帖子，常会看到两类：一类账号晒"我让 AI 5 分钟写了个 dApp"，另一类账号喊"AI agent 是下一个万亿赛道"。<strong>这两类的共同点是，没有人公布他们项目链上昨天有几个用户、合约部署后被独立审计找到几个高危</strong>。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：本模块用两把尺子——<strong>Trust Model</strong>（信任谁、信任什么，一句话说不清就不接）+ <strong>L0-L3 成熟度</strong>（L0 vibe 无锚 / L1 工具锚 / L2 微调 + 第三方数据 / L3 嵌入既有流程）——把推文层的喧嚣过滤成工程结论。所有判断的起点是 METR 那条"主观快 20% / 客观慢 19%"的偏差。</p>
 <p>一端是"AI agent 颠覆 Web3"的代币营销（多数项目链上活动近零），另一端是"AI 写出无漏洞合约"的乐观推文（与安全公司实测不符）。客观数据：</p>
 <ul>
 <li><a href="https://www.soliditylang.org/blog/2026/04/15/solidity-developer-survey-2025-results/">Solidity Developer Survey 2025</a>（1,095 开发者，87 国，检索 2026-04）：<strong>88% 月用、58% 日用，45% 不信任 AI 输出</strong>。</li>
@@ -647,6 +651,11 @@
 </ul>
 <p>本模块目标：用 Trust Model + L0-L3 框架画清"能用、应用、不应过度依赖"的边界。先看哪些已生产化（§1），再看哪些还在涌现（§2 起）；两条平行历史线整理在文末附录 I。</p>
 <p><strong>L 等级一次定义</strong>：L0 = vibe 工具（无锚定）；L1 = AI 输出 + 静态分析锚定；L2 = + 形式化验证锚定；L3 = + 链上仲裁/抵押锚定。后文不再重复定义。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：Trust Model + L0-L3 是本模块两把通用尺。任何 AI × Web3 工具，没有它锚定的"确定性输出 / 经济激励 / 硬件证明 / 密码学假设"之一，trust 等于 0。</p>
+<p><strong>下一步</strong>：§1 看已被一线团队默认装入工作流的生产化工具；§2 看正在涌现但需人审的方向。</p>
+<p><strong>自检</strong>：能否用一句话说出 zkML / opML / TEE / Bittensor 各信任谁？答不出回到本节"两把尺子"段。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -656,6 +665,7 @@
 <p>假设你周一早上拿到一个新需求：用 OpenZeppelin 模板写一个带 0.5% performance fee 的 ERC-4626 vault，附 95% 覆盖率的 Foundry 测试。<strong>手写大概 2-3 小时，用 Claude Code 30-45 分钟</strong>——这一节讲的就是哪些工作已经被 AI 削成这种"不上工作流就吃亏"的形态。</p>
 <p>标准很明确：Trail of Bits、Cyfrin、OpenZeppelin 这种一线团队默认装；有第三方公开数据，不是营销贴。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：生产化 = 主流团队默认装 + 有公开 ROI。Solidity 工程师基础四件套：<strong>Claude Code + Cursor</strong>（编辑/agent）+ <strong>OZ Contracts MCP</strong>（生成）+ <strong>Slither/Aderyn MCP</strong>（静态分析）+ <strong>Foundry MCP</strong>（执行）。加速比在 boilerplate 上 5-10×，在熟悉代码库上可能 -20%（METR）。</p>
 <p><strong>Trust Model（本节）</strong>：信任 AI 输出 = 信任"人类工程师在每个 diff / PR 上做了 review"——AI 的 trust 全部来自人类把关者，与下面 §3 的"链上 trust"是两回事。本节工具被纳入"生产化"的标准是：主流团队默认装入工作流、有公开 ROI 数据。</p>
 <h3 id="11-ai">1.1 代码补全与生成：主流 AI 工具全景</h3>
 <blockquote>
@@ -933,6 +943,11 @@
 <li><strong>更多 MCP 服务器</strong>：参考 <a href="https://sureprompts.com/blog/model-context-protocol-mcp-complete-guide-2026">SurePrompts MCP 2026 Guide</a>（检索 2026-04），到 2026-04 已有公开 MCP 注册表 + Claude Desktop / Cursor / VS Code 一级支持。</li>
 </ul>
 <p>工程师基础四件套：OpenZeppelin Contracts MCP（生成）+ Aderyn MCP（静态分析）+ Slither MCP（静态分析）+ Foundry MCP（执行测试）——覆盖"AI 写 Solidity"的 80% 工作流。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：编辑器 Cursor、agent 宿主 Claude Code、生成靠 MCP（OZ Contracts）、静态分析靠 MCP（Slither/Aderyn）、执行靠 MCP（Foundry）——这五件组合是 2026-04 公开数据支持下的"默认配置"。</p>
+<p><strong>下一步</strong>：§2 看 AI 审计这条相对涌现的赛道，理解 L0 vibe / L1 工具锚 / L2 微调 / L3 嵌入工作流的差距如何决定 trust。</p>
+<p><strong>自检</strong>：能否说出"什么任务用 AI 反而慢"的 3 个条件（METR 适用边界）？答不出回到 §1.1.4。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -942,6 +957,7 @@
 <p>2023-2024 年 Tornado Cash 多个分支被审计，但<strong>主审计公司在 governance proposal 流程里漏报了一处可注入 selfdestruct 的逻辑</strong>——不是因为审计师不行，而是合约上下文太长、人脑切换成本太高。这种"人类审计师疲劳的地方"，恰好是 AI 适合补位的地方；但<strong>反过来"AI 单独审"则是这一节最刺眼的反例</strong>。</p>
 <p>这一节讲的就是这条边界：哪些 AI 审计/测试用法，让"工具锚定 + 人审"协作能补人脑的疲劳；哪些则是 5 分钟出 PDF 的 vibe audit，结论严格等于 0。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：AI 审计的可用边界 = "L1 静态分析锚 + L3 嵌入既有审计流"。当前 AI 对 H+M 召回 <strong>30-50%</strong>、误报 <strong>30-90%</strong>——结论是"放大镜+实习生"，不是"替代审计师"。Anthropic SCONE-bench 同时证明<strong>攻击者比防御者先用 AI</strong>：单 agent 扫一个合约 1.22 美元，全 405 个合约模拟成功盗取 5.5 亿美元。</p>
 <p><strong>Trust Model（本节）</strong>：AI 输出的 trust 取决于"是否用确定性工具锚定 + 是否有人类二次审"。把 §0 的 L0-L3 投射到审计场景：</p>
 <h3 id="20-ai-l0-l3">2.0 AI 审计的四个等级（L0-L3 投射）</h3>
 <figure><img src="diagram-02ae6c1105.png" alt="mermaid diagram"></figure>
@@ -1188,6 +1204,11 @@
 <p>常见做法：Circom/Noir/Halo2 报错丢 Claude 解释 constraint mismatch；电路代码 + 期望行为 → LLM 定位"哪一行约束少了"。</p>
 <p><strong>风险</strong>：约束<strong>少</strong>一行（unsound）与约束<strong>多</strong>一行（complete 但电路错）报错形态不同，LLM 容易混淆。LLM 给的"修好了"必须用 <a href="https://github.com/Veridise/Picus">Picus</a> 或 <a href="https://github.com/zksecurity">ZKSecurity</a> 重新验证。</p>
 <p>ZK 漏洞代价极高（unsound = 证明系统失效）——AI <strong>推断</strong>最危险的地方，必须工具化验证。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：审计场景里 AI 的 trust = 静态分析的可证明锚 + 人类审计师二次复核。L0 vibe audit 信任值 = 0，L1（Slither/Aderyn MCP）是必装地基，L3（Trail of Bits skills）是 2026 最先进实践；攻击侧 AI 同样便宜——防御方必须把 AI 加进流程，否则结构性落后。</p>
+<p><strong>下一步</strong>：§3 进入"链上 AI 基础设施"层——zkML / opML / TEE / 去中心化推理 / Agent 框架——理解每一层的 trust 锚换到了哪里。</p>
+<p><strong>自检</strong>：拿到一份"AI 审计报告"，先问哪三件事？（提示：用了什么静态分析、谁人审过、召回率/误报率在哪份第三方数据上）</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1197,6 +1218,7 @@
 <p>假设你在做一个去中心化保险协议，理赔需要 AI 模型判断"这次车祸是否真实"——你立刻撞上一个老问题：<strong>链上合约凭什么相信 AI 模型给出的结果</strong>？这是 §3 全部内容的入口。</p>
 <p>名词很多——zkML、opML、TEE、Bittensor、Akash、Eliza、Wayfinder——但它们其实只在回答这一个问题，只是答案的形状不一样：用密码学证明（zkML）、用挑战期博弈（opML）、用硬件保证（TEE）、用经济投票（Bittensor）。<strong>先记住这四类，再读名字</strong>。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：链上 AI = 链下推理 + 链上验证。四种 trust 锚：<strong>zkML（数学）/ opML（博弈）/ TEE（硬件）/ 经济投票（stake）</strong>。生产可用上限——zkML 到 GPT-2、opML 到 13B、TEE 到 70B+。99% 的 dApp 用 OpenAI/Anthropic API + 多签就够，<strong>先问"能不能用集中式预言机 + hash"，再决定要不要把这一层加进来</strong>。</p>
 <p>名词最多、生产化最低的一层。本节把每个原语先归到它的 trust 锚——<strong>trust 没说清的方案不要接</strong>。</p>
 <h3 id="30-ai">3.0 链上 AI 的四种"信任锚"</h3>
 <blockquote>
@@ -1382,6 +1404,7 @@
 <blockquote>
 <p>一句话先记住：<strong>这一节里 99% 的项目不是给"用 dApp 的人"准备的——是给"卖 GPU 的人"和"做模型市场的人"准备的</strong>。如果你只是想在你的合约里调一次 LLM，OpenAI / Anthropic API + 多签代签就够了。</p>
 <p>三类常被混淆，建议先把这三盆水分清：(1) GPU 市场（租算力，结果你自己验）；(2) 推理网络（调 API，靠 stake 投票拍板真值）；(3) 训练网络（多方协作训模型）。下面表格按这个顺序展开。</p>
+<p><strong>读法提示</strong>：标题里 10 个项目名不需要硬记。<strong>先读 §3.4.1 那张三分类图，把项目挂到三个桶里</strong>，再用 §3.4.2 速查表查具体单价。深度数据全在附录 D——主线只决定"我现在该不该看这一节"。</p>
 </blockquote>
 <p><strong>Trust Model</strong>：因子类而异——
 - <strong>GPU 市场（Akash/io.net/Aethir）</strong>：信任"我自己跑的容器，结果我自己验"——计算正确性责任在租用方，链只做支付与撮合。
@@ -1511,6 +1534,11 @@
 <p>主要协议：CoW Swap（月成交 ~18.6 亿美元）、UniswapX、1inch Fusion、Anoma（intent-centric L1）、Across（ERC-7683 跨链）。</p>
 <p>ERC-7521 intent + ERC-4337 账户抽象 = AI agent 安全操作链上的标准范式。EIP 细节与字段见 <a href="#附录-h-intent--erc-7521-详">附录 H</a>。</p>
 <p><strong>Agent 经济三件套</strong>：MCP（agent ↔ 工具）/ A2A（agent ↔ agent，Google 2025-04）/ AP2（Agent Payments Protocol，2025-Q4 草案）。MCP 走 stdio/SSE，A2A 走 HTTP + JSON-RPC，AP2 在 A2A 之上加 ERC-20/x402 支付。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：链上 AI 四种 trust 锚各有代价，<strong>生产化最高的是 TEE</strong>（Phala 日处理 13.4 亿 token），<strong>zkML 上限仍是 GPT-2</strong>，<strong>opML 走通到 13B</strong>。Agent 安全的工程范式是 ERC-7521 intent + ERC-4337 账户抽象——agent 不持私钥、只签约束。</p>
+<p><strong>下一步</strong>：§4 进入代币经济与攻防——把"协议层 trust"和"代币层 trust"拆开，看 aixbt / TAO / AKT / FET 等真实业务支撑度。</p>
+<p><strong>自检</strong>：能否填出"我自己这个需求该选哪一层"——给定延迟 / 模型规模 / 信任假设三参数，决策树（§3.2.3）走一遍。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1520,6 +1548,7 @@
 <p>aixbt 在 2025-01 上 Binance 时 ATH $0.95，到 2026-04 跌到 $0.020——<strong>14 个月跌掉 97.6%</strong>。同期 TAO ~$251、Akash 季度收入破 100 万——业务做实的 token 没有跟它一起死。</p>
 <p>这是最有效的"代币层 vs 业务层"分离实验：<strong>框架本身可以是 L2 工程产品，代币仍可能是纯 hype</strong>——评估时永远把这两层拆开看。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：评估任何 agent 代币 = 拆 (a) 协议层 trust + (b) 代币层 trust，两者独立。aixbt 是反例（框架失败 + 代币归零），TAO/AKT/RNDR 是有真实收入的反向。<strong>x402 无代币年化 6 亿美元真实支付</strong>——证明"不靠代币也能铺开"才是 AI × crypto 的真实路径。</p>
 <p><strong>Trust Model（本节）</strong>：评估任何 agent 代币 = 拆解 (a) 协议层 trust（用 §3 框架）+ (b) 代币层 trust（代币是否被业务收入对冲、是否仅靠 meme/解锁）。两者独立。框架本身可以 L2，代币层仍可能是纯 hype。</p>
 <h3 id="41-fetchai-ocean-bittensor-ai16z-aixbt">4.1 现状：FetchAI / Ocean / Bittensor / ai16z / aixbt</h3>
 <blockquote>
@@ -1778,6 +1807,11 @@
 <h3 id="47-agent">4.7 Agent 框架选型</h3>
 <p>按 Trust Model 分类见 §3.6。GitHub stars / 语言 / 活跃度 / tx 签名方式的字段级对比见 <a href="#附录-c-agent-框架字段级">附录 C</a>。</p>
 <p>选型结论：做 agent 工程首选 <strong>elizaOS</strong>（TypeScript、~15K stars、生态最大）或 <strong>uAgents</strong>（Python、企业向）。代币层和工程层分开决策。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：代币层（投机大）和工程层（部分真实）独立。x402 / TAO / AKT / RNDR 有可查的真实业务，aixbt / 多数 agent meme 代币没有。攻击侧 AI（drainer 量产 + SCONE-bench）已铺开，防御侧工程师必须把 simulator / preview / 模块 05 流程做满。MEV 主流赛道已被三巨头垄断，AI × MEV 只在 long-tail 和 intent solver 评分上有机会。</p>
+<p><strong>下一步</strong>：§5 给出"哪些工作让 AI 做 / 哪些工作亲自做"的清单，把前 4 节的 trust 框架变成本周可以执行的动作。</p>
+<p><strong>自检</strong>：拿任一 AI agent 代币，能否在 5 分钟内说出协议层 trust（§3.6 四类）+ 代币层支撑（收入/业务/解锁）？</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1824,6 +1858,11 @@
 <li><strong>建自己的 Claude Code skills 库</strong>：参考 <a href="https://github.com/trailofbits/skills">trailofbits/skills</a>，把重复 prompt + 检查点编码成 markdown skill 跨项目复用。</li>
 <li><strong>重点投入 AI 不会替代的方向</strong>：协议设计、密码学、安全审计、经济建模、共识研究——其中任一深入都是 5-10 年红利。</li>
 </ol>
+<blockquote>
+<p><strong>要点回顾</strong>：boilerplate 外包给 AI（5-10× 真实加速），协议设计 / 密码学 / 经济建模亲自做（错一个常数 = 8 位数损失）。技能升级的核心是"保留肌肉 + 外包重复 + 对照原始资料 + 建 skills 库"。</p>
+<p><strong>下一步</strong>：§6-§9 把前 5 节的所有 trust 框架和工具串成 4 个端到端 demo——ERC-4626 / 链上 viem 分析 agent / EZKL ZK 推理 / ORA opML 调用。</p>
+<p><strong>自检</strong>：本周接下来 5 个任务里，哪几个能贴到 §5.1 / 哪几个必须贴到 §5.2？答得出再开终端。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1832,6 +1871,7 @@
 <blockquote>
 <p>任务：写一个带 0.5% performance fee 的 ERC-4626 vault，覆盖 share inflation attack 在内的 5 个测试场景，95% 行覆盖率。<strong>不用 AI 大约 2-3 小时；下面这套流程 30-45 分钟，其中一半时间花在审查 + 修补</strong>。这是 §1.1 加速比的真实落地版本。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：仓库根目录放 <code>CLAUDE.md</code> 钉死版本/规范 → Claude Code 跑 prompt 模板生成 src/Vault.sol + test/Vault.t.sol → 人审 + <code>forge test</code>。加速比 4-6×，但 share inflation 这类<strong>业务语义陷阱必须人复核</strong>。</p>
 <p>完整演示在 <a href="./code/04626-vault-with-claude/"><code>code/04626-vault-with-claude/</code></a>。</p>
 <h3 id="61">6.1 流程</h3>
 <ol>
@@ -1861,6 +1901,11 @@ Output two files: src/Vault.sol and test/Vault.t.sol.
 </code></pre></div>
 <h3 id="63">6.3 实测时间对比</h3>
 <p>不查文档手写通过基础测试的 Vault：资深工程师约 2-3 小时；上面流程 + Claude Code 约 30-45 分钟（其中一半花在审查 + 修补）。与 §1.1 表格加速比一致。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：<code>CLAUDE.md</code> 是项目级 prompt 锚——版本、库、测试目标全钉死。生成的 Vault 必须人审 share inflation / first depositor / fee accounting 三处。</p>
+<p><strong>下一步</strong>：§7 用 Claude + viem 写一个<strong>不持私钥</strong>的链上读单 agent，把 §3.6 / §7 的 Trust Model 套到工程实现里。</p>
+<p><strong>自检</strong>：能否说出"为什么 share inflation 必须人审"——这是 boilerplate 边界外的业务语义。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1870,6 +1915,7 @@ Output two files: src/Vault.sol and test/Vault.t.sol.
 <p>假设你想用 AI 写一个"链上读单"助手——晚上 11 点你在床上想知道"过去 24 小时 vitalik.eth 转出了多少 USDC"，不想打开 Etherscan 一笔笔点。<strong>agent 帮你 resolve ENS、查 block by timestamp、扫 ERC-20 transfer，最后用一句话回答你</strong>。</p>
 <p>关键设计：<strong>agent 不持私钥，只读不写</strong>——这是 aixbt 失误后的业界共识 baseline。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：LLM 通过 tool calling 调 viem，工具集只读不写（<code>resolveENS / getERC20Transfers / getBlockByTimestamp</code>）。写操作的演进路径 = ERC-4337 + ERC-7521，agent 生成 UserOp，SmartAccount + bundler 走 4337 流程。</p>
 <p>完整代码在 <a href="./code/onchain-analyst-agent/"><code>code/onchain-analyst-agent/</code></a>。用户自然语言问"过去 24 小时 vitalik.eth 转出了多少 USDC"，agent 解析 → RPC 查询 → 返回结果。</p>
 <h3 id="71">7.1 架构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>用户 prompt
@@ -1894,6 +1940,11 @@ LLM 整合结果 → 自然语言回答
 <p>正确做法：(1) agent 生成 calldata → (2) 走 ERC-7521 / ERC-4337 intent 提交 wallet → (3) 用户/钱包侧最终授权。</p>
 <p><strong>"agent 直接持 EOA 私钥" = anti-pattern</strong>——aixbt 失误的根源。</p>
 <p><strong>下一版升级</strong>：ERC-4337 + 7521 让 agent <strong>不持私钥</strong>——agent 生成 UserOp，由 SmartAccount + bundler 走 4337 流程；详见附录 H。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：agent 不持私钥 + 工具只读 + RPC 限速 + 返回数据带 block/tx hash——这四条是 aixbt 失误后的最小安全集。</p>
+<p><strong>下一步</strong>：§8 进入 zkML 工程化——用 EZKL 把 Logistic 回归塞进 SNARK，链上 Solidity verifier 验证。</p>
+<p><strong>自检</strong>：如果让这个 agent 能签 tx，最少要加哪两层（提示：SmartAccount policy + intent 约束）？</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1903,6 +1954,7 @@ LLM 整合结果 → 自然语言回答
 <p>假设你做一个匿名信用评分协议：用户上传 4 个特征（收入、负债等），合约要根据"二分类逻辑回归"判断是否给 100 USDC 信贷额度——但<strong>用户不愿暴露原始特征，合约也不愿意自己跑模型</strong>。</p>
 <p>这就是 zkML 最适合的"高价值低频"场景。下面的流程把这个需求从 sklearn → ONNX → EZKL → Solidity verifier 串成一条流水线。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：sklearn 训练 → ONNX 导出 → EZKL <code>gen-settings / compile-circuit / setup / prove / create-evm-verifier</code> → Foundry 部署。Proof 几 KB，链上验证 gas 百万级——适合<strong>低频高价值</strong>，不适合高吞吐。</p>
 <p>完整代码在 <a href="./code/ezkl-logistic-regression/"><code>code/ezkl-logistic-regression/</code></a>。</p>
 <h3 id="81">8.1 流程</h3>
 <ol>
@@ -1925,6 +1977,11 @@ LLM 整合结果 → 自然语言回答
 <li><strong>选</strong>：链上信用评分、KYC 分数、私有特征模型、Worldcoin 类身份证明；</li>
 <li><strong>不选</strong>：高吞吐推荐系统、实时行情预测。</li>
 </ul>
+<blockquote>
+<p><strong>要点回顾</strong>：EZKL 把"非线性模型 + 隐私输入"压成几 KB proof，但每次链上验证 gas 百万级——只在"高价值低频"场景划算。Float → fixed-point + SRS 下载是两个最常见的环境坑。</p>
+<p><strong>下一步</strong>：§9 切到 opML——同样的"链下推理 + 链上结算"，但 trust 锚换成挑战期博弈，模型规模能跑到 13B。</p>
+<p><strong>自检</strong>：能否说出 zkML 不适合"实时行情预测"的两个原因（提示：proof 时间 + verifier gas）？</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1933,6 +1990,7 @@ LLM 整合结果 → 自然语言回答
 <blockquote>
 <p>假设你要做一个"AI 内容审核"链游：玩家提交一张图，合约要判断是否违规并发奖。zkML 太贵跑不动 vision 模型，TEE 又不想信硬件——<strong>opML 把这一步外包给 ORA 网络：链下推理、10 分钟挑战期、结果回调上链</strong>。同样的代码骨架以后想换 zkML 也只改后端。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：合约继承 <code>AIOracleCallbackReceiver</code> → 调 OAO <code>requestCallback(modelId, input)</code> → ORA 链下推理 + ~10 分钟挑战期 → 结果回调上链。trust = "至少 1 个诚实复算者"，适合<strong>高频小额 + 容忍延迟 + 权重公开</strong>。</p>
 <p>完整代码在 <a href="./code/ora-opml-demo/"><code>code/ora-opml-demo/</code></a>。</p>
 <h3 id="91">9.1 流程</h3>
 <ol>
@@ -1946,6 +2004,11 @@ LLM 整合结果 → 自然语言回答
 <p><strong>opML</strong>：高频小额（每次价值 $1-100）+ 容忍 10 分钟挑战期 + 权重无需隐藏。trust = "至少 1 个诚实复算者"。</p>
 <p><strong>zkML</strong>：要求即时 finality + 强不可伪造证明 + 模型规模 ≤ GPT-2。trust = 椭圆曲线/哈希假设 + 权重 commitment。</p>
 <p>两者都不够时退回中心化预言机 + 多签 + hash。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：opML = 链上的小额仲裁庭。同样的"链下推理 + 链上结算"骨架，trust 锚换成挑战期博弈；ORA 13B demo 是 2026-04 唯一公开运行 13B+ 模型的去信任推理方案。</p>
+<p><strong>下一步</strong>：§10 把 §1-§9 的概念揉成 3 道练习——审计漏报率、on-chain LLM agent、EZKL MNIST 流水线。"听过" 和 "做过" 之间的距离就在这三道题。</p>
+<p><strong>自检</strong>：给定一个"AI 判断车祸是否真实"的保险理赔需求，opML / zkML / TEE / 集中式哪个最匹配？（提示：单笔金额、延迟容忍、模型规模、合规要求）</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
@@ -1954,6 +2017,7 @@ LLM 整合结果 → 自然语言回答
 <blockquote>
 <p>这三道题是把前面所有概念<strong>揉进键盘</strong>的最快路径——审计漏报率不是"听过"，是你亲手算过的；ZK 电路 setup 多久不是"猜的"，是你跑出来的；on-chain agent 安全约束不是"记的"，是你给它加上去后被自己测试推翻又改对的。</p>
 </blockquote>
+<p><strong>TL;DR</strong>：3 道题 ≈ 一个周末。10.1 复现"AI 审计漏报率"；10.2 写一个事件驱动 on-chain LLM agent（带签名校验 + rate limit）；10.3 EZKL + MNIST 端到端跑通。完成度直接决定 §1-§9 概念能否上手。</p>
 <p>详见 <a href="./exercises/"><code>exercises/</code></a>，建议全部做完：</p>
 <h3 id="101-ai">10.1 评估 AI 审计工具：漏报率统计</h3>
 <ul>
@@ -1975,11 +2039,20 @@ LLM 整合结果 → 自然语言回答
 <li>模板：<code>exercises/03-ezkl-mnist/</code>。</li>
 </ul>
 <p>预期（参考 EZKL benchmark 与 ICME 2025 报告）：setup 数十秒到几分钟；单次 proof 几秒到几十秒；verifier gas 100 万-200 万。</p>
+<blockquote>
+<p><strong>要点回顾</strong>：3 道题对应 3 类 trust 锚——审计（人审 + 静态分析）/ on-chain agent（签名 + rate limit + 长度限制）/ zkML（密码学）。做完这一轮，§5.1 / §5.2 清单上的边界感才会落到键盘上。</p>
+<p><strong>下一步</strong>：§11 看本模块与其他模块的双向引用——把 AI × Web3 摆回整本指南的网络位置。</p>
+<p><strong>自检</strong>：3 题里哪一题最让你卡？卡在哪一步？回头去对应的 §2 / §7 / §8 把那段重读一遍。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
 <h2 id="11" id="ch13"><span class="chapter-num">Chapter 13</span><br>11. 与其他模块的双向引用</h2>
 
+<blockquote>
+<p>把模块 12 摆回整本指南的网络位置——AI × Web3 不是独立赛道，是其他 11 个模块的横向放大镜。</p>
+</blockquote>
+<p><strong>TL;DR</strong>：AI 与本指南所有模块都有接口——04 / 05 接生产化工具，08 接 ZK 推理，06 / 10 接 intent 与 AA，11 接 DePIN compute，13 接 KYA 身份。读这张表 = 给自己画一张"接下来要回头看哪些模块"的清单。</p>
 <table>
 <thead>
 <tr>
@@ -2041,11 +2114,20 @@ LLM 整合结果 → 自然语言回答
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>要点回顾</strong>：模块 12 是其他模块的"AI 视角横切"——05（安全）/ 08（ZK）/ 10（AA）三处接口最深。</p>
+<p><strong>下一步</strong>：§12 给出固定追踪源——半年一次系统更新就用这份清单。</p>
+<p><strong>自检</strong>：你接下来 1 个月最该回看的是哪 2 个模块？答得出 = 知道自己的"AI × Web3"卡在哪。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
 <h2 id="12_1" id="ch14"><span class="chapter-num">Chapter 14</span><br>12. 推荐阅读与持续追踪</h2>
 
+<blockquote>
+<p>这一节是模块 12 的"半年保鲜阈值"——AI × Web3 6 个月一变天，固定追踪源比临时搜索更可靠。</p>
+</blockquote>
+<p><strong>TL;DR</strong>：研究报告（a16z / Paradigm / METR / Solidity Survey / ICME）+ 安全公司博客（Trail of Bits / OZ / Cyfrin / Zellic）+ 链上 AI 官方文档（EZKL / Lagrange / ORA / Bittensor / ERC-7521 / x402）+ Vitalik 原始博客。订阅这一栏 = 模块 12 的"持续编辑器"。</p>
 <p>所有链接均检索 2026-04。</p>
 <p><strong>研究 / 报告</strong></p>
 <ul>

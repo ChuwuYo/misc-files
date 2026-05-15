@@ -41,7 +41,7 @@ flowchart LR
 | **ERC-1155** | 一合约多种 token，可堆叠 | `balanceOf(addr, id)` / `safeBatchTransferFrom` | `0xd9b67a26` | 游戏道具 / 票务 / open edition |
 | **ERC-6551** | NFT 拥有自己的合约钱包 | Registry `account()` + `execute()` | n/a（singleton） | 角色背包 / 复合资产 |
 
-**ERC-6551 一句类比**：普通 NFT 是数字所有权证书；ERC-6551 让这张证书自己有个钱包——证书卖给别人，钱包里的东西也跟着走。
+**ERC-6551 一句类比**：普通 NFT 是数字所有权证书；ERC-6551 让这张证书自己有个钱包——证书卖给别人，钱包里的东西也跟着走。再形象一点：你买的是一只 BAYC 猴子，猴子背后挂着一个保险柜，柜里可能有 100 USDC + 一把游戏神剑 + 一张 POAP；猴子换主人，保险柜整柜易手，零额外签名、零授权迁移。
 
 ### 1.2 先到架构图再看代码
 
@@ -64,6 +64,8 @@ Alice 卖掉 NFT #4321，整个钱包里的资产一起归 Bob——零额外签
 | NFT 绑定资产 / 角色背包 | ERC-721 + ERC-6551 |
 | 版税 | 加 ERC-2981（附录 A）|
 | Soulbound 证书 | ERC-5192（附录 A）|
+
+**章末**：三个标准的差别可以用一句话装下——721 给"每件独一无二的东西"，1155 给"一店多货架"，6551 给"NFT 自己有钱包"。选错标准远比写错代码痛——选定后，下一章先把最常用的 ERC-721 跑起来。
 
 ---
 
@@ -408,10 +410,8 @@ function LoginButton() {
 }
 ```
 
-### 5.5 四个常见错误
+### 5.5 另外两个坑
 
-- **复用 nonce**：每次必须新生成，否则 replay 直接过。
-- **信任 message.domain**：后端必须硬编码传 domain 给 `verify()`。
 - **把签名当长效 token**：SIWE 签名只换 session/cookie，签名本身一次即丢。
 - **合约钱包（Safe / 4337）**：使用 EIP-1271，需显式传 provider 给 verify。
 
@@ -472,7 +472,9 @@ const attestationUID = await tx2.wait()
 
 ### 6.2 链上 Gate（合约验证）
 
-**建议先读 §6.3 EAS schema/attest/revoke**——直觉建立后再看本节合约 gate。
+**先建直觉**：上一节我们盖了一张"alice 给 bob 写了条 score=95 的 attestation"——它躺在 EAS 合约里，UID 是它的指纹。本节解决的问题是：**任何第三方合约怎么凭这枚指纹决定"放不放 bob 进门"**。四个校验缺一不可：schema 是不是我认的那个模板、attester 是不是我信的那个人、有没有过期、有没有被撤销。把这四点想成机场入境四道门：护照类型 → 签发国 → 有效期 → 是否在黑名单。
+
+> 提示：建议先回看 §6.1 的 schema/attest 流程把"盖章"的画面建立起来，再来读合约 gate 会更顺。
 
 ```solidity
 import {IEAS, Attestation} from "@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol";
@@ -577,6 +579,11 @@ await hubClient.submitMessage(cast.value)
 ### 7.4 Mini Apps（原 Frames v2）
 
 Frames 2024-01 推出，2025 初重命名 Mini Apps（[docs.farcaster.xyz/reference/frames-redirect](https://docs.farcaster.xyz/reference/frames-redirect)；[miniapps.farcaster.xyz/docs/specification](https://miniapps.farcaster.xyz/docs/specification)）。v1（OG meta tags + server-rendered，2025-Q1 deprecated）→ v2 / Mini Apps（in-app browser 加载任意 web app，附录 D 实现）。Mini App 内置 fid + verified eth address、钱包连接、cast context、notification permission。
+
+> ⚠️ **Mini App 三个最容易踩的坑**：
+> - **v1 / v2 meta tag 混用**：`fc:frame` 是 v1（已 deprecated），新项目只能用 `fc:miniapp`，否则 Warpcast unfurler 显示旧式按钮甚至不渲染。
+> - **忘记 `sdk.actions.ready()`**：splash 屏永远转圈不消失——Warpcast 等这个调用才知道你 app 加载完了。
+> - **以为 fid + verified address 等于身份证**：fid 可以转、custody address 可以换；高价值场景仍需结合 SIWE 或 EAS 二次确认。
 
 **fid 的社交特殊性**：转 fid 给别人时全网 follow 跟着走，这是社交语义的路径依赖，也是 Farcaster 用户极少 transfer fid 的原因。
 

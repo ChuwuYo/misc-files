@@ -28,9 +28,9 @@ flowchart LR
 
 > **TL;DR**：L1 有三道物理墙（gas limit、12s 出块、家用电脑节点），L2 是唯一出路，但用 sequencer 中心化和桥风险换来低费用。
 
-**钩子**：2021-09 一个深夜，你想用 Uniswap 把 $200 USDC 换成 ETH，确认页 gas 费 **$84**。等到凌晨三点再试：还是 $54。Twitter 上刷屏：「以太坊已经成了富人的玩具。」
+**钩子**：2022-05-01，Yuga Labs 的 Otherside 元宇宙 NFT 公开 mint，5.5 万人同时抢 5.5 万个地块。链上 base fee 在十分钟内被推到约 8000 gwei，单次 mint 的 gas 费一度 ~2.5 ETH（当时 $7,000+）。最后 mint 合约消耗了大约 7000 ETH gas、其中**几千笔交易直接 revert——失败的也得付钱**，损失上亿美元。OpenSea 同期 Twitter 公告说"以太坊本身在卡顿"。
 
-L2 不是技术爱好者的锦上添花——它是 L1 物理上压不下来成本后**剩下的唯一出路**。
+L1 物理墙第一次以这么戏剧化的方式被全网用户摸到：不是慢，是**集体抢同一秒钟的区块空间**——这就是 L2 的存在理由。L2 不是技术爱好者的锦上添花——它是 L1 物理上压不下来成本后**剩下的唯一出路**。
 
 ### 1.1 L1 的三道物理墙
 
@@ -69,7 +69,11 @@ graph LR
     B --> E[新痛: 流动性碎片化]
 ```
 
-**章末**：L2 不是免费午餐。理解这三个新痛点是本模块后半段的核心。
+**章末三件套**
+
+- **一句话总结**：L1 物理上压不下来成本，L2 是唯一出路，但用 sequencer 中心化、桥风险、流动性碎片三个新痛点换来低费用。
+- **自检三问**：①为什么以太坊永远不走「大区块」路线？②blob 上线（2024-03）后 L2 费用从哪里来、占比怎样？③如果 L2 完美解决了 gas，为什么还需要后续 7 章？
+- **下一步**：第 2 章用「法庭 vs 工地」类比，区分 Optimistic 与 ZK 两大 rollup 派别——它们解决「sequencer 可能撒谎」用的是完全不同的两套审计哲学。
 
 ---
 
@@ -110,7 +114,11 @@ flowchart TB
 
 **Rollup vs Sidechain**：Polygon PoS 是独立 PoS 侧链，不继承以太坊安全，不在 L2BEAT 里。
 
-**章末**：两派核心差异 = 争议解决时点。Optimistic 事后挑战，ZK 事前证明。欺诈证明工程细节见附录 C，ZK proof system 对比见附录 D。
+**章末三件套**
+
+- **一句话总结**：两派核心差异 = 争议解决时点——Optimistic 事后挑战（7 天窗口 + 欺诈证明），ZK 事前证明（每 batch 附数学证明 + 即时终局），安全假设互不可替。
+- **自检三问**：①为什么不能简单说「ZK 比 Optimistic 安全」？②Polygon PoS 为什么不在 L2BEAT 里？③如果你是一条新 rollup 团队，选 Optimistic 还是 ZK，要看哪三个工程指标？
+- **下一步**：第 3 章拆 Optimistic 的「二分博弈」——这是让欺诈证明在 L1 上经济可行的核心 trick，也是 7 天提款延迟的根因。欺诈证明工程细节见附录 C，ZK proof system 对比见附录 D。
 
 ---
 
@@ -150,7 +158,11 @@ sequenceDiagram
     end
 ```
 
-**章末**：Optimistic 的工程细节（Cannon / BoLD 实现对比）见附录 C。
+**章末三件套**
+
+- **一句话总结**：Optimistic 用「二分博弈 + 7 天挑战期 + force inclusion」三件套保安全，本质是把 L1 当成「最终仲裁法庭」，只在出现分歧时才请它仲裁一条 EVM 指令。
+- **自检三问**：①为什么二分博弈能把欺诈证明成本压到「L1 上几十个 hash」？②7 天提款延迟解决了什么问题，又催生了什么市场（提示：即时桥）？③force inclusion 为什么是 Stage 1 的硬要求？
+- **下一步**：第 4 章看 ZK 派别如何用「快递查验码」类比绕过 7 天等待——同一个「sequencer 撒谎」问题，换数学手段一次性堵死。Optimistic 工程细节（Cannon / BoLD 实现对比）见附录 C。
 
 ---
 
@@ -190,7 +202,11 @@ sequenceDiagram
 2. **可信设置泄漏**（仅 Groth16/PLONK，STARK 无此问题）；
 3. **prover liveness**：prover 集群故障 = 链停。
 
-**章末**：SNARK vs STARK 详细对比、各 zkEVM 证明系统选型见附录 D。
+**章末三件套**
+
+- **一句话总结**：ZK Rollup 用「validity proof」把信任锚点从「7 天挑战期」搬到「L1 验证 50–500k gas」，工程取舍在 Type-1 到 Type-4 的 EVM 等价度光谱上展开。
+- **自检三问**：①为什么 rollup 里「零知识」其实不必需，叫「validity rollup」更准确？②Type-2 与 Type-4 的核心区别是什么，对开发者意味着什么？③ZK Rollup 三大风险中，哪一个 STARK 体系天然免疫？
+- **下一步**：第 5 章拆 DA——无论 Optimistic 还是 ZK，状态根有了不等于钱能提，缺了原始数据照样冻死。SNARK vs STARK 详细对比、各 zkEVM 证明系统选型见附录 D。
 
 ---
 
@@ -225,7 +241,11 @@ EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Cele
 
 **DA 选型速查**：DeFi 主资金 → Ethereum blob；链游/低值高频 → Validium/DAC；极致吞吐 → EigenDA。DA 层详细对比（Celestia/EigenDA/Avail）见附录 E。
 
-**章末**：EIP-4844 blob 字段、KZG 承诺数学见附录 A。
+**章末三件套**
+
+- **一句话总结**：DA = 数据可下载（≠ 永久保存），它是 rollup 的真正命门——状态根再正确，丢了 DA 一样冻钱；blob 让以太坊 DA 成本塌到近零，外部 DA 的市场叙事从「便宜」转向「极致吞吐」。
+- **自检三问**：①为什么 18 天就丢的 blob 足够支撑 rollup 安全？②Validium 与 Optimium 各自的 DA 在哪里、信任假设是什么？③DeFi 主资金为什么不能用 DAC（少数委员会）做 DA？
+- **下一步**：第 6 章把前 5 章的所有维度（Optimistic/ZK、Stage、DA 位置）落到 6 条主流 L2 的选型决策。EIP-4844 blob 字段、KZG 承诺数学见附录 A，外部 DA 层（Celestia/EigenDA/Avail）见附录 E。
 
 ---
 
@@ -261,7 +281,11 @@ EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Cele
 | 原生账户抽象 | zkSync Era |
 | 链游 / 低值高频 | Arbitrum Nova（AnyTrust DAC） |
 
-**章末**：各链详细架构、Stage 历史、sequencer 去中心化进度见附录 H。
+**章末三件套**
+
+- **一句话总结**：六条主流 L2 = Optimistic 三强（Arbitrum / OP / Base，均 Stage 1）+ ZK 三家（Scroll Stage 1，zkSync / Linea Stage 0），选型先看 Stage，再看工具链，最后看流量来源。
+- **自检三问**：①为什么「OP Stack 赢得框架战争」对新项目有影响（提示：Superchain 共享 sequencer）？②同样 Stage 0 的 zkSync Era 与 Linea，工程师评估时如何拉开差距？③Arbitrum One 与 Arbitrum Nova 共享品牌，安全等级为什么不同（提示：DA）？
+- **下一步**：第 7 章看 L2 之间最危险的环节——桥；占 TVL 不到 10%，却占被盗资金 50% 以上。各链详细架构、Stage 历史、sequencer 去中心化进度见附录 H。
 
 ---
 
@@ -295,7 +319,11 @@ EIP-4844 后 blob_base_fee 长期 ≈ 1 wei（接近免费）。外部 DA（Cele
 4. 历史事故如何处理；
 5. 桥 TVL / 24h volume 比例够不够你的金额。
 
-**章末**：5 起事故完整代码级复盘（含 Ronin/Multichain/Orbit）见附录 G。跨链消息协议（LayerZero/Wormhole/Hyperlane/CCIP/CCTP）对比见附录 H。
+**章末三件套**
+
+- **一句话总结**：桥事故的根因高度集中在「验证模型 + 升级流程 + 私钥管理」三个工程层面，五起 $1.35B 教训背后是同一套可复盘的 checklist。
+- **自检三问**：①Nomad 与 Wormhole 的根因分别是哪一类（合约 bug / 升级流程 / 私钥管理）？②为什么「桥 TVL / 24h volume 比例」比绝对 TVL 更能反映安全压力？③你为什么 USDC 跨 EVM 应优先选 CCTP 而不是任意聚合器路由？
+- **下一步**：第 8 章把前 7 章的所有指标（force inclusion、DA 位置、多签门槛）汇总成一张可执行的 L2BEAT「Stage 评级」体检表。5 起事故完整代码级复盘（Ronin / Multichain / Orbit）见附录 G，跨链消息协议（LayerZero / Wormhole / Hyperlane / CCIP / CCTP）对比见附录 H。
 
 ### 7.4 桥实战决策树（用户视角）
 
@@ -446,7 +474,11 @@ graph LR
 
 Stage 评级 ≠ 安全评级。Blast 和 zkSync Era 同为 Stage 0，但 Blast 因 fraud proof 未上线风险更高。实际评估还需看：sequencer force inclusion 延迟、合约审计、bug bounty。
 
-**章末**：L2BEAT Stage 的数学定义见附录 B。
+**章末三件套**
+
+- **一句话总结**：Stage 评级是「移交方向盘」的工程清单——Stage 0 训练轮、Stage 1 5 条硬要求达标、Stage 2 至今主流 EVM L2 无人触及，Stage ≠ 安全总分，还得叠加 Risk Rosette 与历史事故。
+- **自检三问**：①Stage 1 的 5 条硬要求中，哪一条「force inclusion」直接呼应了第 3 章的抗审查兜底？②为什么 Blast 与 zkSync Era 同为 Stage 0，前者实操风险更高？③一条 ZK rollup 想从 Stage 0 升 Stage 1，最常见卡点是哪一条（提示：proof 还没 permissionless）？
+- **下一步**：模块 08 把 ZK 从「rollup 加速器」抽象出来，作为通用证明系统看待。L2BEAT Stage 的数学定义见附录 B。
 
 **下一站**：L2 里最硬核的支柱是 ZK——它不仅压缩 rollup 计算，还能证明任意陈述。本模块把 ZK 当成「rollup 工具」介绍，但它的能力远不止此。下一站模块 08 系统看 SNARK/STARK/zkVM/zkML，把 ZK 从「rollup 加速器」升级到「通用证明系统」，理解为什么 ZK 是未来十年密码学最值得押注的方向。
 
@@ -797,49 +829,15 @@ graph TB
 
 ### G.1 Wormhole（2022-02-02，$326M）
 
-攻击者在 Solana 端铸造 120,000 wETH，抽空 ETH 储备。
-
-**根因**：signature verification 函数未校验 guardian set 是否真正签名——攻击者用 fake account 替换 system program，bridge 直接 mint wETH。
-
-```rust
-// 漏洞简化：未校验 sysvar 是真 sysvar
-let sysvar = next_account_info(...)?;
-// 没检查 sysvar.key == &sysvar::instructions::id()
-let signers = parse_sysvar(&sysvar.data)?;
-verify_signatures(signers, message);  // 攻击者控制 signers
-```
-
-**修复**：补上 `sysvar.key == &solana_program::sysvar::instructions::id()` 校验。Jump Crypto 注资 $326M 填窟窿，桥继续运行。
-
-**教训**：Solana account model 比 EVM 复杂，account 混淆 bug 是高频漏洞类型。
+Solana 端 sysvar 校验缺失，fake account 绕过 signature verification 铸 120k wETH。详见 05-智能合约安全 §10.2 + 附录 D。
 
 ### G.2 Ronin（2022-03-23，$625M）
 
-偷走 173,600 ETH + 25.5M USDC，Web3 历史第二大单笔损失。
-
-**根因**：9 个 validator 多签，签 5 即可。攻击者社工钓鱼员工拿 4 个私钥；第 5 个来自 Axie DAO 临时授权 Sky Mavis 代签——**未及时撤销**；5/9 达成，调用 `withdrawERC20For` 提走资产。
-
-**教训**：multisig 不是 trust-minimized——同一组织/服务器的 N 个 validator 安全等于 1。临时授权必须有强制过期机制。
+9-of-5 multisig，4 个被钓鱼 + 1 个 Axie DAO 临时授权未撤销凑齐阈值。详见 05-智能合约安全 §7 + 附录 D.1。
 
 ### G.3 Nomad（2022-08-01，$190M）
 
-几小时内被掏空，上百地址复制粘贴交易——史诗级「众包抢劫」。
-
-**根因**：升级合约时把 `acceptableRoot` 映射初始化成 `0x00`：
-
-```solidity
-// 漏洞：升级时 _setAcceptableRoot(0x00, true);
-// 结果：所有空 messageProof（默认 0x00）都被接受
-function process(bytes memory _message) public {
-    bytes32 messageHash = keccak256(_message);
-    require(acceptableRoot[messages[messageHash]], "!proven");  // bypass!
-    // ... 执行任意 message
-}
-```
-
-第一个攻击者构造提款交易，其他人**复制 calldata 只改 to 字段**即可通过。
-
-**教训**：升级合约要有完整 invariant 测试；`mapping(bytes32 => bool)` 零值 + 升级 bug 是致命组合；公开 mempool 让单个 bug 被数百人放大。
+升级把 `acceptableRoot[0x00]` 置 true，300 地址复制 calldata 改 `to` 字段众包抢劫。详见 05-智能合约安全 附录 D.2。
 
 ### G.4 Multichain（2023-07，$130M+）
 

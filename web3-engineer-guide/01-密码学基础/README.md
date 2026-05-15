@@ -133,13 +133,8 @@ keccak256(abi.encodePacked(keccak256("a"), keccak256("bc")))
 
 ### 章末
 
-记住 3 句话：
-
-- 哈希压缩任意输入到 32 字节，单向、无碰撞——地址、txid、Merkle root 全靠它。
-- Solidity 的 `keccak256` 和 Python 的 `sha3_256` 不是一个东西，差一个字节、输出全错。
-- `abi.encodePacked` 后跟多个动态类型会撞哈希，要么换 `abi.encode`，要么先各自 hash 再拼。
-
-小练习：写一段 Python，分别用 `hashlib.sha3_256` 和 pycryptodome 的 `keccak.new(digest_bits=256)` 对 `b"abc"` 求哈希，亲眼看到两个结果不一样。把 keccak 那个结果与 Solidity `keccak256("abc")` 对照（线上 Remix 也行）。
+- 3 句速记：①哈希压任意输入到 32B，地址/txid/root 全靠它；②`keccak256` ≠ `sha3_256`，差一字节全错；③`encodePacked` 多动态类型撞哈希，换 `encode`。
+- 钩子：下章看签名怎么把哈希变身份。
 
 ---
 
@@ -148,6 +143,8 @@ keccak256(abi.encodePacked(keccak256("a"), keccak256("bc")))
 ## 第 2 章 椭圆曲线
 
 > TL;DR：学一个"正向算容易、反推难"的群运算；它撑起 Bitcoin 私钥、以太坊地址、所有 ZK 证明；学完能解释「私钥不能泄露」到底在保护什么数学事实。
+
+2013 年 Android 比特币钱包集体被盗——根本原因是 `SecureRandom` 在某些机型上吐出可预测的"随机数"，攻击者扫一遍链上签名就能反推私钥批量提币。椭圆曲线本身没破，是上层把"私钥"这个数字交给了不靠谱的 RNG。本章带你看清这个数字到底承载着什么。
 
 椭圆曲线撑起每一笔链上交易。本章只看主线路上必须懂的曲线 secp256k1，其它曲线（ed25519 / BLS12-381 / BN254 / Pasta 等）和它们各自的政治史去**附录 C**。
 
@@ -202,15 +199,12 @@ Apple Secure Enclave、WebAuthn / Passkey 用的是 **secp256r1**（也叫 P-256
 
 工程层面记住：写"以太坊地址"相关代码，别撞上 P-256 库。Python `coincurve`、JS `@noble/curves/secp256k1`、Rust `k256` 都是 k1。
 
+> 一字之差排雷表：`secp256k1`（k1）= Bitcoin / EVM；`secp256r1`（r1，又名 P-256）= Passkey / Apple Secure Enclave；`ed25519` = Solana / Cosmos。三者**互不兼容**——同一份助记词在不同曲线上派生出完全不同的地址。
+
 ### 章末
 
-记住 3 句话：
-
-- 椭圆曲线就是带特殊加法的钟表盘；私钥 d 是步数，公钥 Q = d·G 是终点位置。
-- 反推 d 需要 2^128 次运算——secp256k1 安全的全部根据。
-- secp256k1 是 Bitcoin / 以太坊 / EVM 的曲线；secp256r1 是 Passkey 的曲线，名字像但完全不兼容。
-
-小练习：用 Python `coincurve` 生成一个私钥（`os.urandom(32)`），算出对应公钥，分别打出未压缩（65B）和压缩（33B）格式，肉眼对比 X 坐标是否一致。
+- 3 句速记：①椭圆曲线 = 带特殊加法的钟表盘，d 是步数、Q = d·G；②反推 d 需 2^128 次；③k1 是 EVM 用的，r1 是 Passkey 用的，互不兼容。
+- 钩子：下章看签名如何用 (r, s) 把 d 留在链上。
 
 ---
 
@@ -329,13 +323,8 @@ EIP-2 修复方案：强制 **low-s**（`s ≤ n/2`），任何 high-s 一律拒
 
 ### 章末
 
-记住 3 句话：
-
-- ECDSA 签名 = (r, s)，签的时候要 nonce k；k 重用两次就能反推私钥。
-- 以太坊地址 = `keccak256(uncompressed_pubkey[1:])` 取后 20 字节。
-- `ecrecover` 异常时返回 `address(0)`；和默认值 0 比较是经典伪造入口，要么用 OZ 要么显式 `!= address(0)`。
-
-小练习：用 Python `eth_keys` 对消息 `b"hello"` 签名，得到 `(v, r, s)`；然后构造 `(v, r, n-s)`（注意修正 v 的 yParity），验证两个签名都能恢复出同一个地址。这就是 malleability。
+- 3 句速记：①签名 = (r, s)，nonce k 重用两次反推 d；②地址 = `keccak256(pubkey[1:])` 后 20B；③`ecrecover` 异常返 `0x0`，必须显式 `!= address(0)`。
+- 钩子：下章看 EIP-712 把签名搬进钱包确认框。
 
 主线之外你会撞见的三种签名：Schnorr（Bitcoin Taproot，BIP-340，64 字节、聚合友好）、Ed25519（Solana / Cosmos / NEAR，确定性 nonce）、BLS（以太坊共识层 attestation 聚合，签名 96 字节、可聚合）。详见附录 D。
 
@@ -346,6 +335,10 @@ EIP-2 修复方案：强制 **low-s**（`s ≤ n/2`），任何 high-s 一律拒
 ## 第 4 章 签名格式入门
 
 > TL;DR：学一下日常会撞见的几种签名编码——65 字节标准 / 64 字节紧凑 / EIP-712 结构化签名；学完能看懂钱包"签什么"对话框、能调通"链下签链上验"的最常见 bug。
+
+2022 年 9 月，OpenSea 用户被钓鱼合约骗签了一个"看起来无害"的 hash——钱包弹窗只显示 `0x6a45...` 一串乱码，用户随手点确认，几分钟后蓝筹 NFT 被洗劫一空。EIP-712 就是为了堵这个洞而生：把"你在签什么"翻译成人类能读懂的字段。本章把日常会撞见的三种签名编码一次性摆清楚。
+
+类比：签名格式像**快递面单**——内容物（r/s 两个数）是一样的，但贴的标签（v 字节、是否紧凑、是否带 EIP-712 包装）决定了快递员（链上合约）认不认。本章教你认标签。
 
 写 dApp 时你会接触三种签名格式：65 字节裸签名、64 字节紧凑签名、EIP-712 结构化签名。这一章把它们摆清楚。
 
@@ -393,6 +386,8 @@ digest = keccak256( "\x19\x01" ‖ domainSeparator ‖ hashStruct(message) )
 
 工程层面记住：**chainId 必须随网络换**，testnet 通过 mainnet 不通过往往就是 chainId 没改。
 
+> 提示：钱包弹窗如果只显示一串 `0x...` 哈希、看不到字段名和值，**直接拒签**——这是 EIP-191 personalSign 而非 EIP-712，你正在签的东西自己都不知道是什么。所有正经 dApp 现在都应该走 EIP-712 结构化签名。
+
 ### 4.4 常见调试
 
 | 现象 | 原因 |
@@ -404,13 +399,8 @@ digest = keccak256( "\x19\x01" ‖ domainSeparator ‖ hashStruct(message) )
 
 ### 章末
 
-记住 3 句话：
-
-- v 的取值依协议而异（0/1、27/28、EIP-155 那个 chainId 公式）；调签名格式 bug 先查 v。
-- EIP-2098 把 65 字节签名压成 64 字节，省 calldata，需要 OZ 新版本支持。
-- EIP-712 让钱包展示结构化内容；domain 含 chainId + 合约地址，跨链 / 跨合约自动隔离。
-
-小练习：写一段 viem 或 ethers 代码，用同一个私钥分别签：(a) 一个裸 hash；(b) 一个 EIP-712 typed message。把得到的 65 字节签名拆出 r、s、v，确认 (a)、(b) 的 r/s 值不同。
+- 3 句速记：①v 取值依协议而异，签名格式 bug 先查 v；②EIP-2098 把 65B 压成 64B；③EIP-712 domain 含 chainId + 合约地址，跨链自动隔离。
+- 钩子：下章看 Merkle 用一根 root 承诺 N 条白名单。
 
 ---
 
@@ -502,13 +492,8 @@ function claim(uint256 amount, bytes32[] calldata proof) external {
 
 ### 章末
 
-记住 3 句话：
-
-- Merkle 树用 32 字节根承诺任意大数据集，成员证明长度 `O(log n)`。
-- OZ commutative 约定：合并时按字节序排小的在前，验证不需要左右信息。
-- 链上链下叶子结构必须一致（字节边界严格对齐），错一字节 proof 全废。
-
-小练习：构造 4 个白名单条目 `[(addr_i, amount_i)]`，用 Python 算出 root 和每个条目的 proof（不超过 30 行代码）；把 root 部署到一个简单 Solidity 合约里，调 `claim()` 验证 proof。
+- 3 句速记：①Merkle 用 32B root 承诺大数据集，proof 长度 `O(log n)`；②OZ commutative 约定字节序排小在前；③链上链下叶子字节边界必须一致。
+- 钩子：下章看助记词如何派生一棵密钥树。
 
 ---
 
@@ -594,13 +579,8 @@ Ledger Live 把账户编号放在 `account'` 位（hardened），MetaMask 把账
 
 ### 章末
 
-记住 3 句话：
-
-- 12 个助记词 → PBKDF2 → 64 字节种子 → BIP-32 派生整棵密钥树。
-- 路径 `m/44'/60'/0'/0/0` 各段含义固定，不同钱包的默认路径可能完全不同。
-- Ledger 助记词导入 MetaMask 看不到资产是路径不同，不是助记词丢了。
-
-小练习：用 Python `mnemonic` + `bip32utils`（或 `bip-utils`）库，给定一组测试助记词（BIP-39 spec 里有），分别派生 `m/44'/60'/0'/0/0` 和 `m/44'/60'/1'/0/0` 两个地址，确认它们不一样；再派生 `m/44'/501'/0'/0'`，得到对应的 Solana 地址。
+- 3 句速记：①12 词 → PBKDF2 → 64B 种子 → BIP-32 整棵树；②`m/44'/60'/0'/0/0` 各段固定，钱包默认路径不同；③Ledger 导 MetaMask 看不到资产是路径不同，不是助记词丢。
+- 钩子：下章把哈希/签名/Merkle 串成一份 airdrop 合约。
 
 > Solana / Aptos / Sui 的 ed25519 派生（SLIP-0010）和以太坊 BLS validator keystore（EIP-2335 / EIP-2333 / EIP-2334）见**附录 D**。
 
@@ -609,6 +589,10 @@ Ledger Live 把账户编号放在 `account'` 位（hardened），MetaMask 把账
 ## 第 7 章 工程实战代码
 
 > TL;DR：动手时间——把前 6 章的概念跑起来。所有依赖版本 pin 死，macOS / Linux 实测可复现。
+
+读懂密码学和"亲手把一笔 airdrop 跑通"是两回事。前 6 章你看到的所有概念——keccak、secp256k1 签名、Merkle 证明、ECDSA 双门——这一章合到一个最小可运行项目里：~50 行 Python 生成证明，~30 行 Solidity 上链验证，半小时跑完。
+
+类比：这一章像**驾照路考**——前面学了交规、看了别人开车，现在自己上车。所有依赖锁版本，复制粘贴就能跑；跑不通先看依赖、再看本章 troubleshooting。
 
 ### 7.1 安装
 
@@ -691,11 +675,10 @@ function claim(uint256 amount, bytes32[] calldata proof, bytes calldata sig) ext
 
 ### 章末
 
-记住 3 句话：
+> 提示：跑不通先 check 三件事——(1) Python 虚拟环境激活了吗？`which python` 应指向 `.venv`；(2) Foundry 装好了吗？`forge --version` 不报错；(3) Node 端用的 keccak 是 `@noble/hashes/sha3` 的 `keccak_256` 而**不是** `sha3_256`（这是第 1 章的老坑）。
 
-- 永远用 `os.urandom` / `secrets` 抽随机数，绝不用 `random.random()`。
-- 用 RFC 6979 确定性 nonce 的 ECDSA 实现（如 `eth-keys`、`coincurve`、`libsecp256k1`）就不会撞 PS3 那个坑。
-- 链上 Merkle + ECDSA 双门验证防 airdrop 抢领、跨链重放等典型攻击。
+- 3 句速记：①随机数永远用 `os.urandom` / `secrets`；②ECDSA 用 RFC 6979 确定性 nonce 实现；③Merkle + ECDSA 双门防 airdrop 抢领与跨链重放。
+- 钩子：模块 02 进入共识层，看签名如何被多机器同时认可。
 
 小练习：把 `code/03_merkle_tree.py` 跑一遍，输出 root 和 4 条 proof；把 `code/04_AirdropMerkle.sol` 部署到 anvil（`forge create`），调 `claim()` 验证 proof 通过。这就完成了"链下生成 + 链上验证"端到端。
 

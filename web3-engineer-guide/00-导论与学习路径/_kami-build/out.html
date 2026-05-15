@@ -503,6 +503,10 @@
 <section class="chapter">
 <h2 id="0" id="ch01"><span class="chapter-num">Chapter 01</span><br>0. 前置知识</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：这本书像盖二楼，地基（Git/Shell/JS/Python/HTTP/SQL）由你自带。任一项空白回去补，<strong>别在 Web3 教程里学 Git rebase</strong>。</p>
+</blockquote>
+<p>2022 年 Nomad Bridge 被 1.9 亿美元抽干，事后社区复盘里有一条留言："攻击者第一笔交易上链后，竟然有 300 多个地址 copy-paste 同一笔 calldata 跟单抢。"——这些人连 <code>ethers.utils.hexlify</code> 和 <code>parseInt</code> 的差别都没搞清，就敢直接对着 mainnet 喊"我也来一份"。<strong>前置知识空白 + Web3 资金路径 = 现成的反面教材</strong>。</p>
 <p>后续章节默认你已掌握以下能力，任一项空白先回去补：</p>
 <ul>
 <li><strong>Git</strong>：能处理 merge conflict、懂 <code>rebase</code> 与 <code>merge</code> 差别。</li>
@@ -512,13 +516,26 @@
 <li><strong>HTTP</strong>：懂 JSON-RPC 与 REST 差别。</li>
 <li><strong>SQL</strong>：会写 <code>JOIN</code>、懂索引与事务。</li>
 </ul>
+<blockquote>
+<p>💡 把这 6 条想象成"驾照"：没驾照能不能开车？能，但出事就是大事。Web3 是公链广场，撞了车（资金被掏空）没有保险公司赔你。</p>
+<p>⚠️ 没有这些底子直接学 Solidity，最常见的卡点是：看不懂 stack trace、不会用 <code>forge test -vvvv</code>、抓不到 RPC 报错、改不动 Hardhat config。这些都不是 Solidity 问题，是工程基本功。</p>
+</blockquote>
+<h3 id="_2">章末</h3>
+<ul>
+<li>3 句速记：①前置不补，每步变两步；②6 项基本功缺哪补哪，别混学；③出事靠工程师本能，不是教程。</li>
+<li>钩子：§1 看依赖图，对照方向挑路径。</li>
+</ul>
 <hr />
 
 </section><section class="chapter">
 <h2 id="1-16" id="ch02"><span class="chapter-num">Chapter 02</span><br>1. 16 模块概览与依赖图</h2>
 
 <blockquote>
-<p>TL;DR：蓝色 3 模块必学，黄色 3 模块吃饭，粉/绿/紫按方向选。图中箭头 = 硬依赖，跳过必踩坑。</p>
+<p><strong>TL;DR</strong>：蓝色 3 模块必学，黄色 3 模块吃饭，粉/绿/紫按方向选。图中箭头 = 硬依赖，跳过必踩坑。</p>
+</blockquote>
+<p>2022 年 Wormhole 被盗 3.26 亿美元，根因是签名校验跳了一步——开发者跳过的，正是 §1 密码学里讲过的 ECDSA recovery 校验。<strong>模块依赖不是教学顺序问题，是工程事故的预防图</strong>。下面这张依赖图请像看地铁线路图一样看：跳站，会迷路。</p>
+<blockquote>
+<p>💡 类比：依赖图像盖楼。蓝色是地基（混凝土），跳了楼会塌；黄色是承重墙（梁柱），决定你能盖多高；粉/绿/紫是装修，按户型选。</p>
 </blockquote>
 <h3 id="11">1.1 依赖图</h3>
 <figure><img src="diagram-49192c324d.png" alt="mermaid diagram"></figure>
@@ -673,39 +690,52 @@
 </tr>
 </tbody>
 </table>
-<h3 id="_2">章末</h3>
+<h3 id="_3">章末</h3>
 <ul>
-<li>记住：蓝→黄是刚性顺序，跳不了。</li>
-<li>记住：每模块要有可验证的产出物，GitHub 公开。</li>
-<li>记住：横向模块（10/11/12）决定项目能否上线，不是可选项。</li>
+<li>3 句速记：①蓝→黄刚性顺序；②每模块要可验证产出物且公开；③横向模块 10/11/12 非可选。</li>
+<li>钩子：§"行业历史时间轴"先看 11 个心智锚点。</li>
 </ul>
 <hr />
 
 </section><section class="chapter">
-<h2 id="_3" id="ch03"><span class="chapter-num">Chapter 03</span><br>§ 行业历史时间轴（事件驱动地图）</h2>
+<h2 id="_4" id="ch03"><span class="chapter-num">Chapter 03</span><br>§ 行业历史时间轴（事件驱动地图）</h2>
 
 <blockquote>
-<p>TL;DR：Web3 不是平稳增长的工程领域，是被一连串<strong>爆炸性事件</strong>塑造出来的。每个事件都对应一类现在还在写的代码、还在跑的合规规则。下面 11 个节点是 Web2 工程师的"心智锚点"，详细技术机制见各对应模块。</p>
+<p><strong>TL;DR</strong>：Web3 不是平稳增长的工程领域，是被一连串<strong>爆炸性事件</strong>塑造出来的。每个事件都对应一类现在还在写的代码、还在跑的合规规则。下面 11 个节点是 Web2 工程师的"心智锚点"，详细技术机制见各对应模块。</p>
+<p>💡 类比：像航空业的"事故催生法规"。每一条 FAA 规则背后都对应一次空难——Web3 的每一行安全代码、每一份合规模板、每一个 modifier，背后都是一次真实的崩盘。读这一节，请把它当作"行业事故报告合集"来读。</p>
 </blockquote>
 <p><strong>2014-02 Mt.Gox 崩盘</strong>：日本东京交易所丢失约 85 万 BTC（2014-02 约 4.5 亿美元；2026-04 价位约 800 亿美元）。表层归因为 transaction malleability 攻击，深层是 Karpelès 长期挪用与会计造假。这件事直接催生了<strong>现代 Proof-of-Reserves（PoR）</strong>实践和"not your keys, not your coins"行业口号。详见 11 章基础设施。</p>
-<p><strong>2016-06 The DAO 攻击</strong>：Slock.it 募资 1.5 亿美元的链上风投基金被 reentrancy 攻击抽走 360 万 ETH（约 6000 万美元）。社区分裂导致 ETH/ETC 硬分叉——这是历史上第一次"代码即法律 vs 救济持币人"的公开对立。<strong>reentrancy 从此成为安全教科书第一章</strong>，OZ ReentrancyGuard 是每个新人写的第一个 modifier。详见 05 章。</p>
+<p><strong>2016-06 The DAO 攻击</strong>：reentrancy 抽走 360 万 ETH → ETH/ETC 硬分叉 → "代码即法律 vs 救济持币人"首次公开对立；OZ ReentrancyGuard 由此成为新人写的第一个 modifier。详见 05-智能合约安全 §故事1。</p>
 <p><strong>2017-Q3 ICO 退潮 + Howey Test 执法</strong>：2017 年下半年至 2018 年 ICO 募资超 200 亿美元，1500+ 项目 90% 归零。SEC 启动 <em>Munchee</em>、<em>DAO Report</em>、Telegram、Kik 等系列执法，确立"以 Howey Test 判断 token 是否属于证券"的事实标准。后续 Ripple/XRP 案（2023 部分胜诉）、Coinbase/SEC 案（2024-10 撤诉）等都基于这一框架。<strong>法务审查 token launch 的工作流由此成型</strong>。</p>
 <p><strong>2020 夏 DeFi Summer + 流动性挖矿</strong>：Compound 6 月推出 COMP 治理代币空投，开启"yield farming"狂潮，TVL 从 10 亿美元 6 个月内冲到 200 亿美元。Uniswap V2、Yearn、Curve、Aave 在这个窗口同步爆发。<strong>这是 Web2 工程师第一次大规模涌入 Solidity 写合约</strong>，也是现代 DeFi 协议工程的诞生。详见 06 章。</p>
-<p><strong>2022-05 Luna/UST 崩塌</strong>：Terra 算法稳定币 UST 脱钩，Luna 从 80 美元一周内跌到 0.0001 美元（19000 倍稀释），蒸发约 600 亿美元。Do Kwon 后被韩国和美国双双起诉。<strong>这一事件让"算稳"在监管层成为脏词</strong>，直接推动了美国 GENIUS Act（2024 年提案、2025 年初通过）和欧盟 MiCA（<strong>稳定币 2024-06-30 / CASP 2024-12-30 / 过渡期至 2026-07-01</strong>）对储备金型稳定币的强制 1:1 fiat backing。</p>
-<p><strong>2022-06/07 暑假连锁清算</strong>：Luna 暴雷触发 3AC（Three Arrows Capital）追加保证金失败 → 借出方 Celsius、Voyager、BlockFi 接连冻结提现 → 2023-01 Genesis 申请破产。串联机制是<strong>未公开的链下信贷敞口</strong>，同一份抵押被多家 prime broker 重复计入。教训：CeFi 黑箱的风险在 DeFi 之外，PoR + 链上抵押证明从此成为 CEX 合规底线。</p>
+<p><strong>2022-05 Luna/UST 崩塌</strong>：算法稳定币脱钩 → Luna 19000 倍稀释 → 蒸发约 600 亿美元；直接推动美国 GENIUS Act 与欧盟 MiCA 对储备金型稳定币的 1:1 fiat backing 强制。详见 06-DeFi §9.2。</p>
+<p><strong>2022-06/07 暑假连锁清算</strong>：Luna 暴雷 → 3AC 保证金爆仓 → Celsius/Voyager/BlockFi 冻结提现 → 2023-01 Genesis 破产；CeFi 未公开链下信贷敞口是传染主线。详见 06-DeFi §9.8.A。</p>
 <p><strong>2022-08 Tornado Cash 制裁与 Roman Storm 案</strong>：OFAC 把混币器 Tornado Cash 的智能合约地址列入 SDN 清单——<strong>史上第一次制裁不可变代码</strong>。开发者 Alexey Pertsev 在荷兰、Roman Storm 在美国先后被起诉。2025-03 美国财政部部分解除对合约地址的制裁（保留对个人的指控），Storm 案 2025 年开庭。这场官司直接定义了"写开源代码 vs 运营服务"的法律边界，每个 mixer/隐私协议工程师必读。</p>
-<p><strong>2022-11 FTX/Alameda 崩盘</strong>：CoinDesk 披露 Alameda 资产负债表中 FTT（FTX 自家代币）占比异常高，引发 CZ 抛售触发挤兑。FTX 一周内破产，约 80 亿美元客户资金被挪用至 Alameda 高风险头寸。SBF 2024-03 被判 25 年监禁。<strong>这件事杀死了"trust the founder"叙事</strong>，把 PoR、链上结算、自托管推到合规标配。详见 11 章。</p>
+<p><strong>2022-11 FTX/Alameda 崩盘</strong>：FTT 抵押 + CZ 挤兑 → 80 亿客户资金缺口 → SBF 25 年监禁；把 PoR、链上结算、自托管推到合规标配。详见 06-DeFi §9.8.D。</p>
 <p><strong>2023-03 SVB → USDC 脱钩</strong>：硅谷银行倒闭，Circle 披露 33 亿美元储备卡在 SVB，USDC 跌至 0.87。FDIC 周末紧急接管后恢复脱钩。这件事让全行业重写<strong>储备金披露规则</strong>——Circle 改为月度 attestation + 每日 Treasury 持仓公开，Tether 也被迫加速透明化。稳定币工程师从此默认要做"reserve composition + redemption proof"集成。</p>
 <p><strong>2024-07 Mt.Gox 14 万 BTC 还款分发</strong>：破产管理人 Nobuaki Kobayashi 启动 10 年来首次大规模分发，约 14.2 万 BTC 通过 Kraken / Bitstamp / <strong>SBI VC Trade</strong> 等交易所打给债权人。市场短期承压（BTC 从 7 万跌至 5.4 万）。这是流动性风险管理（cliff vesting → linear unlock 设计）的真实压力测试，token 解锁曲线设计的反面教材。详见 15 章。</p>
-<p><strong>2025-02 Bybit Hack 14.6 亿美元</strong>：朝鲜 Lazarus Group 攻陷 Safe{Wallet} 一名前端开发者的 AWS session token，篡改 Safe UI 让 Bybit 多签签名人在不知情下批准了恶意交易，从 cold wallet 转走 40.1 万 ETH。<strong>史上单笔最大加密盗窃</strong>。教训：multisig 不是终点，前端供应链 + 签名内容验证（blind signing 是头号反派）才是。详见 05 章 + 11 章。</p>
+<p><strong>2025-02 Bybit Hack 14.6 亿美元</strong>：DPRK Lazarus 攻陷 Safe{Wallet} 前端供应链 + 盲签 → 40.1 万 ETH 蒸发，<strong>史上单笔最大加密盗窃</strong>。前端供应链 + blind signing 是新攻击面。详见 05-智能合约安全 §故事2 + §4.5 + 附录 C。</p>
 <p>每个事件背后都是一类活的工程实践。读完这本书的目标，是让你看到下一次崩盘新闻时<strong>第一反应是去看代码</strong>，而不是看价格。</p>
+<blockquote>
+<p>⚠️ 别只记数字。每个事件的"教训部分"才是工程师价值最高的部分——比如 Bybit 案教的不是"多签不安全"，而是"前端供应链 + blind signing 是新攻击面"。</p>
+<p>🤔 自问：如果你今天上线一个 DeFi 协议，11 个事件里哪 3 个最可能在你身上重演？答案通常是 reentrancy（事件 2）、oracle/储备漂浮（事件 9）、签名 UI 欺骗（事件 11）。</p>
+</blockquote>
+<h3 id="_5">章末</h3>
+<ul>
+<li>3 句速记：①工程实践是事故催生的；②每个事件对应还在跑的 modifier 或合规模板；③看新闻先看代码。</li>
+<li>钩子：§2 把教训映射到 12 周节奏。</li>
+</ul>
 <hr />
 
 </section><section class="chapter">
 <h2 id="2-12-24" id="ch04"><span class="chapter-num">Chapter 04</span><br>2. 12 周入门 / 24 周精通路径表</h2>
 
 <blockquote>
-<p>TL;DR：12 周学会看 EVM、写 Solidity、通过 Ethernaut；24 周能审计合约、搭全栈 dApp、选定专精方向。</p>
+<p><strong>TL;DR</strong>：12 周学会看 EVM、写 Solidity、通过 Ethernaut；24 周能审计合约、搭全栈 dApp、选定专精方向。</p>
+</blockquote>
+<p>a16z 2024 招聘报告里有个数据：合约工程师入门到接第一个 paid audit 的中位数是 7-9 个月，下面这张表把它压到 24 周——前提是你每周 25-30 小时投入，且<strong>12 周末已经在 GitHub 公开过至少一个能跑的 ERC-20 + 测试套件</strong>。Code4rena 2025-Q1 数据：首战中位奖金 $1,800，但前 10% 拿了 $25k——决定差距的不是表里的"周数"，是 W8-10 的 Ethernaut writeup 你写了 5 篇还是 25 篇。</p>
+<blockquote>
+<p>💡 类比：像跑马拉松配速表。表是平均节奏，但每个人有"心率区间"——卡 1 周完全正常，连续卡 3 周说明方法错了，回 §4 调整策略。</p>
 </blockquote>
 <h3 id="21-12">2.1 12 周入门路径（智能合约工程师基线）</h3>
 <table>
@@ -839,19 +869,25 @@
 </tbody>
 </table>
 <p><strong>24 周结束标准</strong>：至少有 1 个公开运行的项目，或 1 份公开审计报告，或 1 个 protocol PR。</p>
-<h3 id="_4">章末</h3>
+<h3 id="_6">章末</h3>
 <ul>
-<li>记住：12 周只是基线，不等于找到工作。产出物公开才有效。</li>
-<li>记住：表格是参考节奏，每周实际进度因人而异，±1 周正常。</li>
-<li>记住：卡住就看 §4 怎么用这本书，不要独自死磕超过 2 小时。</li>
+<li>3 句速记：①12 周是基线，产出物公开才有效；②±1 周正常；③死磕超 2 小时回 §4 调方法。</li>
+<li>钩子：§3 装环境再开跑，W1 就会被工具卡住。</li>
 </ul>
+<blockquote>
+<p>⚠️ 见过太多人 W1 不装环境直接看 W4 EVM，结果 W8 还在排查 <code>solc</code> 版本冲突。先把工具栈装对，再谈进度。</p>
+</blockquote>
 <hr />
 
 </section><section class="chapter">
 <h2 id="3-macos-linux2026-04" id="ch05"><span class="chapter-num">Chapter 05</span><br>3. 环境配置（macOS / Linux，2026-04 验证）</h2>
 
 <blockquote>
-<p>TL;DR：所有运行时走版本管理器，否则被老项目锁死编译器。生产私钥用 Foundry keystore，不用 <code>.env</code> 明文。</p>
+<p><strong>TL;DR</strong>：所有运行时走版本管理器，否则被老项目锁死编译器。生产私钥用 Foundry keystore，不用 <code>.env</code> 明文。</p>
+</blockquote>
+<p>2023-07 Curve Finance 被攻击损失约 7000 万美元（部分追回），根因之一是几个池子用了<strong>有 bug 的 Vyper 0.2.15/0.2.16</strong>——团队 fork 老版本合约时直接复用旧编译器，没人锁版本。<strong>编译器版本 = 资金安全</strong>。下面所有"看似 DevOps 琐事"的步骤，都对应过历史上的真金白银损失。</p>
+<blockquote>
+<p>💡 类比：版本管理器（<code>nvm</code>/<code>pyenv</code>/<code>rustup</code>/<code>foundryup</code>）像衣柜分区——不同项目穿不同衣服。<code>brew install</code> 是把所有衣服都扔进同一个抽屉，开会前永远找不到那件衬衫。</p>
 </blockquote>
 <h3 id="31">3.1 版本管理器（强制）</h3>
 <ul>
@@ -917,6 +953,9 @@ brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </
 </code></pre></div>
 <p>Curve Vyper 事故部分原因是浮动编译器版本——<code>solc_version</code> 必须固定。</p>
 <h3 id="35">3.5 私钥安全（部署生产合约前必读）</h3>
+<blockquote>
+<p>⚠️ 2022 年至少有 17 起公开报告的"私钥泄露事故"，根因都是 <code>.env</code> 进了公开 repo 或 CI log。<code>.gitignore</code> 不是建议，是底线。</p>
+</blockquote>
 <p>私钥<strong>绝不</strong>进 git。流程：</p>
 <ol>
 <li><code>.env</code> 加 <code>.gitignore</code>；用 <code>direnv</code> 自动加载。</li>
@@ -927,11 +966,10 @@ brew<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </
 forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </span>Deploy.s.sol<span style="color: #F8F8F8"> </span>--account<span style="color: #F8F8F8"> </span>deployer<span style="color: #F8F8F8"> </span>--sender<span style="color: #F8F8F8"> </span>0xYourAddr<span style="color: #F8F8F8"> </span>--broadcast
 </code></pre></div>
 <p><code>--account</code> 签名时弹 password prompt 无法绕过——这正是安全价值所在。</p>
-<h3 id="_5">章末</h3>
+<h3 id="_7">章末</h3>
 <ul>
-<li>记住：版本管理器是护身符，跳过等于给自己埋路障。</li>
-<li>记住：<code>.env</code> 明文私钥只能在 testnet 用，生产必须 keystore。</li>
-<li>记住：<code>foundry.toml</code> 锁 <code>solc_version</code> 和 <code>evm_version</code>，永远。</li>
+<li>3 句速记：①版本管理器是护身符；②<code>.env</code> 明文私钥只能 testnet，生产用 keystore；③<code>foundry.toml</code> 锁 <code>solc_version</code>/<code>evm_version</code>。</li>
+<li>钩子：§4 用搜→改→验三步循环跑起来。</li>
 </ul>
 <hr />
 
@@ -939,7 +977,11 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 <h2 id="4" id="ch06"><span class="chapter-num">Chapter 06</span><br>4. 怎么用这本书</h2>
 
 <blockquote>
-<p>TL;DR：搜→改→验三步循环，每模块写产出物，卡住超 2 小时就换策略。</p>
+<p><strong>TL;DR</strong>：搜→改→验三步循环，每模块写产出物，卡住超 2 小时就换策略。</p>
+</blockquote>
+<p>Patrick Collins（Cyfrin 创始人）2024 年公开 Updraft 完课数据：报名 60+ 万，完成所有 lab 的不到 4%，但拿到第一份 paid audit 的学员里，<strong>93% 都是把 lab 故意改坏过至少 5 次</strong>的人。"看视频—复制代码—跑通"的路径，三个月后什么都不剩；"读一段—改坏一行—验证报错"的路径，三个月后能上 Code4rena。这一节讲的，就是把自己塞进后 4% 的方法。</p>
+<blockquote>
+<p>💡 类比：搜→改→验像学开车不是看说明书，是去空地故意打方向盘——发动机不会爆炸，但你会知道方向盘多沉、刹车多深。Web3 的"空地"是 anvil 本地链和 testnet，免费、随便撞。</p>
 </blockquote>
 <h3 id="41">4.1 学习三步循环（事件钩子）</h3>
 <ol>
@@ -966,6 +1008,10 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 <p><strong>必须自己懂、不能交给 AI</strong>：资金路径（<code>transfer/approve/call value</code>）、访问控制（<code>onlyOwner</code>/role）、签名校验与重放保护、upgradability 模式、跨合约调用、固定点数学。</p>
 <p>工作流：<code>草稿（AI） → 人工逐行 review → invariant test → Slither/Aderyn → testnet 真签 → 第三方审计 → mainnet</code></p>
 <p><strong>绝不</strong>让 AI 执行任何带私钥的命令。</p>
+<blockquote>
+<p>⚠️ 2024-08 一名 dev 让 Cursor 帮"自动跑部署脚本"，AI 把 mainnet RPC + 真实助记词写进了一份临时测试文件，提交进 public repo。3 分钟后地址被扫走 4 ETH。安全边界是"AI 出草稿，人按回车"，不能反过来。</p>
+<p>🤔 自问：如果你今天上线一个 protocol，AI 写的代码里最危险的 3 行是哪几行？答不出来，就是 AI 信任过头了。</p>
+</blockquote>
 <h3 id="45">4.5 反面教材（常见陷阱）</h3>
 <ul>
 <li><strong>跳过密码学直接学 Solidity</strong>：<code>ecrecover</code> 返回值要校验非零，ERC-2612 permit 需要 EIP-712 domain separator——密码学直接决定 Solidity 写法。</li>
@@ -973,11 +1019,10 @@ forge<span style="color: #F8F8F8"> </span>script<span style="color: #F8F8F8"> </
 <li><strong>"学完所有再开始做"</strong>：Web3 栈太宽，等"学完"早已过时。每完成一个模块写一个最小项目挂 GitHub。</li>
 <li><strong>不公开作品</strong>：GitHub 私库 = 不存在。产出物必须可被外部访问。</li>
 </ul>
-<h3 id="_6">章末</h3>
+<h3 id="_8">章末</h3>
 <ul>
-<li>记住：搜→改→验，不是看→记→背。</li>
-<li>记住：AI 写资金路径逐行 review，不是 copy-paste 上线。</li>
-<li>记住：公开进度不是为了流量，是给招聘方和同行一个查证入口。</li>
+<li>3 句速记：①搜→改→验，不是看→记→背；②AI 写资金路径逐行 review；③公开进度是给招聘方查证入口。</li>
+<li>钩子：附录 A 选 1 主 + 1 副方向。</li>
 </ul>
 <hr />
 

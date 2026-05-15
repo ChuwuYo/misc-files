@@ -652,7 +652,9 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 </tr>
 </tbody>
 </table>
-<p>工程上还要两个：<strong>Knowledge Soundness</strong>（prover 真的知道 witness，不只是猜；反例：光证明"存在 x 满足 P" 不够；要证明"你算得出 x"——extractor 能从 prover 提取 witness，否则 prover 可能在猜）和 <strong>Succinctness</strong>（proof 短、verifier 快——SNARK 里的 S）。</p>
+<p>工程上还要两个性质，理解它们能少踩很多坑。</p>
+<p><strong>Knowledge Soundness（知识可靠性）</strong>：光证「存在 x 满足 P(x)」还不够——比如「存在 x 使 x² = 4」，谁都知道答案是 ±2，prover 没掏出任何「知识」。我们要的是更强的「你真的算得出 x」。形式化定义靠 extractor：存在一个算法，能从能跑通的 prover 里把 witness 提取出来；如果不能，那 prover 就是在猜。Tornado Cash 这类隐私池靠的就是 KS——证明你「持有」某 secret，而不是「存在某 secret」。</p>
+<p><strong>Succinctness（简洁性）</strong>：proof 短（≤ 几 KB）+ verifier 快（≤ 几十 ms），这就是 SNARK 名字里的 <strong>S</strong>（Succinct）。反例：直接发整段执行轨迹给 verifier 也能验，但既不短也不快，就不算 SNARK。SNARK proof 约 200B-1KB，STARK proof 约 50-200KB——都算 succinct，但前者更激进。</p>
 <h3 id="snark-vs-stark">SNARK vs STARK：一张对比表</h3>
 <table>
 <thead>
@@ -691,6 +693,7 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 </tbody>
 </table>
 <blockquote>
+<p>💡 <strong>记忆口诀</strong>：<strong>完备性</strong>让好人能用，<strong>可靠性</strong>让坏人骗不过，<strong>零知识</strong>让旁观者学不到。再加 <strong>KS</strong>（你真的知道）+ <strong>Succinctness</strong>（proof 又短又快验）——五件套凑齐才叫工程级 ZK。</p>
 <p>Fiat-Shamir 变换和多项式承诺的数学推导见附录 A；under-constrained 与 Fiat-Shamir 漏洞剖析见附录 H。</p>
 </blockquote>
 <h3 id="60">60 秒电梯演讲</h3>
@@ -739,6 +742,9 @@ Week 11-12: 做一个端到端项目（zk-airdrop / proof-of-solvency / zkML dem
 <li>2026 趋势：「合规友好隐私」——可证「资金不来自 OFAC 制裁地址」同时保留隐私。</li>
 </ul>
 <h3 id="5proof-of-solvency-proof-of-reservespor">场景 5：Proof of Solvency / Proof of Reserves（PoR）</h3>
+<blockquote>
+<p><strong>场景 5 速读</strong>：FTX 崩盘后，交易所需向用户证「资产 ≥ 负债」。技术从 v1 朴素 Merkle Sum Tree → v2 zkPoR（加 ZK range proof 禁负余额）→ v3 链上结算实时化。<strong>赶时间的读者只看本节这两行即可跳到场景 6</strong>；对 PoR 工程感兴趣再往下读三代演进。</p>
+</blockquote>
 <p>FTX 崩盘后，交易所需证明资产 ≥ 用户负债。用 Merkle Sum Tree + ZK proof，每个用户能验自己的余额被包含、总和正确，但看不到别人余额。Binance、Kraken、OKX 均已部署。</p>
 <h4 id="ftx-por">行业背景：FTX 之后为什么必须做 PoR</h4>
 <p>2022-11 FTX 在 72 小时内从「全球第二大 CEX」变成全员维权对象。事后审计显示：FTX 把用户存款挪给 Alameda 做杠杆，链上钱包余额远低于内部账本负债。社区共识由此形成——<strong>CEX 必须以可验证的方式证明：链上资产 ≥ 用户负债总和</strong>，而且证明频率要远高于传统季度审计。这套机制叫 Proof of Reserves（PoR）/ Proof of Solvency。</p>
@@ -999,6 +1005,9 @@ snarkjs<span style="color: #F8F8F8"> </span>groth16<span style="color: #F8F8F8">
   链上 Solidity verifier 验 proof（~250B，~3ms）
 </code></pre></div>
 <p>代价：zkVM 比手写电路慢约 3–5 倍（2026 年数据）（限定：通用 RV32IM 程序；EVM 区块证明上 SP1 Hypercube 已反超手写电路）。收益：你不用懂电路、不用调约束、不用担心 under-constrained。</p>
+<blockquote>
+<p>💡 <strong>何时选 zkVM、何时手写电路</strong>：业务逻辑复杂、迭代快、团队没有密码学背景 → zkVM（写 Rust）；电路稳定、proof 要最小、gas 要最省 → 手写 Circom/Noir（写电路）。大多数应用工程师永远不会脱离 zkVM 这一层——这是好事。</p>
+</blockquote>
 <h3 id="sp1-vs-risc0">SP1 vs Risc0：选型速查</h3>
 <table>
 <thead>
@@ -1114,6 +1123,8 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 <blockquote>
 <p><strong>TL;DR</strong>：zkML = 证明 ML 推理结果来自特定模型；zkBridge = 用 ZK light client 替代多签跨链。两者都是「用 ZK 替代信任第三方」的典型范式。</p>
 </blockquote>
+<h3 id="_22">钩子</h3>
+<p>跨链桥三大事故合计被偷了 11 亿美元——Ronin $625M、Wormhole $326M、Nomad $190M——共同点都是多签私钥被攻破，「m-of-n 个人不勾结」的信任假设在巨额激励面前一次次失效。同一时间，AI Agent 开始在链上做决策（信用评分、反欺诈、撮合），用户怎么知道你真的用了宣称的那个模型，而不是一个对你有利的替代品？这两个问题表面无关，底层是同一个：<strong>把人/信任替换成数学</strong>。zkML 与 zkBridge 就是给这俩问题的同一类答案。</p>
 <h3 id="zkml-ml">zkML：证明 ML 推理的正确性</h3>
 <p><strong>问题</strong>：dApp 用 ML 模型做决策（如信用评分、反欺诈）时，用户怎么知道你真的用了宣称的模型，而不是一个对你有利的替代品？</p>
 <p><strong>zkML 的答案</strong>：把模型权重固定（commit），把推理计算变成 ZK 电路，proof 证明「输出来自这个特定模型对这个特定输入的推理」。</p>
@@ -1192,7 +1203,7 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 <blockquote>
 <p>证明系统深度对比（SNARK/STARK/Plonk/Halo2/Plonky3 的内部机制）见附录 B；zkML benchmark 详细数据见附录 E。</p>
 </blockquote>
-<h3 id="_22">章末</h3>
+<h3 id="_23">章末</h3>
 <p>场景直觉清楚了。下一章动手：三个实战从浅到深——Circom Poseidon 电路 → Noir 等价实现 → SP1 Fibonacci 链上验证。</p>
 <hr />
 
@@ -1202,12 +1213,15 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 <blockquote>
 <p><strong>TL;DR</strong>：三个实战按复杂度递增。Circom = 最接近电路金属的工具；Noir = 现代 ZK DSL；SP1 = 不写电路直接写 Rust。</p>
 </blockquote>
-<h3 id="_23">钩子</h3>
+<h3 id="_24">钩子</h3>
 <p>Tornado Cash 的核心电路只有 30 行 Circom——证明「我知道某个 secret，使 Poseidon(secret) 等于 Merkle 树里的某个叶子」，但不暴露 secret。本章把这个电路从零跑到部署。</p>
+<blockquote>
+<p>💡 <strong>三个实战怎么挑</strong>：时间紧只跑一个 → <strong>SP1 实战 3</strong>（不写电路、最贴近现代工程）；想看 ZK 全栈 → <strong>Circom 实战 1</strong>（从 ceremony 到 Solidity verifier 全流程，30 分钟）；项目要选语言 → <strong>Noir 实战 2</strong>（对比 Circom 体验差）。三者代码都在 <code>code/</code> 目录，可独立跑。</p>
+</blockquote>
 <h3 id="1circom-22-snarkjs-07">实战 1：Circom 2.2 + snarkjs 0.7 端到端</h3>
 <p>设想 Alice 的需求：她的钱包给 Tornado Cash fork 存了 1 ETH，现在想取出来到一个全新地址。她要向合约证明「我知道某个 secret，使 Poseidon(secret) 等于这棵 Merkle 树里的某个叶子」——但不能告诉合约这个 secret 是什么，否则别人就能撞库。这就是 ZK 隐私池的核心电路。本章把这个 Poseidon 原像证明从 0 跑到部署：Phase 1 ceremony → 编译 → 生成 witness → 出 proof → Solidity verifier 上 Anvil。30 分钟内你能在自家电脑上完成 Tornado Cash 之类项目用的同款流水线。</p>
 <p>目标：实现「我知道 x 使 Poseidon(x) = y」并把 verifier 部署到本地以太坊网络。完整代码在 <code>code/circom-poseidon/</code>。</p>
-<h4 id="_24">环境准备</h4>
+<h4 id="_25">环境准备</h4>
 <p>依赖：Node.js 22+、Rust 1.80+、circom 2.2.2、Foundry。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 1. circom 用 Cargo 装（不要用 npm 上的同名包）</span>
 git<span style="color: #F8F8F8"> </span>clone<span style="color: #F8F8F8"> </span>https://github.com/iden3/circom.git
@@ -1226,7 +1240,7 @@ npm<span style="color: #F8F8F8"> </span>install<span style="color: #F8F8F8"> </s
 <span style="color: #8F5902; font-style: italic"># 4. Foundry（部署 Solidity verifier 到本地 Anvil）</span>
 curl<span style="color: #F8F8F8"> </span>-L<span style="color: #F8F8F8"> </span>https://foundry.paradigm.xyz<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">|</span><span style="color: #F8F8F8"> </span>bash<span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">&amp;&amp;</span><span style="color: #F8F8F8"> </span>foundryup
 </code></pre></div>
-<h4 id="_25">电路文件</h4>
+<h4 id="_26">电路文件</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>pragma circom 2.2.2;
 
 include &quot;node_modules/circomlib/circuits/poseidon.circom&quot;;
@@ -1254,7 +1268,7 @@ component main { public [expectedHash] } = PoseidonPreimage(2);
 <li><code>===</code>：纯约束等号；</li>
 <li><code>component main { public [...] }</code>：必须显式列出公开信号。</li>
 </ul>
-<h4 id="_26">完整流水线</h4>
+<h4 id="_27">完整流水线</h4>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>circom<span style="color: #F8F8F8"> </span>poseidon_preimage.circom<span style="color: #F8F8F8"> </span>--r1cs<span style="color: #F8F8F8"> </span>--wasm<span style="color: #F8F8F8"> </span>--sym<span style="color: #F8F8F8">  </span><span style="color: #8F5902; font-style: italic"># 编译</span>
 snarkjs<span style="color: #F8F8F8"> </span>powersoftau<span style="color: #F8F8F8"> </span>new<span style="color: #F8F8F8"> </span>bn128<span style="color: #F8F8F8"> </span><span style="color: #0000CF; font-weight: bold">12</span><span style="color: #F8F8F8"> </span>pot12_0000.ptau<span style="color: #F8F8F8"> </span>-v
 snarkjs<span style="color: #F8F8F8"> </span>powersoftau<span style="color: #F8F8F8"> </span>contribute<span style="color: #F8F8F8"> </span>pot12_0000.ptau<span style="color: #F8F8F8"> </span>pot12_0001.ptau<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
@@ -1273,7 +1287,7 @@ anvil<span style="color: #F8F8F8"> </span><span style="color: #000; font-weight:
 forge<span style="color: #F8F8F8"> </span>create<span style="color: #F8F8F8"> </span>verifier.sol:Groth16Verifier<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span>http://localhost:8545<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">\</span>
 <span style="color: #F8F8F8">  </span>--private-key<span style="color: #F8F8F8"> </span>0xac0974...80
 </code></pre></div>
-<h4 id="_27">生产里别这样做</h4>
+<h4 id="_28">生产里别这样做</h4>
 <ul>
 <li><strong>不要自己跑 Phase 1</strong>：直接用 Hermez Powers of Tau（<code>powersOfTau28_hez_final_*.ptau</code>）或以太坊 KZG ceremony 输出；</li>
 <li><strong>Phase 2 至少 5-10 个独立、不可勾结的贡献者</strong>；</li>
@@ -1446,14 +1460,11 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 </tbody>
 </table>
 <hr />
-<h3 id="_28">章末</h3>
-<p>三个实战跑完，你的工具链能力：</p>
+<h3 id="_29">章末</h3>
 <ul>
-<li>Circom：电路工程，直接对接密码学底层，适合最小 proof 上链；</li>
-<li>Noir：现代 ZK DSL，语法接近 Rust，适合新项目；</li>
-<li>SP1 zkVM：不写电路，适合把现有 Rust 逻辑快速做成可证明程序。</li>
+<li>3 句速记：①Circom 对接电路底层，适合最小 proof 上链；②Noir = 现代 ZK DSL，语法接近 Rust；③SP1 zkVM 不写电路，把 Rust 逻辑快速做成可证明程序。</li>
+<li>钩子：下章 ZK 安全红线 + 进阶路线图。</li>
 </ul>
-<p>下一章：ZK 安全红线、练习题、进阶路线图。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1462,9 +1473,12 @@ cargo<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </spa
 <blockquote>
 <p><strong>TL;DR</strong>：USENIX Security 2024 SoK：≈95% 真实 ZK 漏洞来自 under-constrained。会看漏洞，比会写电路更值钱。</p>
 </blockquote>
-<h3 id="_29">钩子</h3>
+<h3 id="_30">钩子</h3>
 <p>Trail of Bits 在 PLONK / Bulletproofs / Spartan 实现里发现 frozen heart 漏洞——不是算法错，是 Fiat-Shamir 少 hash 了一项。ZK 的安全边界不在数学，在「每一行代码是否真的约束了你以为约束了的东西」。</p>
-<h3 id="_30">三大安全红线</h3>
+<h3 id="_31">三大安全红线</h3>
+<blockquote>
+<p>💡 <strong>一句话记住三条红线</strong>：<strong>under-constrained</strong>（约束写漏）、<strong>Fiat-Shamir 误用</strong>（hash 漏 absorb）、<strong>AI 写电路</strong>（前两条的高发源）。前两条让恶意 prover 能伪造 proof，第三条让前两条更容易发生。</p>
+</blockquote>
 <h4 id="1under-constrained">红线 1：under-constrained（最高频）</h4>
 <p>Circom 的 <code>&lt;--</code> 语法：赋值但不约束。合法 prover 跑得通，恶意 prover 可以填入任意值。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>// 危险：只赋值不约束
@@ -1483,7 +1497,7 @@ out === 1 - in;
 <p><strong>铁律</strong>：永远不自己写 Fiat-Shamir，用已审计的 transcript 库（merlin、Halo2/Plonky3 transcript），每次 absorb 带唯一字段名。</p>
 <h4 id="3ai">红线 3：AI 写电路不可靠</h4>
 <p>LLM 写的 ZK 电路 90% 概率有 under-constrained 漏洞。原因：under-constrained 不会让 proof 生成失败，LLM 没有这个「会 panic 的反馈信号」。<strong>AI 可以辅助调试、解释告警，但不能替代人工审计。</strong></p>
-<h3 id="_31">四道练习题</h3>
+<h3 id="_32">四道练习题</h3>
 <p><strong>练习 1：Merkle Proof + Poseidon（Circom）</strong></p>
 <p>写电路证明「我知道叶子 leaf 和长度 20 的 Merkle path，使叶子 hash 到 root」。</p>
 <ul>
@@ -1542,20 +1556,17 @@ out === 1 - in;
 </tr>
 </tbody>
 </table>
-<h3 id="_32">章末</h3>
-<p>主线读完了。继续深入请看：</p>
+<h3 id="_33">章末</h3>
 <ul>
-<li><strong>附录 A</strong>：多项式承诺数学（KZG/FRI/IPA 推导）</li>
-<li><strong>附录 B</strong>：SNARK/STARK/Plonk/Halo2/Plonky3 深度对比</li>
-<li><strong>附录 H</strong>：Fiat-Shamir / under-constrained 漏洞剖析（推荐在 L3 时读）</li>
+<li>3 句速记：①主线已通，深入看附录 A（PCS 数学）／B（证明系统对比）／H（漏洞剖析）；②L3 阶段必读附录 H；③生产 ZK 必须经专业审计。</li>
+<li>钩子：下一站附录 + 真实审计入门。</li>
 </ul>
-<p>生产 ZK 必须经专业审计（Trail of Bits / Veridise / zkSecurity / Cantina）。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="9" id="ch10"><span class="chapter-num">Chapter 10</span><br>第 9 章 进一步阅读与参考资料</h2>
 
-<h3 id="_33">推荐学习路线（从浅到深）</h3>
+<h3 id="_34">推荐学习路线（从浅到深）</h3>
 <ol>
 <li><strong>Vitalik zk-SNARK 三连发</strong>（2016-2017）—— QAP、配对、zk-SNARK Under the Hood；</li>
 <li><strong>Jordi Baylina Circom 文档</strong> + ZK-MOOC（UC Berkeley）视频；</li>
@@ -1567,7 +1578,7 @@ out === 1 - in;
 <li><strong>Trail of Bits ZK audit 文章合集</strong>（Axiom Halo2 deep dive 2025-05、circomspect 工具）；</li>
 <li><strong>ZKHack puzzle</strong>：做一遍所有题，是 L3→L4 最快路径。</li>
 </ol>
-<h3 id="_34">关键参考资料</h3>
+<h3 id="_35">关键参考资料</h3>
 <p><strong>论文</strong></p>
 <ul>
 <li>KZG10：<a href="https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf">https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf</a></li>
@@ -1625,7 +1636,10 @@ open(f, z) -&gt; (v, π)    # 声称 f(z)=v 并附证明
 verify(cm, z, v, π) -&gt; bool
 </code></pre></div>
 <h3 id="a3-kzg10">A.3 KZG10：除法构造</h3>
-<p><strong>配对直觉</strong>：e: G1×G2→GT 满足 e([a]P,[b]Q) = e(P,Q)^(ab)——把"群指数"放进配对里能验等式，是 KZG 的灵魂。</p>
+<blockquote>
+<p>💡 <strong>一句话直觉</strong>：「我有一个多项式 p(X)，p(z)=v。证据是商多项式 q(X)=(p(X)-v)/(X-z) 能整除——只有 p(z)=v 时它才能整除。」KZG 把这个整除事实压成 48 字节。</p>
+<p>💡 <strong>配对在干什么</strong>：椭圆曲线给定 [a]P=a·P 之后，从 [a]P 反推 a 是不可行的（离散对数难）。但配对 e: G1×G2→GT 满足 e([a]P, [b]Q)=e(P,Q)^(ab)——它能验「这两个加密的数相乘等于那第三个加密的数」。直觉：<strong>配对是「乘法的密封信封」</strong>，你看不到信封里的数，但能验它们的乘积关系。KZG verifier 的最后一步配对等式，本质就是「验 q(X)·(X-z) 在 τ 点等于 p(X)-v」——一次配对，48 字节 proof。</p>
+</blockquote>
 <p>给定 p(X)，证明 p(z)=v：</p>
 <ol>
 <li>构造商多项式 q(X) = (p(X) − v) / (X − z)（p(z)−v=0 保证整除）；</li>
@@ -1633,8 +1647,16 @@ verify(cm, z, v, π) -&gt; bool
 <li>Verifier 检查配对等式：e([p]−[v], H) =? e([q], [τ]H−[z]H)。</li>
 </ol>
 <p>proof = 1 个曲线点（~48B），verifier 时间 ~3ms（1 次配对）。代价：Trusted Setup（τ 泄露可伪造任意 proof）。</p>
+<blockquote>
+<p>💡 <strong>τ 为什么必须销毁</strong>：如果 prover 知道 τ，他可以构造一个假 p(X)、假 q(X) 通过配对验证——因为他能在 τ 点凑出任何想要的值。这就是为什么 KZG ceremony 要 14 万人参与：只要一个人诚实销毁，τ 就重建不出来。</p>
+</blockquote>
 <h3 id="a4-fri">A.4 FRI：折叠证明低次性</h3>
 <p>FRI（Fast Reed-Solomon IOP of Proximity）：纯哈希，抗量子，无 setup。</p>
+<blockquote>
+<p>💡 <strong>一句话直觉</strong>：「证明 f(X) 是低次多项式」难做；但「证明 f 折一半后还是低次」简单。FRI 反复把多项式对折，每次次数减半，最后剩一个常数——常数显然是 0 次，等于完成了递归证明。</p>
+<p>💡 <strong>为什么对折保留低次性</strong>：把 deg-n 多项式按奇偶项拆 f(X) = f_even(X²) + X·f_odd(X²)，新函数 f'(Y) = f_even(Y) + β·f_odd(Y) 的次数 ≤ n/2。如果原 f 是低次的，f' 也是；如果原 f 是「假装低次」的（其实有高次项），随机 β 几乎必然把伪造痕迹放大——这就是 Reed-Solomon proximity testing 的力量。</p>
+<p>💡 <strong>类比</strong>：像「把一本厚书每次撕一半，最后剩一页」。如果原书真是一本数学书，每一半都还是数学书；如果中间夹了一页假货，对折时随机抽查能发现错位——查 log 次就够了。</p>
+</blockquote>
 <p><strong>FRI 关键</strong>：commit phase（多轮折叠把 deg n 多项式压到常数）+ query phase（验证者随机抽点验一致性）；安全来自 Reed-Solomon proximity testing，不是单纯次数减半。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>轮 0: f(X) = f_even(X²) + X·f_odd(X²)
 轮 1: Verifier 给随机 β；新函数 f&#39;(Y) = f_even(Y) + β·f_odd(Y)（次数减半）
@@ -1642,6 +1664,9 @@ verify(cm, z, v, π) -&gt; bool
 轮 log d: 剩下常数
 </code></pre></div>
 <p>每轮 Verifier 做 spot check（Merkle 路径 + 折叠关系）。proof 大小 O(log² d) hash，~几十 KB。无 setup + 抗量子，SP1/Risc0/STARK 的默认 PCS。</p>
+<blockquote>
+<p>💡 <strong>FRI vs KZG 一对比</strong>：KZG 把证据藏在「商多项式整除」里，靠配对验；FRI 把证据藏在「反复对折后变常数」里，靠 Merkle 抽查验。前者要 Trusted Setup 但 proof 极小（48B）；后者无 setup 但 proof 几十 KB——这就是 SNARK 和 STARK 在 PCS 层的根本分叉。</p>
+</blockquote>
 <h3 id="a5-ipa-bulletproofs">A.5 IPA / Bulletproofs</h3>
 <p>递归折半证明内积 ⟨a,b⟩=c，proof 2·log(d) 个点，无 setup，verifier O(d) 慢。Halo2 Zcash 主线（Pasta 曲线）、Mina 使用。</p>
 <h3 id="a6-brakedown-pcs">A.6 Brakedown：线性时间 PCS</h3>

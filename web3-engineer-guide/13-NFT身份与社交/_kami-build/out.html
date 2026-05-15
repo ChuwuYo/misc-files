@@ -584,7 +584,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>ERC-6551 一句类比</strong>：普通 NFT 是数字所有权证书；ERC-6551 让这张证书自己有个钱包——证书卖给别人，钱包里的东西也跟着走。</p>
+<p><strong>ERC-6551 一句类比</strong>：普通 NFT 是数字所有权证书；ERC-6551 让这张证书自己有个钱包——证书卖给别人，钱包里的东西也跟着走。再形象一点：你买的是一只 BAYC 猴子，猴子背后挂着一个保险柜，柜里可能有 100 USDC + 一把游戏神剑 + 一张 POAP；猴子换主人，保险柜整柜易手，零额外签名、零授权迁移。</p>
 <h3 id="12">1.2 先到架构图再看代码</h3>
 <figure><img src="diagram-aa3c5292c4.png" alt="mermaid diagram"></figure>
 
@@ -620,6 +620,7 @@
 </tr>
 </tbody>
 </table>
+<p><strong>章末</strong>：三个标准的差别可以用一句话装下——721 给"每件独一无二的东西"，1155 给"一店多货架"，6551 给"NFT 自己有钱包"。选错标准远比写错代码痛——选定后，下一章先把最常用的 ERC-721 跑起来。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1023,7 +1024,10 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 <span style="color: #8F5902; font-style: italic">// 注意：eas-sdk 2.7+ 已封装：`const uid = await tx.wait();` 直接拿 UID 字符串</span>
 </code></pre></div>
 <h3 id="62-gate">6.2 链上 Gate（合约验证）</h3>
-<p><strong>建议先读 §6.3 EAS schema/attest/revoke</strong>——直觉建立后再看本节合约 gate。</p>
+<p><strong>先建直觉</strong>：上一节我们盖了一张"alice 给 bob 写了条 score=95 的 attestation"——它躺在 EAS 合约里，UID 是它的指纹。本节解决的问题是：<strong>任何第三方合约怎么凭这枚指纹决定"放不放 bob 进门"</strong>。四个校验缺一不可：schema 是不是我认的那个模板、attester 是不是我信的那个人、有没有过期、有没有被撤销。把这四点想成机场入境四道门：护照类型 → 签发国 → 有效期 → 是否在黑名单。</p>
+<blockquote>
+<p>提示：建议先回看 §6.1 的 schema/attest 流程把"盖章"的画面建立起来，再来读合约 gate 会更顺。</p>
+</blockquote>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>IEAS<span style="color: #000; font-weight: bold">,</span><span style="color: #F8F8F8"> </span>Attestation<span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span>from<span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&quot;@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol&quot;</span><span style="color: #000; font-weight: bold">;</span>
 
 <span style="color: #204A87; font-weight: bold">contract</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00">ReputationGate</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span>
@@ -1129,6 +1133,12 @@ attest: by alice, recipient=0xbob, score=95, reason=&quot;great PR review&quot;
 </code></pre></div>
 <h3 id="74-mini-apps-frames-v2">7.4 Mini Apps（原 Frames v2）</h3>
 <p>Frames 2024-01 推出，2025 初重命名 Mini Apps（<a href="https://docs.farcaster.xyz/reference/frames-redirect">docs.farcaster.xyz/reference/frames-redirect</a>；<a href="https://miniapps.farcaster.xyz/docs/specification">miniapps.farcaster.xyz/docs/specification</a>）。v1（OG meta tags + server-rendered，2025-Q1 deprecated）→ v2 / Mini Apps（in-app browser 加载任意 web app，附录 D 实现）。Mini App 内置 fid + verified eth address、钱包连接、cast context、notification permission。</p>
+<blockquote>
+<p>⚠️ <strong>Mini App 三个最容易踩的坑</strong>：
+- <strong>v1 / v2 meta tag 混用</strong>：<code>fc:frame</code> 是 v1（已 deprecated），新项目只能用 <code>fc:miniapp</code>，否则 Warpcast unfurler 显示旧式按钮甚至不渲染。
+- <strong>忘记 <code>sdk.actions.ready()</code></strong>：splash 屏永远转圈不消失——Warpcast 等这个调用才知道你 app 加载完了。
+- <strong>以为 fid + verified address 等于身份证</strong>：fid 可以转、custody address 可以换；高价值场景仍需结合 SIWE 或 EAS 二次确认。</p>
+</blockquote>
 <p><strong>fid 的社交特殊性</strong>：转 fid 给别人时全网 follow 跟着走，这是社交语义的路径依赖，也是 Farcaster 用户极少 transfer fid 的原因。</p>
 <p><strong>章末</strong>：Farcaster 是目前工程师最容易上手的 Web3 社交协议，Mini App 是最快的分发渠道。Lens v3 / Lens Chain 详见附录 E。</p>
 <hr />

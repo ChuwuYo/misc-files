@@ -169,6 +169,8 @@ if __name__ == "__main__":
 
 经验数据：在金融年报这类「有大量表格的 PDF」上，PyMuPDF 直接抽文字，下游 RAG 准确率约 55%；换 Docling 之后能到 78%。**解析阶段的天花板，决定了 RAG 整体的天花板**。
 
+> **生产提醒**：客户上传的 PDF 真实分布远比 demo 复杂——加密/受密码保护、扫描分辨率 < 150 DPI、嵌套图片表格、Adobe LiveCycle 表单、PDF/A-3 带附件、文件头损坏但 PyMuPDF 仍能"半解析"。生产 ingest 必须有：(1) 解析前 magic-byte + pikepdf 健康检查；(2) 单文档解析超时（建议 60-120s，复杂年报会卡死整个 worker）；(3) 解析失败入死信队列而非静默丢；(4) OCR 走独立进程池，CPU 跑满会拖垮在线检索。Docling 在 GPU 上跑得动，CPU 上单页 5-15 秒，预算别忘算。
+
 ### 2.2 切分：五种切分策略对比
 
 切分（chunking）的核心矛盾：
@@ -316,9 +318,7 @@ doc_embedding = model.encode("订阅终止流程：登录后台...", prompt_name
 
 一个模型同时支撑 dense + sparse + late-interaction 三种检索路径，是 2024 年之后做混合检索的事实标准。
 
----
-
-## 4. 检索：从单一向量到混合 + 多向量
+> **生产提醒**：换 embedding 模型不是改一行 config。新旧模型向量不兼容、维度可能不同、归一化方式不同——必须全量重 embed 整个语料库。千万级 chunk 用 GPU 跑也要几小时到一天，期间得维护新旧两套索引做 dual-read（用旧的查、用新的灌），灰度切流量后才能下线旧索引。预算上还要算一次"迁移期内 collection 体积 × 2"的存储成本。任何"我们直接升级到 BGE-M3"的乐观估算，都没把这条迁移路径算进去。
 
 ### 4.1 向量检索的算法层
 
@@ -330,6 +330,8 @@ doc_embedding = model.encode("订阅终止流程：登录后台...", prompt_name
 工程经验：百万级文档 HNSW 够用；上亿级再考虑 IVF-PQ + 重排两段式。
 
 ### 4.2 BM25 / SPLADE：稀疏检索没死
+
+> 名词速通 · **Dense（稠密）vs Sparse（稀疏）检索**：dense = 上一节讲的 embedding 向量检索，每维都是浮点数（"稠密"），擅长理解语义；sparse = 像 BM25 那样的"关键词权重"向量，绝大多数维度是 0（"稀疏"），擅长精确匹配字面。**两者各有盲区，所以工业界标配是两条路一起跑再合并**（hybrid）。
 
 向量检索的弱点：**精确匹配差**。用户搜「错误码 ECONNREFUSED」，向量检索可能把别的"连接错误"召回到前面，把真正含 ECONNREFUSED 的文档排到第 30 名。
 
@@ -695,6 +697,11 @@ Level 2: 摘要的摘要
 **Contextual Retrieval 解法**：每个 chunk 入库前，让 LLM 写一段"situating context"——这个 chunk 在原文档里的上下文位置说明——拼到 chunk 前面，再去 embed。
 
 ```python
+# 注意：本段用 Anthropic SDK，不复用 §1.1 的 OpenAI client。
+# pip install anthropic
+import anthropic
+anthropic_client = anthropic.Anthropic()
+
 CONTEXTUAL_PROMPT = """<document>
 {whole_document}
 </document>
@@ -707,7 +714,7 @@ CONTEXTUAL_PROMPT = """<document>
 请写一段简短上下文（50-100 字），说明这个片段在整个文档里的位置和角色，让该片段单独被检索时也能被理解。只输出上下文，不要解释。"""
 
 def contextualize(whole_doc: str, chunk: str) -> str:
-    resp = client.messages.create(
+    resp = anthropic_client.messages.create(
         model="claude-haiku-4-5",  # 2025-10 发布；用便宜模型即可，配 prompt cache 把 whole_doc 缓住
         max_tokens=200,
         messages=[{"role": "user", "content": CONTEXTUAL_PROMPT.format(
@@ -1658,7 +1665,7 @@ L3 特别值得注意：Claude 的 prompt cache 让不变的部分（system prom
 - [ ] L1 + L3 缓存。
 - [ ] 成本监控（按 P95 / P99 看）。
 - [ ] 用户反馈通道（点踩按钮 → 自动入候选评估集）。
-- [ ] 危险查询过滤（PII 脱敏 / prompt injection 检测）。
+- [ ] 危险查询过滤（PII 脱敏 / Prompt 注入检测）。
 
 ---
 

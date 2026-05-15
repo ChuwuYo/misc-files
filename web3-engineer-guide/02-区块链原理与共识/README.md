@@ -26,6 +26,10 @@ N 个互不相识的节点，没有中央仲裁，怎么对一份一直在追加
 
 每个共识协议都是同一道题在不同维度上的取舍：有人花电费换稳（PoW），有人押币换快（PoS），有人用数学证明换严格（BFT）。读完这册你会发现这其实是同一首曲子，只是不同乐器在演奏。
 
+**类比**：共识协议像一桌人凑钱合租——谁来记账、记错了怎么办、有人耍赖怎么办。Web2 的解法是请个房东（中心化服务器）；Web3 的解法是这桌人自己定一套游戏规则，让作弊比老实更亏。
+
+**章末**：本册主线就一句话——**N 个互不信任的人怎么对一份账本达成一致**。后面 9 节每节讲一种答卷：PoW 烧电、PoS 押币、BFT 投票、HotStuff 流水线、Solana 拼时钟、finality 收尾。读到哪节卡住，先回这页对一下"它在解谁的问题"。
+
 ---
 
 ## 1. 拜占庭将军与三条不能绕开的定理
@@ -82,6 +86,10 @@ CAP 说"网络分区时一致性 C 与可用性 A 二选一"。这和 FLP 是两
 ## 2. 共识协议全景图
 
 > **TL;DR** 19 个协议出自共同祖先。主线详讲 5 个（Bitcoin PoW、Ethereum Gasper、Tendermint、HotStuff、Solana TowerBFT），其他 14 个见附录 A。
+
+**钩子**：拿着"共识协议"四个字去搜，能搜到几十种带英文缩写的名字——PBFT、HotStuff、Ouroboros、Avalanche、Tangle，看一圈头都晕。别慌：这些协议九成九都是 1989-1999 那几篇老论文的远房亲戚，只是换了新名字、换了新假设、换了新身份证。
+
+**类比**：共识协议谱系像编程语言——C、Java、Python 看上去差很远，但都从 ALGOL/Lisp 那条主线分叉出来。会读家谱就能"看一眼名字，猜出它属于哪一支、解了哪个老问题"。
 
 19 个协议听起来很多，但谱系树一画就清楚了。
 
@@ -149,6 +157,10 @@ graph TD
 | Avalanche (Snow*) | 抽样投票 | metastable | 概率终结（β 轮） | 1-2s | $5B+ |
 
 数据来源：各项目官方文档（Algorand pure-PoS 论文、Polkadot wiki、Aptos Baby Raptr 公告、Sui Mysticeti 公告、Hedera 官方文档），均访问 2026-04-27。
+
+> **提示**：读这张表的姿势——先盯"最终性"那列，看是概率/经济/绝对哪一种；再盯"分区时怎么办"（隐含在类别里），就能在 30 秒内定位它的工程取舍。
+
+**章末**：这张谱系图是后续章节的"地图"。遇到新链宣传"我们用了 XX 共识"，先在树上找到它的支系——PoW 看烧电、PoS 看罚没、BFT 看投票阶段——就知道该用哪套问题去拷问它。
 
 ---
 
@@ -427,6 +439,8 @@ sequenceDiagram
 
 > **TL;DR** BFT 协议把"块确认"做成多轮投票——PREPARE → PREVOTE → COMMIT，收齐 2f+1 签名才推进。Tendermint 是 PBFT 面向公链的改造版，选 safety 牺牲 liveness。
 
+**钩子**：1999 年 Castro 和 Liskov 在 OSDI 发了 PBFT，那是 BFT 真正能跑起来的第一个工程版本。但 PBFT 是为银行内网这种"30 个节点上限、网络稳定"的场景设计的——直到 2014 年 Jae Kwon 把它改造成 Tendermint，BFT 才第一次进了公链：Cosmos 至今跑着它的后裔 CometBFT。
+
 **类比**：BFT = 围城将军投票。每轮将军们广播投票，等到 2f+1 人投同一个目标，这步才推进。叛将最多 f 个，所以 quorum 2f+1 必然包含至少 f+1 个诚实将军——两组 quorum 必有诚实交集，不会通过矛盾决议。
 
 ### 6.1 Tendermint 三阶段
@@ -500,6 +514,8 @@ sequenceDiagram
 > **TL;DR** HotStuff 把 BFT 通信从 O(n²) 压到 O(n)，链式流水线让每 view 出一块。Aptos/Sui/Movement 都是它的工业化后代。
 
 **钩子**：2019 年 PODC，VMware Research 的 Maofan Yin 等发了 HotStuff，拿了当年 best paper。Facebook 用 LibraBFT（HotStuff 工业化版）启动 Libra/Diem，2022 年关闭后团队带代码创立了 Aptos 和 Sui。
+
+**类比**：PBFT 像 100 个人围一桌开会，每个人都得对其他 99 个人喊一遍自己的票（O(n²) 嗓子哑）。HotStuff 改成"所有人只跟主持人讲，主持人汇总后再一次性通报全场"——通信量直接砍到 O(n)。再加上流水线：上一议题刚进二读，下一议题就能开始一读，会议室一刻不闲。
 
 PBFT 在 100 个节点上跑一轮要发一万条消息（O(n²) = 10000），公网扛不住。HotStuff 的改进：
 

@@ -956,8 +956,9 @@
 <h2 id="4" id="ch05"><span class="chapter-num">Chapter 05</span><br>4. 签名 + 发送交易</h2>
 
 <blockquote>
-<p><strong>TL;DR</strong> 三种操作：<code>personal_sign</code>（文本签名）、<code>signTypedData</code>（EIP-712 结构化签名）、<code>sendTransaction</code>（发 ETH / 调合约）。全部从 <code>useWalletClient()</code> 拿到的 client 发起。</p>
+<p><strong>TL;DR</strong> 三种操作：<code>personal_sign</code>（文本签名）、<code>signTypedData</code>（EIP-712 结构化签名）、<code>sendTransaction</code>（发 ETH / 调合约）。全部从 <code>useWalletClient()</code> 拿到的 client 发起；写之前必先 <code>simulate</code>。</p>
 </blockquote>
+<p><strong>钩子</strong>：dApp 与钱包之间的"对话"只有三句话——你是谁（personal_sign）、你同意什么（signTypedData）、你想干什么（sendTransaction）。剩下的复杂度都长在这三句话上。</p>
 <h3 id="41-personal_sign">4.1 personal_sign（登录 / 证明身份）</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">useSignMessage</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;wagmi&#39;</span>
 
@@ -1010,7 +1011,10 @@
 <span style="color: #204A87; font-weight: bold">const</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">isSuccess</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #CE5C00; font-weight: bold">=</span><span style="color: #F8F8F8"> </span><span style="color: #000">useWaitForTransactionReceipt</span><span style="color: #000; font-weight: bold">({</span><span style="color: #F8F8F8"> </span><span style="color: #000">hash</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">})</span>
 </code></pre></div>
 <p>这是 wagmi dApp 的标准四步。把 <code>simErr?.shortMessage</code> 直接显示给用户，不要吞错误。</p>
-<p><strong>章末</strong>：签名 + 发交易已通。下一节加 SIWE，让后端知道"谁登录了"。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：所有写操作走"读 → simulate → 写 → 等回执"四步范式，错误前置到 UI。
+- <strong>看代码</strong>：<code>code/src/components/TransferForm.tsx</code> 是这四步的最小落地。
+- <strong>下一步</strong>：本章只保证 <code>personal_sign</code> 跑通，下一节用 SIWE 把它升级成有 domain/nonce/时效的"安全登录"。</p>
 <hr />
 <hr />
 
@@ -1141,11 +1145,18 @@ Resources:
 <h3 id="71">7.1 六个角色</h3>
 <figure><img src="diagram-4b3ff86791.png" alt="mermaid diagram"></figure>
 
+<p><strong>用户侧两位</strong>：</p>
 <ul>
-<li><strong>Signer</strong>：EOA / Passkey / MPC，负责签 userOpHash。</li>
+<li><strong>Signer</strong>：EOA / Passkey / MPC，负责签 userOpHash——身份证 + 签字笔。</li>
+<li><strong>Smart Account</strong>：实现 <code>validateUserOp</code> 的合约，等价"账户本体"。Safe / Kernel / Nexus / LightAccount。</li>
+</ul>
+<p><strong>链下中转一位</strong>：</p>
+<ul>
 <li><strong>Bundler</strong>（快递员）：攒 N 笔 UserOp，打包成一笔 tx 调 EntryPoint。Pimlico / Alchemy / Etherspot。</li>
-<li><strong>EntryPoint</strong>（单例合约）：<code>0x0000000071727De22E5E9d8BAf0edAc6f37da032</code>，所有链同地址。</li>
-<li><strong>Smart Account</strong>：实现 <code>validateUserOp</code> 的合约，Safe / Kernel / Nexus / LightAccount。</li>
+</ul>
+<p><strong>链上协调三位</strong>：</p>
+<ul>
+<li><strong>EntryPoint</strong>（单例合约）：<code>0x0000000071727De22E5E9d8BAf0edAc6f37da032</code>，所有 EVM 链同地址，负责验签 + 调度。</li>
 <li><strong>Paymaster</strong>（金主）：可选，代付 gas。支持 ERC-20 代付 / 业务方 sponsor。</li>
 <li><strong>Factory</strong>：可选，首次 UserOp 时 CREATE2 部署 smart account。</li>
 </ul>
@@ -1264,6 +1275,7 @@ Resources:
 <blockquote>
 <p><strong>TL;DR</strong> 四个维度定选型：资金规模、用户类型、目标链、是否需要 session key。多数 dApp 选 Pimlico + Biconomy Nexus 或 Coinbase Smart Wallet，不要自己写 smart account 逻辑。</p>
 </blockquote>
+<p><strong>钩子</strong>：Safe 守着 300 亿美元 TVL 不是因为代码最炫，而是因为它先存活下来。"用谁不重要，别自己写"才是这一节真正的答案——smart account 逻辑写错一行就是清零事故。</p>
 <h3 id="_3">选型矩阵</h3>
 <table>
 <thead>
@@ -1329,6 +1341,10 @@ Resources:
 <li><strong>Bundler 选型</strong>：Pimlico（开发者文档最好）、Alchemy（已用 RPC 一站式）、Etherspot（自部署免费）。</li>
 </ul>
 <p>ERC-7579 / 6900 模块化架构细节见<strong>附录 F</strong>；Bundler 选型建议见上表。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：选型按"资金规模 × 用户类型 × 是否要 session key"三轴定位，先选 Smart Account 再配 Bundler。
+- <strong>看代码</strong>：<code>code/src/lib/aa.ts</code> 是 Safe + Pimlico 的最小组合，换成 Kernel 只改一行 <code>toSafeSmartAccount → toKernelSmartAccount</code>。
+- <strong>下一步</strong>：选完账户，下一节进入"前端要不要拦人"的合规问题。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1500,7 +1516,10 @@ Resources:
 </tbody>
 </table>
 <p>工程师视角：①前端按 IP / 钱包标签做地区分流（美国 IP 关闭杠杆功能）；②法律合规请律师，<strong>别拿这张表打官司</strong>。</p>
-<p><strong>章末</strong>：拦完坏地址，下一节看怎么把好地址的法币变成链上资产。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：合规是"前端筛 + 合约兜"两层网——SDN 拦地址、blacklist 冻余额、Privacy Pools 给清白者一条退路。
+- <strong>看代码</strong>：<code>/api/screen</code> 路由是 OFAC 拦截最小实现；保留 5 年 log 是法务硬指标。
+- <strong>下一步</strong>：拦完"坏地址"，下一节解决"没地址"——法币如何变成链上资产。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1697,16 +1716,19 @@ Resources:
 </tr>
 </tbody>
 </table>
-<p><strong>章末</strong>：用户进得来、留得住，下一节看实战项目把全部前 10 节代码跑一遍。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：聚合器（Onramper / Mt Pelerin）一行 SDK 接多渠道是默认解，单点 SDK（MoonPay / Stripe / Coinbase Onramp）按区域补位。
+- <strong>看代码</strong>：<code>BuyButton</code> 演示 MoonPay 接入；生产环境 <code>walletAddress</code> 必须后端 HMAC 签名再注入 URL。
+- <strong>下一步</strong>：用户既进得来又拦得住，下一节把前 12 节代码合到 <code>code/</code> 一套项目里跑通。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="13-code" id="ch14"><span class="chapter-num">Chapter 14</span><br>13. 实战项目导览（code/）</h2>
 
 <blockquote>
-<p>前面 10 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：<code>pnpm dev</code> 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。</p>
-<p>把它当作"读完前 10 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。</p>
+<p><strong>TL;DR</strong> <code>code/</code> 是把前 12 节"翻译"成 Next.js 15 项目的最小范例：<code>pnpm dev</code> 跑起来即得连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全链路。读代码顺序 = 章节顺序，每一行都能反查"为什么这么写"。</p>
 </blockquote>
+<p><strong>钩子</strong>：把前面 12 节的代码片段散点摆开，最容易翻车的不是某一行，而是"组装"。这一节就是"组装说明书"——把每一段代码放在它该在的目录里，按住 <code>pnpm dev</code> 就能起来。</p>
 <h3 id="131">13.1 目录结构</h3>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>code/
 ├── package.json                 # pin 全部版本
@@ -1894,16 +1916,20 @@ PIMLICO_API_KEY=pim_...
 </code></pre></div>
 <h3 id="135">13.5 项目级安全约定</h3>
 <p>write 前必跑 <code>useSimulateContract</code> 并同步显示结果；typed data 签名前渲染 <code>&lt;TypedDataPreview/&gt;</code>；Permit2 deadline ≤ 5 分钟；7702 永远 chain_id != 0；SIWE nonce verify 后即销毁。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：<code>code/</code> 是"前 12 节合订本"——每个组件对应一节，可独立删改不影响其他模块。
+- <strong>看代码</strong>：从 <code>src/lib/wagmi.ts</code>（§2）→ <code>Providers.tsx</code>（§3）→ <code>SiweLogin.tsx</code>（§5）→ <code>UserOp4337Demo.tsx</code>（§7）顺序读完，知识闭环。
+- <strong>下一步</strong>：手跑通 demo 后做 §14 习题，把"看懂"升级成"能改"。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="14" id="ch15"><span class="chapter-num">Chapter 15</span><br>14. 习题与解答</h2>
 
 <blockquote>
-<p>这一节六道题是对前 10 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。</p>
-<p>不会做就回对应章节，做完再读参考解答能学到双倍。</p>
+<p><strong>TL;DR</strong> 六道题压测前 13 节核心点：viem 迁移、4337 字段打包、712 钓鱼检测、SIWE nonce、Smart Wallet 切链、session key 限额。前 5 道带答案，第 6 题开放。</p>
 </blockquote>
-<p>前 5 道带答案，第 6 道开放题。</p>
+<p><strong>钩子</strong>：会看不等于会写。读懂 EIP-7702 不会让你避开 chain_id=0 攻击，但亲手算一遍 userOpHash 会。这一节强迫你"动手"，做完再回看前 10 节会发现密度突然变薄。</p>
+<p>不会做就回对应章节，做完再读参考解答能学到双倍。</p>
 <h3 id="1viem-ethers-v6-api">习题 1：viem 与 ethers v6 API 对照</h3>
 <p>下列 ethers v6 代码改写成 viem 2.x：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #204A87; font-weight: bold">import</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">{</span><span style="color: #F8F8F8"> </span><span style="color: #000">ethers</span><span style="color: #F8F8F8"> </span><span style="color: #000; font-weight: bold">}</span><span style="color: #F8F8F8"> </span><span style="color: #204A87; font-weight: bold">from</span><span style="color: #F8F8F8"> </span><span style="color: #4E9A06">&#39;ethers&#39;</span>
@@ -2022,11 +2048,18 @@ PIMLICO_API_KEY=pim_...
 <h3 id="6-session-key">习题 6（开放题）：设计 session key 模块限额策略</h3>
 <p>要求：游戏 dApp 授权代签 1 小时，最多花 0.1 ETH，仅限 GameContract 的 <code>move</code>/<code>attack</code>。需：① ERC-7579 Validator 模块接口设计；② ZeroDev/Kernel <code>toPermissionValidator + toCallPolicy</code> 实现；③ session key 私钥泄露时 revoke 方案。</p>
 <p><strong>思路</strong>：Validator 校验签名来自 session key + 时间 &lt; deadline + 累计花费 &lt; 0.1 ETH；toCallPolicy 限制 target = GameContract, selector ∈ {move, attack}；revoke 方案：主 owner 签一笔 <code>uninstallModule</code>，或 Validator 内置 <code>paused</code> flag（<code>setPaused(true)</code> 立刻冻结）。</p>
+<p><strong>章末三件套</strong>：
+- <strong>一句话</strong>：6 题对应模块四大能力点（API 迁移、AA 字段、签名安全、session key），做完即可独立交付一个 dApp 模块。
+- <strong>看代码</strong>：习题 3 参考 <code>code/src/hooks/useEip712Inspector.ts</code>；习题 6 参考 ZeroDev <code>toPermissionValidator</code> 文档。
+- <strong>下一步</strong>：把答案改成 PR，对照 §15 参考资料补足背景。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="15_1" id="ch16"><span class="chapter-num">Chapter 16</span><br>15. 参考资料</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong> 按"viem/wagmi → 钱包 SDK → AA 栈（4337/7702）→ 标准 EIP → 钓鱼数据"五条线分组阅读；线上版本随 viem 2.43+ / EntryPoint v0.7 校准。</p>
+</blockquote>
 <ul>
 <li>viem 官方文档（v2.43.3，与模块 13 一致）：https://viem.sh/</li>
 <li>viem ethers 迁移：https://viem.sh/docs/ethers-migration</li>

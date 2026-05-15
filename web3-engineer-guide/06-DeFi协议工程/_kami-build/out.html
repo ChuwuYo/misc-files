@@ -488,7 +488,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">11</span>
-    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">附录 O. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</a></span>
+    <span class="toc-title"><a href="#ch11" style="color:inherit;text-decoration:none">附录 N. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -513,7 +513,7 @@
   </div>
   <div class="toc-item">
     <span class="toc-num">16</span>
-    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 P. 商户支付与 OTC 链路</a></span>
+    <span class="toc-title"><a href="#ch16" style="color:inherit;text-decoration:none">附录 O. 商户支付与 OTC 链路</a></span>
     <span class="toc-page">·</span>
   </div>
   <div class="toc-item">
@@ -585,7 +585,7 @@
  8. MEV 入门（链上的高频交易）
  9. 风险全景（UST + Mango + 五条铁律 + 行业级历史教训）
 </code></pre></div></p>
-<p>工具栈 + 链上 alpha 实战见 <a href="#附录-o-巨鲸跟单--聪明钱链上-alpha-工具栈">附录 O</a></p>
+<p>工具栈 + 链上 alpha 实战见 <a href="#附录-n-巨鲸跟单--聪明钱链上-alpha-工具栈">附录 N</a></p>
 <p><strong>附录</strong>（不按顺序，需要时再翻）：
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>A. AMM 数学（V3 sqrtPriceX96 / V4 hooks / Curve LLAMMA / Balancer / ve(3,3)）
 B. 借贷数学（jump rate 公式 / Aave Umbrella / Compound III / Morpho / Maple）
@@ -600,8 +600,8 @@ J. Foundry 实战指南骨架
 K. DeFi 速查图（一页打印版）
 L. 术语小词典
 M. 学习路径与项目案例
-O. 巨鲸跟单 + 聪明钱（Nansen / Arkham / Dune / Whale Alert / PoR）
-P. 商户支付与 OTC 链路（Coinbase Commerce / BitPay / MoonPay / 三地入金）
+N. 巨鲸跟单 + 聪明钱（Nansen / Arkham / Dune / Whale Alert / PoR）
+O. 商户支付与 OTC 链路（Coinbase Commerce / BitPay / MoonPay / 三地入金）
 </code></pre></div></p>
 <hr />
 
@@ -919,6 +919,9 @@ $$</p>
 <p>ETH=$3000 时存 1 ETH + 3000 USDC 进池。三个月后 ETH 涨到 $6000 你撤资。直觉：应该是 1 ETH + 3000 USDC = $9000。实际：0.707 ETH + 4243 USDC = $8485。少了 $515。这 $515 就是 IL。</p>
 </blockquote>
 <p>类比：<strong>LP 是荷官</strong>——价格涨时被迫卖 ETH，价格跌时被迫接 ETH。本质是<strong>给市场卖 straddle 期权</strong>，期权金就是手续费。</p>
+<blockquote>
+<p>💡 <strong>公式怕的话先记口诀</strong>：① 价格不动 → IL=0；② 价格翻倍 → 亏 5.7%；③ 价格 4x → 亏 20%；④ 不管涨跌<strong>对称亏</strong>（跌一半和涨一倍亏一样多）。下面的表只是把这四件事写精确，跳过不影响理解。</p>
+</blockquote>
 <p><strong>LP = 卖 straddle 期权</strong>（同时押涨跌都赔）。下面公式给精确数字，看不懂可记住：价格变动越大、亏越多。</p>
 <p>公式（设价格倍数 $r = p_1/p_0$）：</p>
 <p>$$
@@ -1103,6 +1106,9 @@ $$</p>
 <p>TL;DR：合约里的价格不是凭空来的。<strong>Chainlink</strong> 节点主动推（push），<strong>Pyth</strong> 让消费者按需拉（pull），<strong>TWAP</strong> 用过去 N 分钟均价防操纵。oracle 是 DeFi 单类损失最大的攻击面——Mango $116M、Cream $130M、bZx 都是 oracle 攻击。</p>
 </blockquote>
 <h3 id="61-push-vs-pull">6.1 Push vs Pull（一张表）</h3>
+<blockquote>
+<p>💡 <strong>直觉</strong>：push 像新闻联播——节点按点准时广播，你被动接收（不新鲜但稳定）；pull 像外卖——你下单它才送，新鲜但你付配送费；TWAP 像菜场平均价——把过去 N 分钟的成交平均一下，操纵成本高得多。借贷选 push、永续选 pull、防操纵选 TWAP。</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -1206,6 +1212,7 @@ $$</p>
 <h3 id="74-lrt">7.4 LRT：再走一阶</h3>
 <blockquote>
 <p>2021 年 Sreeram Kannan（华盛顿大学教授）盯着以太坊在想：全网 $400 亿+ 的 ETH 在干同一份工（验证主链）赚 3%——<strong>为什么不让它再租给别的工作？</strong> 这就是 EigenLayer 的核心思路。</p>
+<p>💡 <strong>用户视角的 motivation</strong>：你的 1 ETH 已经在 Lido stake 赚 3%，但只为以太坊主链做保安——这份"安全感"是闲置资源。如果有人愿意付额外 2-4% 让你"分神"也帮他们的桥/oracle/DA 层做保安，你愿意吗？愿意 → 你就是 LRT 的目标用户。<strong>但额外的 2-4% 不是白给——任一份兼职出事，你的本金（不是收益）会被罚没</strong>。这是和"循环抵押多赚利息"完全不同的风险：那只是亏利差，这是亏本金。</p>
 </blockquote>
 <p><strong>Restaking</strong> = 把同一笔 ETH（或 LST）的安全性出租给多个 <strong>AVS</strong>（Actively Validated Service：DA 层、桥、appchain、oracle 等），赚多份收益。代价是<strong>slashing surface 叠加</strong>——任一 AVS 出问题你的本金都被罚。</p>
 <p><strong>LRT</strong> = 用户委托 ETH/stETH 给 LRT 协议，协议作为 operator 接管多个 AVS 的 slashing 风险，奖励聚合后分给 LRT holder。代币如 eETH、ezETH、rsETH。EigenLayer 2026-04 TVL ~$18B，39+ 个活跃 AVS。</p>
@@ -1309,11 +1316,7 @@ $$</p>
 <p><strong>Do Kwon 后续</strong>：2024-2025 在美国受审，因 $40B 崩盘被判 <strong>25 年</strong>联邦监禁（2025-12-11 美国南区法院判）。</p>
 <p><strong>这件事教什么</strong>：① 算法稳定币的"无外部抵押自稳定"是个谎言；② 经济模型出问题时合约代码再安全也救不了你；③ "看起来稳"的协议要先问"极端行情下还能维持吗？"。</p>
 <h3 id="93-mango-markets2022-10116m">9.3 故事二：Mango Markets（2022-10，$116M）</h3>
-<blockquote>
-<p>Avi Eisenberg 用约 $10M USDC（CFTC 起诉书 / Halborn 复盘）在三家小盘 CEX 同时挂单把 MNGO 现货从 $0.04 拉到 $0.91（涨 22 倍）。Mango 的 oracle 是这三家 CEX 的中位数价——OK，它老老实实把估值同步上去。Avi 在 Mango 的 MNGO 永续多单瞬间盈利 $400M+，把虚高浮盈当抵押借走 $116M。<strong>整个攻击 20 分钟，每一行代码都按设计运行——但合约相信的"现货价"不再代表真实市场价</strong>。</p>
-</blockquote>
-<p><strong>法律续集</strong>：Eisenberg 2024 年被陪审团裁定欺诈罪 + 市场操纵罪，但 2025 年法官以"Mango 没有用户协议、没有禁止操纵条款、没有还款要求"为由 Rule 29 撤销有罪判决。检方上诉中。</p>
-<p><strong>这件事教什么</strong>：① 用现货价做 oracle 必死无疑；② 流动性差的标的资产 + 集中度低的 oracle = 灾难；③ "合法但不道德"在链上是开放问题——Mango 的合约没说不许操纵。</p>
+<p>Avi Eisenberg 操纵 MNGO 现货 22 倍拉盘，虚高浮盈当抵押借走 $116M——"用现货价做 oracle 必死"的教科书案例。详见 §6.2。</p>
 <h3 id="94">9.4 五条铁律（夜间读物）</h3>
 <blockquote>
 <p>这五条贯穿前文每一桩事故，背下来。</p>
@@ -1485,7 +1488,7 @@ Genesis Trading（DCG 子公司）
 <hr />
 
 </section><section class="chapter">
-<h2 id="o-alpha" id="ch11"><span class="chapter-num">Chapter 11</span><br>附录 O. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</h2>
+<h2 id="n-alpha" id="ch11"><span class="chapter-num">Chapter 11</span><br>附录 N. 巨鲸跟单 + 聪明钱（链上 alpha 工具栈）</h2>
 
 <blockquote>
 <p>TL;DR：链上数据是<strong>公开的、连续的、永不丢失的</strong>——这意味着任何"聪明钱"的足迹都暴露在外。本附录是数据驱动 alpha 的工程视角：用四个工具栈把"看到 → 标签 → 信号 → 跟单"做成 pipeline，再用 PoR 监控守住反向风险。</p>
@@ -1774,9 +1777,9 @@ $$</p>
 
 <p>主线 Ch9 讲了 UST、Mango。本附录补其它 12 个 $50M+ 事件。</p>
 <h3 id="c1-ronin-2022-03625m">C.1 Ronin 2022-03（$625M）</h3>
-<p>Sky Mavis 控制 9 个 validator 中的 4 个，加 Axie DAO 1 个 = 5/9 阈值。攻击：① LinkedIn 假招聘 PDF 钓鱼 Sky Mavis 4 个 validator 私钥；② 发现 2021-12 未撤销的"gas-free"白名单 backdoor，自动签到 Axie DAO 第 5 个；③ 单次提走 173,600 ETH + 25.5M USDC = ~$625M，<strong>6 天后</strong>才被发现。Sky Mavis 从 Binance 募 $150M 赔偿。<strong>教训</strong>：多签不够分散，过期配置必须及时清理。</p>
+<p>5/9 multisig 桥被钓鱼私钥 + 未撤销白名单 backdoor 凑齐阈值。详见 05-智能合约安全 §7 + 附录 D.1。</p>
 <h3 id="c2-wormhole-2022-02326m">C.2 Wormhole 2022-02（$326M）</h3>
-<p>攻击链：① Wormhole 用 deprecated <code>load_instruction_at</code> 读 Secp256k1 验证结果，此函数<strong>不验证 sysvar 账户真实性</strong>；② 攻击者制造 fake sysvar account（预填"已验证"字节序列）；③ verify_signatures 信了；④ 铸 120,000 wETH 桥回 Ethereum 抽真 ETH。Jump Crypto 自掏 $326M 补损。<strong>教训</strong>：deprecated API 是攻击面；系统级信任入口必须严格验证账户身份。</p>
+<p>Solana sysvar 校验绕过铸 120k wETH 抽走主网 ETH，Jump Crypto 自掏 $326M 补损。详见 05-智能合约安全 §10.2 + 附录 D。</p>
 <h3 id="c3-kelp-dao-2026-04292m">C.3 Kelp DAO 2026-04（$292M）</h3>
 <p>LayerZero 1-of-1 DVN 私钥被攻陷。攻击者签发 Ethereum 侧 rsETH 铸造消息→1-of-1 DVN 验证通过→$292M rsETH 凭空铸造→抵押 Aave 借走 wETH→Aave 坏账 $196M、TVL 单日跌 $6.6B、AAVE -16%、LDO -19%（市场担心 stETH 也走 LayerZero）。</p>
 <figure><img src="diagram-a767f18e98.png" alt="mermaid diagram"></figure>
@@ -1787,9 +1790,9 @@ $$</p>
 <h3 id="c5-euler-v1-2023-03197m">C.5 Euler V1 2023-03（$197M）</h3>
 <p>donateToReserves 没做健康检查。攻击链：① 闪电贷 30M DAI 10x 杠杆借 100M eDAI；② 调 <code>donateToReserves(100M)</code> 让账户突然变"deeply insolvent"；③ 用第二账户清算第一账户拿走清算折扣对应资产；④ 重复多次抽走 $197M。<strong>结局</strong>：攻击者最终归还 ~$240M（多于偷的）——团队从 OpSec 失误找到对话路径。<strong>教训</strong>：任何会让账户余额突变的函数都必须做 healthCheck。</p>
 <h3 id="c6-nomad-2022-08190m">C.6 Nomad 2022-08（$190M）</h3>
-<p>路由升级里把 trusted root 设为 <code>0x00</code>，而 <code>0x00</code> 是 untrusted root 的默认值——所有消息自动被当成"已验证"。第一个攻击者发现后，tx 公开，<strong>150 分钟内 ~300 个地址跟风</strong>复制 drain <sub>$190M。</sub>$37M 被白帽归还。<strong>教训</strong>：默认值是攻击面，未初始化 root 不能等于零值。</p>
+<p>trusted root 初始化为 <code>0x00</code> 等于 untrusted 默认值，300 地址复制粘贴抢劫。详见 05-智能合约安全 附录 D.2。</p>
 <h3 id="c7-beanstalk-2022-04182m">C.7 Beanstalk 2022-04（$182M）</h3>
-<p>闪电贷借大量治理代币 → 通过"金库转给攻击者"提案 → 还贷。<strong>根因</strong>：无 timelock，治理权重按当下持币而非 ve 锁仓计算。<strong>教训</strong>：必须用 timelock + 长期锁仓权重过滤闪电贷攻击。</p>
+<p>闪电贷 + 同区块 emergencyCommit 抽走治理国库。详见 15-DAO §6.2。</p>
 <h3 id="c8-cream-2021-10130m">C.8 Cream 2021-10（$130M）</h3>
 <p>Cream PriceOracleProxy 把 yUSDVault.getPricePerFullShare 直接当价格；攻击者通过 deposit/withdraw 双倍化 share-price 后反复杠杆借贷，借走 $130M。<strong>教训</strong>：可被外部 donation 操纵的 share-price 不能做估值，必须用底层资产市场价 + TWAP。</p>
 <h3 id="c9-multichain-2023-07130m">C.9 Multichain 2023-07（$130M）</h3>
@@ -1813,7 +1816,7 @@ $$</p>
 <hr />
 
 </section><section class="chapter">
-<h2 id="p-otc" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 P. 商户支付与 OTC 链路</h2>
+<h2 id="o-otc" id="ch16"><span class="chapter-num">Chapter 16</span><br>附录 O. 商户支付与 OTC 链路</h2>
 
 <p>主线 §2.4 讲了稳定币流通分布；本附录补"链上→链下→商户/用户"的完整支付与 OTC 工程链路（截至 2026-04）。</p>
 <h3 id="p1">P.1 加密商户支付网关</h3>

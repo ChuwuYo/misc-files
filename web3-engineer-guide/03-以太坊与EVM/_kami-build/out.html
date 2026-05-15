@@ -662,6 +662,9 @@
 <h2 id="1-usdc-evm" id="ch03"><span class="chapter-num">Chapter 03</span><br>1 直觉先行：从一笔 USDC 转账反推整个 EVM</h2>
 
 <p>【必读】</p>
+<blockquote>
+<p><strong>TL;DR</strong>：EVM 要在 12 秒内回答三个问题——谁付钱（签名 + 1559 烧）、谁执行（栈机 + 每条 opcode 付 gas + 超额回滚）、谁记账（账户模型 + MPT + 全节点重算 stateRoot）。整个模块都是这三个问题的展开；记住六组对偶（EOA/CA、memory/storage、CALL/DELEGATECALL、base/priority fee、execution/blob gas、MPT/Verkle）就能给所有新概念归类。</p>
+</blockquote>
 <h3 id="11">1.1 一笔交易必须答三个问题</h3>
 <blockquote>
 <p>你刚在钱包里按下"转 1000 USDC 给 Alice"。手机震了一下，二十秒后她那边收到通知。中间这二十秒，全世界几千台机器同时干完了一件事——它们都用一模一样的方式把你账户的 1000 USDC 划给了 Alice，谁都没有作弊的余地。</p>
@@ -789,6 +792,15 @@
 </tbody>
 </table>
 <p>OP / Arbitrum / Base / zkSync Era / Linea / Scroll / Polygon zkEVM 都以 EVM 为执行层。</p>
+<h3 id="15">1.5 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：把"谁付钱 / 谁执行 / 谁记账"三个问题 + 六组对偶记牢，后面 20 节都是它们的展开。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>为什么 EVM 不用浮点数？（答案：全节点必须算出完全相同的状态——浮点平台差异会破坏共识）</li>
+<li>为什么 EVM 选栈机而不是寄存器？（答案：栈高度变化对每条 opcode 是确定的，编译器可静态计算栈、JUMP、gas，简化验证）</li>
+<li>CALL 和 DELEGATECALL 都是六组对偶的哪一组？区别是什么？（答案：切上下文 vs 借上下文——前者 storage/sender 都换，后者借用调用方的）</li>
+</ol>
+<p><strong>下一步</strong>：直觉建立后，§2 把过去十年的硬分叉时间线串起来——你会看到每条铁规背后都有一次真实事故。</p>
 <hr />
 
 </section><section class="chapter">
@@ -808,10 +820,7 @@
 <li><strong>EIP-7</strong>：引入 <strong>DELEGATECALL</strong>——代理模式的祖先；CALLCODE 开始弃用（msg.sender 语义不对）</li>
 </ul>
 <h3 id="23-the-dao-2016-07-20-1920000">2.3 The DAO 分叉（2016-07-20，区块 1,920,000）</h3>
-<p>以太坊历史上最尴尬也最关键的一次分叉。</p>
-<p>The DAO 是当时全世界最大的众筹合约，募了约 1180-1270 万 ETH（2016-05 高峰估值约 $150M，但 2016-06 攻击日 ETH 价已下跌）。它的 <code>splitDAO</code> 函数干了一件经典蠢事：<strong>先把钱转给你，再扣你的余额</strong>。攻击者发现这个顺序后，做了个会回头再调一次 <code>splitDAO</code> 的合约——钱还没扣，又能再领一份；递归下去，他抽走了 360 万 ETH。</p>
-<p>社区分裂成两派：一派说"代码即法律，认栽"，另一派说"我们是人不是教条"。最后硬分叉把那笔钱回滚了，没回滚的那条链留下来叫 <strong>Ethereum Classic</strong>（ETC），回滚的那条就是今天的 <strong>Ethereum</strong>。这次事件留下的两份遗产至今仍是 Solidity 程序员的肌肉记忆：<strong>Checks-Effects-Interactions</strong> 模式（先改余额再转账）和 <strong>ACD 公开讨论惯例</strong>（核心决策不再黑箱）。</p>
-<p>来源：<a href="https://www.gemini.com/cryptopedia/the-dao-hack-makerdao">Gemini: DAO Hack Explained</a>。</p>
+<p>以太坊历史上最尴尬也最关键的一次分叉——<code>splitDAO</code> 重入抽走 360 万 ETH，硬分叉劈出 ETH/ETC 两条链，留下 CEI 模式 + ACD 公开决策两份制度遗产。详见 05-智能合约安全 §故事1。</p>
 <h3 id="24-tangerine-whistle2016-10-18-spurious-dragon2016-11-22">2.4 Tangerine Whistle（2016-10-18）+ Spurious Dragon（2016-11-22）</h3>
 <p>DAO 风波刚平，2016 年 9-10 月又来一拨 DoS：有人反复调用又便宜又重的 IO opcode（SLOAD、EXTCODESIZE 一类），收一两块钱手续费就能让全网卡半小时。社区只能硬着头皮再发两次紧急分叉。</p>
 <ul>
@@ -1013,12 +1022,24 @@
 <h3 id="218-mermaid">2.18 一图流时间线（Mermaid）</h3>
 <figure><img src="diagram-a1e4db5405.png" alt="mermaid diagram"></figure>
 
+<h3 id="219">2.19 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：以太坊不是设计出来的，是被一拳一拳打出来的——DAO 攻击逼出 CEI 模式、Tangerine Whistle 逼出 63/64 规则、Parity 逼出代理 init 规矩、4844 把 L2 救活；每个版本都在收拾上一个版本的烂摊子。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>2016-07 的 The DAO 分叉留下什么遗产？（答案：Checks-Effects-Interactions 模式 + ACD 公开决策；以及 ETC 那条没回滚的链）</li>
+<li>EIP-1559（London）和 The Merge（Paris）一起造成了什么经济效果？（答案：base fee 烧 + PoS 低发行率 ≈ ETH 净通缩）</li>
+<li>Pectra 上的 EIP-7702 抢用了哪个本来给谁预留的字节前缀？（答案：抢用了 EOF 预留的 <code>0xEF</code>——这也是 EOF 在 Fusaka 被剔除的间接原因）</li>
+</ol>
+<p><strong>下一步</strong>：时间线给了"为什么是这样"，§3 开始讲"具体是这样"——账户和交易。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="3" id="ch05"><span class="chapter-num">Chapter 05</span><br>3 账户与交易</h2>
 
 <p>【必读】</p>
+<blockquote>
+<p><strong>TL;DR</strong>：以太坊只有两种账户——能签字的 EOA（个人卡）和不能签字只能被调用的 CA（公司账户）。交易分 5 种类型（Type 0-4），每种是上一种的"加字段"超集：legacy → access list → 1559 动态费 → 4844 blob → 7702 SetCode。学会 Type 2（1559）就能日常用了，其它按需补。</p>
+</blockquote>
 <p>回到 §1.1 那笔 USDC 转账——"谁付钱"和"谁记账"两个问题，最终都落在两样东西上：<strong>账户</strong>（钱在哪、谁有权花）和<strong>交易</strong>（一次具体的"我要花"动作）。</p>
 <blockquote>
 <p><strong>类比</strong>：以太坊上的账户就像银行里<strong>两种账户</strong>——
@@ -1146,19 +1167,79 @@ tip       = (gas_price - base_fee) * gas_used   # 给提议者
 </code></pre></div>
 <p><code>max_fee_per_gas &lt; base_fee</code> → 交易进不了 mempool。烧毁是协议层直接从 sender 余额扣除、不进任何账户，等价 ETH 总量减少。</p>
 <h3 id="34-eip-4844-blob-type-3">3.4 EIP-4844 Blob 交易（Type 3）字段细解</h3>
+<blockquote>
+<p><strong>TL;DR</strong>：blob 是给 L2 用的"快递柜"——大包裹（128 KB / 个）暂存 18 天就销毁，执行层只拿一个 32 字节"取件码"（versioned hash）。L2 把 calldata 搬进去，主网就不用永久背着它们了，rollup swap 费从几美元跌到几美分就靠这个。</p>
+<p><strong>类比</strong>：把 calldata 想成"挂号信"——主网永久存档，又贵又重；blob 是"自助快递柜"——存 18 天就自动清掉，便宜 100 倍，但只够过路用一下。</p>
+</blockquote>
+<p><strong>生词三连</strong>（一次记不住没关系，下面会逐个拆）：</p>
+<ul>
+<li><strong>blob</strong>（binary large object）：一坨 128 KB 的二进制数据，rollup 把交易压缩后塞进去</li>
+<li><strong>KZG commitment</strong>：一种密码学"指纹"，能在不暴露原数据的前提下证"我手上这坨数据没被改"</li>
+<li><strong>versioned hash</strong>：commitment 再哈希一下，前缀加个版本字节，长 32 字节，永久上链</li>
+</ul>
+<p>RLP 字段：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x03 || rlp([
   chain_id, nonce,
   max_priority_fee_per_gas, max_fee_per_gas,
   gas_limit, to, value, data, access_list,
   max_fee_per_blob_gas,             # blob 单价上限
-  blob_versioned_hashes,            # 每个 blob 的 KZG commitment 的 versioned hash 列表
+  blob_versioned_hashes,            # 每个 blob 的&quot;取件码&quot;列表（32 字节 × n）
   v, r, s
 ])
 </code></pre></div>
-<p>Blob 数据走 sidecar（共识层 P2P），约 18 天后删除，versioned hash 永久上链。执行层只能用 <code>BLOBHASH (0x49)</code> 取 versioned hash、用 <code>0x0a</code> precompile 验 KZG 证明。每 blob = 128 KB，每 blob 的 blob gas = <code>131072</code>；单块 blob 上限随分叉演进（Cancun 6、Pectra 9、Fusaka BPO1 15、BPO2 21）。</p>
+<p>只多了两个字段：<strong>单价上限</strong> + <strong>取件码列表</strong>。注意 RLP 体里<strong>没有 blob 本身</strong>——blob 数据走 sidecar（共识层 P2P 单独传），约 18 天后所有节点删除，链上只剩 32 字节 versioned hash 作为承诺。</p>
+<h4 id="341-blob">3.4.1 执行层怎么用 blob</h4>
+<p>合约不能直接读 blob 字节（链上根本不存），只能：</p>
+<ul>
+<li><code>BLOBHASH (0x49)</code> opcode：取当前 tx 第 i 个 versioned hash</li>
+<li><code>0x0a</code> precompile（point evaluation）：传入 <code>(versioned_hash, z, y, commitment, proof)</code>，验证"这个 blob 在位置 z 的值是 y"</li>
+</ul>
+<p>rollup 的玩法就是：把交易批量塞进 blob、把执行结果发到主网、用 0x0a 证明"我说的状态变化和 blob 里写的一致"。这一套比把 calldata 写主网便宜约 100 倍。</p>
+<h4 id="342">3.4.2 几个关键数字</h4>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单 blob 大小</td>
+<td>128 KB（131072 字节）</td>
+<td>固定</td>
+</tr>
+<tr>
+<td>单 blob gas 消耗</td>
+<td>131072</td>
+<td>1 字节 = 1 blob gas</td>
+</tr>
+<tr>
+<td>单块 blob 上限</td>
+<td>Cancun 6 / Pectra 9 / Fusaka BPO1 15 / BPO2 21</td>
+<td>一路放宽</td>
+</tr>
+<tr>
+<td>sidecar 留存</td>
+<td>约 18 天</td>
+<td>之后所有节点删除</td>
+</tr>
+<tr>
+<td>blob gas 与执行 gas</td>
+<td>两套独立市场</td>
+<td>各自有 base fee</td>
+</tr>
+</tbody>
+</table>
+<p>记一条：<strong>blob 数据是"暂存"的，hash 是"永留"的</strong>。三年后回头查那笔 rollup tx，blob 早删了，但承诺还在链上——任何愿意保存 blob 数据的存档节点都能拿出来验证。</p>
 <h3 id="35-eip-7702-setcodetype-4">3.5 EIP-7702 SetCode（Type 4）字段细解</h3>
 <p>【建议】</p>
-<p>EIP-7702 干了一件以太坊七年没人敢干的事：<strong>让 EOA 临时长出代码</strong>。在 Pectra 之前，"是 EOA 还是合约"是一辈子的事，地址一旦从助记词派生就永远只是个普通钱包，想要 batch、想要社恢、想要 paymaster，对不起，你得换地址重新部署一个合约钱包，把所有资产搬过去。Pectra 之后，你那个用了三年的 MetaMask 地址，也可以"今天我是 Safe，明天我是 Ambire"，地址不变。</p>
+<blockquote>
+<p><strong>TL;DR</strong>：你那个用了三年的 MetaMask 地址，现在能"租"一份合约代码用——签一个 authorization 上链，EOA 就能跑批量转账、社恢、gas 代付。地址不变、私钥不变，能力升级。代价：签错对象 = 钱包瞬间被掏空（已有 97% 钓鱼案例）。</p>
+<p><strong>类比</strong>：EOA 原本是"个人用户卡"，CA 是"公司账户"。EIP-7702 给个人卡发了张<strong>临时副卡</strong>——副卡上印着哪家代理公司的章（designator address），刷卡时按那家的章程办事。撤销很简单，签个"指向 0 地址"的新授权就回到普通 EOA。</p>
+</blockquote>
+<p>EIP-7702 干了一件以太坊七年没人敢干的事：<strong>让 EOA 临时长出代码</strong>。在 Pectra 之前，"是 EOA 还是合约"是一辈子的事，地址一旦从助记词派生就永远只是个普通钱包，想要 batch、想要社恢、想要 paymaster，对不起，你得换地址重新部署一个合约钱包，把所有资产搬过去。Pectra 之后，地址不变也能"今天我是 Safe，明天我是 Ambire"。</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0x04 || rlp([
   chain_id, nonce,
   max_priority_fee_per_gas, max_fee_per_gas,
@@ -1167,15 +1248,24 @@ tip       = (gas_price - base_fee) * gas_used   # 给提议者
   v, r, s
 ])
 </code></pre></div>
-<p><code>authorization_list</code> 数组，每元素是 EOA 自签的小授权：</p>
+<p><code>authorization_list</code> 数组，每元素是 EOA 自签的一张小授权：</p>
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>[chain_id, address, nonce, y_parity, r, s]
 </code></pre></div>
-<p>含义："我（EOA）授权把 code 指向 <code>address</code>"。chain_id = 0 表示跨链有效（极不推荐）。</p>
+<p>含义："我（EOA）授权把 code 指向 <code>address</code>"。</p>
+<p><strong>关于 <code>chain_id</code></strong>：填具体链 id（比如主网 = 1）= 只在那条链上有效；填 <code>0</code> = 任意 EVM 链通用——听起来方便，实则危险，<strong>别人能把你签过的同一份 authorization 拿到其他链上重放</strong>。除非你非常清楚后果，永远填具体 chain_id。</p>
+<p><strong>关于 <code>0xef0100</code> 前缀</strong>：执行后，EOA 的 code 字段会被写成 23 字节固定模式：</p>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code>0xef 01 00 || &lt;20 字节 delegate 地址&gt;
+│  │  │      └─ 真正要执行的合约
+│  │  └─ 版本号（v1）
+│  └─ 子格式标识
+└─ 协议保留前缀（任何 0xef 开头的字节序列都是非法 opcode，不会被当代码跑）
+</code></pre></div>
+<p>为啥要这么绕？因为 EVM 必须能一眼分清"这是真合约代码"还是"这是个 7702 委托指针"。<code>0xef</code> 历史上是为 EOF 预留的非法 opcode 前缀，Pectra 抢用了它——EVM 一看代码头是 <code>0xef0100</code>，就知道"不是字节码，是个跳板，去 23 字节里那个 delegate 地址取真代码跑"。</p>
 <p>执行流程：</p>
 <ol>
 <li>验证发送者签名，收手续费</li>
 <li>对每条 authorization：恢复 EOA 地址 → 校验 chain_id 与 nonce → 写 code = <code>0xef0100 || address</code>，EOA nonce +1</li>
-<li>像普通 1559 跑 <code>to</code> 调用</li>
+<li>像普通 1559 一样跑 <code>to</code> 调用</li>
 </ol>
 <p><strong>authority 不必是 sender</strong>——任何人可替你代发，只要你签了 authorization（gas sponsor 核心机制）。Pectra 之后，"我帮你付 gas"不再是 4337 的特权。</p>
 <p>安全提醒，最重要那条：authorization 一旦上链就生效，<strong>签向恶意合约就等于把整个 EOA 双手奉上</strong>。Pectra 上线两周内就出现钓鱼合约，有报告说前一个月里 97% 的 authorization 关联钓鱼。永远只签向审计过的合约——这是底线，没有例外。</p>
@@ -1219,6 +1309,15 @@ tip       = (gas_price - base_fee) * gas_used   # 给提议者
 </tbody>
 </table>
 <p>实际工程：EOA 通过 EIP-7702 委托到 4337 兼容合约，拥有 4337 全部能力同时保持 EOA 地址。</p>
+<h3 id="37">3.7 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：账户有两种（EOA / CA），交易有五种（Type 0-4，越往后字段越多），新类型只是给老类型加字段——不是推倒重来。</p>
+<p><strong>自查三问</strong>（答得上来再往下读）：</p>
+<ol>
+<li>EOA 和 CA 最本质的区别是什么？（答案：能不能签交易）</li>
+<li>Type 2 比 Legacy 多了哪两个字段？为什么这么设计？（答案：max_fee + max_priority_fee；让用户设上限而非猜价格）</li>
+<li>EIP-7702 让 EOA 长出代码后，<code>getCode(eoa)</code> 返回什么？（答案：23 字节 <code>0xef0100 || delegate_addr</code>）</li>
+</ol>
+<p><strong>下一步</strong>：账户和交易讲清"钱怎么进合约"，下一节 §4 讲"进了合约怎么付电费"——gas 模型。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1226,6 +1325,7 @@ tip       = (gas_price - base_fee) * gas_used   # 给提议者
 
 <p>【必读】</p>
 <blockquote>
+<p><strong>TL;DR</strong>：每条 opcode、每字节 calldata、每次扩内存都要先付钱才能跑。这套机制不是为了让普通用户多付钱，是为了让攻击者付不起——每次 gas 涨价背后都有一次具体的 DoS 攻击故事。记住三件事就够日常：①SSTORE 是最贵的（22100 gas / 次冷写）；②cold/warm 双轨（第二次访问同 slot 便宜 21 倍）；③1559 后费用 = base fee（烧）+ priority fee（小费）。</p>
 <p><strong>类比</strong>：gas 就像<strong>打 Uber</strong>——按里程付费，跑得越远越贵；走错路、绕路、堵车都得照付。司机（EVM）跑完才停，但你设了一个"最多花 X 元"的上限，超了直接把你扔下车（OOG，out of gas，交易回滚但 gas 不退）。</p>
 </blockquote>
 <p>Gas 是 EVM 的心跳。每一条 opcode、每一字节 <strong>calldata</strong>（调用方传入的数据，只读）、每一 KB <strong>memory</strong>（临时内存）扩展，都得先付钱再跑——这就是 §1.2 那条"必须停机"的铁规怎么落地的。</p>
@@ -1417,12 +1517,24 @@ fee_per_blob  = blob_base_fee × 131072
   # 净收 PER_AUTH_BASE_COST = 12500 gas。
 </code></pre></div>
 <p>EIP-7623（Pectra）引入 calldata floor——tx 总 gas 不能低于 calldata floor，把"租 calldata 占空间"挤进 blob。floor cost = 10 gas/byte non-zero, 4 gas/byte zero（无论实际执行多少 gas，至少按这个收）。</p>
+<h3 id="49">4.9 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：gas 是 EVM 的心跳，每次涨价都对应一次 DoS 故事；优化第一条铁律——<strong>少写 storage</strong>。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>一次 0 → 非零的冷 SSTORE 花多少 gas？（答案：22100 = 20000 base + 2100 cold）</li>
+<li>为什么 <code>address.transfer(x)</code> 在 2026 年是危险写法？（答案：硬编码 2300 gas，Istanbul 之后连读两次 storage 都不够）</li>
+<li>1559 烧掉的 ETH 去哪了？（答案：直接从 sender 余额扣，不进任何账户，等价 ETH 总量减少）</li>
+</ol>
+<p><strong>下一步</strong>：知道"付多少钱"之后，下一节 §5 讲"钱花在哪儿"——EVM 内部六个数据区。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="5-evm" id="ch07"><span class="chapter-num">Chapter 07</span><br>5 EVM 内部：栈机的六个数据区</h2>
 
 <p>【必读】</p>
+<blockquote>
+<p><strong>TL;DR</strong>：EVM 跑合约时只有六个地方放数据——stack（案板）、memory（灶台）、storage（冰箱，全网可见）、transient storage（小托盘，tx 内有效）、calldata（客人便条，只读）、code（菜谱，部署即冻结）。前两个帧结束清空，storage 进 stateRoot 最贵，后面所有 opcode 都只是在这六个区之间搬数据。</p>
+</blockquote>
 <p>讲完了"账户长什么样、交易怎么签"，下一步该看 EVM 真正运行起来的样子了。一笔交易最终要变成 <strong>CALL 进合约 → 跑字节码 → 改状态</strong>——这一节回答的就是"跑字节码时，EVM 把数据放在哪、从哪读"。</p>
 <blockquote>
 <p><strong>类比</strong>：把 EVM 想成一个非常小的厨房——
@@ -1521,6 +1633,15 @@ fee_per_blob  = blob_base_fee × 131072
 <h3 id="57-mermaid">5.7 一张图把六个数据区串起来（Mermaid）</h3>
 <figure><img src="diagram-be2fc20771.png" alt="mermaid diagram"></figure>
 
+<h3 id="58">5.8 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：六个数据区按"进不进 stateRoot"分两组——进的（storage、code）昂贵且全网可见；不进的（stack、memory、calldata、transient）便宜且帧内私有。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>为什么 mapping 没法被遍历？（答案：slot = <code>keccak256(key ‖ baseSlot)</code>，能算正向但反推不回 key）</li>
+<li>transient storage 和 memory 都"用完就清"，区别在哪？（答案：transient 跨调用帧、tx 内存活；memory 帧结束就销毁）</li>
+<li>EIP-7702 的 23 字节 designator 写在哪个数据区？（答案：code，但 EVM 识别 <code>0xef0100</code> 前缀后会去 delegate 地址取真正的 code 跑）</li>
+</ol>
+<p><strong>下一步</strong>：知道了"数据放哪"，§6 讲"动作怎么做"——核心 opcode。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1638,9 +1759,7 @@ fee_per_blob  = blob_base_fee × 131072
 }
 </code></pre></div>
 <p>implementation 的字节码跑在 proxy 的上下文：proxy 的 storage 被读写，msg.sender / msg.value 保持用户原值，<code>address(this)</code> 是 proxy。这是整个代理模式生态（EIP-1967 透明代理、UUPS、Diamond、ERC-4337）的基础。</p>
-<p><strong>Parity 多签事件（2017-11-06）——一节课价值 5 亿美金</strong>：</p>
-<p>Parity 把钱包逻辑放在 library 合约里，没初始化 <code>initWallet</code> 的 owner。有人发现可以直接调这个 library，把自己设成 owner，然后调 <code>kill</code> 触发 SELFDESTRUCT——library 一死，所有指向它的 stub 钱包成废墟，约 51.3 万 ETH（今天接近 20 亿美元）永久冻结。</p>
-<p>三条硬规矩：①永远 init library 自身（OZ 的 <code>_disableInitializers()</code>）；②implementation 入口加 <code>require(address(this) != _self)</code>；③EIP-6780 后 SELFDESTRUCT 虽弱化，旧合约依旧得当心。</p>
+<p><strong>Parity 多签事件（2017-11-06）——一节课价值 5 亿美金</strong>：library 未 init → 任意人 init 后 kill → 51.3 万 ETH 永久冻结。三条硬规矩：①永远 init library 自身（OZ 的 <code>_disableInitializers()</code>）；②implementation 入口加 <code>require(address(this) != _self)</code>；③EIP-6780 后 SELFDESTRUCT 虽弱化，旧合约依旧得当心。详见 05-智能合约安全 §4。</p>
 <h4 id="staticcall-view">STATICCALL：链上 view 的硬保护</h4>
 <p>Byzantium 引入的只读封印。STATICCALL 一旦进入，整条调用栈里任何 SSTORE、CREATE、SELFDESTRUCT、LOG 都会 revert——把"我只想看不想动"从依赖好心人变成协议保证。</p>
 <h4 id="callcode">CALLCODE 为什么死了</h4>
@@ -1766,6 +1885,15 @@ POP
 ...
 </code></pre></div>
 <p>这是所有 Solidity 合约的 prelude——分配 fmp、检查 msg.value、部署 runtime code。看到此段即可认定来自 Solidity 编译器，而非手写 Yul。</p>
+<h3 id="67">6.7 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：150 条 opcode 里真正会咬人的就那几条——SLOAD/SSTORE 最贵、四种 CALL 的 msg.sender 各不相同、tx.origin 永远别拿来鉴权。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>DELEGATECALL 与 CALL 的本质差别是什么？（答案：DELEGATECALL 借调用方的上下文跑被调代码——msg.sender 保留、storage 用调用方的）</li>
+<li>CREATE2 和 CREATE 的地址公式差在哪？（答案：CREATE 跟 nonce 走，CREATE2 用你自选的 salt + initCode 哈希，部署前可算）</li>
+<li>STATICCALL 进入后哪些 opcode 会 revert？（答案：所有写状态的——SSTORE/CREATE/SELFDESTRUCT/LOG）</li>
+</ol>
+<p><strong>下一步</strong>：opcode 之外，EVM 还藏了 18 个"作弊码"——precompile，§7 速查。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1787,12 +1915,24 @@ POP
 <p><strong>ecrecover（0x01，3000 gas）</strong>：整个以太坊最常调用的 precompile。输入 128 字节 <code>hash || v || r || s</code>，输出恢复地址。两个坑：①恢复失败返回 <code>0x00...0</code>，<strong>别忘记检查</strong>，把全 0 当合法地址是经典漏洞；②签名 malleability——(r,s) 和 (r,n-s) 能恢复同一地址，必须强制 <code>s ≤ n/2</code>（OZ <code>ECDSA.sol</code> 内置了）。</p>
 <p><strong>point evaluation（0x0a，50000 gas）</strong>：EIP-4844 核心。rollup 用它在主网证明 blob 数据完整性，比 calldata 便宜约 100 倍。</p>
 <p><strong>secp256r1（0x100，Fusaka）</strong>：苹果 / 安卓设备的 Face ID / 指纹原生曲线。上线后手机可直接签链上交易，不再需要"先翻译成 ETH 私钥"中间层。</p>
+<h3 id="72">7.2 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：precompile 是 EVM 的"native 加速器"——把椭圆曲线、哈希、配对这种慢得离谱的运算交给客户端 C 库去算，贴个固定地址假装是合约。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>调 ecrecover 返回 <code>0x0000...0</code> 意味着什么？（答案：签名恢复失败——把全 0 当合法地址是经典漏洞，必须显式 check）</li>
+<li>EIP-4844 的 0x0a precompile 给 rollup 解决了什么？（答案：在主网上证明 blob 数据完整，无须把 blob 字节本身存进 stateRoot）</li>
+<li>Fusaka 的 0x100（secp256r1）让什么变成可能？（答案：手机 Face ID / passkey 直接签链上交易，省去"ETH 私钥中间层"）</li>
+</ol>
+<p><strong>下一步</strong>：opcode + precompile 讲清"计算"，下一节 §8 讲"账"——状态树。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="8-mpt-verkle" id="ch10"><span class="chapter-num">Chapter 10</span><br>8 状态树：MPT 现在 → Verkle 将来</h2>
 
 <p>【参考】</p>
+<blockquote>
+<p><strong>TL;DR</strong>：以太坊用一棵叫 MPT 的"加密版索引树"让全网就账户余额达成共识——树根（stateRoot）32 字节写进区块头，所有节点本地算出的根必须一致。MPT 现在 350 GB、单证明 1 KB、深 7-9 层，跑不动了。Verkle 是给它做的换树手术：扇出从 16 涨到 256、证明从 1 KB 压到 150 字节、可批量聚合，目标是让"无状态客户端"成为可能。Hegota 升级后落地。</p>
+</blockquote>
 <p>每次你查 <code>cast balance vitalik.eth</code>，背后有一棵全网都信的树在告诉你答案。</p>
 <p>这棵树是以太坊"所有人对状态达成共识"的工具：每个全节点本地都维护它，新块来时按相同规则更新，最后算出的 root 必须 byte-by-byte 一致——只要这个 32 字节的 root 一样，全世界几千台机器对账户余额、合约 storage、code 的看法就完全一致。这是无信任的物理基础。</p>
 <p>但这棵树也是以太坊最大的肿瘤之一：350 GB 状态、单证明 1 KB、深度 7-9 层、扇出只有 16。Verkle Trees 是给它做的"心脏外科手术"，在 Hegota 升级后落地。</p>
@@ -1856,6 +1996,15 @@ POP
 </tr>
 </tbody>
 </table>
+<h3 id="84">8.4 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：MPT 是"全节点共识用的加密索引树"，Verkle 用椭圆曲线多项式承诺把证明压两个数量级，目标让普通设备也能验证状态。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>stateRoot 是怎么进区块头的？（答案：所有账户 + 各自 storage 树叶 → 哈希逐层往上算 → 树根 32 字节写 header）</li>
+<li>Verkle 证明能比 Merkle 小两个数量级靠什么？（答案：多项式承诺可批量聚合——证 1000 个 slot 只要 ~10 KB；Merkle 要 ~1000 KB）</li>
+<li>为什么"无状态客户端"等 Verkle 才能上？（答案：MPT witness 太大，Verkle witness 一块 ~200 KB 才放得进带宽预算）</li>
+</ol>
+<p><strong>下一步</strong>：树讲完了，下一节 §9 看哪些软件在"养"这棵树——客户端。</p>
 <hr />
 
 </section><section class="chapter">
@@ -1917,11 +2066,23 @@ POP
 </tr>
 </tbody>
 </table>
+<h3 id="92">9.2 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：一台全节点 = EL（跑 EVM）+ CL（跑 PoS），EL 五家、CL 五家，共 25 种组合；优先选份额 &lt; 33% 的组合——这是 2025-12 Prysm 事件用现金买的教训。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>EL 与 CL 之间用什么协议通信？（答案：Engine API，HTTPS + JWT secret 认证）</li>
+<li>为什么"优先选份额 &lt; 33%"？（答案：单家挂掉若 &gt; 33% 网络就会失去 finality；Prysm 事件正好卡在边界）</li>
+<li>Home staker 推荐什么组合？为什么？（答案：reth + nimbus 或 lighthouse，资源占用小且份额不大）</li>
+</ol>
+<p><strong>下一步</strong>：客户端选定后，"升级"是怎么定下来的？§10 讲 ACD 流程。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="10" id="ch12"><span class="chapter-num">Chapter 12</span><br>10 升级机制：硬分叉是怎么开会开出来的</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：以太坊升级靠"开会"——几百个开发者每两周一次 ACD Zoom，吵出哪些 EIP 进下次硬分叉。流程：Idea → Draft → Review → Last Call → Final → 进硬分叉 meta EIP；上主网前要跑 ~10 个 devnet + Holesky/Hoodi/Sepolia 测试网。看起来慢，但十年没出过决策黑箱导致的分叉事故。</p>
+</blockquote>
 <p>以太坊没有 CEO。没人有"按下去"的红色按钮。Pectra 那 11 个 EIP 怎么塞进去的、Prague EOF 是谁拍的板要剔除？没人。是几百个开发者每两周开一次 Zoom，吵两小时，慢慢吵出来的。</p>
 <p>如果你来自传统软件公司，会觉得这个过程慢得离谱——但它能跑十年没出过一次因决策黑箱而引发的链分裂。这一节把这个看似松散的流程拆开，让你听懂下次 ACD 会议为什么会争得面红耳赤。</p>
 <h3 id="101-eip">10.1 EIP 流程</h3>
@@ -1946,6 +2107,15 @@ POP
 <h3 id="105-fusaka">10.5 Fusaka 后的节奏</h3>
 <p>Fusaka 上线时 ACD 决议：大致<strong>春季 + 秋季</strong>各一次硬分叉。Glamsterdam 春季款，Hegota 秋季款。</p>
 <p>来源：<a href="https://www.theblock.co/post/381285/fusaka-rollout-ethereum-twice-year-hard-fork-schedule">The Block: twice-a-year hard-fork schedule</a>。</p>
+<h3 id="106">10.6 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：协议升级 = EIP（书面提案）+ ACD（开会拍板）+ devnet/testnet（实测）三件套；任何一环卡住都能让 EIP 延期，EOF 在 Fusaka 被剔除就是 devnet 同步失败 + 工程复杂度过高的复合结果。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>EIP 的 <code>Status: Final</code> 等于上主网了吗？（答案：不等于——还要进硬分叉的 meta EIP 列表才算正式纳入）</li>
+<li>为什么 Pectra 在 Hoodi 测试网首发而不是 Sepolia？（答案：Hoodi 是 2025 起的长寿命测试网，专门给 Pectra/Fusaka 这种大升级做压测）</li>
+<li>Fusaka 后的硬分叉节奏是什么？（答案：春 + 秋各一次，Glamsterdam 春季款、Hegota 秋季款）</li>
+</ol>
+<p><strong>下一步</strong>：看完所有零件后，下一节 §11 把整笔 USDC 转账从头串一遍。</p>
 <hr />
 
 </section><section class="chapter">
@@ -2006,6 +2176,15 @@ POP
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%;"><span></span><code><span style="color: #8F5902; font-style: italic"># 用 cast 跟踪任何一笔 USDC transfer</span>
 cast<span style="color: #F8F8F8"> </span>run<span style="color: #F8F8F8"> </span>0x&lt;tx_hash&gt;<span style="color: #F8F8F8"> </span>--rpc-url<span style="color: #F8F8F8"> </span><span style="color: #000">$ETH_RPC_URL</span><span style="color: #F8F8F8"> </span>--quick
 </code></pre></div>
+<h3 id="112">11.2 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：一笔 USDC tx 从签名到 finalize 走 7 段（钱包 → mempool → builder → proposer → EL → proxy → impl），用到前 10 节的所有概念——选择器、DELEGATECALL、cold SLOAD、LOG3、stateRoot 更新一应俱全。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>USDC 转账为什么会经过 DELEGATECALL？（答案：USDC 是 proxy 模式，调用先到 proxy，fallback 再 DELEGATECALL 到 implementation）</li>
+<li>一笔 tx 从入 mempool 到 finalize 大约多久？（答案：进块 ~12 秒，finality ~12.8 分钟，2 epochs）</li>
+<li>base fee 烧掉的 ETH 进了谁的口袋？（答案：没人——直接从 sender 余额扣，等价 ETH 总量减少）</li>
+</ol>
+<p><strong>下一步</strong>：搞清楚交易长什么样后，§12 讲 calldata 那串 0xa9059cbb... 是怎么编出来的。</p>
 <hr />
 
 </section><section class="chapter">
@@ -2034,11 +2213,23 @@ cast<span style="color: #F8F8F8"> </span>sig<span style="color: #F8F8F8"> </span
 </code></pre></div>
 <h3 id="123-abiencode-vs-abiencodepacked">12.3 abi.encode vs abi.encodePacked</h3>
 <p><code>abi.encodePacked</code> 紧凑拼接，<strong>绝对不要用来做签名哈希参数</strong>——<code>keccak256(abi.encodePacked("a","bc"))</code> 和 <code>keccak256(abi.encodePacked("ab","c"))</code> 结果相同，经典签名重放攻击入口。永远用 <code>abi.encode</code> + EIP-712 类型哈希做消息签名。</p>
+<h3 id="124">12.4 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：calldata = 4 字节 selector + ABI 编码参数；静态类型填到 32 字节、动态类型放尾部头部存偏移——会读这两件事就能看懂 Etherscan 任何交易。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li><code>transfer(address,uint256)</code> 的 selector 怎么算？（答案：<code>bytes4(keccak256("transfer(address,uint256)"))</code> = <code>0xa9059cbb</code>，<code>uint</code> 必须写全 <code>uint256</code>）</li>
+<li>4 字节 selector 的碰撞概率是多少？为什么 Diamond 要严查？（答案：1/2^32 ≈ 1/40 亿；多 facet 路由若两个函数 selector 撞了就路由错乱）</li>
+<li><code>abi.encodePacked</code> 为什么不能用来签消息？（答案：变长类型拼接歧义——("a","bc") 和 ("ab","c") 哈希相同，可被重放）</li>
+</ol>
+<p><strong>下一步</strong>：理论看够了，§13 直接动手——viem / Foundry / cast 实战。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="13-viem-foundry-cast" id="ch15"><span class="chapter-num">Chapter 15</span><br>13 工程实现：viem / Foundry / cast 实战</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：六个 demo 把前面所有公式落到键盘上——<code>code/01</code> 读链、<code>02</code> 手撸 1559 签名、<code>03</code> 跑 EIP-7702 委托、<code>04</code> cast 速查 12 配方、<code>05</code> Foundry trace SSTORE 冷热、<code>06</code> evm.codes playground 玩 opcode。环境固定 Node 20.18 / viem 2.43 / Foundry v1.0+。</p>
+</blockquote>
 <p>到这里你已经被规则塞了十节，是时候把这些字打到键盘上。</p>
 <p>每个示例都对应前面一个公式：1559 那一节的"加密签名再 RLP"会落到 <code>serializeTransaction</code> + <code>keccak256</code> + <code>signTransaction</code> 三行；SSTORE 冷热表会变成 <code>forge test -vvvv</code> 里你能亲眼看见的 gas 数字；CREATE2 那个 <code>0xff || ... || keccak(initCode)</code> 公式会缩成 <code>cast create2</code> 一句话。</p>
 <p>读不动公式没关系，跑一次代码大概率比读三遍正文管用。</p>
@@ -2075,11 +2266,23 @@ forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</spa
 00     STOP
 </code></pre></div>
 <p>点 Run 逐步显示 stack / storage。替换 <code>02</code> 为 <code>01/04/07</code> 等过一遍算术 opcode。</p>
+<h3 id="137">13.7 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：跑一次 demo 比读三遍正文管用——<code>forge test -vvvv</code> 给你的 trace 里能数清每个 SSTORE 烧了多少 gas，比任何课本都直白。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>跑 <code>03-eip7702-delegate.ts</code> 之后，去 etherscan 看 EOA 的 code 字段应该是什么？（答案：23 字节 <code>0xef0100 || delegate_addr</code>）</li>
+<li>为什么作者写"勿直接 <code>bash 04-...</code>"？（答案：那是配方而非脚本——挑感兴趣段落复制粘贴，跑全套会乱）</li>
+<li><code>forge test -vvvv</code> 比 <code>-v</code> 多出来什么信息？（答案：每条 opcode 的完整执行 trace，能逐步看 stack/memory/storage）</li>
+</ol>
+<p><strong>下一步</strong>：跑通工程后，§14 讲怎么从链上读事件——前端和 indexer 全靠这个。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="14-logs" id="ch16"><span class="chapter-num">Chapter 16</span><br>14 事件与 logs</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：合约用 LOG0-LOG4 opcode 往区块的 receiptsRoot 里写"事件记录"——链不读它（不进 stateRoot），但 The Graph、Etherscan、MetaMask 历史这些链下工具全靠它。每个事件有 0-4 个 indexed topic（前端用来过滤）+ 任意 data。</p>
+</blockquote>
 <p>打开 Etherscan 任何一笔交易，下面那一长串"Transfer"、"Approval"、"Swap" 是怎么来的？</p>
 <p>它们不在 stateRoot 里，链不会"看见"它们；它们只在 receiptsRoot 里，专门给链下读：The Graph、Subsquid、你的 Dune dashboard、MetaMask 的那个交易历史——所有"链下知道链上发生了什么"的能力，都靠 LOG opcode 系列 + logsBloom 这套基础设施。</p>
 <h3 id="141-log-opcode">14.1 LOG opcode 系列</h3>
@@ -2109,11 +2312,23 @@ forge<span style="color: #F8F8F8"> </span><span style="color: #204A87">test</spa
 <li><a href="https://goldsky.com/">Goldsky</a>、<a href="https://envio.dev/">Envio</a>：商用</li>
 <li>自建：<code>eth_getLogs</code> + PostgreSQL / ClickHouse</li>
 </ul>
+<h3 id="145">14.5 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：log 是"链下专属"的告示牌——不进 stateRoot 故便宜，但永久写进 receiptsRoot 可索引；logsBloom 让你 O(1) 判断"这块可能有我要的事件"。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>ERC-20 Transfer 用的是 LOG 几？为什么？（答案：LOG3——topic[0] = 事件签名 hash，topic[1] = from，topic[2] = to，data = amount）</li>
+<li>anonymous 事件和普通事件差在哪？（答案：anonymous 没有 topic[0]，indexer 只能用其它 topic 过滤）</li>
+<li>logsBloom 是什么、怎么工作？（答案：256 字节布隆过滤器，对 address + 每个 topic 哈希后置位 3 个 11 位偏移，用于轻节点快速筛选）</li>
+</ol>
+<p><strong>下一步</strong>：log 讲完了，§15 讲一个用 log 维持的工程模式——代理与 DELEGATECALL。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="15-delegatecall" id="ch17"><span class="chapter-num">Chapter 17</span><br>15 代理模式与 DELEGATECALL 工程</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：合约部署后字节码永久冻结——所以工程上把"地址"和"逻辑"拆开：proxy（不变的地址 + 用户 storage）+ implementation（可换的逻辑）。升级 = 改 proxy 里指向 impl 的那个指针。代价：DELEGATECALL 是 EVM 最危险的家伙，Parity 51 万 ETH 就是这么没的。三种主流形态：TransparentProxy / UUPS / Diamond。</p>
+</blockquote>
 <h3 id="151">15.1 为什么需要代理</h3>
 <p>合约一旦部署，字节码永久冻结。这是 EVM 的物理事实——你部署完了发现一个 typo？对不起，那段错的字节码会永远活在主网。</p>
 <p>但现实业务不可能不升级。USDC 要加合规接口、Aave 要换利率模型、4337 wallet 要支持新签名算法——怎么办？</p>
@@ -2148,11 +2363,23 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 <li>升级前 <code>forge inspect</code> 比对 storage layout</li>
 <li>用 OpenZeppelin Upgrades 插件自动检查</li>
 </ul>
+<h3 id="157">15.7 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：代理 = 把"地址 / 用户数据"和"代码逻辑"拆成两个合约，靠 DELEGATECALL 把后者搬到前者的家里跑——能升级，但每个错误都是百万级的。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>EIP-1967 implementation slot 为啥要 <code>keccak("eip1967.proxy.implementation") - 1</code>？（答案：减 1 把它推出 keccak 像空间，mapping 计算无法碰撞到它）</li>
+<li>UUPS 比 TransparentProxy 省 gas，但有什么致命风险？（答案：升级逻辑在 impl 里——若新 impl 没正确写 <code>_authorizeUpgrade</code>，proxy 永远不能再升级）</li>
+<li><code>_disableInitializers()</code> 防什么？（答案：防有人直接调 implementation 自身的 init 函数，把 implementation 据为己有再 selfdestruct——Parity 死法）</li>
+</ol>
+<p><strong>下一步</strong>：合约升级讲完了，§16 视角往外拉——交易从 mempool 到上链的整条链路。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="16-mempool-builder-relay-proposer" id="ch18"><span class="chapter-num">Chapter 18</span><br>16 区块构建链路：mempool → builder → relay → proposer</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：你的交易从签完到上链走五个角色——mempool（公开广场）→ searcher（找套利）→ builder（打包成块）→ relay（中介转发）→ proposer（盲签发链）。整条路 200ms 到 4s，是 MEV 的诞生地，也是 ePBS（EIP-7732，Glamsterdam）想砍掉的中间人。</p>
+</blockquote>
 <p>你按下"发送"，到这笔交易真的进区块，中间发生了什么？</p>
 <p>短答：你扔进 mempool，几个搜索者（searcher）盯着它找套利机会，几个 builder 把它和其他交易打包成一个候选块，relay 把"最有钱"那个块的 header 推给当前 slot 的 proposer，proposer 盲签后广播——大约 200ms 到 4s 之间，你的交易就上链了。</p>
 <p>长答见下文。这条链路是 MEV 的诞生地、抢跑攻击的舞台、ePBS 想杀掉的中间人——理解它，你才能理解为什么有人愿意付几千万美元去当 builder，为什么 Flashbots Protect 这种"私有 mempool"的产品突然冒出来。</p>
@@ -2172,11 +2399,23 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 - block 广播             : slot 内 4 s 之前
 - 2 epochs 之后 finality : ~12.8 minutes (32 slot × 12s × 2)
 </code></pre></div>
+<h3 id="165">16.5 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：tx 不是一签完就上链——它要先在 mempool 里被 searcher 盯一遍、被 builder 排进候选块、被 relay 转给 proposer 盲签后才广播；这条链路是 MEV、抢跑、夹击的所有发生地。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>公共 mempool 和 Flashbots Protect 这种私有 mempool 差在哪？（答案：公共广播全网可见易被 sandwich，私有直发 builder 不进公共 gossip）</li>
+<li>proposer 为什么"盲签"？（答案：MEV-Boost 模式下 proposer 只看 bid 不看 body——避免它窃取 block 内的套利机会；ePBS 想把这条写进协议）</li>
+<li>为什么 finality 要 ~12.8 分钟？（答案：2 epochs × 32 slot × 12s——PoS 要两轮投票确认才不可逆）</li>
+</ol>
+<p><strong>下一步</strong>：上链之后呢？§17 教你怎么拿一个未 verify 的字节码反推逻辑。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="17-evm" id="ch19"><span class="chapter-num">Chapter 19</span><br>17 EVM 字节码逆向工程</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：拿到一段未 verify 的字节码，五步反推逻辑——<code>cast code</code> 取字节、找 selector 表（<code>0xe0 SHR + EQ + JUMPI</code> 模式）、<code>cast 4byte</code> 反查函数名、跟 JUMP 重建控制流、对照常见模板猜 Solidity。工具链：whatsabi / Heimdall-rs / Dedaub。</p>
+</blockquote>
 <p>链上有一个看着很可疑的合约。它没在 Etherscan 上 verify 源码，每天有几万 ETH 进出，开发者钱包里突然出现了 1000 ETH 不知所踪——你想知道它在干什么。</p>
 <p>字节码逆向就是这种时候的活儿。它不是科学，是手艺：先识别 selector 表分清"它有几个函数"，再反查每个 4-byte 找出函数名，再追踪每段 jump 重建控制流，最后在脑子里把 Solidity 写回来。这一节给你工作流和工具。</p>
 <h3 id="171">17.1 工作流</h3>
@@ -2240,11 +2479,23 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 </table>
 <h3 id="174">17.4 对照练习</h3>
 <p>找 Etherscan 上一个未 verify 的合约：<code>cast code</code> → <code>cast 4byte</code> 反查 → <a href="https://library.dedaub.com/">Dedaub</a> / Heimdall 反编译 → 让 Claude 按"PC by PC + stack"格式（§19.3）逐段解释 → <code>forge test vm.prank</code> 验证重建 ABI。</p>
+<h3 id="175">17.5 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：字节码逆向不是科学是手艺——靠模式识别（dispatcher、prelude、proxy slot）+ 工具链（whatsabi/Heimdall/Dedaub）+ 让 AI 当模拟器（§19.3 prompt 那条）三件套。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li><code>0xe0 SHR + EQ + JUMPI</code> 这个模式出现在哪？什么作用？（答案：dispatcher 段——从 calldata[0..4] 取 selector，逐个 EQ 比对然后跳）</li>
+<li>字节码开头是 <code>0x6080604052</code> 说明什么？（答案：Solidity 编译器生成的标准 prelude——初始化 free memory pointer 到 0x80）</li>
+<li>看到 <code>0x360894a13ba1a3...</code> 这个 slot 意味着什么？（答案：EIP-1967 implementation slot——大概率是 proxy 合约）</li>
+</ol>
+<p><strong>下一步</strong>：见过链上各种凶险手法，§18 把"已知会咬人"的 13 个坑列出来集中防。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="18-top-12" id="ch20"><span class="chapter-num">Chapter 20</span><br>18 常见坑（Top 12）</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：13 个已知会咬人的反模式，按"被偷的钱 × 被坑的人"排序——DELEGATECALL 撞 storage、tx.origin 鉴权、签名 malleability、跨链重放、未初始化 implementation、重入、硬编码 2300 gas 是最常踩的几条。</p>
+</blockquote>
 <p>每条都有名有姓的祭品。按"被坑过的人 × 被偷的钱"排序：</p>
 <ol>
 <li><strong>DELEGATECALL 到 storage layout 不一致的合约</strong> — Parity 级灾难</li>
@@ -2261,11 +2512,23 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 <li><strong>未删 SELFDESTRUCT</strong> — EIP-6780 后危害降低但非零</li>
 <li><strong>CREATE2 撞已有 storage 的地址</strong> — EIP-7610：禁止往已有 storage 的地址重新部署合约（防 CREATE2 撞击导致状态污染）</li>
 </ol>
+<h3 id="181">18.1 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：每个坑背后都有名字（Parity / The DAO / GST2…），不是抽象警告——审计第一步就是把这 13 条当 checklist 走一遍。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>为什么 <code>tx.origin</code> 不能做权限？（答案：可被钓鱼合约滥用——攻击者诱导你的合约去调一个用 tx.origin 鉴权的合约）</li>
+<li>写 ERC-20 的转账逻辑时怎么避免重入？（答案：checks-effects-interactions——先 SSTORE 改余额，再外部 call）</li>
+<li>CREATE2 部署到一个已有 storage 的地址会发生什么？（答案：EIP-7610 之后 revert；之前会导致状态污染，是经典攻击面）</li>
+</ol>
+<p><strong>下一步</strong>：知道哪里会咬人之后，§19 讲怎么让 AI 帮你不咬人——以及哪些活儿 AI 一定会幻觉。</p>
 <hr />
 
 </section><section class="chapter">
 <h2 id="19-ai-evm" id="ch21"><span class="chapter-num">Chapter 21</span><br>19 AI 在 EVM 工作流的位置</h2>
 
+<blockquote>
+<p><strong>TL;DR</strong>：AI 在 EVM 工作流里两极分化——模板反编译、calldata 解释、审计副驾驶能用；ACD 决策、形式化证明、gas 极致优化用不了。让 AI 解释字节码的 prompt 关键：把它从"想象家"按回"模拟器"，强制逐 PC + stack 列出执行步骤再翻译，幻觉率直降。</p>
+</blockquote>
 <p>不是所有事都该让 AI 干。EVM 这种"一个字符错就吃光 gas"的环境，AI 表现得很两极：模板代码反编译它能 80 分，gas 优化最后那 5% 它一定瞎编。</p>
 <p>知道哪些事让它做、哪些事别让它做，就是这一节。</p>
 <h3 id="191-ai">19.1 用 AI 能省时间的场景</h3>
@@ -2286,6 +2549,15 @@ beacon slot         = bytes32(uint256(keccak256(&quot;eip1967.proxy.beacon&quot;
 <p>这段字节码从 PC=0 执行，请逐 PC 列出：opcode、执行后 stack（<code>[a,b,c]</code> 栈顶在右）、改变的 memory（<code>mem[off..len] = ...</code>）、改变的 storage（<code>slot k = ...</code>）。JUMP/JUMPI 列出所有可能分支。完成后再给 Solidity 译文。</p>
 </blockquote>
 <p>差别在哪？前一句让 AI"自由发挥"，后一句强制它<strong>老实模拟 EVM</strong>——它必须先把每一步算出来才能写答案，幻觉率显著下降。这是和 LLM 共事的通用技巧：把它从"想象家"按回"模拟器"。</p>
+<h3 id="194">19.4 一句话回顾 &amp; 自查</h3>
+<p><strong>一句话</strong>：AI 能给 80 分，剩下 20 分还得人肉——尤其是 gas 极限优化和形式化证明。</p>
+<p><strong>自查三问</strong>：</p>
+<ol>
+<li>AI 能帮你做的三件事是什么？（答案：反编译模板代码、解释 calldata、审计副驾驶副 hint）</li>
+<li>让 AI 翻译字节码时的正确 prompt 关键词是什么？（答案：逐 PC + stack 状态模拟，再 Solidity 译文——强制它"先做对再写"）</li>
+<li>哪些事别让 AI 碰？（答案：形式化 invariant 证明、gas 极致优化最后 5%、ACD trade-off 决策、新加密原语设计）</li>
+</ol>
+<p><strong>下一步</strong>：理论完了，§20 用六道题让你自检一遍。</p>
 <hr />
 
 </section><section class="chapter">

@@ -118,7 +118,6 @@ const hash = await walletClient.writeContract(request)
 | 坑 | 解决 |
 | --- | --- |
 | `1` 不是 `1n` | 开 `noImplicitAny`；用 `parseUnits` |
-| 漏 simulate | 强制 `simulateContract` 先行 |
 | ABI 漏 `as const` | `parseAbi` 入参显式 `as const` |
 | ssr=false 没开 | wagmi config 设 `ssr: true` + `cookieStorage` |
 
@@ -351,7 +350,9 @@ export default () => (
 
 ## 4. 签名 + 发送交易
 
-> **TL;DR** 三种操作：`personal_sign`（文本签名）、`signTypedData`（EIP-712 结构化签名）、`sendTransaction`（发 ETH / 调合约）。全部从 `useWalletClient()` 拿到的 client 发起。
+> **TL;DR** 三种操作：`personal_sign`（文本签名）、`signTypedData`（EIP-712 结构化签名）、`sendTransaction`（发 ETH / 调合约）。全部从 `useWalletClient()` 拿到的 client 发起；写之前必先 `simulate`。
+
+**钩子**：dApp 与钱包之间的"对话"只有三句话——你是谁（personal_sign）、你同意什么（signTypedData）、你想干什么（sendTransaction）。剩下的复杂度都长在这三句话上。
 
 ### 4.1 personal_sign（登录 / 证明身份）
 
@@ -420,7 +421,10 @@ const { isSuccess } = useWaitForTransactionReceipt({ hash })
 
 这是 wagmi dApp 的标准四步。把 `simErr?.shortMessage` 直接显示给用户，不要吞错误。
 
-**章末**：签名 + 发交易已通。下一节加 SIWE，让后端知道"谁登录了"。
+**章末三件套**：
+- **一句话**：所有写操作走"读 → simulate → 写 → 等回执"四步范式，错误前置到 UI。
+- **看代码**：`code/src/components/TransferForm.tsx` 是这四步的最小落地。
+- **下一步**：本章只保证 `personal_sign` 跑通，下一节用 SIWE 把它升级成有 domain/nonce/时效的"安全登录"。
 
 ---
 
@@ -594,10 +598,18 @@ flowchart LR
   SA --> EXT[业务合约]
 ```
 
-- **Signer**：EOA / Passkey / MPC，负责签 userOpHash。
+**用户侧两位**：
+
+- **Signer**：EOA / Passkey / MPC，负责签 userOpHash——身份证 + 签字笔。
+- **Smart Account**：实现 `validateUserOp` 的合约，等价"账户本体"。Safe / Kernel / Nexus / LightAccount。
+
+**链下中转一位**：
+
 - **Bundler**（快递员）：攒 N 笔 UserOp，打包成一笔 tx 调 EntryPoint。Pimlico / Alchemy / Etherspot。
-- **EntryPoint**（单例合约）：`0x0000000071727De22E5E9d8BAf0edAc6f37da032`，所有链同地址。
-- **Smart Account**：实现 `validateUserOp` 的合约，Safe / Kernel / Nexus / LightAccount。
+
+**链上协调三位**：
+
+- **EntryPoint**（单例合约）：`0x0000000071727De22E5E9d8BAf0edAc6f37da032`，所有 EVM 链同地址，负责验签 + 调度。
 - **Paymaster**（金主）：可选，代付 gas。支持 ERC-20 代付 / 业务方 sponsor。
 - **Factory**：可选，首次 UserOp 时 CREATE2 部署 smart account。
 
@@ -709,6 +721,8 @@ if (risk.score > 70) {
 
 > **TL;DR** 四个维度定选型：资金规模、用户类型、目标链、是否需要 session key。多数 dApp 选 Pimlico + Biconomy Nexus 或 Coinbase Smart Wallet，不要自己写 smart account 逻辑。
 
+**钩子**：Safe 守着 300 亿美元 TVL 不是因为代码最炫，而是因为它先存活下来。"用谁不重要，别自己写"才是这一节真正的答案——smart account 逻辑写错一行就是清零事故。
+
 ### 选型矩阵
 
 | 维度 | Safe | Kernel (ZeroDev) | Biconomy Nexus | Alchemy LightAccount |
@@ -729,6 +743,11 @@ if (risk.score > 70) {
 - **Bundler 选型**：Pimlico（开发者文档最好）、Alchemy（已用 RPC 一站式）、Etherspot（自部署免费）。
 
 ERC-7579 / 6900 模块化架构细节见**附录 F**；Bundler 选型建议见上表。
+
+**章末三件套**：
+- **一句话**：选型按"资金规模 × 用户类型 × 是否要 session key"三轴定位，先选 Smart Account 再配 Bundler。
+- **看代码**：`code/src/lib/aa.ts` 是 Safe + Pimlico 的最小组合，换成 Kernel 只改一行 `toSafeSmartAccount → toKernelSmartAccount`。
+- **下一步**：选完账户，下一节进入"前端要不要拦人"的合规问题。
 
 ---
 
@@ -824,7 +843,10 @@ export function useOfacGuard() {
 
 工程师视角：①前端按 IP / 钱包标签做地区分流（美国 IP 关闭杠杆功能）；②法律合规请律师，**别拿这张表打官司**。
 
-**章末**：拦完坏地址，下一节看怎么把好地址的法币变成链上资产。
+**章末三件套**：
+- **一句话**：合规是"前端筛 + 合约兜"两层网——SDN 拦地址、blacklist 冻余额、Privacy Pools 给清白者一条退路。
+- **看代码**：`/api/screen` 路由是 OFAC 拦截最小实现；保留 5 年 log 是法务硬指标。
+- **下一步**：拦完"坏地址"，下一节解决"没地址"——法币如何变成链上资产。
 
 ---
 
@@ -916,15 +938,18 @@ export function BuyButton({ amount = 100 }: { amount?: number }) {
 | 香港 | HKID + 地址 + selfie | $1000 起触发增强 KYC | VATP 牌照机构才能直接对零售 |
 | 新加坡 | NRIC + 地址 + 可能 IRAS | 严格按 MAS 风险评级 | DPT 牌照下零售杠杆禁，散户 KYC 严 |
 
-**章末**：用户进得来、留得住，下一节看实战项目把全部前 10 节代码跑一遍。
+**章末三件套**：
+- **一句话**：聚合器（Onramper / Mt Pelerin）一行 SDK 接多渠道是默认解，单点 SDK（MoonPay / Stripe / Coinbase Onramp）按区域补位。
+- **看代码**：`BuyButton` 演示 MoonPay 接入；生产环境 `walletAddress` 必须后端 HMAC 签名再注入 URL。
+- **下一步**：用户既进得来又拦得住，下一节把前 12 节代码合到 `code/` 一套项目里跑通。
 
 ---
 
 ## 13. 实战项目导览（code/）
 
-> 前面 10 节都在讲"理论 + 字段 + 选型"，这一节是个落地参考：`pnpm dev` 起一个 Next.js 15 项目，连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全跑通，签名前先渲染 typed data 再让你按。
->
-> 把它当作"读完前 10 节的功课"——你可以直接 fork 改业务，也可以一边看代码一边对照前面章节理解每一行为什么这么写。
+> **TL;DR** `code/` 是把前 12 节"翻译"成 Next.js 15 项目的最小范例：`pnpm dev` 跑起来即得连接 + 余额 + 转账 + SIWE + Permit2 + 4337 + 7702 全链路。读代码顺序 = 章节顺序，每一行都能反查"为什么这么写"。
+
+**钩子**：把前面 12 节的代码片段散点摆开，最容易翻车的不是某一行，而是"组装"。这一节就是"组装说明书"——把每一段代码放在它该在的目录里，按住 `pnpm dev` 就能起来。
 
 ### 13.1 目录结构
 
@@ -1135,15 +1160,20 @@ export function Eip7702Demo() {
 
 write 前必跑 `useSimulateContract` 并同步显示结果；typed data 签名前渲染 `<TypedDataPreview/>`；Permit2 deadline ≤ 5 分钟；7702 永远 chain_id != 0；SIWE nonce verify 后即销毁。
 
+**章末三件套**：
+- **一句话**：`code/` 是"前 12 节合订本"——每个组件对应一节，可独立删改不影响其他模块。
+- **看代码**：从 `src/lib/wagmi.ts`（§2）→ `Providers.tsx`（§3）→ `SiweLogin.tsx`（§5）→ `UserOp4337Demo.tsx`（§7）顺序读完，知识闭环。
+- **下一步**：手跑通 demo 后做 §14 习题，把"看懂"升级成"能改"。
+
 ---
 
 ## 14. 习题与解答
 
-> 这一节六道题是对前 10 节的"压力测试"——前两题强迫你记住 viem 与 ethers 的差异、亲手构造一笔 PackedUserOperation 才知道字段是怎么打包的；后四题把"防钓鱼"和"AA UX"翻译成自己的代码——签名钓鱼检测器、SIWE nonce 一次性、Coinbase Smart Wallet 的链切换边界、session key 限额。
->
-> 不会做就回对应章节，做完再读参考解答能学到双倍。
+> **TL;DR** 六道题压测前 13 节核心点：viem 迁移、4337 字段打包、712 钓鱼检测、SIWE nonce、Smart Wallet 切链、session key 限额。前 5 道带答案，第 6 题开放。
 
-前 5 道带答案，第 6 道开放题。
+**钩子**：会看不等于会写。读懂 EIP-7702 不会让你避开 chain_id=0 攻击，但亲手算一遍 userOpHash 会。这一节强迫你"动手"，做完再回看前 10 节会发现密度突然变薄。
+
+不会做就回对应章节，做完再读参考解答能学到双倍。
 
 ### 习题 1：viem 与 ethers v6 API 对照
 
@@ -1294,9 +1324,16 @@ function detectPhishing(i: ...) {
 
 **思路**：Validator 校验签名来自 session key + 时间 < deadline + 累计花费 < 0.1 ETH；toCallPolicy 限制 target = GameContract, selector ∈ {move, attack}；revoke 方案：主 owner 签一笔 `uninstallModule`，或 Validator 内置 `paused` flag（`setPaused(true)` 立刻冻结）。
 
+**章末三件套**：
+- **一句话**：6 题对应模块四大能力点（API 迁移、AA 字段、签名安全、session key），做完即可独立交付一个 dApp 模块。
+- **看代码**：习题 3 参考 `code/src/hooks/useEip712Inspector.ts`；习题 6 参考 ZeroDev `toPermissionValidator` 文档。
+- **下一步**：把答案改成 PR，对照 §15 参考资料补足背景。
+
 ---
 
 ## 15. 参考资料
+
+> **TL;DR** 按"viem/wagmi → 钱包 SDK → AA 栈（4337/7702）→ 标准 EIP → 钓鱼数据"五条线分组阅读；线上版本随 viem 2.43+ / EntryPoint v0.7 校准。
 
 - viem 官方文档（v2.43.3，与模块 13 一致）：https://viem.sh/
 - viem ethers 迁移：https://viem.sh/docs/ethers-migration

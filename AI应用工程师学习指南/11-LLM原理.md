@@ -8,7 +8,7 @@
 
 **承前启后**：第 10 章刚把分布式训练讲完——能训出一个大模型只是开始；这个由 next-token 概率分布堆出来的「黑盒」每天在你应用里算什么、为什么这么算、什么时候会算错，才是 AI 应用工程师真正吃饭的底层。第 1-10 章把工程基础（Python、Web、Docker、数据库、向量库、RPC、并发、可观测性、CI/CD、安全）打完，从这章开始正式进入第四部分 LLM 篇。后面的开源生态（第 12 章）、微调技术（第 13 章）、Prompt 工程化（第 14 章），以及第五部分应用开发里的 RAG、Agent，每一节都依赖你对本章原理的理解——否则调出来的东西全是黑盒，出问题只能靠玄学和换模型。
 
-**前置**：第 1 章（Python 基础，跑代码 demo）、第 9 章（可观测性，理解为什么要监控 token）、第 10 章（训练栈，理解模型权重是怎么来的）。**后续**：第 12 章把本章的架构特性、许可证、上下文长度落到模型选型；第 13 章把本章的 SFT/DPO 转成可执行的微调流程；第 14 章把本章的采样参数、tokenizer 落到 prompt 工程化；第五部分进一步把 context window、knowledge cutoff 转化为 RAG 与 Agent 的设计动机。
+**前置**：第 02 章（Python 工程化基础，跑代码 demo + 理解可观测性，为什么要监控 token）、第 10 章（训练栈，理解模型权重是怎么来的）。**后续**：第 12 章把本章的架构特性、许可证、上下文长度落到模型选型；第 13 章把本章的 SFT/DPO 转成可执行的微调流程；第 14 章把本章的采样参数、tokenizer 落到 prompt 工程化；第五部分进一步把上下文窗口（context window）、knowledge cutoff 转化为 RAG 与 Agent 的设计动机。
 
 > **阅读纲领**：本章不教你训练 LLM，只教你**作为 API 调用方需要懂哪些**。判断标准是：这条知识在 debug 一次失败、估一次成本、选一个模型时会不会用上。用不上的（比如手推 attention、各种位置编码的数学推导）我们让给《Attention Is All You Need》和 Sebastian Raschka 的书。
 
@@ -120,7 +120,7 @@ o200k_base:
 1. **同义中文 token 数是英文的 1.7×（GPT-4o）到 1.9×（GPT-4）**。早期 GPT-3.5（cl100k_base）对中文非常不友好，平均一个汉字 1 个 token；GPT-4o 升级到 o200k_base 后中文压缩率大幅提升，常见汉字组合（"语言模型"）能合并成一个 token。
 2. **o200k_base 把英文每 token 字符数从 5.57 提到 6.16**。词表大了一倍（cl100k 100K vs o200k 200K），英文也更省 token——英文用户也是受益方。
 
-**国产模型词表更偏中文**：DeepSeek-V3 词表 129K、Qwen3 词表 151K，都对中文做过优化，token 比英文模型省 20-40%。如果你的业务以中文为主，**模型选型不仅看 benchmark，还要看 tokenizer**。
+**国产模型词表更偏中文**：DeepSeek-V3 词表 128K、Qwen3 词表 151K，都对中文做过优化，token 比英文模型省 20-40%。如果你的业务以中文为主，**模型选型不仅看 benchmark，还要看 tokenizer**。
 
 ### 1.4 Tokenizer 对成本和性能的影响
 
@@ -167,7 +167,7 @@ flowchart LR
 1. **system prompt 用英文**：除非你的模型对中文 system prompt 调优过，否则英文 system prompt 同义且省 30-50% token。这一点对 OpenAI/Anthropic 系统几乎是常识，但很多团队的 system prompt 习惯性用中文写，每次调用浪费几百 token，月度账单上直接看到。
 2. **few-shot 例子用英文**：同上。一个 5-shot 中文 prompt 普遍 2K token，换成英文能压到 800-1000。
 3. **用户输入按用户语言处理**：不要把用户的中文翻译成英文再喂模型，会累积翻译错误。模型本身已经多语言对齐，对用户原始 query 的理解不会比你预先翻译差。
-4. **chunk 切割按 token 不按字符**：第 16 章 RAG 会反复用到，切错 chunk size 会爆 context window。常见错误：用 `text.split` 按字符切 1000 字一段，中文 1000 字 ≈ 1100-1500 token（GPT-4o），混入英文段落或代码后可能涨到 2000+。
+4. **chunk 切割按 token 不按字符**：第 16 章 RAG 会反复用到，切错 chunk size 会爆上下文窗口。常见错误：用 `text.split` 按字符切 1000 字一段，中文 1000 字 ≈ 1100-1500 token（GPT-4o），混入英文段落或代码后可能涨到 2000+。
 5. **算成本前先估 token**：在做任何 PoC 前，用 tiktoken 把典型 prompt + 预期 output 跑一遍，估出每次调用的 token，再乘单价、乘日活。这一步能在立项阶段就识别成本不可行的方案。
 
 参考：[OpenAI Tokenizer](https://platform.openai.com/tokenizer)、[tiktoken cookbook](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken)。
@@ -207,7 +207,7 @@ flowchart LR
 2. **语言识别**：fastText / cld3 过滤目标语言。
 3. **质量过滤**：基于规则（句子长度、标点比、英文字符比）+ 基于分类器（fastText 用 wikipedia/arxiv 当正样本训练）。
 4. **去毒**：色情、暴力、PII（个人身份信息）按词表 + 分类器过滤。
-5. **代码 / 数学专项**：Llama 3 起，预训练数据 ~ 17% 是代码、~ 10% 是数学，且单独走 pipeline 处理。
+5. **代码 / 数学专项**：Llama 3 起，预训练数据 ~ 17% 是代码、~ 25% 是数学与推理，且单独走 pipeline 处理（Meta 公布的 Llama 3 数据 mix：通用知识 50% / 数学与推理 25% / 代码 17% / 多语言 8%）。
 6. **混合采样**：上采样 wikipedia/arxiv/book 这种「干净」数据，下采样 web 噪声。Llama 3 在 405B 上做了大量 mix ratio 调优。
 
 **中文数据来源**：CC-Net 中文部分 + WuDao-Corpora（智源）+ MNBVC + 国内厂商自有抓取。质量参差不齐，**国产开源模型（Qwen、DeepSeek、ChatGLM）的中文优势主要来自这步**。
@@ -261,7 +261,7 @@ quadrantChart
 **2024-2026 的实践偏离**：
 
 - **Llama 3 70B**：参数 70B、数据 15T token，**比例 214:1**，远超 Chinchilla 最优。原因：Meta 选择「过度训练」小模型来换**推理便宜**——花更多训练算力一次，换无数次推理省 GPU。
-- **DeepSeek-V3 671B**：参数 671B（37B activated）、14.8T token，**比例 22:1（按 activated）或 22:1（按总参数）**，接近 Chinchilla。MoE 架构让训练算力分摊到 activated 参数，671B 训练成本仅 2.788M H800 GPU hours。
+- **DeepSeek-V3 671B**：参数 671B（37B activated）、14.8T token，**按总参数 22:1**（接近 Chinchilla 最优）、**按 activated 400:1**（明显过度训练）。MoE 架构让训练算力分摊到 activated 参数，671B 训练成本仅 2.788M H800 GPU hours。
 - **Qwen3 235B**：22B activated，36T token，**比例 1636:1（按 activated）**，明显过度训练，目标也是推理便宜。
 
 **应用工程师的 takeaway**：
@@ -787,6 +787,8 @@ flowchart LR
 
 **为什么 GQA 重要**：推理时 KV cache（缓存历史 K、V 避免重复算）占了大头显存。Llama-3 70B（$L=80, H_{kv}=8, d_h=128$, fp16, GQA）在 128K context、batch=1 下 KV Cache 约 **40 GiB**（详细公式见 09 章 §11.2）；如果用 MHA（$H=64$）会膨胀 8 倍到 320 GiB，无法部署。**KV cache 砍 8-16 倍**，长 context 推理才可能。
 
+> **生产提醒**：上面 40 GiB 是 batch=1 数字，**线上几乎不存在 batch=1 场景**——vLLM PagedAttention 用并发 batching，同一张 H100 上 32 路并发用户、每人 128K context 的 KV cache 加起来理论上要 40 × 32 ≈ 1.28 TiB。结果是：(1) 任何把"模型权重 140GB + 单卡 80G H100"画进容量表的方案，都默认了短上下文，长上下文吞吐至少要再砍一半甚至要 2 张卡；(2) 用户输入长度分布会随产品演化偷偷变长（接入新功能、用户开始贴长 PDF），KV cache 显存吃用是非线性的，必须每周看 `prompt_tokens` 直方图 P95、P99；(3) vLLM 的 `--max-model-len` 不是越大越好，开 128K 时即使没人发长 prompt，单 batch 容量也会按最坏情况预留；(4) FP8 / INT8 KV cache 量化（vLLM 0.6+）能再砍 2 倍但首 token 准确率会降，必须在自家 golden eval 上回归过再开。
+
 #### 6.1.2 RoPE（Rotary Position Embedding）
 
 ```mermaid
@@ -914,7 +916,7 @@ gantt
 - **优先把关键信息放头尾**：第 16 章 RAG 会反复提，retrieved chunk 要放在 prompt 的头部或尾部，不要放中段。
 - **prompt 不要塞满**：哪怕模型支持 128K，实际用 16K-32K 是「最甜」区间。塞到 100K 不仅慢、贵，还掉准确率。
 - **prefill 成本**：长 prompt 的第一 token 延迟（TTFT）和 prompt 长度成线性甚至超线性关系。50K 输入的 TTFT 可能要 5-15 秒，UX 不友好——长 context 配 streaming UI 时要给用户「正在思考」的过渡态。
-- **prompt caching 大有可为，但各家差异大**：四家厂商（Anthropic / OpenAI / Gemini / DeepSeek）在「手动 vs 自动」「折扣率」「TTL」「写入溢价」上差别很大，命中折扣从 OpenAI 的 50% 到 DeepSeek 的 ~98% 不等。应用工程师 takeaway：把不变的 prefix（system prompt + 示例 + 工具定义）放最前、变量放尾部，命中率能从 30% 拉到 80%+。**具体折扣率与配置详见第 22 章 §Prompt Caching**。
+- **prompt caching 大有可为，但各家差异大**：四家厂商（Anthropic / OpenAI / Gemini / DeepSeek）在「手动 vs 自动」「折扣率」「TTL」「写入溢价」上差别很大，命中折扣从 OpenAI 的 50% 到 DeepSeek 的 ~98% 不等。应用工程师 takeaway：把不变的 prefix（system prompt + 示例 + 工具定义）放最前、变量放尾部，命中率能从 30% 拉到 80%+。**具体折扣率与配置详见第 22 章 §22.2 Prompt Caching**。
 
 ---
 
@@ -1258,7 +1260,7 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 ### 8.5 把三段代码放进 RAG / Agent 怎么用
 
 - **Demo 1 → RAG**：第 16 章切 chunk 时直接复用 `tiktoken` 计 token 数，确保 chunk 不超 model context。
-- **Demo 2 → 调试 prompt**：当 prompt 出诡异输出，用逐 token 解码看模型在哪一步「跑偏」，类比第 9 章的 trace 工具。
+- **Demo 2 → 调试 prompt**：当 prompt 出诡异输出，用逐 token 解码看模型在哪一步「跑偏」，类比第 02 章的 trace 工具。
 - **Demo 3 → 自托管 LLM**：第 13 章微调完模型用 vLLM 部署时，`top_p` / `min_p` / `temperature` 都是要在 server 端配的。理解算法本身才能调出合理参数。
 
 ---
@@ -1271,7 +1273,7 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 2. **后训练决定模型「人格」**：同一个 base 模型经过不同的 SFT / DPO / RLAIF，能调出风格迥异的 chat 模型。GPT 啰嗦、Claude 谨慎、DeepSeek 简洁，根都在后训练数据偏好。
 3. **采样参数有判断范式**：严谨任务（代码、SQL、抽取）T=0；chat T=0.7；创意 T=1.0+ 配 min_p。**别同时把 T 和 top_p 都开到极致**，那是随机噪声。
 4. **Reasoning 模型不是万能的**：有可验证答案（数学、代码、复杂逻辑）才上 reasoning。chitchat、摘要、客服上 reasoning 是浪费钱——同一题成本可能高 20-100 倍。
-5. **Context window 别看声称值**：「128K context」按 RULER 实测有效部分多在 64K 左右；prompt 塞太满不仅慢、贵，还掉准确率。**16K-32K 是甜区**。
+5. **上下文窗口（context window）别看声称值**：「128K context」按 RULER 实测有效部分多在 64K 左右；prompt 塞太满不仅慢、贵，还掉准确率。**16K-32K 是甜区**。
 6. **幻觉的根因在训练目标**：next-token 是「续写最像分布」不是「输出事实」，加 `请不要编造` 没用。要 RAG（给证据）+ 压 temperature + 后处理 verifier。
 
 ### 必看 vs 选看（按读者类型）
@@ -1311,7 +1313,7 @@ T=1.5 min_p=0.05: counts = [325, 233, 171, 96, 71, 50, 30, 24, 0, 0]
 | Reasoning Models（§5.3） | 第 17 章 Agent | reasoning 模型作 Agent backbone |
 | 幻觉（§7.1） | 第 16 章 RAG / 第 17 章 Agent | 缓解的两大动机 |
 | 主流架构 / 许可证 / MoE（§6） | 第 12 章 开源生态 | 选型与部署成本估算的依据 |
-| MoE / 推理成本（§6.2） | 第 9 章 可观测性 / 第 21 章 模型部署 | 成本监控 + 模型选型 |
+| MoE / 推理成本（§6.2） | 第 24 章 LLMOps / 第 21 章 模型部署 | 成本监控 + 模型选型 |
 | Speculative Decoding（§4.6） | 第 21 章 模型部署 | 自托管推理加速 |
 
 ### 9.2 推荐阅读
