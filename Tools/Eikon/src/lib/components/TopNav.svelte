@@ -10,7 +10,7 @@ const tabs: { id: RouteId; label: string }[] = [
 
 <header class="top">
   <span class="dot"></span>
-  <h1>证件照工坊</h1>
+  <h1>方寸 <span class="en">Eikon</span></h1>
   <nav class="tabs">
     {#each tabs as t (t.id)}
       <button
@@ -43,6 +43,13 @@ const tabs: { id: RouteId; label: string }[] = [
     font: var(--t-card-title-weight) var(--t-card-title-size) var(--font-sans);
     color: var(--c-ink);
     margin: 0;
+    letter-spacing: 0.5px;
+  }
+  h1 .en {
+    font-family: var(--font-mono);
+    font-weight: 460;
+    color: var(--c-soft);
+    letter-spacing: 1px;
   }
   .tabs {
     display: flex;

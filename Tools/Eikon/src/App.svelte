@@ -11,9 +11,19 @@ const pages = {
   tools: () => import("./lib/pages/ToolsPage.svelte"),
 };
 
+const ROUTE_TITLE: Record<string, string> = {
+  maker: "证件照",
+  tools: "图片工具",
+};
+
 onMount(() => {
   theme.init();
   route.init();
+});
+
+// Web tab title reflects the active top-nav sub-page.
+$effect(() => {
+  document.title = `${ROUTE_TITLE[route.current] ?? ""} · 方寸 Eikon`;
 });
 </script>
 
