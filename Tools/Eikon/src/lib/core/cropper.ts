@@ -157,8 +157,14 @@ export function createCropper(container: HTMLElement): CropperHandle {
     },
 
     reset(): void {
-      getImage()?.$resetTransform();
+      // Return to the initial *fitted* state, not the raw transform:
+      // $resetTransform alone restores the image's intrinsic (often huge)
+      // size; re-fit it to the canvas like on mount.
+      const image = getImage();
+      image?.$resetTransform();
+      image?.$center("contain");
       getSelection()?.$reset();
+      getSelection()?.$center();
     },
 
     async renderTo(spec: PhotoSpec, bg: BackgroundColor): Promise<HTMLCanvasElement> {
