@@ -1,0 +1,68 @@
+/*
+ * App density scale. DESIGN.md's type tokens are a marketing-site scale
+ * (body 18px, button 20px, headline 26px). This is a dense productivity
+ * tool, so we deliberately override the *functional* type tokens to a
+ * compact scale while keeping DESIGN.md's color / radius / spacing /
+ * weight system intact. Loaded after tokens.css so it wins.
+ */
+:root {
+  --t-headline-size: 15px;
+  --t-headline-lh: 1.3;
+
+  --t-card-title-size: 15px;
+  --t-card-title-lh: 1.3;
+
+  --t-body-size: 13px;
+  --t-body-lh: 1.4;
+
+  --t-body-sm-size: 12px;
+  --t-body-sm-lh: 1.4;
+
+  --t-button-size: 13px;
+  --t-button-lh: 1.25;
+
+  --t-eyebrow-size: 10.5px;
+  --t-caption-size: 10px;
+
+  /*
+   * DESIGN.md uses very light Inter weights (320–340) — too thin at this
+   * compact scale. Nudge up a little but stay below normal (400) for body,
+   * per the requested "slightly bolder, not full weight". Small mono labels
+   * get a touch more so they stay legible at 10px.
+   */
+  --t-body-weight: 380;
+  --t-body-sm-weight: 390;
+  --t-eyebrow-weight: 460;
+  --t-caption-weight: 460;
+}
+
+/*
+ * Overlay scrollbar — thin, drawn OVER content. It never reserves a gutter
+ * (scrollbar-gutter: auto) so showing/hiding it causes zero layout shift
+ * of sibling/!inner elements. Apply `.scroll-overlay` to any scroll area.
+ */
+.scroll-overlay {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: auto;
+  scrollbar-width: thin; /* Firefox: thin, still overlays on most platforms */
+  scrollbar-color: var(--c-hairline) transparent;
+}
+.scroll-overlay::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-overlay::-webkit-scrollbar-thumb {
+  background: var(--c-hairline);
+  border-radius: var(--r-full);
+  /* Inset the thumb so it floats and doesn't visually push content. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-overlay::-webkit-scrollbar-thumb:hover {
+  background: var(--c-soft);
+  background-clip: padding-box;
+}

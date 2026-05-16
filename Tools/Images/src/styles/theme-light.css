@@ -1,0 +1,18 @@
+/* Light theme — Solarized Light only. No dark elements anywhere. */
+:root,
+[data-theme="light"] {
+  --c-canvas: #fdf6e3; /* base3  */
+  --c-surface-1: #eee8d5; /* base2  */
+  --c-surface-2: #e4dcc4; /* base2 -1 step */
+  --c-ink: #04222a; /* headings */
+  --c-body: #1d343b; /* body — normal, fully readable */
+  /* Secondary text must still be clearly readable (NOT faint). Only the
+     disabled state dims things, via opacity, not via this token. */
+  --c-soft: #3a565e;
+  --c-hairline: rgba(7, 54, 66, 0.16);
+  --c-accent: #268bd2; /* solarized blue */
+  --c-on-accent: #fdf6e3;
+  --c-accent-2: #2aa198; /* solarized cyan — crop guide */
+  --c-success: #859900; /* solarized green */
+  --c-danger: #dc322f; /* solarized red */
+}

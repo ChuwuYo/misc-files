@@ -1,0 +1,15 @@
+/* Dark theme — official DESIGN.md dark palette (getdesign.md site, verbatim). */
+[data-theme="dark"] {
+  --c-canvas: #0a0a0a; /* Canvas (dark) */
+  --c-surface-1: #161616; /* Surface 1 — cards, swatches */
+  --c-surface-2: #1f1f1f; /* Surface 2 — elevated tiles, icon buttons */
+  --c-ink: #ffffff; /* Ink — headings */
+  --c-body: rgba(255, 255, 255, 0.95); /* body — normal, readable */
+  --c-soft: rgba(255, 255, 255, 0.82); /* secondary — still clearly readable */
+  --c-hairline: rgba(255, 255, 255, 0.12);
+  --c-accent: #ffffff; /* Primary inverts to white */
+  --c-on-accent: #0a0a0a; /* On-Primary inverted */
+  --c-accent-2: #ff3d8b; /* Magenta Promo — single brand accent */
+  --c-success: #2ecc5b; /* Success Green (lifted) */
+  --c-danger: #ff3d8b;
+}

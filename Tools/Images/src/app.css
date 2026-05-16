@@ -1,0 +1,22 @@
+@import "./styles/tokens.css";
+@import "./styles/app-scale.css";
+@import "./styles/theme-light.css";
+@import "./styles/theme-dark.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--c-canvas);
+  color: var(--c-body);
+  font: var(--t-body-weight) var(--t-body-size) / var(--t-body-lh) var(--font-sans);
+  letter-spacing: var(--t-body-ls);
+  -webkit-font-smoothing: antialiased;
+}

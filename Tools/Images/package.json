@@ -1,0 +1,43 @@
+{
+  "name": "images",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "sync:imgly": "node scripts/sync-imgly.mjs",
+    "fix": "oxlint --fix && biome format --write .",
+    "qa": "oxlint && biome format . && svelte-check --tsconfig ./tsconfig.app.json",
+    "start": "bash scripts/dev.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@iconify-json/iconamoon": "^1.2.2",
+    "@imgly/background-removal-data": "^1.4.5",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@tsconfig/svelte": "^5.0.8",
+    "@types/node": "^24.12.3",
+    "oxlint": "^1.65.0",
+    "svelte": "^5.55.5",
+    "svelte-check": "^4.4.8",
+    "typescript": "~6.0.2",
+    "unplugin-icons": "^23.0.1",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "@silvia-odwyer/photon": "^0.3.3",
+    "cropperjs": "^2.1.1",
+    "konva": "^10.3.0"
+  }
+}

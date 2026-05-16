@@ -1,0 +1,72 @@
+/* Design tokens — sourced verbatim from docs/DESIGN.md (getdesign "figma" system).
+   Theme-neutral primitives only. Color roles live in theme-*.css. */
+:root {
+  /* Radius scale */
+  --r-xs: 2px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 50px;
+  --r-full: 9999px;
+
+  /* Spacing scale — 8px base unit */
+  --sp-hair: 1px;
+  --sp-xxs: 4px;
+  --sp-xs: 8px;
+  --sp-sm: 12px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+  --sp-xxl: 48px;
+  --sp-section: 96px;
+
+  /* Typography — Inter substitutes figmaSans, JetBrains Mono substitutes figmaMono */
+  --font-sans: Inter, "SF Pro Display", system-ui, helvetica, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", menlo, monospace;
+
+  --t-headline-size: 26px;
+  --t-headline-weight: 540;
+  --t-headline-lh: 1.35;
+  --t-headline-ls: -0.26px;
+
+  --t-card-title-size: 24px;
+  --t-card-title-weight: 700;
+  --t-card-title-lh: 1.45;
+
+  --t-body-size: 18px;
+  --t-body-weight: 320;
+  --t-body-lh: 1.45;
+  --t-body-ls: -0.26px;
+
+  --t-body-sm-size: 16px;
+  --t-body-sm-weight: 330;
+  --t-body-sm-lh: 1.45;
+
+  --t-button-size: 20px;
+  --t-button-weight: 480;
+  --t-button-lh: 1.4;
+  --t-button-ls: -0.1px;
+
+  --t-eyebrow-size: 14px;
+  --t-eyebrow-weight: 400;
+  --t-eyebrow-ls: 0.54px;
+
+  --t-caption-size: 12px;
+  --t-caption-weight: 400;
+  --t-caption-ls: 0.6px;
+
+  /* Elevation — shadow-light by design */
+  --elev-1: 0 0 0 1px var(--c-hairline);
+  --elev-2: 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  /* Brand block colors — unchanged across themes (per DESIGN.md) */
+  --block-lime: #dceeb1;
+  --block-lilac: #c5b0f4;
+  --block-cream: #f4ecd6;
+  --block-mint: #c8e6cd;
+  --block-pink: #efd4d4;
+  --block-coral: #f3c9b6;
+  --block-navy: #1f1d3d;
+  --accent-magenta: #ff3d8b;
+}
