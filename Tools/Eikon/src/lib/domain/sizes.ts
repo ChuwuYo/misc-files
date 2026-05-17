@@ -80,17 +80,6 @@ export const PHOTO_SPECS: PhotoSpec[] = [
     dpi: 300,
     recommendedBg: "white",
   },
-  {
-    id: "cn-resume",
-    name: "简历照",
-    category: "common",
-    widthMm: 25,
-    heightMm: 35,
-    widthPx: 295,
-    heightPx: 413,
-    dpi: 300,
-    recommendedBg: "white",
-  },
 
   // —— 身份/社保/驾照 ——
   {
