@@ -20,7 +20,6 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@iconify-json/iconamoon": "^1.2.2",
-    "@imgly/background-removal-data": "^1.4.5",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tsconfig/svelte": "^5.0.8",
     "@types/node": "^24.12.3",
