@@ -1,5 +1,6 @@
 <script lang="ts">
-import IconPen from "~icons/iconamoon/pen";
+import ColorPicker from "svelte-awesome-color-picker";
+import ColorTrigger from "../ui/ColorTrigger.svelte";
 import Panel from "../ui/Panel.svelte";
 import Button from "../ui/Button.svelte";
 import { BACKGROUNDS } from "../../domain/sizes";
@@ -28,9 +29,8 @@ function pickPreset(p: BackgroundPreset) {
   editor.setBackground(BACKGROUNDS[p]);
 }
 
-function pickCustom(e: Event) {
-  const hex = (e.currentTarget as HTMLInputElement).value;
-  editor.setBackground({ preset: "custom", hex });
+function pickCustom(color: { hex?: string | null }) {
+  if (color.hex) editor.setBackground({ preset: "custom", hex: color.hex });
 }
 
 async function runCutout() {
@@ -82,19 +82,20 @@ async function exportSheet() {
         onclick={() => pickPreset(p)}
       ></button>
     {/each}
-    <label
+    <div
       class="custom"
       class:sel={editor.background.preset === "custom"}
-      class:picked={editor.background.preset === "custom"}
       title="自定义背景色"
-      style:--picked={customHex}
     >
-      <span class="custom-chip" aria-hidden="true">
-        <IconPen />
-      </span>
-      <span class="custom-label">自定义</span>
-      <input type="color" value={customHex} oninput={pickCustom} aria-label="自定义背景色" />
-    </label>
+      <ColorPicker
+        hex={customHex}
+        label="自定义"
+        position="responsive"
+        isAlpha={false}
+        components={{ input: ColorTrigger }}
+        onInput={pickCustom}
+      />
+    </div>
   </div>
 
   <div class="cut">
@@ -153,65 +154,29 @@ async function exportSheet() {
   .dot.sel {
     box-shadow: 0 0 0 2px var(--c-accent);
   }
-  /* Custom color = a clear labelled pill, not a bare native dot. The chip
-     shows a rainbow (universal "pick any color"); once a custom color is
-     chosen it shows that color. The native picker sits invisibly on top. */
+  /* Custom color via svelte-awesome-color-picker (modern, maintained,
+     Svelte-native). Themed to DESIGN.md tokens through the library's
+     CSS custom properties; popup not the bare OS dialog. */
   .custom {
-    position: relative;
-    height: 32px;
     display: flex;
     align-items: center;
-    gap: var(--sp-xxs);
-    padding: 0 10px 0 4px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--c-hairline);
-    background: var(--c-surface-1);
-    color: var(--c-ink);
-    cursor: pointer;
-    font-size: var(--t-caption-size);
+    /* library popup theme */
+    --cp-bg-color: var(--c-surface-1);
+    --cp-border-color: var(--c-hairline);
+    --cp-text-color: var(--c-ink);
+    --cp-input-color: var(--c-surface-2);
+    /* Not --c-accent: in dark theme accent is #fff, which made the
+       hex/HSV toggle button white-on-white on hover. A surface-tinted
+       mix stays visible and keeps the (unchanged) text readable in both
+       themes. */
+    --cp-button-hover-color: color-mix(in srgb, var(--c-accent) 20%, var(--c-surface-2));
   }
-  .custom.sel {
+  /* Trigger is our ColorTrigger (pill). Selected-state ring on it. */
+  .custom.sel :global(.trigger) {
     box-shadow: 0 0 0 2px var(--c-accent);
   }
-  .custom-chip {
-    width: 22px;
-    height: 22px;
-    border-radius: var(--r-full);
-    display: grid;
-    place-items: center;
-    color: #fff;
-    border: 1px solid var(--c-hairline);
-    background: conic-gradient(
-      red,
-      yellow,
-      lime,
-      aqua,
-      blue,
-      magenta,
-      red
-    );
-  }
-  .custom.picked .custom-chip {
-    background: var(--picked);
-  }
-  .custom-chip :global(svg) {
-    width: 12px;
-    height: 12px;
-    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
-  }
-  .custom-label {
-    white-space: nowrap;
-  }
-  .custom input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
+  .custom :global(.color-picker .text-input) {
+    color: var(--c-ink);
   }
   .cut {
     margin-bottom: var(--sp-md);
