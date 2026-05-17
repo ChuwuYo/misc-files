@@ -10,12 +10,6 @@ export default defineConfig({
   // jSquash / imgly ship wasm + workers; excluding them from dep
   // pre-bundling keeps their lazy dynamic imports as separate chunks.
   optimizeDeps: {
-    exclude: [
-      "@jsquash/oxipng",
-      "@jsquash/jpeg",
-      "@jsquash/png",
-      "@imgly/background-removal",
-      "@silvia-odwyer/photon",
-    ],
+    exclude: ["@jsquash/oxipng", "@jsquash/jpeg", "@jsquash/png", "@imgly/background-removal"],
   },
 });

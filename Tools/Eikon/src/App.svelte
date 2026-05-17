@@ -5,7 +5,7 @@ import { route } from "./lib/state/route.svelte";
 import TopNav from "./lib/components/TopNav.svelte";
 
 // Route-level code splitting: each page (and its heavy libs — Cropper.js
-// for maker, Konva/Photon for tools) ships only when that route is opened.
+// for maker, Konva/pica for tools) ships only when that route is opened.
 const loaders = {
   maker: () => import("./lib/pages/MakerPage.svelte"),
   tools: () => import("./lib/pages/ToolsPage.svelte"),

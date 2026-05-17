@@ -112,12 +112,6 @@ function applyAdjustments() {
   });
 }
 
-// Real reset: neutralize adjustments and re-fit the view.
-function resetAll() {
-  tools.resetAdjustments();
-  fitToStage();
-}
-
 // Load / reload the source image whenever the URL changes.
 $effect(() => {
   const url = tools.sourceUrl;
@@ -195,7 +189,6 @@ $effect(() => {
       <div class="controls">
         <button type="button" onclick={actualSize}>1:1</button>
         <button type="button" onclick={fitToStage}>适应</button>
-        <button type="button" onclick={resetAll}>重置</button>
       </div>
     {/if}
   {:else}

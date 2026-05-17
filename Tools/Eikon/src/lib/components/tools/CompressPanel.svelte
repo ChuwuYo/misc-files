@@ -9,6 +9,18 @@ import { preview } from "./preview.svelte";
 let format = $state<"png" | "jpeg">("png");
 let jpegQuality = $state(90);
 
+// PNG path is lossless re-encode → just "下载". JPEG exposes a quality
+// slider, so "压缩并下载" is meaningful only there.
+const actionLabel = $derived(
+  tools.busy
+    ? format === "png"
+      ? "处理中…"
+      : "压缩中…"
+    : format === "png"
+      ? "下载"
+      : "压缩并下载",
+);
+
 const disabled = $derived(!preview.ready || tools.busy || tools.sourceUrl === null);
 
 const savedPct = $derived.by(() => {
@@ -50,7 +62,7 @@ async function run() {
 }
 </script>
 
-<Panel label="③ 压缩与下载">
+<Panel label="③ 格式与下载">
   <div class="body" class:dim={tools.sourceUrl === null}>
     <div class="formats">
       <button
@@ -94,7 +106,7 @@ async function run() {
     {/if}
 
     <Button onclick={run} {disabled}>
-      {tools.busy ? "压缩中…" : "压缩并下载"}
+      {actionLabel}
     </Button>
 
     {#if tools.compressed}

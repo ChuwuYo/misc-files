@@ -36,9 +36,9 @@
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/oxipng": "^2.3.0",
     "@jsquash/png": "^3.1.1",
-    "@silvia-odwyer/photon": "^0.3.3",
     "cropperjs": "^2.1.1",
     "konva": "^10.3.0",
+    "pica": "^10.0.0",
     "svelte-awesome-color-picker": "^4.1.2"
   }
 }
