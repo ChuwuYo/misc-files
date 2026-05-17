@@ -9,7 +9,26 @@ const tabs: { id: RouteId; label: string }[] = [
 </script>
 
 <header class="top">
-  <span class="dot"></span>
+  <span class="brand-mark" aria-hidden="true">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <mask id="nav-carve-base">
+          <rect width="200" height="200" fill="white" />
+          <circle cx="180" cy="180" r="120" fill="black" />
+          <circle cx="20" cy="80" r="40" fill="black" />
+        </mask>
+        <mask id="nav-carve-global">
+          <rect width="200" height="200" fill="white" />
+          <line x1="20" y1="180" x2="180" y2="20" stroke="black" stroke-width="2.5" />
+        </mask>
+      </defs>
+      <g mask="url(#nav-carve-global)" fill="currentColor">
+        <rect x="25" y="25" width="150" height="150" rx="35" mask="url(#nav-carve-base)" />
+        <circle cx="132" cy="132" r="15" />
+        <circle cx="132" cy="132" r="30" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </g>
+    </svg>
+  </span>
   <h1>方寸 <span class="en">Eikon</span></h1>
   <nav class="tabs">
     {#each tabs as t (t.id)}
@@ -33,11 +52,18 @@ const tabs: { id: RouteId; label: string }[] = [
     border-bottom: 1px solid var(--c-hairline);
     background: var(--c-canvas);
   }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: var(--r-full);
-    background: var(--c-accent);
+  /* Brand mark — currentColor follows the in-app theme token (light:
+     Solarized blue, dark: white), switching with the theme toggle. */
+  .brand-mark {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    color: var(--c-accent);
+  }
+  .brand-mark svg {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
   h1 {
     font: var(--t-card-title-weight) var(--t-card-title-size) var(--font-sans);

@@ -28,12 +28,12 @@ interface SelectionChangeEvent extends CustomEvent {
 const TEMPLATE = `
 <cropper-canvas background style="width: 100%; height: 100%;">
   <cropper-image rotatable scalable skewable translatable></cropper-image>
-  <cropper-shade hidden></cropper-shade>
+  <cropper-shade></cropper-shade>
   <cropper-handle action="select" plain></cropper-handle>
   <cropper-selection movable resizable initial-coverage="0.8">
-    <cropper-grid role="grid" covered></cropper-grid>
+    <cropper-grid role="grid"></cropper-grid>
     <cropper-crosshair centered></cropper-crosshair>
-    <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0.35)"></cropper-handle>
+    <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0)"></cropper-handle>
     <cropper-handle action="n-resize"></cropper-handle>
     <cropper-handle action="e-resize"></cropper-handle>
     <cropper-handle action="s-resize"></cropper-handle>
