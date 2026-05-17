@@ -140,7 +140,10 @@ async function run() {
     text-align: left;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  .fmt:not(:disabled):hover { border-color: var(--c-accent); }
+  .fmt:not(:disabled):hover {
+    border-color: var(--c-border-strong);
+    background: var(--c-surface-3);
+  }
   .fmt.on {
     border-color: var(--c-accent);
     box-shadow: 0 0 0 1px var(--c-accent) inset;

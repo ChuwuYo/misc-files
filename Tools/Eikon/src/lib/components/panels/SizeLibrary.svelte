@@ -168,7 +168,8 @@ function submitCustom() {
     transition: border-color 0.12s ease, background 0.12s ease;
   }
   .group-head:hover {
-    border-color: var(--c-accent);
+    border-color: var(--c-border-strong);
+    background: var(--c-surface-2);
   }
   .group-head[aria-expanded="true"] {
     border-color: var(--c-accent);
@@ -231,8 +232,8 @@ function submitCustom() {
     transition: border-color 0.12s ease, background 0.12s ease;
   }
   .row:hover {
-    background: var(--c-surface-1);
-    border-color: var(--c-accent);
+    background: var(--c-surface-3);
+    border-color: var(--c-border-strong);
   }
   .row.sel {
     box-shadow: 0 0 0 2px var(--c-accent) inset;

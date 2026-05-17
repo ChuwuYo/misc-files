@@ -246,8 +246,9 @@ $effect(() => {
     cursor: pointer;
   }
   .controls button:hover {
-    border-color: var(--c-accent);
-    color: var(--c-accent);
+    border-color: var(--c-border-strong);
+    background: var(--c-surface-3);
+    color: var(--c-ink);
   }
   .empty {
     text-align: center;

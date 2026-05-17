@@ -108,7 +108,8 @@ function clear() {
   }
   .drop:hover,
   .drop.over {
-    border-color: var(--c-soft);
+    border-color: var(--c-border-strong);
+    background: var(--c-surface-2);
   }
   .drop.over {
     border-style: solid;
@@ -167,10 +168,11 @@ function clear() {
     cursor: pointer;
     font-family: inherit;
     font-size: var(--t-body-sm-size);
-    transition: border-color 0.15s ease, color 0.15s ease;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
   }
   .act:hover {
-    border-color: var(--c-soft);
+    border-color: var(--c-border-strong);
+    background: var(--c-surface-3);
     color: var(--c-ink);
   }
   .act.danger {
