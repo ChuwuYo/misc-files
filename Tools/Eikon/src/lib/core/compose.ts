@@ -1,8 +1,6 @@
 /**
  * Six-inch print-sheet tiling. Given a single rendered photo and a paper
  * spec, computes the grid and draws repeated cells with a cut gap.
- *
- * STUB: signature stable; body filled during implementation plan.
  */
 import type { PhotoSpec, SheetLayout } from "../domain/types";
 import { PAPER_BG, CUT_GUIDE } from "../domain/constants";

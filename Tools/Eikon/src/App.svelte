@@ -6,10 +6,16 @@ import TopNav from "./lib/components/TopNav.svelte";
 
 // Route-level code splitting: each page (and its heavy libs — Cropper.js
 // for maker, Konva/Photon for tools) ships only when that route is opened.
-const pages = {
+const loaders = {
   maker: () => import("./lib/pages/MakerPage.svelte"),
   tools: () => import("./lib/pages/ToolsPage.svelte"),
 };
+
+// Memoize per route so {#await} doesn't get a fresh Promise every render.
+const cache: Partial<Record<keyof typeof loaders, ReturnType<typeof loaders.maker>>> = {};
+function page(r: keyof typeof loaders) {
+  return (cache[r] ??= loaders[r]());
+}
 
 const ROUTE_TITLE: Record<string, string> = {
   maker: "证件照",
@@ -29,7 +35,7 @@ $effect(() => {
 
 <TopNav />
 
-{#await pages[route.current]() then mod}
+{#await page(route.current) then mod}
   {@const Page = mod.default}
   <Page />
 {:catch}

@@ -1,13 +1,16 @@
 <script lang="ts">
 import Konva from "konva";
-import { applyColor, renderAdjusted, sharpenInPlace } from "../../core/adjust";
+import { renderAdjusted } from "../../core/adjust";
 import { createProxy, type Proxy } from "../../core/proxy";
+import { createAdjustRunner } from "../../core/preview-pipeline";
 import { tools } from "../../state/tools.svelte";
 import { preview } from "./preview.svelte";
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 8;
-const SHARPEN_DEBOUNCE = 120;
+
+// Proxy → color → debounced-sharpen orchestration lives in core.
+const adjustRunner = createAdjustRunner(120);
 
 let stageEl: HTMLDivElement | undefined = $state();
 let loading = $state(false);
@@ -23,13 +26,9 @@ let layer: Konva.Layer | null = null;
 let node: Konva.Image | null = null;
 
 let resizeObs: ResizeObserver | null = null;
-let sharpenTimer: ReturnType<typeof setTimeout> | undefined;
-// Guards stale async sharpen runs from clobbering newer state.
-let renderGen = 0;
 
 function destroyStage() {
-  if (sharpenTimer) clearTimeout(sharpenTimer);
-  sharpenTimer = undefined;
+  adjustRunner.dispose();
   stage?.destroy();
   stage = null;
   layer = null;
@@ -103,28 +102,20 @@ function resizeStage() {
   layer?.batchDraw();
 }
 
-// Apply current color adjustments to the proxy and show it instantly,
-// then debounce the (async, WASM) sharpen pass.
+// Delegate the proxy→color→debounced-sharpen pipeline to core; this
+// component only paints the resulting canvas onto the Konva node.
 function applyAdjustments() {
   if (!proxy || !node || !layer) return;
-  const adj = { ...tools.adj };
-  const color = applyColor(proxy.canvas, proxy.width, proxy.height, adj);
-  node.image(color);
-  layer.batchDraw();
+  adjustRunner.run(proxy, { ...tools.adj }, (canvas) => {
+    node?.image(canvas);
+    layer?.batchDraw();
+  });
+}
 
-  const gen = ++renderGen;
-  if (sharpenTimer) clearTimeout(sharpenTimer);
-  if (adj.sharpen <= 0) return;
-  sharpenTimer = setTimeout(async () => {
-    const sharp = document.createElement("canvas");
-    sharp.width = color.width;
-    sharp.height = color.height;
-    sharp.getContext("2d")?.drawImage(color, 0, 0);
-    await sharpenInPlace(sharp, adj.sharpen);
-    if (gen !== renderGen || !node || !layer) return;
-    node.image(sharp);
-    layer.batchDraw();
-  }, SHARPEN_DEBOUNCE);
+// Real reset: neutralize adjustments and re-fit the view.
+function resetAll() {
+  tools.resetAdjustments();
+  fitToStage();
 }
 
 // Load / reload the source image whenever the URL changes.
@@ -168,13 +159,10 @@ $effect(() => {
   };
 });
 
-// Live update on adjustment changes.
+// Live update on adjustment changes. Touch every value generically so the
+// dependency set can't fall out of sync when an Adjustments field is added.
 $effect(() => {
-  const a = tools.adj;
-  void a.brightness;
-  void a.contrast;
-  void a.saturation;
-  void a.sharpen;
+  for (const v of Object.values(tools.adj)) void v;
   if (proxy && node) applyAdjustments();
 });
 
@@ -207,7 +195,7 @@ $effect(() => {
       <div class="controls">
         <button type="button" onclick={actualSize}>1:1</button>
         <button type="button" onclick={fitToStage}>适应</button>
-        <button type="button" onclick={fitToStage}>重置</button>
+        <button type="button" onclick={resetAll}>重置</button>
       </div>
     {/if}
   {:else}

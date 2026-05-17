@@ -18,8 +18,12 @@ export const ACCEPT_ATTR = ACCEPTED_MIME.join(",");
 /** Human list for hints, e.g. "PNG / JPEG / WebP". */
 export const ACCEPTED_LABEL = "PNG / JPEG / WebP";
 
-/** Max upload size in MB, per workflow. */
-export const MAX_MB = { maker: 20, tools: 30 } as const;
+/**
+ * Single upload size cap (MB) — same wall for every page. 30MB covers
+ * essentially all phone/camera source images; decoding to an RGBA canvas
+ * stays within safe browser memory, and ID-photo sources are far smaller.
+ */
+export const MAX_MB = 30;
 
 const EXT_RE = /\.(png|jpe?g|webp)$/i;
 
@@ -29,19 +33,15 @@ const EXT_RE = /\.(png|jpe?g|webp)$/i;
  * Checks MIME first, falls back to extension when the browser reports an
  * empty type (common for drag-drop of some files).
  */
-export function validateImageFile(
-  file: File | null | undefined,
-  workflow: keyof typeof MAX_MB,
-): string | null {
+export function validateImageFile(file: File | null | undefined): string | null {
   if (!file) return "未选择文件";
   const mimeOk = (ACCEPTED_MIME as readonly string[]).includes(file.type);
   const extOk = file.type === "" && EXT_RE.test(file.name);
   if (!mimeOk && !extOk) {
     return `不支持的格式，仅支持 ${ACCEPTED_LABEL}（不支持 HEIC/AVIF/GIF/SVG 等）`;
   }
-  const maxBytes = MAX_MB[workflow] * 1024 * 1024;
-  if (file.size > maxBytes) {
-    return `图片不能超过 ${MAX_MB[workflow]} MB`;
+  if (file.size > MAX_MB * 1024 * 1024) {
+    return `图片不能超过 ${MAX_MB} MB`;
   }
   return null;
 }

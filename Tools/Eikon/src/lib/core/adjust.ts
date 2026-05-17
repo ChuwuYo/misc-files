@@ -10,8 +10,6 @@
  * The on-screen preview runs these on a downscaled proxy (see core/proxy);
  * full resolution is only used on export. So this module stays pure and
  * resolution-agnostic — callers decide the dimensions.
- *
- * STUB: signatures are frozen; bodies filled by the implementation agent.
  */
 export interface Adjustments {
   /** % — 100 = unchanged. */

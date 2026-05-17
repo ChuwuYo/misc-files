@@ -3,8 +3,6 @@
  * compute adjustments on a small copy (long edge ≤ maxEdge) so the main
  * thread never chokes on a 24-megapixel source while a slider is dragged.
  * Full resolution is reserved for export only.
- *
- * STUB: signature frozen; body filled by the implementation agent.
  */
 export interface Proxy {
   canvas: HTMLCanvasElement;

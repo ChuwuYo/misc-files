@@ -4,8 +4,6 @@
  *
  * - PNG  → @jsquash/oxipng lossless re-encode (smaller, pixel-identical).
  * - JPEG → @jsquash/jpeg (mozjpeg) at a quality (visually lossless ≥ 90).
- *
- * STUB: signatures stable; bodies filled by implementation agent.
  */
 export type CompressFormat = "png" | "jpeg";
 

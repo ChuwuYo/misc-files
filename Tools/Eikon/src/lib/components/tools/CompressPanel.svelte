@@ -3,18 +3,13 @@ import Panel from "../ui/Panel.svelte";
 import Button from "../ui/Button.svelte";
 import { tools } from "../../state/tools.svelte";
 import { compressImage } from "../../core/compress";
+import { fmtBytes } from "../../domain/format";
 import { preview } from "./preview.svelte";
 
 let format = $state<"png" | "jpeg">("png");
 let jpegQuality = $state(90);
 
 const disabled = $derived(!preview.ready || tools.busy || tools.sourceUrl === null);
-
-function fmtBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-}
 
 const savedPct = $derived.by(() => {
   const c = tools.compressed;
