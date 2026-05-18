@@ -70,6 +70,10 @@ export async function compressImage(
       const out = await optimise(imageData, { level: options?.pngLevel ?? 3 });
       blob = new Blob([out], { type: "image/png" });
     } else {
+      // JPEG has no alpha: transparent pixels would encode as black.
+      // Flatten onto white first so cut-out (transparent) PNGs export
+      // correctly when the user picks JPEG.
+      flattenAlphaOntoWhite(imageData);
       const { encode } = await import("@jsquash/jpeg");
       const out = await encode(imageData, {
         quality: options?.jpegQuality ?? 90,
@@ -86,5 +90,18 @@ export async function compressImage(
     throw new Error(`图片压缩失败：${err instanceof Error ? err.message : String(err)}`, {
       cause: err,
     });
+  }
+}
+
+/** Composite each pixel over opaque white, then set alpha to 255. */
+function flattenAlphaOntoWhite(img: ImageData): void {
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const a = d[i + 3] / 255;
+    if (a === 1) continue;
+    d[i] = d[i] * a + 255 * (1 - a);
+    d[i + 1] = d[i + 1] * a + 255 * (1 - a);
+    d[i + 2] = d[i + 2] * a + 255 * (1 - a);
+    d[i + 3] = 255;
   }
 }

@@ -31,6 +31,13 @@ onMount(() => {
 $effect(() => {
   document.title = `${ROUTE_TITLE[route.current] ?? ""} · 方寸 Eikon`;
 });
+
+// Log chunk-load failures so production issues are diagnosable; returns
+// "" so it can be used inline in the {:catch} markup.
+function logPageError(err: unknown): string {
+  console.error("page chunk load failed", err);
+  return "";
+}
 </script>
 
 <TopNav />
@@ -38,8 +45,8 @@ $effect(() => {
 {#await page(route.current) then mod}
   {@const Page = mod.default}
   <Page />
-{:catch}
-  <p class="load-err" role="alert">页面加载失败，请刷新重试</p>
+{:catch err}
+  <p class="load-err" role="alert">{logPageError(err)}页面加载失败，请刷新重试</p>
 {/await}
 
 <style>

@@ -14,7 +14,15 @@
  * public/imgly/ is gitignored (regenerate with `bun run sync:imgly`).
  * Paths are resolved relative to this file — portable across clones.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,15 +45,33 @@ const base = `https://staticimgly.com/@imgly/background-removal-data/${version}/
 console.log(`▸ 数据版本对齐 web 包: ${version}`);
 console.log(`▸ 源: ${base}`);
 
+// Small retry so a single transient CDN hiccup doesn't abort the whole
+// sync and leave public/imgly half-populated.
+async function withRetry(fn, label, tries = 3) {
+  let lastErr;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < tries) await new Promise((r) => setTimeout(r, 500 * i));
+    }
+  }
+  throw new Error(`${label} 失败（${tries} 次重试后）: ${lastErr}`);
+}
 async function getJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return r.json();
+  return withRetry(async () => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    return r.json();
+  }, url);
 }
 async function getBuf(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return Buffer.from(await r.arrayBuffer());
+  return withRetry(async () => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status} ${url}`);
+    return Buffer.from(await r.arrayBuffer());
+  }, url);
 }
 
 const resources = await getJSON(`${base}resources.json`);
@@ -67,20 +93,42 @@ let bytes = 0;
 const trimmed = {};
 for (const key of keep) {
   const entry = resources[key];
+  if (!Array.isArray(entry?.chunks) || entry.chunks.length === 0) {
+    console.error(`✗ resources.json 条目 ${key} 缺少 chunks`);
+    process.exit(1);
+  }
   trimmed[key] = entry;
   bytes += entry.size ?? 0;
   for (const chunk of entry.chunks) wanted.add(chunk.hash);
 }
-writeFileSync(join(outDir, "resources.json"), JSON.stringify(trimmed));
 
-let done = 0;
-for (const hash of wanted) {
-  const dest = join(outDir, hash);
-  if (!existsSync(dest)) {
-    writeFileSync(dest, await getBuf(base + hash));
+try {
+  writeFileSync(join(outDir, "resources.json"), JSON.stringify(trimmed));
+
+  let done = 0;
+  for (const hash of wanted) {
+    const dest = join(outDir, hash);
+    // Skip only if a non-empty file already exists (a truncated chunk from
+    // an interrupted run must be re-fetched, not trusted).
+    if (existsSync(dest) && statSync(dest).size > 0) {
+      done++;
+    } else {
+      const tmp = `${dest}.tmp`;
+      writeFileSync(tmp, await getBuf(base + hash));
+      renameSync(tmp, dest); // atomic publish
+      done++;
+    }
+    process.stdout.write(`\r  下载分块 ${done}/${wanted.size}`);
   }
-  process.stdout.write(`\r  下载分块 ${++done}/${wanted.size}`);
+
+  // Completion sentinel — dev.sh gates on this, not on the dir existing.
+  writeFileSync(join(outDir, ".complete"), version);
+  console.log(
+    `\n✓ 已同步 ${wanted.size} 个分块 (${(bytes / 1048576).toFixed(1)} MB) → public/imgly/`,
+  );
+} catch (err) {
+  // Leave nothing half-baked: wipe so the next run re-syncs cleanly.
+  rmSync(outDir, { recursive: true, force: true });
+  console.error(`\n✗ 同步失败，已清理 public/imgly/：${err}`);
+  process.exit(1);
 }
-console.log(
-  `\n✓ 已同步 ${wanted.size} 个分块 (${(bytes / 1048576).toFixed(1)} MB) → public/imgly/`,
-);

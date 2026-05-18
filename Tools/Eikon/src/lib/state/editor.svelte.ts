@@ -52,6 +52,8 @@ class EditorStore {
     this.sourceUrl = url;
     this.cutoutApplied = true;
     this.cutoutStatus = "done";
+    this.cutoutProgress = 0;
+    this.error = null;
   }
 
   setSpec(spec: PhotoSpec) {

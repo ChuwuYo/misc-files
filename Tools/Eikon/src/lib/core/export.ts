@@ -1,5 +1,6 @@
 /** Canvas → file. Triggers a browser download as JPG or PNG. */
 import { JPEG_FALLBACK_BG } from "../domain/constants";
+import { compositeOver } from "./canvas";
 
 export type ExportFormat = "image/jpeg" | "image/png";
 
@@ -17,7 +18,7 @@ export async function exportCanvas(
   quality = 0.95,
   opaqueBg: string = JPEG_FALLBACK_BG,
 ): Promise<void> {
-  const target = format === "image/jpeg" ? flatten(canvas, opaqueBg) : canvas;
+  const target = format === "image/jpeg" ? compositeOver(canvas, opaqueBg) : canvas;
   const blob = await new Promise<Blob | null>((res) => target.toBlob(res, format, quality));
   if (!blob) throw new Error("Canvas export failed.");
   const url = URL.createObjectURL(blob);
@@ -27,17 +28,4 @@ export async function exportCanvas(
   a.click();
   // Defer revoke: Firefox needs the URL alive past the click tick.
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-/** Composite `canvas` over a solid color, returning a new opaque canvas. */
-function flatten(canvas: HTMLCanvasElement, bg: string): HTMLCanvasElement {
-  const out = document.createElement("canvas");
-  out.width = canvas.width;
-  out.height = canvas.height;
-  const ctx = out.getContext("2d");
-  if (!ctx) throw new Error("Failed to acquire 2D context for flatten.");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, out.width, out.height);
-  ctx.drawImage(canvas, 0, 0);
-  return out;
 }

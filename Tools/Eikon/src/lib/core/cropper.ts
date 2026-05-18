@@ -4,6 +4,7 @@
  */
 import Cropper from "cropperjs";
 import type { BackgroundColor, PhotoSpec } from "../domain/types";
+import { compositeOver } from "./canvas";
 
 /** Minimal structural typings for the Cropper.js v2 web-component elements. */
 interface CropperImageEl extends HTMLElement {
@@ -181,18 +182,7 @@ export function createCropper(container: HTMLElement): CropperHandle {
       if (bg.hex === "transparent") {
         return cropped;
       }
-
-      const out = document.createElement("canvas");
-      out.width = spec.widthPx;
-      out.height = spec.heightPx;
-      const ctx = out.getContext("2d");
-      if (!ctx) {
-        throw new Error("Failed to acquire 2D context for compositing.");
-      }
-      ctx.fillStyle = bg.hex;
-      ctx.fillRect(0, 0, out.width, out.height);
-      ctx.drawImage(cropped, 0, 0, out.width, out.height);
-      return out;
+      return compositeOver(cropped, bg.hex);
     },
 
     destroy(): void {

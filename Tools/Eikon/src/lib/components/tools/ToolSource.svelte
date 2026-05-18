@@ -1,5 +1,5 @@
 <script lang="ts">
-import { fmtBytes } from "../../domain/format";
+import { fmtBytes } from "../../domain/bytes";
 import { tools } from "../../state/tools.svelte";
 import Uploader from "../ui/Uploader.svelte";
 

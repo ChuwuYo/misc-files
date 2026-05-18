@@ -3,7 +3,7 @@ import Panel from "../ui/Panel.svelte";
 import Button from "../ui/Button.svelte";
 import { tools } from "../../state/tools.svelte";
 import { compressImage } from "../../core/compress";
-import { fmtBytes } from "../../domain/format";
+import { fmtBytes } from "../../domain/bytes";
 import { preview } from "./preview.svelte";
 
 let format = $state<"png" | "jpeg">("png");
@@ -37,7 +37,9 @@ function download(blob: Blob, name: string) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Defer revoke: revoking in the same tick can abort the download in
+  // Firefox / some Chromium configs.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function run() {

@@ -3,9 +3,9 @@
  * spec, computes the grid and draws repeated cells with a cut gap.
  */
 import type { PhotoSpec, SheetLayout } from "../domain/types";
-import { PAPER_BG, CUT_GUIDE } from "../domain/constants";
+import { CUT_GUIDE, PAPER_BG, SHEET_GAP_MM } from "../domain/constants";
 
-export function planSheet(cell: PhotoSpec, sheet: PhotoSpec, gapMm = 2): SheetLayout {
+export function planSheet(cell: PhotoSpec, sheet: PhotoSpec, gapMm = SHEET_GAP_MM): SheetLayout {
   const usableW = sheet.widthMm;
   const usableH = sheet.heightMm;
   const cols = Math.max(1, Math.floor((usableW + gapMm) / (cell.widthMm + gapMm)));

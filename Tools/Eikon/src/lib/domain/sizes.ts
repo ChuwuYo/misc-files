@@ -229,7 +229,8 @@ export const PHOTO_SPECS: PhotoSpec[] = [
     heightMm: 16,
     widthPx: 144,
     heightPx: 192,
-    dpi: 300,
+    // NCRE standard is 144×192px; 12×16mm at that pixel size ≈ 305dpi.
+    dpi: 305,
     recommendedBg: "white",
   },
   {

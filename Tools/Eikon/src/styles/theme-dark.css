@@ -21,5 +21,5 @@
   --c-on-accent: #0a0a0a;
   --c-accent-2: #ff3d8b; /* magenta promo */
   --c-success: #2ecc5b; /* lifted green */
-  --c-danger: #ff3d8b;
+  --c-danger: #ff6b6b; /* distinct from accent-2 magenta — keeps error signal */
 }
