@@ -40,7 +40,7 @@ function mountFor(url: string): void {
   img.src = url;
 }
 
-// React to source changes (initial upload, AI cutout swap) → (re)mount.
+// React to source changes (initial upload, reselect, clear) → (re)mount.
 $effect(() => {
   const url = editor.sourceUrl;
   if (!url) {

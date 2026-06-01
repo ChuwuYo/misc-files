@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Self-hosted @imgly model/runtime (~81MB) — regenerate: bun run sync:imgly
-public/imgly
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

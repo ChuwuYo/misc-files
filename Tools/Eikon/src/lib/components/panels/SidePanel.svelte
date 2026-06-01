@@ -7,7 +7,6 @@ import { BACKGROUNDS } from "../../domain/sizes";
 import { isSheetEligible } from "../../domain/sizes";
 import { editor } from "../../state/editor.svelte";
 import type { BackgroundPreset } from "../../domain/types";
-import { removeBackground } from "../../core/background";
 import {
   exportPhoto as pipelineExportPhoto,
   exportSheet as pipelineExportSheet,
@@ -21,7 +20,6 @@ const customHex = $derived(
   editor.background.preset === "custom" ? editor.background.hex : "#000000",
 );
 
-const running = $derived(editor.cutoutStatus === "running");
 const noCropper = $derived(!editor.cropper);
 const sheetDisabled = $derived(noCropper || !isSheetEligible(editor.spec));
 
@@ -31,23 +29,6 @@ function pickPreset(p: BackgroundPreset) {
 
 function pickCustom(color: { hex?: string | null }) {
   if (color.hex) editor.setBackground({ preset: "custom", hex: color.hex });
-}
-
-async function runCutout() {
-  if (!editor.sourceUrl) return;
-  editor.error = null;
-  editor.cutoutStatus = "running";
-  editor.cutoutProgress = 0;
-  try {
-    const blob = await (await fetch(editor.sourceUrl)).blob();
-    const result = await removeBackground(blob, (r) => {
-      editor.cutoutProgress = r;
-    });
-    editor.applyCutout(URL.createObjectURL(result));
-  } catch (err) {
-    editor.error = err instanceof Error ? err.message : "AI 抠图失败";
-    editor.cutoutStatus = "error";
-  }
 }
 
 async function exportPhoto() {
@@ -96,20 +77,6 @@ async function exportSheet() {
         onInput={pickCustom}
       />
     </div>
-  </div>
-
-  <div class="cut">
-    <Button onclick={runCutout} disabled={!editor.sourceUrl || running}>
-      {running ? "抠图中…" : "AI 抠图换底"}
-    </Button>
-    <p class="hint">模型本地自托管，完全离线运行；首次加载稍慢。</p>
-    {#if running}
-      <div class="bar" role="progressbar" aria-valuemin={0} aria-valuemax={100}
-        aria-valuenow={Math.round(editor.cutoutProgress * 100)}>
-        <span style:width={`${Math.round(editor.cutoutProgress * 100)}%`}></span>
-      </div>
-      <p class="hint">处理进度 {Math.round(editor.cutoutProgress * 100)}%</p>
-    {/if}
   </div>
 
   <div class="fmt" role="radiogroup" aria-label="导出格式">
@@ -177,29 +144,6 @@ async function exportSheet() {
   }
   .custom :global(.color-picker .text-input) {
     color: var(--c-ink);
-  }
-  .cut {
-    margin-bottom: var(--sp-md);
-    display: grid;
-    gap: var(--sp-xs);
-  }
-  .hint {
-    margin: 0;
-    font-size: var(--t-body-sm-size);
-    color: var(--c-soft);
-  }
-  .bar {
-    height: 6px;
-    border-radius: var(--r-full);
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-hairline);
-    overflow: hidden;
-  }
-  .bar span {
-    display: block;
-    height: 100%;
-    background: var(--c-accent);
-    transition: width 0.2s ease;
   }
   .fmt {
     display: flex;

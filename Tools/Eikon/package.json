@@ -12,7 +12,6 @@
     "lint:fix": "oxlint --fix",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "sync:imgly": "node scripts/sync-imgly.mjs",
     "fix": "oxlint --fix && biome format --write .",
     "qa": "oxlint && biome format . && svelte-check --tsconfig ./tsconfig.app.json",
     "start": "bash scripts/dev.sh"
@@ -31,7 +30,6 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
-    "@imgly/background-removal": "^1.7.0",
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/oxipng": "^2.3.0",
     "@jsquash/png": "^3.1.1",

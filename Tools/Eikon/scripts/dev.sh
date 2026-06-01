@@ -23,13 +23,5 @@ if [ ! -d node_modules ]; then
   bun install
 fi
 
-# Self-hosted @imgly model/runtime for offline AI cutout (gitignored).
-# Gate on the completion sentinel, not just the dir, so an interrupted
-# sync re-runs instead of shipping a half-downloaded model.
-if [ ! -f public/imgly/.complete ]; then
-  echo "▸ 同步离线模型资源 (sync:imgly, ~76MB)…"
-  bun scripts/sync-imgly.mjs
-fi
-
 echo "▸ 启动开发服务器 (vite)…"
 exec bun run dev

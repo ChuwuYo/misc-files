@@ -1,7 +1,11 @@
 # 证件照制作网页 — 设计文档
 
 日期：2026-05-16
-状态：待用户评审
+状态：**部分已废止** — 本文档为按日期冻结的历史规格快照。
+其中所有关于「AI 抠图换底 / @imgly / core/background.ts / editor.cutout* / isnet_quint8 /
+WebGPU 回退 / `抠图库` 选型」的内容已于 2026-05-17 整体移除，
+详见 [`docs/decisions/2026-05-17-remove-ai-cutout.md`](../../decisions/2026-05-17-remove-ai-cutout.md)。
+其余章节（裁剪、尺寸库、背景色板、导出、排版、双主题、隐私模型）仍反映当前实现。
 
 ## 1. 目标
 
