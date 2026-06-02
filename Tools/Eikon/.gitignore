@@ -25,3 +25,7 @@ dist-ssr
 
 # Vite cache
 .vite
+
+# Self-hosted MediaPipe assets (synced via scripts/sync-mediapipe.mjs)
+# Phase 0 Gate: ~22 MB, keep out of git until commit policy decided
+public/mediapipe/

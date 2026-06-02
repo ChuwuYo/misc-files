@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Phase 0 · MediaPipe Selfie Segmenter Gate (v2 — fair)</title>
+    <style>
+      :root {
+        --bg: #fdf6e3; --ink: #073642; --soft: #586e75;
+        --hair: rgba(7, 54, 66, 0.12); --accent: #268bd2;
+        --ok: #859900; --warn: #b58900; --err: #dc322f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 24px; background: var(--bg); color: var(--ink);
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+      }
+      h1 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+      .sub { color: var(--soft); margin-bottom: 20px; max-width: 900px; }
+      .grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+      .panel { background: #fff; border: 1px solid var(--hair); border-radius: 8px; padding: 16px; }
+      .panel + .panel { margin-top: 16px; }
+      .panel h2 { margin: 0 0 12px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--soft); }
+      label { display: block; margin: 0 0 12px; font-size: 13px; }
+      input[type=file] { width: 100%; font: inherit; }
+      .swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--hair); cursor: pointer; padding: 0; }
+      .swatch[aria-pressed=true] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+      input[type=color] { width: 34px; height: 34px; border: none; padding: 0; background: none; cursor: pointer; }
+      input[type=range] { width: 100%; }
+      .ctl-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .ctl-row .val { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--accent); min-width: 48px; text-align: right; }
+      button.action { appearance: none; border: 1px solid var(--hair); background: #fff; color: var(--ink); border-radius: 6px; padding: 8px 12px; font: inherit; cursor: pointer; margin: 4px 4px 0 0; }
+      button.action:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+      button.action.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      button.action.primary:hover:not(:disabled) { color: #fff; opacity: .9; }
+      button.action:disabled { color: var(--soft); cursor: not-allowed; opacity: .6; }
+      .stats { font-family: ui-monospace, Menlo, monospace; font-size: 12px; line-height: 1.7; }
+      .stat-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--hair); padding: 4px 0; }
+      .stat-label { color: var(--soft); }
+      .stat-val { font-weight: 600; }
+      .ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); }
+      .verdict { display: flex; flex-direction: column; gap: 6px; }
+      .v-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; background: var(--bg); font-size: 13px; }
+      .badge { font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; min-width: 64px; text-align: center; }
+      .badge.pass { background: var(--ok); color: #fff; }
+      .badge.fail { background: var(--err); color: #fff; }
+      .badge.manual { background: var(--warn); color: #fff; }
+      .badge.pending { background: var(--hair); color: var(--soft); }
+      .cards { display: flex; flex-direction: column; gap: 16px; }
+      .card { background: #fff; border: 1px solid var(--hair); border-radius: 8px; padding: 14px; }
+      .card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+      .card-head .name { font-weight: 600; font-size: 13px; }
+      .card-head .meta { font-family: ui-monospace, monospace; font-size: 11px; color: var(--soft); }
+      .triptych { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .cell h3 { margin: 0 0 6px; font-size: 11px; color: var(--soft); text-transform: uppercase; letter-spacing: .04em; }
+      .cell canvas, .cell img {
+        width: 100%; height: auto; max-height: 360px; object-fit: contain; border-radius: 4px;
+        background:
+          linear-gradient(45deg, #e8e1d0 25%, transparent 25%),
+          linear-gradient(-45deg, #e8e1d0 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #e8e1d0 75%),
+          linear-gradient(-45deg, transparent 75%, #e8e1d0 75%);
+        background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      }
+      .card-stats { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 16px; font-family: ui-monospace, monospace; font-size: 11px; }
+      .card-stats .kv { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--hair); padding: 2px 0; }
+      .card-stats .k { color: var(--soft); }
+      .hair-judge { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+      .log { margin-top: 16px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; background: #002b36; color: #93a1a1; padding: 10px 12px; border-radius: 6px; max-height: 220px; overflow: auto; white-space: pre-wrap; }
+      .log .ts { color: #586e75; } .log .ok { color: #859900; } .log .err { color: #dc322f; } .log .warn { color: #b58900; }
+      .net-audit { font-family: ui-monospace, monospace; font-size: 11px; }
+      .net-audit .ext { color: var(--err); }
+      details { margin-top: 8px; font-size: 12px; }
+      summary { cursor: pointer; color: var(--soft); }
+      code { background: var(--bg); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+    </style>
+  </head>
+  <body>
+    <h1>Phase 0 · MediaPipe Selfie Segmenter Gate <span style="font-size:13px;color:var(--soft)">v2 · 公平测法</span></h1>
+    <div class="sub">
+      ADR 2026-06-02 验证。v2 修正 v1 三处错误：① <b>confidence mask</b> 软 alpha（非硬切 categoryMask）·
+      ② <b>双线性</b>上采样（非最近邻）· ③ <b>经验标定</b>人物通道（不硬编码 0/1，v1 把人/背景标反了）。
+      并补：暖机 + N 次中位耗时、合取式 COOP/COEP 判定、离线网络审计、多图语料、可复核 PASS/FAIL。
+    </div>
+
+    <div class="grid">
+      <aside>
+        <div class="panel">
+          <h2>① 输入语料（可多选）</h2>
+          <label><input type="file" id="file" accept="image/*" multiple /></label>
+          <div style="font-size:12px;color:var(--soft)">
+            建议覆盖硬例：白墙正脸 · 戴眼镜 · 深发深底 · 侧脸 · 杂乱背景 · 大尺寸(4000px+)
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>② 目标底色</h2>
+          <div class="swatches" id="swatches">
+            <button class="swatch" data-color="#ffffff" aria-pressed="true" style="background:#fff" title="白"></button>
+            <button class="swatch" data-color="#438edb" aria-pressed="false" style="background:#438edb" title="蓝"></button>
+            <button class="swatch" data-color="#d72d29" aria-pressed="false" style="background:#d72d29" title="红"></button>
+            <input type="color" id="customColor" value="#fdf6e3" title="自定义" />
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>③ 羽化参数</h2>
+          <div class="ctl-row"><span>smoothstep 下沿</span><input type="range" id="lo" min="0" max="0.5" step="0.01" value="0.35" /><span class="val" id="loVal">0.35</span></div>
+          <div class="ctl-row"><span>smoothstep 上沿</span><input type="range" id="hi" min="0.5" max="1" step="0.01" value="0.65" /><span class="val" id="hiVal">0.65</span></div>
+          <div class="ctl-row"><span>alpha 高斯(px)</span><input type="range" id="blur" min="0" max="4" step="0.5" value="1" /><span class="val" id="blurVal">1.0</span></div>
+          <div class="ctl-row"><span>计时迭代 N</span><input type="range" id="nruns" min="5" max="50" step="5" value="20" /><span class="val" id="nrunsVal">20</span></div>
+          <label style="margin-top:8px"><input type="checkbox" id="softCutoff" checked /> 用 confidence 软 alpha（取消则退回硬切对比）</label>
+        </div>
+
+        <div class="panel">
+          <h2>④ 执行</h2>
+          <button class="action" id="btnInit">1. 初始化分割器</button>
+          <button class="action primary" id="btnRun" disabled>2. 跑全语料</button>
+          <button class="action" id="btnReset">重置</button>
+          <details>
+            <summary>离线验证步骤</summary>
+            DevTools → Network → 勾 <code>Offline</code> → 点「跑全语料」→ 看下方网络审计应为
+            <b>零外部请求、零失败</b>。WASM/模型/库均来自 <code>/mediapipe/*</code> 与本地 node_modules。
+          </details>
+        </div>
+
+        <div class="panel">
+          <h2>⑤ Gate 判定</h2>
+          <div class="verdict" id="verdict">
+            <div class="v-row"><span class="badge pending" id="b1">—</span><span>无 COOP/COEP 且成功出 mask</span></div>
+            <div class="v-row"><span class="badge pending" id="b2">—</span><span>暖机中位推理 &lt; 500ms</span></div>
+            <div class="v-row"><span class="badge pending" id="b3">—</span><span>头发边缘可接受（人工逐图判）</span></div>
+            <div class="v-row"><span class="badge pending" id="b4">—</span><span>离线零外部请求</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>⑥ 环境 / 计时</h2>
+          <div class="stats">
+            <div class="stat-row"><span class="stat-label">SharedArrayBuffer</span><span class="stat-val" id="sabFlag">—</span></div>
+            <div class="stat-row"><span class="stat-label">crossOriginIsolated</span><span class="stat-val" id="coiFlag">—</span></div>
+            <div class="stat-row"><span class="stat-label">WASM 变体</span><span class="stat-val" id="wasmVariant">—</span></div>
+            <div class="stat-row"><span class="stat-label">初始化(冷)</span><span class="stat-val" id="initMs">—</span></div>
+            <div class="stat-row"><span class="stat-label">推理 中位/p95</span><span class="stat-val" id="segMs">—</span></div>
+            <div class="stat-row"><span class="stat-label">人物通道(标定)</span><span class="stat-val" id="personCh">—</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>⑦ 网络审计</h2>
+          <div class="net-audit" id="netAudit">未运行</div>
+        </div>
+      </aside>
+
+      <main>
+        <div class="cards" id="cards"></div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script type="module">
+      import { ImageSegmenter, FilesetResolver } from "@mediapipe/tasks-vision";
+
+      const $ = (id) => document.getElementById(id);
+      const logEl = $("log");
+      let segmenter = null;
+      let images = [];          // {name, el, w, h}
+      let targetColor = "#ffffff";
+      let segTiming = null;     // {median, p95, min, max}
+      let resolvedPersonCh = null;
+      let lastRunHadValidMask = false;
+
+      // ---------- env probe (informational; verdict is outcome-based, computed after a real run) ----------
+      const hasSAB = typeof SharedArrayBuffer !== "undefined";
+      const coi = self.crossOriginIsolated;
+      $("sabFlag").textContent = hasSAB ? "present" : "absent";
+      $("sabFlag").className = "stat-val " + (hasSAB ? "warn" : "ok");
+      $("coiFlag").textContent = coi ? "true" : "false";
+      $("coiFlag").className = "stat-val " + (coi ? "warn" : "ok");
+      log(`环境探针 SAB=${hasSAB} COI=${coi}。注意：这只是“当前不存在头”，Gate 判定要等真实出 mask 后合取。`, "warn");
+
+      function log(msg, cls = "") {
+        const ts = new Date().toISOString().slice(11, 23);
+        const el = document.createElement("div");
+        el.innerHTML = `<span class="ts">${ts}</span> <span class="${cls}">${msg}</span>`;
+        logEl.appendChild(el);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // ---------- controls ----------
+      const bind = (id, valId, fmt = (v) => v) => {
+        const el = $(id), out = $(valId);
+        el.addEventListener("input", () => { out.textContent = fmt(el.value); });
+      };
+      bind("lo", "loVal"); bind("hi", "hiVal");
+      bind("blur", "blurVal", (v) => Number(v).toFixed(1));
+      bind("nruns", "nrunsVal");
+
+      $("swatches").addEventListener("click", (e) => {
+        const btn = e.target.closest(".swatch");
+        if (!btn) return;
+        for (const b of $("swatches").querySelectorAll(".swatch")) b.setAttribute("aria-pressed", "false");
+        btn.setAttribute("aria-pressed", "true");
+        targetColor = btn.dataset.color;
+      });
+      $("customColor").addEventListener("input", (e) => {
+        for (const b of $("swatches").querySelectorAll(".swatch")) b.setAttribute("aria-pressed", "false");
+        targetColor = e.target.value;
+      });
+
+      // ---------- file input (multi) ----------
+      $("file").addEventListener("change", (e) => {
+        images = [];
+        $("cards").innerHTML = "";
+        const files = [...(e.target.files || [])];
+        let pending = files.length;
+        if (!pending) return;
+        files.forEach((file) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            images.push({ name: file.name, el: img, w: img.naturalWidth, h: img.naturalHeight });
+            log(`载入 ${file.name} ${img.naturalWidth}×${img.naturalHeight}`);
+            if (--pending === 0 && segmenter) $("btnRun").disabled = false;
+          };
+          img.src = url;
+        });
+      });
+
+      // ---------- init ----------
+      $("btnInit").addEventListener("click", async () => {
+        $("btnInit").disabled = true;
+        log("加载 self-host WASM + tflite …");
+        const t0 = performance.now();
+        try {
+          const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+          segmenter = await ImageSegmenter.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: "/mediapipe/models/selfie_segmenter.tflite" },
+            runningMode: "IMAGE",
+            outputConfidenceMasks: true,   // FLOAT32 soft matte — the fair signal
+            outputCategoryMask: true,      // kept only for a cheap coverage sanity check
+          });
+          const dt = performance.now() - t0;
+          $("initMs").textContent = `${dt.toFixed(0)} ms`;
+          $("initMs").className = "stat-val " + (dt < 3000 ? "ok" : dt < 6000 ? "warn" : "err");
+          // which WASM variant actually loaded?
+          const variant = detectWasmVariant();
+          $("wasmVariant").textContent = variant;
+          $("wasmVariant").className = "stat-val " + (variant.includes("threaded") ? "warn" : "ok");
+          log(`分割器就绪 ${dt.toFixed(0)} ms · WASM=${variant}`, "ok");
+          if (images.length) $("btnRun").disabled = false;
+        } catch (err) {
+          log(`初始化失败：${err.message}`, "err");
+          $("btnInit").disabled = false;
+        }
+      });
+
+      function detectWasmVariant() {
+        // SIMD-only single-thread is what we want (no SAB/COEP). Threaded build would need SAB.
+        const entries = performance.getEntriesByType("resource").map((e) => e.name);
+        const loaded = entries.find((n) => /vision_wasm.*internal\.wasm/.test(n)) || "";
+        if (/nosimd/.test(loaded)) return "nosimd single-thread";
+        if (/threaded/.test(loaded)) return "threaded (needs SAB!)";
+        if (loaded) return "simd single-thread";
+        return "unknown";
+      }
+
+      // ---------- person-channel calibration (no hardcoded index) ----------
+      // selfie_segmenter returns 2 confidence masks. We DON'T assume which is person:
+      // the channel whose CENTER probability most exceeds its CORNER probability is the person.
+      function calibratePersonChannel(masks) {
+        let best = 0, bestScore = -Infinity;
+        const details = [];
+        for (let i = 0; i < masks.length; i++) {
+          const a = masks[i].getAsFloat32Array();
+          const w = masks[i].width, h = masks[i].height;
+          const center = regionMean(a, w, h, 0.35, 0.65, 0.30, 0.75);
+          const corners = cornerMean(a, w, h, 0.12);
+          const score = center - corners;
+          details.push(`ch${i}: center=${center.toFixed(2)} corner=${corners.toFixed(2)} Δ=${score.toFixed(2)}`);
+          if (score > bestScore) { bestScore = score; best = i; }
+        }
+        log(`通道标定 → person=ch${best} [${details.join(" · ")}]`, "ok");
+        return best;
+      }
+      function regionMean(a, w, h, x0, x1, y0, y1) {
+        let s = 0, n = 0;
+        for (let y = Math.floor(y0 * h); y < y1 * h; y++)
+          for (let x = Math.floor(x0 * w); x < x1 * w; x++) { s += a[y * w + x]; n++; }
+        return n ? s / n : 0;
+      }
+
+      // Resolve an oriented PERSON-alpha (Float32, person=high), robust to model
+      // builds that emit 1 confidence mask (foreground prob — what this build does)
+      // or 2 ([bg, person]), AND to either polarity. ID subjects are centered, so
+      // we orient by center-vs-corner instead of trusting any documented index.
+      function resolveAlpha(masks) {
+        if (!masks.length) return null;
+        let personCh = 0, m;
+        if (masks.length >= 2) {
+          personCh = calibratePersonChannel(masks);
+          m = masks[personCh];
+        } else {
+          m = masks[0];
+          log("confidence mask 数=1（该模型构建的常规形态）：单通道前景概率", "ok");
+        }
+        const alpha = m.getAsFloat32Array();
+        const mw = m.width, mh = m.height;
+        const center = regionMean(alpha, mw, mh, 0.35, 0.65, 0.30, 0.75);
+        const corner = cornerMean(alpha, mw, mh, 0.12);
+        let inverted = false;
+        if (corner > center) { // high confidence at the edges => it's a bg-prob mask
+          inverted = true;
+          for (let i = 0; i < alpha.length; i++) alpha[i] = 1 - alpha[i];
+          log(`mask 为背景概率(corner ${corner.toFixed(2)} > center ${center.toFixed(2)}) → 取反为人物 alpha`, "warn");
+        }
+        return { alpha, mw, mh, personCh, inverted };
+      }
+      function cornerMean(a, w, h, frac) {
+        const cw = Math.max(1, Math.floor(w * frac)), ch = Math.max(1, Math.floor(h * frac));
+        let s = 0, n = 0;
+        const boxes = [[0, 0], [w - cw, 0], [0, h - ch], [w - cw, h - ch]];
+        for (const [bx, by] of boxes)
+          for (let y = by; y < by + ch; y++)
+            for (let x = bx; x < bx + cw; x++) { s += a[y * w + x]; n++; }
+        return n ? s / n : 0;
+      }
+
+      // ---------- composite (confidence soft alpha + bilinear upscale + feather) ----------
+      function composite(img, alphaFloat, mw, mh, color, opts) {
+        const W = img.w, H = img.h;
+        // 1) small alpha canvas: confidence -> alpha channel (RGB=255, ignored)
+        const mc = document.createElement("canvas"); mc.width = mw; mc.height = mh;
+        const mctx = mc.getContext("2d");
+        const mid = mctx.createImageData(mw, mh);
+        for (let i = 0; i < alphaFloat.length; i++) {
+          mid.data[i * 4] = mid.data[i * 4 + 1] = mid.data[i * 4 + 2] = 255;
+          mid.data[i * 4 + 3] = Math.round(Math.min(1, Math.max(0, alphaFloat[i])) * 255);
+        }
+        mctx.putImageData(mid, 0, 0);
+
+        // 2) bilinear upscale to WxH (+ optional gaussian on alpha via canvas filter)
+        const ac = document.createElement("canvas"); ac.width = W; ac.height = H;
+        const actx = ac.getContext("2d");
+        actx.imageSmoothingEnabled = true;
+        actx.imageSmoothingQuality = "high";
+        if (opts.blur > 0) actx.filter = `blur(${opts.blur}px)`;
+        actx.drawImage(mc, 0, 0, mw, mh, 0, 0, W, H);
+        actx.filter = "none";
+        const aData = actx.getImageData(0, 0, W, H).data; // alpha in [i*4+3]
+
+        // 3) composite out = src*alpha + target*(1-alpha); keep matte separate, write opaque RGBA
+        const out = document.createElement("canvas"); out.width = W; out.height = H;
+        const octx = out.getContext("2d");
+        octx.drawImage(img.el, 0, 0, W, H);
+        const id = octx.getImageData(0, 0, W, H);
+        const d = id.data;
+        const t = hexToRgb(color);
+        const { lo, hi, soft } = opts;
+        for (let p = 0; p < W * H; p++) {
+          let a = aData[p * 4 + 3] / 255;
+          if (soft) { // smoothstep transition band
+            a = clamp((a - lo) / Math.max(1e-6, hi - lo));
+            a = a * a * (3 - 2 * a);
+          } else {     // hard cutoff (v1-style) for A/B comparison
+            a = a >= 0.5 ? 1 : 0;
+          }
+          const k = p * 4;
+          d[k]     = d[k]     * a + t.r * (1 - a);
+          d[k + 1] = d[k + 1] * a + t.g * (1 - a);
+          d[k + 2] = d[k + 2] * a + t.b * (1 - a);
+          d[k + 3] = 255;
+        }
+        octx.putImageData(id, 0, 0);
+        return { out, mc, alphaUpscaled: aData };
+      }
+
+      const clamp = (v) => Math.min(1, Math.max(0, v));
+      function hexToRgb(hex) {
+        const m = /^#?([a-f0-9]{6})$/i.exec(hex.trim());
+        if (!m) return { r: 255, g: 255, b: 255 };
+        const n = parseInt(m[1], 16);
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+      }
+
+      // ---------- benchmark: warmup + N runs ----------
+      function benchmark(img, N) {
+        segmenter.segment(img.el); // warmup (discarded)
+        const ts = [];
+        for (let i = 0; i < N; i++) {
+          const t = performance.now();
+          const r = segmenter.segment(img.el);
+          ts.push(performance.now() - t);
+          r.confidenceMasks?.forEach((m) => m.close());
+          r.categoryMask?.close();
+        }
+        ts.sort((a, b) => a - b);
+        return { median: ts[Math.floor(N / 2)], p95: ts[Math.min(N - 1, Math.floor(N * 0.95))], min: ts[0], max: ts[N - 1] };
+      }
+
+      // ---------- run full corpus ----------
+      $("btnRun").addEventListener("click", async () => {
+        if (!segmenter || !images.length) return;
+        $("btnRun").disabled = true;
+        $("cards").innerHTML = "";
+        const netBefore = performance.getEntriesByType("resource").length;
+        const opts = {
+          lo: parseFloat($("lo").value), hi: parseFloat($("hi").value),
+          blur: parseFloat($("blur").value), soft: $("softCutoff").checked,
+        };
+        const N = parseInt($("nruns").value, 10);
+
+        // timing on the FIRST image (warm median) — representative steady state
+        log(`计时：暖机 + ${N} 次 …`);
+        segTiming = benchmark(images[0], N);
+        $("segMs").textContent = `${segTiming.median.toFixed(1)} / ${segTiming.p95.toFixed(1)} ms`;
+        $("segMs").className = "stat-val " + (segTiming.median < 500 ? "ok" : "err");
+        log(`暖机中位 ${segTiming.median.toFixed(1)}ms · p95 ${segTiming.p95.toFixed(1)}ms · min ${segTiming.min.toFixed(1)} · max ${segTiming.max.toFixed(1)}`,
+          segTiming.median < 500 ? "ok" : "err");
+
+        for (const img of images) {
+          const r = segmenter.segment(img.el);
+          const res = resolveAlpha(r.confidenceMasks || []);
+          if (!res) {
+            log(`${img.name}: 无 confidence mask！`, "err");
+            r.confidenceMasks?.forEach((m) => m.close());
+            r.categoryMask?.close();
+            continue;
+          }
+          const { alpha, mw, mh, personCh } = res;
+          resolvedPersonCh = personCh;
+          $("personCh").textContent = `ch${personCh}${res.inverted ? "·inv" : ""}`;
+          $("personCh").className = "stat-val ok";
+
+          // coverage from soft matte (mean alpha) — more meaningful than category count
+          let sum = 0; for (let i = 0; i < alpha.length; i++) sum += alpha[i];
+          const cov = (sum / alpha.length) * 100;
+          lastRunHadValidMask = cov > 1 && cov < 99;
+
+          const { out, mc } = composite(img, alpha, mw, mh, targetColor, opts);
+          renderCard(img, mc, out, { mw, mh, cov, personCh });
+
+          r.confidenceMasks?.forEach((m) => m.close());
+          r.categoryMask?.close();
+          await new Promise((res) => setTimeout(res, 0)); // yield to paint
+        }
+
+        // network audit
+        const all = performance.getEntriesByType("resource").slice(netBefore);
+        const ext = all.filter((e) => {
+          try { return new URL(e.name).host !== location.host; } catch { return false; }
+        });
+        renderNetAudit(all.length, ext);
+
+        computeVerdict(ext.length);
+        $("btnRun").disabled = false;
+      });
+
+      function renderCard(img, maskCanvas, outCanvas, st) {
+        const card = document.createElement("div");
+        card.className = "card";
+        const id = "judge_" + Math.abs(hashStr(img.name));
+        card.innerHTML = `
+          <div class="card-head">
+            <span class="name">${img.name}</span>
+            <span class="meta">${img.w}×${img.h} · mask ${st.mw}×${st.mh} · person ch${st.personCh}</span>
+          </div>
+          <div class="triptych">
+            <div class="cell"><h3>原图</h3></div>
+            <div class="cell"><h3>软 Matte (alpha)</h3></div>
+            <div class="cell"><h3>换底结果</h3></div>
+          </div>
+          <div class="card-stats">
+            <div class="kv"><span class="k">前景占比(平均α)</span><span>${st.cov.toFixed(1)}%</span></div>
+          </div>
+          <div class="hair-judge">
+            头发边缘：
+            <button class="action" data-j="pass" data-id="${id}">可接受</button>
+            <button class="action" data-j="fail" data-id="${id}">不可接受</button>
+            <span id="${id}" class="badge pending">未判</span>
+          </div>`;
+        const cells = card.querySelectorAll(".cell");
+        const srcClone = img.el.cloneNode();
+        srcClone.style.width = "100%"; srcClone.style.height = "auto";
+        cells[0].appendChild(srcClone);
+        maskCanvas.style.width = "100%"; maskCanvas.style.height = "auto";
+        cells[1].appendChild(maskCanvas);
+        outCanvas.style.width = "100%"; outCanvas.style.height = "auto";
+        cells[2].appendChild(outCanvas);
+        $("cards").appendChild(card);
+
+        card.querySelectorAll("[data-j]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const badge = $(btn.dataset.id);
+            const pass = btn.dataset.j === "pass";
+            badge.textContent = pass ? "可接受" : "不可接受";
+            badge.className = "badge " + (pass ? "pass" : "fail");
+            updateHairVerdict();
+          });
+        });
+      }
+
+      function updateHairVerdict() {
+        const badges = [...$("cards").querySelectorAll(".hair-judge .badge")];
+        const judged = badges.filter((b) => b.textContent !== "未判");
+        const anyFail = judged.some((b) => b.textContent === "不可接受");
+        const b3 = $("b3");
+        if (judged.length === 0) { setBadge(b3, "manual", "待判"); return; }
+        if (judged.length < badges.length) { setBadge(b3, "manual", `${judged.length}/${badges.length}`); return; }
+        setBadge(b3, anyFail ? "fail" : "pass", anyFail ? "FAIL" : "PASS");
+      }
+
+      function renderNetAudit(total, ext) {
+        const el = $("netAudit");
+        if (ext.length === 0) {
+          el.innerHTML = `<span class="ok">✔ ${total} 请求全部同源（${location.host}）<br>零外部请求</span>`;
+        } else {
+          el.innerHTML = `<span class="ext">✘ ${ext.length} 个外部请求：</span><br>` +
+            ext.map((e) => `<span class="ext">· ${new URL(e.name).host}</span>`).join("<br>");
+        }
+      }
+
+      function computeVerdict(extCount) {
+        // (1) COOP/COEP-free AND outcome valid — conjunctive, not flag-only
+        const variant = $("wasmVariant").textContent;
+        const headerFree = !hasSAB && !coi && !variant.includes("needs SAB");
+        setBadge($("b1"), headerFree && lastRunHadValidMask ? "pass" : "fail",
+          headerFree && lastRunHadValidMask ? "PASS" : "FAIL");
+        // (2) warm median < 500
+        setBadge($("b2"), segTiming && segTiming.median < 500 ? "pass" : "fail",
+          segTiming ? (segTiming.median < 500 ? "PASS" : "FAIL") : "—");
+        // (3) hair — manual
+        updateHairVerdict();
+        // (4) offline: zero external requests during the run
+        setBadge($("b4"), extCount === 0 ? "pass" : "fail", extCount === 0 ? "PASS" : "FAIL");
+        log(`判定：COOP/COEP-free=${headerFree && lastRunHadValidMask} · <500ms=${segTiming?.median < 500} · 外部请求=${extCount}`,
+          headerFree && segTiming?.median < 500 && extCount === 0 ? "ok" : "warn");
+        log(`注意：离线判定仅在你已在 DevTools 勾选 Offline 后才有意义（否则只证明本次没用到外部）。`, "warn");
+      }
+
+      function setBadge(el, cls, text) { el.className = "badge " + cls; el.textContent = text; }
+      function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h << 5) - h + s.charCodeAt(i) | 0; return h; }
+
+      $("btnReset").addEventListener("click", () => {
+        images = []; $("file").value = ""; $("cards").innerHTML = "";
+        segTiming = null; resolvedPersonCh = null; lastRunHadValidMask = false;
+        $("btnRun").disabled = true;
+        ["b1", "b2", "b3", "b4"].forEach((id) => setBadge($(id), "pending", "—"));
+        $("netAudit").textContent = "未运行";
+        log("已重置。");
+      });
+    </script>
+  </body>
+</html>

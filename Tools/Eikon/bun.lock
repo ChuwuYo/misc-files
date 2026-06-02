@@ -8,6 +8,7 @@
         "@jsquash/jpeg": "^1.6.0",
         "@jsquash/oxipng": "^2.3.0",
         "@jsquash/png": "^3.1.1",
+        "@mediapipe/tasks-vision": "^0.10.35",
         "cropperjs": "^2.1.1",
         "konva": "^10.3.0",
         "pica": "^10.0.0",
@@ -98,6 +99,8 @@
     "@jsquash/oxipng": ["@jsquash/oxipng@2.3.0", "", { "dependencies": { "wasm-feature-detect": "^1.2.11" } }, "sha512-aQ8wiEp6ztlTMXc+RMt/CG8crU3mEHDU+h+JYkIi6ctMhlh8+Ltj5XwQFfBuyzKYrp8NxaFW80Dp824bqjr+zA=="],
 
     "@jsquash/png": ["@jsquash/png@3.1.1", "", {}, "sha512-C10pc+0H6j0h8fENOfnGOvkXCmvpSQTDGlfGd0sHphZhPSGTyLjIrHba0FaZZdsKqA/wlmhYicUHb92vfZphaw=="],
+
+    "@mediapipe/tasks-vision": ["@mediapipe/tasks-vision@0.10.35", "", {}, "sha512-HOvadwVRE6JC+45nyYhmnywnr5h/J8KZvOeUNVOG9q/0875pZgItznFB9bRTvLc264YSJqiZ1NsIpCStJw/egg=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow=="],
 

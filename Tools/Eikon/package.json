@@ -33,6 +33,7 @@
     "@jsquash/jpeg": "^1.6.0",
     "@jsquash/oxipng": "^2.3.0",
     "@jsquash/png": "^3.1.1",
+    "@mediapipe/tasks-vision": "^0.10.35",
     "cropperjs": "^2.1.1",
     "konva": "^10.3.0",
     "pica": "^10.0.0",
