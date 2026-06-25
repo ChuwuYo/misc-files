@@ -85,7 +85,7 @@ def vetnbprompt(d):
 def gen_case_wf(idxs,outpath,wfname):
     prepared=_load("d3_prepared.json",{})
     salv=_load("d3_cases_salvaged.json",[])
-    done_ce={(c["idx"],c["start"]) for c in salv if c["kind"]=="册"}
+    byno=_load("d3_cases_byno.json",{})   # 按单例编号抢救的权威覆盖
     done_nb={c["idx"] for c in salv if c["kind"]=="本"}
     tasks=[]; skipped=0
     for i in idxs:
@@ -94,7 +94,7 @@ def gen_case_wf(idxs,outpath,wfname):
         d=DOCS[i]
         bym={p["no"]:p for p in room["patients"]}
         for c,nos in enumerate(room["cefen"]):
-            if (i,nos[0]) in done_ce: skipped+=1; continue
+            if all(n in byno for n in nos): skipped+=1; continue  # 该册10例全在byno=已完成
             block=[bym[n] for n in nos]
             tasks.append({"kind":"册","idx":i,"c":c+1,"start":nos[0],"end":nos[-1],
                 "label":"%s·册%d(%s-%s)"%(d["name"],c+1,nos[0],nos[-1]),"prompt":caseprompt(d,block)})
