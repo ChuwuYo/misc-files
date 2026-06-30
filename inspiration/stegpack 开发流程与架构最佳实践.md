@@ -9,6 +9,7 @@
 - 提供一致的核心能力（inject / extract / verify）、可选加密、自动/手动格式识别、进度与错误可视化。
 - 保持低依赖、轻量打包、可扩展。
 - **定位**：这是一个本地工具——只负责把 payload 干净地嵌入/取出载体文件（字节级、非破坏性、可校验、可加密）。文件做好之后怎么传、发到哪，是用户自己的事，不在工具职责范围内。
+- **两种模式（用户可选，详见第五节）**：①**格式伪装/套壳**——把你自己的文件（如 ZIP）在外面套成另一种格式（MP4），改后缀也能开（脏），本工具干净一键还原；②**藏进真载体**——把 payload 藏进一张真实无关文件（如真照片 PNG）内部，看起来就是普通照片，需本工具才能取出。加密对两者都是可选项。
 
 ---
 
@@ -18,12 +19,14 @@
 
 ### 支持的格式（大众主流，归 3 大代码族）
 
-| 格式 | 类别 | 嵌入点 | 代码族 |
+> 这些格式两用：既是**模式 A** 的"目标伪装格式"（套壳成它），也是**模式 B** 的"真实载体"。下表"嵌入点"列是**模式 B**（藏进真载体内部）的合法可忽略位置；模式 A 是把原文件套在该格式壳外面（见第五节）。
+
+| 格式 | 类别 | 嵌入点（模式 B） | 代码族 |
 |---|---|---|---|
-| PNG | 图片 | zTXt 辅助块（IEND 前插入，IDAT 一字节不动） | 块/段/尾插入 |
-| JPEG | 图片 | COM/APPn 段（每段 ≤64KB，需分段链接） | 块/段/尾插入 |
+| PNG | 图片 | **私有辅助块**（private ancillary chunk：原始字节 + CRC32，解码器忽略）。**不用 zTXt**——它是 zlib 压缩的 Latin-1 文本，装不了高熵密文 | 块/段/尾插入 |
+| JPEG | 图片 | APPn/COM 段（每段 ≤64KB，需分段链接；二进制优先 APPn） | 块/段/尾插入 |
 | GIF | 图片/动图 | 注释扩展块（`0x21 0xFE`），或 `0x3B` 尾标后追加（主流解码器都容忍） | 块/段/尾插入 |
-| WebP | 图片 | RIFF 自定义 chunk（未知 FOURCC + 更新顶层 RIFF size） | RIFF 容器 |
+| WebP | 图片 | RIFF 自定义 chunk（**需确保/转成 VP8X 扩展形式**再挂——裸 VP8/VP8L 严格解码器不一定认；更新顶层 RIFF size） | RIFF 容器 |
 | MP3 | 音频 | **最后一帧之后尾部追加** + 磁标/长度（向后扫描定位）；不走 ID3 重写，保持 O(块) 流式 | 块/段/尾插入 |
 | MP4 | 视频 | `free`/`uuid` box（顶层 box 扁平扫描；同一扫描器兼顾 MOV/M4A/HEIF） | 块/段/尾插入 |
 | docx/xlsx/pptx | 文档 | ZIP/OPC 容器，EOCD 后 overlay（三者同一路径） | ZIP/OPC 容器 |
@@ -64,7 +67,7 @@
 
 ## 三、选型与总体架构
 
-**一套技术栈打三端（Rust + Tauri 2.x + wasm + 单一前端）：**
+**一套技术栈打三端（Rust + Tauri 2.x + wasm + React 前端）：**
 
 | 端 | 形态 | 后端路径 | 本期 |
 |---|---|---|---|
@@ -82,7 +85,7 @@
 - 核心语言：Rust（stable，单一 Cargo workspace）
 - 桌面/移动端：**Tauri 2.x**（能力/权限模型 capability-based；wasm 前端需在 CSP 放开 `wasm-unsafe-eval`）
 - Web 端：WebAssembly（`wasm-bindgen` 工具链），同一 Rust 核心编译为 wasm
-- 前端：**单一前端代码库（固定 Svelte 或 React 其一）**——三端共享 UI 的前提；不可「任选其一」
+- 前端：**固定 React**（单一前端代码库，三端共享 UI 的前提）——选 React 是因为它训练数据最多、最成熟稳定，AI 辅助开发时写得最可靠、返工最少（不用 Svelte/Vue 等更小众的，避免出错）
 - 加密：默认 **ChaCha20-Poly1305**（软件/wasm 无 AES-NI 时显著快于 AES-GCM），可选 AES-256-GCM；KDF 默认 **Argon2id**
 
 ### 关键架构决策：桌面走原生、Web 走 wasm、共享同一前端
@@ -120,8 +123,8 @@
 
 所有嵌入手段本质都是「在已知偏移处插入/追加」，因此核心应设计为**流式转换**，而非「整文件读入内存」：
 
-- 加壳：将壳文件按块（如 1 MiB）从输入流读出 → 写入输出流 → 在正确位置插入/追加 payload（含加密与 trailer）。内存占用 O(块大小)，与文件大小无关。
-- 去壳：从尾部回扫 trailer magic → 读 trailer → 定位并流式读出 payload → 解密 → 写出。
+- 加壳：将壳文件按块（如 1 MiB）从输入流读出 → 写入输出流 → 在正确位置插入/追加 payload（含加密与 footer）。内存占用 O(块大小)，与文件大小无关。
+- 去壳：从尾部读定长 footer → 用密码+salt 派生 key → 流式读出密文并解密（AEAD 通过即有效）→ 写出。
 - 落盘：
   - 桌面：直接写文件流。
   - Web：**Chromium** 用 File System Access API（`showSaveFilePicker` + `FileSystemWritableFileStream`）流式写盘；**Firefox/Safari 不支持该 API**，回退为内存内 Blob 拼装（受 RAM 限制）→ 超大文件应引导用户改用桌面端。
@@ -130,39 +133,51 @@
 
 ---
 
-## 五、容器封装格式（trailer）规范
+## 五、两种封装模式（加壳时用户选）
 
-无论追加到尾部还是放进结构段，payload 都包成统一的自描述容器，便于校验、加密参数携带与可靠提取：
+### 模式 A — 格式伪装（套壳）：把你自己的文件伪装成另一种格式
+
+在原文件**外面**套一层目标格式的壳，原文件一字节不改、结构完整。
 
 ```
-[payload 字节（可能已压缩、已加密、已分块）]
-[trailer]：
-  magic        "STGP"        (4B)
-  version      u8
-  flags        u8            // bit0 加密  bit1 压缩  bit2 含原始文件名
-  kdf_id       u8            // 0=none 1=argon2id 2=scrypt
-  aead_id      u8            // 0=none 1=chacha20poly1305 2=aes256gcm
-  kdf_params   (m,t,p) + salt        // 仅加密时
-  chunk_size   u32                   // 分块 AEAD 的块大小
-  base_nonce   12B                   // 仅加密时
-  orig_name    (len + bytes，可选)
-  payload_len  u64                    // 密文/数据长度
-  plain_sha256 32B                    // 明文 SHA-256（完整性）
-  trailer_len  u32                    // 便于从尾部回扫定位
-  magic_end    "STGP"        (4B)
+布局（ZIP 伪装成 MP4）：
+[ MP4 壳 + 我方标记/元数据 ]   ← 加的，在原文件"外面"
+[ 原 ZIP，整块保留 ]           ← 留在其自身阅读器找得到的位置（zip 锚在尾部）
 ```
 
-提取流程：seek 到文件尾 → 读末 4B 校验 magic_end → 回读 `trailer_len` → 解析 trailer → 读取 payload → 校验 SHA-256（解密后）。
+- **改后缀也能开（脏）**：壳在外面、原文件没动，rename 回原扩展名往往直接能打开，只是带壳、偏大、可能告警。**不锁死、不做绝。**
+- **本工具 = 干净 + 一键**：去壳剥壳，给出与原文件**逐字节一致**的干净文件（不是 rename 出来的脏版本）。
+- 最适合原文件本身是"位置容忍"的容器（zip / office / pdf）——其阅读器从尾部/特定锚点找结构，壳放另一端不挡路。其他格式对的"rename 可开"程度因格式而异。
+
+**模式 A 可行性表**（决定"rename 还能不能打开原文件"的是**原文件的锚点**，不是目标格式）：
+
+| 原文件类型 | 锚点机制 | rename 仍能打开(脏) | 说明 / 建议 |
+|---|---|---|---|
+| zip / docx / xlsx / pptx | EOCD 从文件尾回扫 | ✅ 最稳（前缀多大都不影响） | Mode A 首选；壳+标记放前面，原文件留尾部 |
+| mp3 | 帧同步可重新对齐 | ✅ 可（播放器跳过前缀杂数据） | 可用 |
+| pdf | 头部 `%PDF` + 尾部 `startxref` | ⚠️ 多数能开 | 壳太大（>~1KB）时个别严格阅读器找不到 `%PDF`；壳小则稳 |
+| png / jpeg / gif / webp / mp4 / exe | 魔数必须在 0 偏移 | ❌ 前缀顶掉魔数，打不开 | 这些当**原文件**时退回 Mode B（藏进真载体、仅工具提取），或接受"只能用本工具还原" |
+
+> 目标（伪装成什么）：任何"头部有魔数 + 容忍尾部冗余"的格式都行（png/jpeg/gif/webp/mp4/pdf）；目标别选 zip/office（它们也尾锚，会和原文件抢尾部）。
+
+### 模式 B — 藏进真载体：把 payload 藏进一张真实无关文件的内部
+
+把 payload 嵌入一个真实载体（如一张真照片 PNG）的**合法可忽略结构**里（私有块 / free box / 注释段等，见第二节），文件看起来就是那张普通照片，payload 被藏住；改后缀**不会**让它掉出来，**需本工具（+可选密码）才能提取**。
+
+### 两模式共用：标记/元数据
+
+记录 magic、版本、**模式**、壳/嵌入范围、原格式与文件名、（可选）加密参数——供去壳/提取时精确还原。模式 A 放在壳里（原文件外），模式 B 放在载体的私有块里。去壳时据此自动识别是哪种模式。
 
 ---
 
-## 六、加密方案
+## 六、加密方案（可选附加层，非存在理由）
 
-- AEAD：默认 **ChaCha20-Poly1305**（纯软件/wasm 无 AES 硬件加速时快 ~50–300%），可选 **AES-256-GCM**。两者均用 RustCrypto 纯 Rust 实现，**置于核心库**，native 与 wasm 走同一代码路径——**不再为 wasm 单独引入 WebCrypto 适配**（避免逻辑分叉与 async 传染）。
-- **分块 AEAD（STREAM 式）**：大文件不可一次性 GCM/Poly1305。按 `chunk_size` 分块，每块独立 nonce = `base_nonce || counter`，末块做域分离标记，防止截断/重排。这与第四节的流式处理天然契合。
-- KDF：**Argon2id**（OWASP 推荐）。浏览器内存预算敏感，默认参数取中等（如 m≈19–64 MiB、t=2–3、p=1），桌面可上调；参数随 trailer 持久化以便解密。scrypt 仅作兼容选项（OWASP 参数约 128 MB，对浏览器偏重）。
-- 随机源：浏览器 `crypto.getRandomValues`（经 `getrandom` 的 js 特性），桌面系统级 RNG。由适配层注入核心。
-- 生命周期：密钥与明文最小驻留，可行范围内显式清零（如 `zeroize`）。
+> 存在理由是"可逆的加壳/去壳"（第五节），**不是密码**。加密只是给想要"连内容也保密"的人的可选层：不加密照样能去壳还原；加密后则别人即便去了壳也看不到内容。
+
+- **可选加密**：默认可开可关。开启后 payload 经 AEAD 加密，原文件名/元数据移入密文。
+- KDF：**Argon2id**（参数随 footer 持久化）。AEAD：默认 **ChaCha20-Poly1305**（wasm 无 AES-NI 更快），可选 AES-256-GCM；RustCrypto 纯 Rust，native/wasm 同一路径，**不引入 WebCrypto**。
+- 分块 STREAM：`aead::stream::EncryptorBE32`——nonce = 7B 前缀 + 4B 大端计数 + 1B 末块标志（共 12B），防截断/重排。
+- 加密时**不存明文哈希**（完整性由 AEAD tag 保证，避免已知明文 oracle）；随机源 `getrandom`(js)/系统 RNG；密钥 `zeroize` 清零。
 
 ---
 
@@ -181,9 +196,10 @@
 ## 八、桌面客户端（Tauri 2.x）方案
 
 - 权限：能力（capability）模型，最小化 FS 权限，仅允许用户选择的路径，关闭无关 API。
-- IPC：注入/提取/校验、加密开关、格式自动识别、进度订阅、错误上报。大文件用流式/分块命令 + 进度事件。
+- IPC：注入/提取/校验、密码输入、格式自动识别、进度订阅、错误上报。大文件用流式/分块命令 + 进度事件。
 - 打包：小体积；Windows/macOS/Linux 构建；签名与自动更新（updater 插件）**可选**——签名需付费证书，按需启用。
 - 与 Web 一致性：同一前端代码、同一核心 crate，仅后端绑定方式不同。
+- **注意 Tauri 2.x API 坑**：v2 与 v1 差异大（能力/权限模型、插件体系、IPC 都变了）。实现时锁定 v2 文档，**别混用 v1 写法**——这是 Tauri 对 AI 辅助开发的主要风险点，需对照官方 v2 文档逐处核对。
 
 ---
 
@@ -191,16 +207,16 @@
 
 核心流程：
 
-- 加壳：选壳文件 → 选 payload → 选输出 → 可选（加密、密码、KDF 档位、嵌入策略）→ 执行 → **选导出方式（源文件 / 压缩包 .zip）** → 下载/保存。
-- 去壳：选已加壳文件**或一个 .zip**（自动解包找出里面的载体）→ 选输出 → 可选输入密码 → 执行 → 下载/保存 payload。
+- 加壳：**选模式（A 套壳伪装 / B 藏进真载体）** → 选文件（A：要伪装的原文件；B：payload + 真实载体）→ 选目标格式 → 可选（加密+密码）→ 选输出 → 执行 → **选导出方式（源文件 / 压缩包 .zip）** → 下载/保存。
+- 去壳：选已加壳文件**或一个 .zip**（自动解包找出载体）→ 选输出 →（若加壳时加了密再输密码）→ 执行 → **自动识别模式，精确还原原文件/payload**。
 
 主要模块：
 
 - 文件区：拖放/选择；历史记录默认**关闭**（隐私，stego 工具尤甚），开启也只存路径不存内容。
-- 选项区：自动/手动识别、加密开关、密码强度提示、KDF 档位（简单/高级）。
+- 选项区：自动/手动识别、**加密开关 + 密码（可选）+ 强度提示**、KDF 档位（简单/高级）。
 - 状态区：实时进度、可折叠日志、兼容性提示（PDF 追加会破坏签名、文档被重存会丢 payload 等）。
 - 结果区：**两种导出方式**——①导出源文件（带载荷的载体本体）；②导出压缩包（把载体放进一个正常 `.zip`，普通归档）。用户按需自选（默认记住上次选择）。另含复制校验和；复制 CLI 参数（**仅桌面端**，Web 无 CLI）。
-- 完整性检查：选文件做结构校验 + trailer/marker 验证，提示是否可安全提取。
+- 完整性检查：校验 footer/标记与结构、确认可去壳还原；若加壳时加了密，再输入密码做"试解密"验证。
 - 设置：国际化、主题、内存策略、隐私与安全说明。
 
 可用性/可访问性：键盘操作、屏幕阅读器标签、对比度主题；大文件非阻塞 UI 与可取消。
@@ -220,7 +236,7 @@
 - 单元测试：各格式注入/提取/校验/加密/错误路径。
 - **属性/往返测试**：随机 payload + 随机参数，inject→extract 必须 bit 级还原。
 - **模糊测试**：对每个格式解析器跑 `cargo-fuzz`，防止恶意/损坏文件导致 panic 或越界。
-- 真实语料：收集各格式真实样本（含边界：超小、超大、已含 trailer、损坏）。
+- 真实语料：收集各格式真实样本（含边界：超小、超大、已含 footer、损坏）。
 - 兼容性测试：多 OS、多浏览器、目标阅读器/查看器（Office: Word/LibreOffice/Google Docs；图片/音视频: 主流查看器与播放器）；记录哪些会在重存时丢 overlay。
 - 性能与内存：小/中/大三档，记录耗时与峰值内存，验证 O(块) 内存。
 - 安全测试：KDF 参数正确性、RNG 可用性、AEAD 完整性与篡改检测、截断/重排攻击。
@@ -246,11 +262,12 @@ stegpack/                      # Cargo workspace
 │   ├── core/                  # stegpack-core：无 IO、native+wasm 双目标
 │   │   ├── src/lib.rs         # Format trait、inject/extract/verify
 │   │   ├── src/registry.rs    # 编译期格式注册表
-│   │   ├── src/container.rs   # trailer 容器编解码
-│   │   ├── src/crypto.rs      # ChaCha20-Poly1305 / AES-GCM + Argon2id + 分块 AEAD
+│   │   ├── src/container.rs   # footer 容器编解码
+│   │   ├── src/crypto.rs      # 可选加密：ChaCha20-Poly1305 / AES-GCM + Argon2id + 分块 STREAM AEAD
 │   │   ├── src/stream.rs      # 流式 Read→Write 抽象
-│   │   ├── src/families/      # 按 3 大代码族组织（不是一格式一文件）：
-│   │   │   ├── chunk_box.rs   #   块/段/尾插入：png(zTXt)·jpeg(COM/APPn)·gif(注释块/尾追加)·mp3(尾追加)·mp4(free/uuid box)·pdf(尾追加)
+│   │   ├── src/shell.rs       # 模式A 套壳：按目标格式在原文件"外面"生成/套壳 + 记录壳范围（rename 可开）
+│   │   ├── src/families/      # 模式B 嵌入点（藏进真载体；按 3 大代码族，不是一格式一文件）：
+│   │   │   ├── chunk_box.rs   #   块/段/尾插入：png(私有辅助块)·jpeg(APPn/COM)·gif(注释块/尾追加)·mp3(尾追加)·mp4(free/uuid box)·pdf(尾追加)
 │   │   │   ├── riff.rs        #   RIFF 容器：webp（如需可低成本加 wav）
 │   │   │   └── zip_opc.rs     #   ZIP/OPC 容器：docx·xlsx·pptx
 │   │   ├── src/transport.rs   # 普通 zip 归档：把载体打成 zip(STORE) / 从 zip 解出载体（与隐写无关，纯容器）
@@ -261,7 +278,7 @@ stegpack/                      # Cargo workspace
 │   ├── src/main.rs
 │   ├── src/commands.rs        # IPC 绑定 inject/extract/verify（流式）
 │   └── tauri.conf.json        # 能力/权限、CSP（wasm-unsafe-eval）
-└── ui/                        # 单一前端（Svelte/React 固定其一）
+└── ui/                        # 单一前端（固定 React）
     ├── src/backend/           # StegBackend 抽象 + tauri/wasm 两实现
     ├── src/components/
     ├── src/store/
@@ -278,14 +295,14 @@ stegpack/                      # Cargo workspace
 ## 阶段 0：地基（先把风险前置）
 
 - 建 Cargo workspace + CI（fmt/clippy/test + **`wasm32-unknown-unknown` 构建检查**，从第一天就跑）。
-- 定义 `Format` trait、错误模型、流式 `Read→Write` 抽象、trailer 容器格式。
+- 定义 `Format` trait、错误模型、流式 `Read→Write` 抽象、footer 容器格式。
 - 立刻验证「一个最小核心」能同时编译为 native 与 wasm（证明工具链与库选型 wasm-clean）。
 
 ## 阶段 1：最薄竖切（端到端走通一遍）
 
-- 选 **docx（ZIP 容器族代表）+ PNG（块/段插入族代表）** 两种格式，打通 inject/extract/verify。
-- 集成加密容器：Argon2id + 分块 ChaCha20-Poly1305 + SHA-256，随 trailer 持久化。
-- CLI 作为测试入口（也是正式交付物之一）；同一核心同时跑通 native 与 **wasm（浏览器内冒烟测试）**。
+- 选 **docx（ZIP 容器族代表）+ PNG（私有辅助块代表）** 两种格式，打通加壳/去壳/verify——**先把"逐字节无损还原"跑通**。
+- footer 容器 + **可选加密**（Argon2id + 分块 STREAM ChaCha20-Poly1305；加密时完整性靠 AEAD tag、不存明文哈希）。
+- CLI 作为测试入口、正式交付物、**且就是"配套去壳/还原器"**（免安装跨平台单文件）；同一核心同时跑通 native 与 **wasm（浏览器内冒烟测试）**。
 - 顺带做 `transport.rs`（zip 归档：打包/解包），导出/导入即可二选一——逻辑简单，早做早用。
 - 产出：一个能加密、能往返、native+wasm 都验证过的最小可用核心。**此处验证完所有架构性风险。**
 
@@ -339,9 +356,9 @@ stegpack/                      # Cargo workspace
 # 保障机制与风险控制（要点）
 
 - 仅用规范允许的嵌入点，保证结构无损。
-- trailer = magic + 版本 + 长度 + 校验 + 加密参数，保障提取准确与可恢复。
-- 默认完整性校验（SHA-256），可选 AEAD 加密（默认 ChaCha20-Poly1305）。
-- UI 完整性检查辅助验证可提取性。
+- footer 记录"加了什么"（magic + 版本 + 原格式 + payload 起止 + 可选加密参数），保障**精确去壳、逐字节还原**。
+- 可选 AEAD 加密（默认 ChaCha20-Poly1305）；加密时完整性由 AEAD tag 保证、不存明文哈希。
+- UI 完整性检查辅助验证可去壳还原。
 - PDF 追加会破坏数字签名 / 可被取证检测——UI 一句提示。
 
 ---
@@ -361,7 +378,7 @@ stegpack/                      # Cargo workspace
 | wasm 放在 M4 | 兼容性风险暴露太晚 | wasm 构建检查进 M0、wasm 冒烟测试进 M1 | 工具链/库 wasm 兼容是架构性风险，须前置 |
 | 「插件化动态扩展」 | wasm 无法运行时动态加载 | 改为编译期格式注册表 | wasm 无 dlopen |
 | Web 端「复制 CLI 参数」 | Web 无 CLI | 该功能仅桌面端 | — |
-| 前端「React/Vue/Svelte 任一」 | 任选导致组件无法复用 | 固定单一框架（Svelte/React 二选一） | 双端共享 UI 的前提 |
+| 前端「React/Vue/Svelte 任一」 | 任选导致组件无法复用；且需选 AI 能可靠写的 | **固定 React** | 三端共享 UI 的前提；React 训练数据最多、最成熟，AI 写得最稳。**注**：Svelte 在包体/性能上确实更优，但本应用 UI 极简、真正占体积与算力的是 wasm 核心，React 运行时（~40KB）相形之下可忽略，故让位于 AI 可靠性 |
 | 浏览器大文件落盘 | 未区分浏览器能力 | Chromium 用 File System Access 流式落盘；FF/Safari 回退 Blob 并引导桌面端 | FF/Safari 不支持 showSaveFilePicker |
 
 ---
@@ -384,7 +401,7 @@ stegpack/                      # Cargo workspace
 
 | 决策 | 格式 | 一句话依据 |
 |---|---|---|
-| 支持 | PNG | 主流图片，zTXt 块合规、低检测、纯字节级 |
+| 支持 | PNG | 主流图片，私有辅助块装原始字节、解码器忽略、纯字节级 |
 | 支持 | JPEG | 最自然的「照片」载体，人人都发 |
 | 支持 | GIF | 大众熟悉的动图，嵌入点干净（不算冗余） |
 | 支持 | WebP | 现代主流图片，RIFF chunk 干净 |
