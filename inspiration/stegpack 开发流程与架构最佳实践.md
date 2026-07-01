@@ -85,7 +85,8 @@
 - 核心语言：Rust（stable，单一 Cargo workspace）
 - 桌面/移动端：**Tauri 2.x**（能力/权限模型 capability-based；wasm 前端需在 CSP 放开 `wasm-unsafe-eval`）
 - Web 端：WebAssembly（`wasm-bindgen` 工具链），同一 Rust 核心编译为 wasm
-- 前端：**固定 React**（单一前端代码库，三端共享 UI 的前提）——选 React 是因为它训练数据最多、最成熟稳定，AI 辅助开发时写得最可靠、返工最少（不用 Svelte/Vue 等更小众的，避免出错）
+- 前端：**固定 React**（单一前端代码库，三端共享 UI 的前提）——选 React 是因为它训练数据最多、最成熟稳定，AI 辅助开发时写得最可靠、返工最少（Svelte 在包体/性能略优，但本应用 wasm 核心是大头、UI 又极简，差异可忽略，故让位于 AI 可靠性）。
+- 前端技术栈**保持极简**：**Vite + React SPA、客户端渲染**，本地状态用 `useState`/`useReducer`（真需要再上超轻 store 如 Zustand）。**不用 SSR / meta-framework / TanStack（Query/Router/Start）**——本工具纯离线、无服务器、无网络请求、就俩界面，那些解决的是我们没有的问题。
 - 加密：默认 **ChaCha20-Poly1305**（软件/wasm 无 AES-NI 时显著快于 AES-GCM），可选 AES-256-GCM；KDF 默认 **Argon2id**
 
 ### 关键架构决策：桌面走原生、Web 走 wasm、共享同一前端
@@ -294,6 +295,7 @@ stegpack/                      # Cargo workspace
 
 ## 阶段 0：地基（先把风险前置）
 
+- **开发环境前置**：Rust(rustup) + `wasm32-unknown-unknown` target + `tauri-cli` + `wasm-pack` + Node + **pnpm**(前端包管理，比 npm 快/省磁盘/依赖更严)。系统 WebView：**macOS 自带 WKWebView**(装 Xcode CLT 即可)、Windows 自带 WebView2、**Linux 需额外装 webkit2gtk 等 -dev 包**。→ macOS 上 Tauri 几乎不加额外系统依赖，唯一实质要装的是 Rust（做核心本就需要）。当前机器：Node/pnpm/Xcode 已就绪，仅缺 Rust。
 - 建 Cargo workspace + CI（fmt/clippy/test + **`wasm32-unknown-unknown` 构建检查**，从第一天就跑）。
 - 定义 `Format` trait、错误模型、流式 `Read→Write` 抽象、footer 容器格式。
 - 立刻验证「一个最小核心」能同时编译为 native 与 wasm（证明工具链与库选型 wasm-clean）。
